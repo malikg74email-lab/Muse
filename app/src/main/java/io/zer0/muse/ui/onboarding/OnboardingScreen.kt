@@ -62,6 +62,7 @@ import io.zer0.ai.core.Model
 import io.zer0.ai.core.ProviderConfig
 import io.zer0.common.Logger
 import io.zer0.muse.R
+import io.zer0.muse.data.AppearanceSettingsStore
 import io.zer0.muse.data.SettingsRepository
 import io.zer0.muse.data.assistant.AssistantRepository
 import io.zer0.muse.data.preset.PresetProviders
@@ -115,10 +116,10 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // ── 各步骤状态 ──
-    var selectedLanguage by rememberSaveable { mutableStateOf("zh") }
-    var selectedThemeId by rememberSaveable { mutableStateOf("mono") }
+    var selectedLanguage by rememberSaveable { mutableStateOf("en") }
+    var selectedThemeId by rememberSaveable { mutableStateOf(AppearanceSettingsStore.DEFAULT_THEME_ID) }
     var userName by rememberSaveable { mutableStateOf("") }
-    var agentName by rememberSaveable { mutableStateOf("Muse") }
+    var agentName by rememberSaveable { mutableStateOf("Shaheen 2") }
     var selectedPresetId by rememberSaveable { mutableStateOf("") }
     var apiKey by rememberSaveable { mutableStateOf("") }
     var customBaseUrl by rememberSaveable { mutableStateOf("") }
@@ -390,17 +391,13 @@ private fun ProgressDots(currentPage: Int, pageCount: Int, modifier: Modifier = 
 
 // ── 步骤 0：欢迎页 ──────────────────────────────────────────────
 /**
- * 问候语轮播表 — 跟随支持的语言逐条切换(中文优先,其次英文,其余顺序轮转)。
- * 每条本身就是对应语言的原文,不走资源本地化。
+ * Welcome greeting shown under the app name on the first onboarding step.
+ * Shaheen 2 ships English + Roman Urdu only, so the greeting is a single
+ * Roman Urdu line (kept as a list: the welcome step crossfades through
+ * the entries, and a one-entry list simply stays on it).
  */
 private val WELCOME_GREETINGS = listOf(
-    "嗨，终于见面了。",
-    "Hi, nice to meet you.",
-    "はじめまして。",
-    "반가워요.",
-    "Hola, encantado.",
-    "Olá, prazer.",
-    "Привет, рады знакомству.",
+    "Assalam-o-Alaikum.",
 )
 
 @Composable
@@ -530,11 +527,7 @@ private data class FeatureItem(
 @Composable
 private fun StepLanguage(selectedLanguage: String, onLanguageSelected: (String) -> Unit) {
     val languages = listOf(
-        "zh" to stringResource(R.string.onboarding_lang_zh),
-        "zh-TW" to stringResource(R.string.onboarding_lang_zh_tw),
         "en" to stringResource(R.string.onboarding_lang_en),
-        "ja" to stringResource(R.string.onboarding_lang_ja),
-        "ko" to stringResource(R.string.onboarding_lang_ko),
     )
 
     Column(
