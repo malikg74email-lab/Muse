@@ -161,8 +161,6 @@
     <string name="permission_termux_grant_toast">If no dialog appears, open Termux once and retry.</string>
     <string name="permission_termux_grant_manual_hint">If no dialog appears, open Termux once and retry.</string>
     <string name="permission_termux_config_hint">In Termux run echo \'allow-external-apps = true\' &gt;&gt; ~/.termux/termux.properties, then restart Termux</string>
-    <string name="permission_termux_copy_cmd">Copy command</string>
-    <string name="permission_termux_copy_cmd_done">Command copied</string>
     <string name="shizuku_apk_installed">Shizuku APK installed</string>
     <string name="shizuku_apk_not_installed">Shizuku APK not installed</string>
     <string name="shizuku_service_running">Shizuku service running</string>

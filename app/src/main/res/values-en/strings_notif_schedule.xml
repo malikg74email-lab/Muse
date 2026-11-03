@@ -133,7 +133,4 @@
     <string name="schedule_tool_advanced_hint">Tip: advanced features are usually easier to describe with AI</string>
     <string name="schedule_tool_templates_title">Common tools quick-fill (select to auto-fill)</string>
     <string name="schedule_view_all_history">View all history</string>
-    <string name="moment_generate_success">Moment generated</string>
-    <string name="moment_generate_no_material">No material to generate today</string>
-    <string name="moment_generate_failed">Generation failed: try again later</string>
 </resources>
