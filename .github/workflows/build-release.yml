@@ -40,15 +40,33 @@ jobs:
           bash tools/runtime-pack/build-runtime-pack.sh both
           bash tools/python-pack/build-python-pack.sh both
 
-      # Signing design: no keystore is stored on GitHub by design. This workflow
-      # intentionally builds with the keystore check skipped and explicit
-      # version properties; the returned release APK is unsigned and must be
-      # signed locally with Malik's dedicated Shaheen keystore, which is kept
-      # off-GitHub. Do not upload or commit that keystore or its passwords.
-      - name: Build release APK (unsigned; sign locally)
+      # Signing design: Malik's dedicated Shaheen keystore NEVER goes on GitHub.
+      # Instead, this workflow generates a throwaway (ephemeral) keystore inside
+      # the runner so AGP packages normally-signed release APKs under their
+      # canonical names (an unsigned "-unsigned"-suffixed provider APK breaks
+      # :app:syncA11yProviderApkRelease, whose @InputFile is the canonical
+      # accessibility-provider-release.apk path). The ephemeral signature is
+      # discarded: the returned APKs are re-signed locally with the dedicated
+      # off-GitHub keystore before delivery, and re-signing replaces this
+      # signature cleanly. The keystore and keystore.properties exist only in
+      # the runner (both are also covered by .gitignore) and are never committed.
+      - name: Create ephemeral CI keystore
+        run: |
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/shaheen-ci.jks" -alias shaheen-ci -keyalg RSA -keysize 2048 -validity 3650 -storepass shaheen-ci-ephemeral -keypass shaheen-ci-ephemeral -dname "CN=Shaheen CI Ephemeral, O=AA Studio Creations, C=PK"
+
+      - name: Write keystore.properties
+        run: |
+          cat > keystore.properties <<EOF
+          storeFile=$RUNNER_TEMP/shaheen-ci.jks
+          storePassword=shaheen-ci-ephemeral
+          keyAlias=shaheen-ci
+          keyPassword=shaheen-ci-ephemeral
+          EOF
+
+      - name: Build release APK (ephemeral CI signature; re-signed locally)
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease -PreleaseSkipKeystoreCheck=true -PshaheenUnsignedRelease=true -PversionName=1.0.0-shaheen -PversionCode=1000000
+          ./gradlew :app:assembleRelease -PversionName=1.0.0-shaheen -PversionCode=1000000
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
