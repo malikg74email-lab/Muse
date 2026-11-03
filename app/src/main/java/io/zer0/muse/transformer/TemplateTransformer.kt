@@ -103,7 +103,7 @@ class TemplateTransformer(
             put("user_name", userNickname)
             put("nickname", userNickname)
             put("userName", userNickname) // v1.97: camelCase 别名
-            val assistantName = (context.extra("assistant_name") as? String) ?: "Muse"
+            val assistantName = (context.extra("assistant_name") as? String) ?: "Shaheen 2"
             put("assistant_name", assistantName)
             put("char", assistantName)
             put("character_name", assistantName)
