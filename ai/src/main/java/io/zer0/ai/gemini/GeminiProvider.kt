@@ -992,6 +992,39 @@ class GeminiProvider(
         return true
     }
 
+    /**
+     * Shaheen 2 speed fix (2026-11-03): OFF / AUTO ke liye sab se lean explicit
+     * thinking config.
+     *
+     * Pehle OFF/AUTO par thinkingConfig bheja hi nahi jata tha — Gemini 2.5
+     * series us surat mein dynamic thinking (budget = -1, server ki marzi)
+     * chala deti hai, aur pehla visible token soch ke pure phase ke baad aata
+     * hai (Malik ki "slow reply" shikayat ki asal wajah). UI layer pehle hi
+     * assistant ke AUTO ko OFF mein badal deti hai (ChatStreamCoordinator),
+     * is liye OFF ka matlab yahan wazeh hai: "sochna nahi hai". User ki khud
+     * chuni hui LOW/MEDIUM/HIGH/XHIGH levels is fix se mehfooz hain — woh
+     * pehle ki tarah chalti hain.
+     *
+     * Sirf un model families par lagta hai jinka rawaiya verified hai:
+     *  - Gemini 3+: sirf thinkingLevel samajhte hain; "low" sab se lean hai.
+     *  - Gemini 2.5 Pro: thinking band ho hi nahi sakta; minimum budget 128
+     *    hai (0 bhejna ghalat hai).
+     *  - Gemini 2.5 Flash / Flash-Lite: budget 0 = thinking bilkul band,
+     *    pehla token foran.
+     *  - Gemini 2.0 aur purane: default mein sochte nahi, is liye null
+     *    (purana rawaiya) — wahan bhejna ghair-zaroori risk hai.
+     */
+    private fun leanThinkingConfig(modelId: String?, forceThinkingLevel: Boolean): GeminiThinkingConfig? {
+        val id = modelId?.lowercase() ?: return null
+        return when {
+            forceThinkingLevel || id.contains("gemini-3") || id.contains("gemini-4") ->
+                GeminiThinkingConfig(thinkingLevel = "low")
+            id.contains("gemini-2.5-pro") -> GeminiThinkingConfig(thinkingBudget = 128)
+            id.contains("gemini-2.5") -> GeminiThinkingConfig(thinkingBudget = 0)
+            else -> null
+        }
+    }
+
     private fun buildRequestBody(
         system: String?,
         contents: List<GeminiContent>,
@@ -1010,8 +1043,10 @@ class GeminiProvider(
         // 传错写法会被服务端直接 400 拒掉，所以按模型分代选。
         // [forceThinkingLevel] 给自动回退用：不认模型名，强制发档位。
         val thinkingCfg = when (reasoningLevel) {
-            ReasoningLevel.OFF -> null
-            ReasoningLevel.AUTO -> null
+            // Shaheen 2 speed fix: OFF/AUTO ko "kuch mat bhejo" ki bajaye explicit
+            // lean config bhejte hain (dekho leanThinkingConfig) — warna Gemini 2.5
+            // dynamic thinking mein chala jata hai aur pehla token late aata hai.
+            ReasoningLevel.OFF, ReasoningLevel.AUTO -> leanThinkingConfig(modelId, forceThinkingLevel)
             else -> if (forceThinkingLevel || usesThinkingLevel(modelId)) {
                 reasoningLevel.effort?.let { GeminiThinkingConfig(thinkingLevel = it) }
             } else {
@@ -1043,6 +1078,9 @@ class GeminiProvider(
                 responseModalities = responseModalities,
             ),
             tools = geminiTools,
+            // Shaheen 2: har Gemini request ke saath sab se narm safety thresholds
+            // (GEMINI_LOOSEST_SAFETY_SETTINGS — tamam configurable categories BLOCK_NONE).
+            safetySettings = GEMINI_LOOSEST_SAFETY_SETTINGS,
         )
         return AppJson.encodeToString(payload)
     }
