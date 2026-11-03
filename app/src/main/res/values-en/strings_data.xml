@@ -82,7 +82,7 @@
 
     <!-- ===== data/SettingsRepository ===== -->
     <!-- Account default user name (persisted to DataStore) -->
-    <string name="settings_repo_default_user_name">Muse User</string>
+    <string name="settings_repo_default_user_name">Malik</string>
     <string name="settings_repo_guest_name">Guest</string>
 
     <!-- ===== data/promptinjection ===== -->
