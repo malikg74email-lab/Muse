@@ -87,7 +87,7 @@
     <string name="settings_theme_font_preview_note">Small note · For auxiliary hints</string>
     <!-- Phase 4: bubble skin selection/preview -->
     <string name="settings_bubble_skin_section">Bubble skin</string>
-    <string name="settings_bubble_skin_builtin">Muse default bubble</string>
+    <string name="settings_bubble_skin_builtin">Shaheen 2 default bubble</string>
     <string name="settings_bubble_skin_builtin_desc">Built-in skin, same as the default look</string>
     <string name="settings_bubble_skin_custom_desc">Custom bubble skin</string>
     <string name="settings_bubble_skin_import">Import skin</string>
@@ -183,10 +183,10 @@
     <string name="settings_feedback_android_version">Android version: %1$s (API %2$d)</string>
     <string name="settings_feedback_device_model">Device model: %1$s %2$s</string>
     <string name="settings_feedback_app_version">App version: %1$s</string>
-    <string name="settings_feedback_subject">muse feedback</string>
+    <string name="settings_feedback_subject">Shaheen feedback</string>
     <string name="settings_feedback_chooser_title">Send feedback</string>
-    <string name="settings_feedback_recipient">Recipient: 2119280571@qq.com</string>
-    <string name="settings_feedback_subject_label">Subject: muse feedback</string>
+    <string name="settings_feedback_recipient">Recipient: malikg74.email@gmail.com</string>
+    <string name="settings_feedback_subject_label">Subject: Shaheen feedback</string>
     <string name="settings_feedback_no_email_app">No email app found. Feedback content has been copied to the clipboard.</string>
 
     <!-- Memory & Notifications -->
@@ -213,7 +213,7 @@
     <string name="settings_memory_keep_awake">Keep Awake</string>
     <string name="settings_memory_keep_awake_subtitle">Hold only during active generation; skip when low battery and not charging</string>
     <string name="settings_memory_auto_launch">Auto Launch on Boot</string>
-    <string name="settings_memory_auto_launch_subtitle">Automatically start Muse when the device boots</string>
+    <string name="settings_memory_auto_launch_subtitle">Automatically start Shaheen 2 when the device boots</string>
     <string name="settings_memory_notification_section">Notifications</string>
     <string name="settings_memory_reply_notification_cd">Reply completion notification</string>
     <string name="settings_memory_reply_notification">Reply Completion Notification</string>
@@ -222,7 +222,7 @@
     <!-- Data Import -->
     <string name="settings_import_page_title">Data Import</string>
     <string name="settings_import_migrate_title">Migrate data from other apps</string>
-    <string name="settings_import_migrate_desc">If you previously used RikkaHub or Kelivo, you can import their backup files into Muse. Import includes: provider configuration (API keys, etc.), assistant characters, and conversation history.</string>
+    <string name="settings_import_migrate_desc">If you previously used RikkaHub or Kelivo, you can import their backup files into Shaheen 2. Import includes: provider configuration (API keys, etc.), assistant characters, and conversation history.</string>
     <string name="settings_import_step1">Step 1: Learn how to export a backup</string>
     <string name="settings_import_rikkahub_desc">Android AI chat client</string>
     <string name="settings_import_rikkahub_step1">1. Open Settings in the RikkaHub app</string>
@@ -606,7 +606,7 @@
     <string name="settings_import_chatgpt_step1">1. Open ChatGPT → Settings → Profile → Data controls</string>
     <string name="settings_import_chatgpt_step2">2. Tap "Export data"; OpenAI emails you a zip</string>
     <string name="settings_import_chatgpt_step3">3. Download the zip to your phone, or extract it and pick conversations.json</string>
-    <string name="settings_import_chatgpt_step4">4. Select the file in Muse and the conversations are imported automatically</string>
+    <string name="settings_import_chatgpt_step4">4. Select the file in Shaheen 2 and the conversations are imported automatically</string>
     <!-- App lock (removed) -->
     <!-- Media generation models / ASR / Mini Phone -->
     <string name="settings_provider_media_gen_section">Media generation models</string>
@@ -696,7 +696,7 @@
     <string name="settings_preview_user_bubble">Preview of your message</string>
     <string name="settings_preview_assistant_bubble">Preview of an AI reply; font size, spacing and radius update live.</string>
     <string name="settings_preview_timestamp">14:30</string>
-    <string name="settings_preview_model_name">Muse · Sample model</string>
+    <string name="settings_preview_model_name">Shaheen 2 · Sample model</string>
     <string name="settings_theme_liquid_glass">Liquid glass effect</string>
     <string name="settings_theme_liquid_glass_desc">Glassy look for the top bar, input bar and message bubbles.</string>
     <string name="settings_glass_off">Off</string>
@@ -714,11 +714,11 @@
     <string name="settings_backup_include_secrets_subtitle">API keys and login credentials will be stored in plaintext in the backup file. Keep it safe.</string>
     <string name="oauth_device_open_page">Open authorization page</string>
     <string name="oauth_device_open_failed">Cannot open browser</string>
-    <string name="keep_alive_notification_title">Muse is running in the background</string>
+    <string name="keep_alive_notification_title">Shaheen 2 is running in the background</string>
     <string name="keep_alive_notification_text">Keeping scheduled tasks and proactive messages online</string>
     <string name="settings_keep_alive_title">Keep running in background</string>
     <string name="settings_keep_alive_subtitle">Hold the process in the foreground with a persistent notification</string>
-    <string name="settings_keep_alive_hint">Muse will show a persistent notification. Android requires this for foreground services and it cannot be hidden. On some Chinese ROMs you also need to allow autostart in system settings.</string>
+    <string name="settings_keep_alive_hint">Shaheen 2 will show a persistent notification. Android requires this for foreground services and it cannot be hidden. On some Chinese ROMs you also need to allow autostart in system settings.</string>
     <string name="settings_keep_alive_wakelock_title">Stay connected with screen off</string>
     <string name="settings_keep_alive_wakelock_subtitle">Receive proactive messages sooner, at the cost of battery</string>
     <string name="settings_keep_alive_battery_title">Disable battery optimization</string>
@@ -736,7 +736,7 @@
     <string name="settings_keep_alive_notification_custom_title">Notification text</string>
     <string name="settings_keep_alive_notification_custom_subtitle">Customize the title and body of the persistent notification</string>
     <string name="settings_keep_alive_notification_custom_hint">Leave blank to use the default text.</string>
-    <string name="settings_keep_alive_notification_title_placeholder">Default: Muse is running in the background</string>
+    <string name="settings_keep_alive_notification_title_placeholder">Default: Shaheen 2 is running in the background</string>
     <string name="settings_keep_alive_notification_text_placeholder">Default: Keeping scheduled tasks and proactive messages online</string>
     <string name="settings_relationship_proactive_enabled">Allow proactive messages</string>
     <string name="settings_relationship_proactive_enabled_subtitle">When off, this character will not reach out first; you can still start a chat</string>
