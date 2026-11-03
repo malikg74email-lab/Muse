@@ -50,8 +50,8 @@ class A2aHandler(
     /** Agent Card：声明本 agent 的身份、能力与技能。 */
     fun agentCard(baseUrl: String): AgentCard = AgentCard(
         protocolVersion = A2A_PROTOCOL_VERSION,
-        name = "Muse",
-        description = "Muse — Android 端 AI 助手，提供隔离的文本对话补全（A2A 不执行本地工具或设备操作）。",
+        name = "Shaheen 2",
+        description = "Shaheen 2 — Android 端 AI 助手，提供隔离的文本对话补全（A2A 不执行本地工具或设备操作）。",
         url = "$baseUrl/a2a",
         version = appVersion,
         capabilities = AgentCapabilities(streaming = false, pushNotifications = false),
