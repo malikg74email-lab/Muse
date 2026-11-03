@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- P3-3: 无障碍服务在系统设置页显示的描述 -->
-    <string name="accessibility_service_description">Muse UI 自动化服务。允许 Muse 读取任意应用的屏幕内容并执行点击/滑动/输入等操作，用于 AI 助手控制手机。仅在信任时开启；不会后台监控。</string>
+    <string name="accessibility_service_description">Shaheen 2 UI automation service. Allows Shaheen 2 to read the screen content of any app and perform click/swipe/input actions to control the device. Only enable if you trust this; it does not monitor in the background.</string>
 </resources>
