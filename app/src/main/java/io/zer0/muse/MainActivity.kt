@@ -282,7 +282,7 @@ class MainActivity : ComponentActivity() {
                     // （会被 RuntimeLocaleProvider 的语言快照覆盖），改用 Activity 层
                     // 监听 onConfigurationChanged 的 systemDarkState。
                     val systemDark = systemDarkState.value
-                    val themeMode by settings.themeModeFlow.collectAsStateWithLifecycle(initialValue = "system")
+                    val themeMode by settings.themeModeFlow.collectAsStateWithLifecycle(initialValue = "dark")
                     val darkTheme = when (themeMode) {
                         "light" -> false
                         "dark" -> true

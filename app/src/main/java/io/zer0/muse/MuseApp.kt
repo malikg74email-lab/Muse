@@ -229,7 +229,11 @@ class MuseApp : Application(), ImageLoaderFactory {
             return
         }
         val incompleteRestore = restoreJournal.incompleteEntry()
-        val initializeRuntime: MuseApp.() -> Unit = {
+        // Shaheen 2 startup fix (2026-11-03): 本 lambda 改为 suspend 并整体在 appScope(IO)
+        // 后台执行(见下方调用点),不再同步压主线程。内部步骤与顺序一字未改;
+        // 唯一线程适配: ProcessLifecycleOwner.addObserver 强制主线程,单独用
+        // withContext(Main.immediate) 跳回主线程注册(见 lambda 内注释)。
+        val initializeRuntime: suspend MuseApp.() -> Unit = {
             // 强制实例化全部工具注册器，让 100+ 工具在启动后即可用
             toolRegistrarBootstrapper
             // v2.6.7: 待办落库出口 —— 此前只写进程内存，切会话即丢。
@@ -405,65 +409,70 @@ class MuseApp : Application(), ImageLoaderFactory {
             // 无 UI 的场景)不触发 → 媒体工具缺失。启动即解析保证所有入口可用。
             runCatching { chatViewModel.toString() }
                 .onFailure { t -> Logger.w("MuseApp", "ChatViewModel Early-init 失败: ${t.message}", t) }
-            ProcessLifecycleOwner.get().lifecycle.addObserver(
-                LifecycleEventObserver { _, event ->
-                    when (event) {
-                        Lifecycle.Event.ON_STOP -> {
-                            Logger.i("MuseApp", "Process ON_STOP: 释放 ChatViewModel 资源 + 停止 MemoryTicker")
-                            // v1.0.29: 切后台时如果正在生成,启动前台服务保活。必须同步执行。
-                            resultOf { chatViewModel.onAppBackground() }
-                                .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppBackground 失败: $msg", t) }
-                            // ChatGenerationManager 在任务登记时立即启动前台服务；这里不再重复启动。
-                            // 这样单聊、群聊以及工具计划都由同一个 activeGenerations 快照保活。
-                            resultOf { chatViewModel.releaseForBackground() }
-                                .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.release 失败: $msg", t) }
-                            // v1.0.30: memoryTicker.stop 含 30s 超时等待，移入协程
-                            appScope.launch {
-                                resultOf { memoryTicker.stop() }
-                                    .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.stop 失败: $msg", t) }
-                                // P1-1: AppLifecycleHook.onAppBackground
-                                resultOf {
-                                    hookRegistry.executeNoResult(
-                                        io.zer0.muse.hook.AppLifecycleHook::class,
-                                    ) { it.onAppBackground() }
-                                }
-                                    .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppBackground 失败: $msg", t) }
-                            }
-                        }
-                        Lifecycle.Event.ON_START -> {
-                            // 生成任务可能仍在执行，不能因为页面回到前台就停止保活服务。
-                            // ChatGenerationService 会在 activeGenerations 变空后自行退出。
-                            resultOf { chatViewModel.onAppForeground() }
-                                .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppForeground 失败: $msg", t) }
-                            // 回前台时重启 memory ticker
-                            resultOf { memoryTicker.start() }
-                                .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.start 失败: $msg", t) }
-                            if (resumePatrolTriggered.compareAndSet(false, true)) {
+            // Shaheen 2 startup fix: initializeRuntime 现运行在 IO 线程,而
+            // LifecycleRegistry.addObserver 强制主线程(违反抛 IllegalStateException),
+            // 仅此一处注册跳回主线程执行;观察者内容与注册时机(相对顺序)不变。
+            kotlinx.coroutines.withContext(Dispatchers.Main.immediate) {
+                ProcessLifecycleOwner.get().lifecycle.addObserver(
+                    LifecycleEventObserver { _, event ->
+                        when (event) {
+                            Lifecycle.Event.ON_STOP -> {
+                                Logger.i("MuseApp", "Process ON_STOP: 释放 ChatViewModel 资源 + 停止 MemoryTicker")
+                                // v1.0.29: 切后台时如果正在生成,启动前台服务保活。必须同步执行。
+                                resultOf { chatViewModel.onAppBackground() }
+                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppBackground 失败: $msg", t) }
+                                // ChatGenerationManager 在任务登记时立即启动前台服务；这里不再重复启动。
+                                // 这样单聊、群聊以及工具计划都由同一个 activeGenerations 快照保活。
+                                resultOf { chatViewModel.releaseForBackground() }
+                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.release 失败: $msg", t) }
+                                // v1.0.30: memoryTicker.stop 含 30s 超时等待，移入协程
                                 appScope.launch {
+                                    resultOf { memoryTicker.stop() }
+                                        .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.stop 失败: $msg", t) }
+                                    // P1-1: AppLifecycleHook.onAppBackground
                                     resultOf {
-                                        proactiveScheduler.runCycle(
-                                            io.zer0.muse.proactive.ProactiveScheduler.TRIGGER_RESUME,
-                                        )
-                                    }.onError { msg, t -> Logger.w("MuseApp", "app_resume 主动消息巡检失败: $msg", t) }
+                                        hookRegistry.executeNoResult(
+                                            io.zer0.muse.hook.AppLifecycleHook::class,
+                                        ) { it.onAppBackground() }
+                                    }
+                                        .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppBackground 失败: $msg", t) }
                                 }
                             }
-                            // v1.0.16: 回前台清理 OkHttp 空闲连接，移入协程
-                            appScope.launch {
-                                resultOf { io.zer0.ai.core.ProviderHttpSupport.evictIdleConnections() }
-                                    .onError { msg, t -> Logger.w("MuseApp", "evictIdleConnections 失败: $msg", t) }
-                                // P1-1: AppLifecycleHook.onAppForeground
-                                resultOf {
-                                    hookRegistry.executeNoResult(
-                                        io.zer0.muse.hook.AppLifecycleHook::class,
-                                    ) { it.onAppForeground() }
+                            Lifecycle.Event.ON_START -> {
+                                // 生成任务可能仍在执行，不能因为页面回到前台就停止保活服务。
+                                // ChatGenerationService 会在 activeGenerations 变空后自行退出。
+                                resultOf { chatViewModel.onAppForeground() }
+                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppForeground 失败: $msg", t) }
+                                // 回前台时重启 memory ticker
+                                resultOf { memoryTicker.start() }
+                                    .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.start 失败: $msg", t) }
+                                if (resumePatrolTriggered.compareAndSet(false, true)) {
+                                    appScope.launch {
+                                        resultOf {
+                                            proactiveScheduler.runCycle(
+                                                io.zer0.muse.proactive.ProactiveScheduler.TRIGGER_RESUME,
+                                            )
+                                        }.onError { msg, t -> Logger.w("MuseApp", "app_resume 主动消息巡检失败: $msg", t) }
+                                    }
                                 }
-                                    .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppForeground 失败: $msg", t) }
+                                // v1.0.16: 回前台清理 OkHttp 空闲连接，移入协程
+                                appScope.launch {
+                                    resultOf { io.zer0.ai.core.ProviderHttpSupport.evictIdleConnections() }
+                                        .onError { msg, t -> Logger.w("MuseApp", "evictIdleConnections 失败: $msg", t) }
+                                    // P1-1: AppLifecycleHook.onAppForeground
+                                    resultOf {
+                                        hookRegistry.executeNoResult(
+                                            io.zer0.muse.hook.AppLifecycleHook::class,
+                                        ) { it.onAppForeground() }
+                                    }
+                                        .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppForeground 失败: $msg", t) }
+                                }
                             }
+                            else -> {}
                         }
-                        else -> {}
-                    }
-                },
-            )
+                    },
+                )
+            }
             // Phase 8.2: 确保默认 Assistant 存在(fire-and-forget,失败不阻塞启动)
             appScope.launch {
                 // v2.x（用户反馈）: 优先使用用户设置的默认助手指针（删除默认助手后会指向另一个助手）
@@ -842,8 +851,28 @@ class MuseApp : Application(), ImageLoaderFactory {
         } // initializeRuntime
 
         if (incompleteRestore == null) {
-            initializeRuntime()
-            _startupReady.value = true
+            // Shaheen 2 startup fix (2026-11-03): initializeRuntime() 此前在 onCreate 里
+            // 同步执行 —— 100+ 工具注册器强制实例化 / MCP startAll / 自动化初始化
+            // 全部压在主线程,低端机首次启动进引导页时直接触发
+            // "Shaheen 2 isn't responding" ANR。现在整体移入 appScope(IO)后台执行,
+            // 内部顺序不变;_startupReady 只在初始化真正完成后才置 true ——
+            // MainActivity 在此之前只渲染加载圈(主线程空闲、可响应输入,不会 ANR),
+            // DB 界面与聊天入口都不会提前出现,因此首次发送 / 首次工具调用看到的
+            // 运行时状态与旧同步路径完全一致。失败兜底与下方恢复路径同一约定:
+            // 记录 + 标记 Safe Mode + 必须置 ready,绝不把用户永久卡在启动圈上。
+            appScope.launch {
+                val initError =
+                    runCatching { this@MuseApp.initializeRuntime() }.exceptionOrNull()
+                if (initError != null) {
+                    Logger.e(
+                        "MuseApp",
+                        "initializeRuntime 后台初始化失败 — 标记 Safe Mode 并继续启动: ${initError.message}",
+                        initError,
+                    )
+                    MuseCrashHandler.markSafeMode(this@MuseApp)
+                }
+                _startupReady.value = true
+            }
         } else {
             Logger.w(
                 "MuseApp",
