@@ -69,7 +69,7 @@ private fun MuseQuickWidgetContent(assistantId: String) {
                 .padding(12.dp),
         ) {
             Text(
-                text = "Muse",
+                text = "Shaheen 2",
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
                     color = ColorProvider(accentColor, Color(0xFFA78BFA)),
