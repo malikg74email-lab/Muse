@@ -17,7 +17,6 @@ data class PresetTheme(
     val lightScheme: ColorScheme,
     val darkScheme: ColorScheme,
 )
-
 /**
  * 按 id 查找预设主题，找不到则回退到默认（warm_paper）。
  */
@@ -27,6 +26,7 @@ val PresetThemes: List<PresetTheme> = listOf(
     MonoTheme,
     WarmPaperTheme,
     SakuraTheme,
+    ShaheenTheme,
     OceanTheme,
     SpringTheme,
     AutumnTheme,
