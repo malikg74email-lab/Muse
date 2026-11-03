@@ -77,7 +77,7 @@ private fun Context.findActivity(): Activity? {
 )
 fun MuseTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    themeId: String = "mono",
+    themeId: String = "shaheen",
     darkThemeId: String = "",
     fontSizeScale: String = "medium",
     dynamicColor: Boolean = false,
