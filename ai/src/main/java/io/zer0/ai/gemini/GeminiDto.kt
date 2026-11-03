@@ -133,6 +133,30 @@ internal data class GeminiSafetySetting(
     val threshold: String,
 )
 
+/**
+ * Shaheen 2 (Malik's order, 2026-11-03): the loosest Gemini safety thresholds
+ * Google permits, applied to EVERY Gemini request this app sends (chat via
+ * [GeminiProvider] and image generation via the Gemini image provider).
+ *
+ * All four harm categories that the Gemini API exposes as configurable are set
+ * to BLOCK_NONE — no category-based blocking at any probability level.
+ * HARM_CATEGORY_CIVIC_INTEGRITY is intentionally NOT listed: on the
+ * generativelanguage (API-key) surface it is not a documented configurable
+ * category for generateContent, and sending an unsupported category can make
+ * the whole request fail with HTTP 400.
+ *
+ * Honest limit: this only controls the per-request, per-category thresholds.
+ * Google's non-configurable core protections (e.g. CSAM and the core harms
+ * layer) are enforced server-side regardless of safetySettings and cannot be
+ * changed by any client.
+ */
+internal val GEMINI_LOOSEST_SAFETY_SETTINGS: List<GeminiSafetySetting> = listOf(
+    GeminiSafetySetting(category = "HARM_CATEGORY_HARASSMENT", threshold = "BLOCK_NONE"),
+    GeminiSafetySetting(category = "HARM_CATEGORY_HATE_SPEECH", threshold = "BLOCK_NONE"),
+    GeminiSafetySetting(category = "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold = "BLOCK_NONE"),
+    GeminiSafetySetting(category = "HARM_CATEGORY_DANGEROUS_CONTENT", threshold = "BLOCK_NONE"),
+)
+
 @Serializable
 internal data class GeminiGenerationConfig(
     val temperature: Double? = null,
