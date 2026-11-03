@@ -104,7 +104,7 @@
 
     <!-- ===== data/assistant ===== -->
     <!-- 默认助手名(持久化到 Room) -->
-    <string name="assistant_repo_default_name">默认助手</string>
+    <string name="assistant_repo_default_name">Shaheen 2</string>
 
     <!-- ===== data/session/FolderRepository ===== -->
     <!-- 新文件夹默认名(持久化到 Room) -->
