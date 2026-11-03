@@ -2,6 +2,7 @@ package io.zer0.ai.image
 
 import io.zer0.ai.RefImageUrlValidator
 import io.zer0.ai.core.ProviderHttpSupport
+import io.zer0.ai.gemini.GEMINI_LOOSEST_SAFETY_SETTINGS
 import io.zer0.ai.gemini.GeminiProvider
 import io.zer0.common.AppJson
 import io.zer0.common.ErrorCode
@@ -180,6 +181,18 @@ class GeminiImageProvider(
                 putJsonArray("responseModalities") {
                     add(JsonPrimitive("TEXT"))
                     add(JsonPrimitive("IMAGE"))
+                }
+            }
+            // Shaheen 2: chat ki tarah image requests par bhi sab se narm safety
+            // thresholds (GEMINI_LOOSEST_SAFETY_SETTINGS — tamam categories BLOCK_NONE).
+            putJsonArray("safetySettings") {
+                GEMINI_LOOSEST_SAFETY_SETTINGS.forEach { setting ->
+                    add(
+                        buildJsonObject {
+                            put("category", setting.category)
+                            put("threshold", setting.threshold)
+                        },
+                    )
                 }
             }
         }.toString()
