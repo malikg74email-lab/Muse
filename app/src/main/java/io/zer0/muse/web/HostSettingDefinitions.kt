@@ -262,17 +262,13 @@ internal object HostSettingDefinitions {
         type = HostSettingType.BOOLEAN,
     )
 
-    /** 通用：界面语言。候选与 App 语言选择器一致（跟随系统 / 中 / 英 / 日 / 韩 / 俄）。 */
+    /** General: UI language. Options match the in-app language picker (Follow system / English). */
     private val LANGUAGE = HostSettingDefinition(
         key = "language",
         type = HostSettingType.ENUM,
         options = listOf(
             "system" to "settings_theme_follow_system",
-            "zh" to "settings_theme_language_zh",
             "en" to "settings_theme_language_en",
-            "ja" to "settings_theme_language_ja",
-            "ko" to "settings_theme_language_ko",
-            "ru" to "settings_theme_language_ru",
         ),
     )
 
