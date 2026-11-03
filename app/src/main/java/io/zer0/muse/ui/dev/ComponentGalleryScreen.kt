@@ -791,11 +791,11 @@ private fun MediaSection() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AssistantAvatar(
-                assistant = AssistantEntity(id = "gallery_preview", name = "Muse"),
+                assistant = AssistantEntity(id = "gallery_preview", name = "Shaheen 2"),
                 avatarSize = 40.dp,
             )
             AssistantAvatar(
-                assistant = AssistantEntity(id = "gallery_preview_large", name = "Muse"),
+                assistant = AssistantEntity(id = "gallery_preview_large", name = "Shaheen 2"),
                 avatarSize = 56.dp,
             )
             GalleryLabel("AssistantAvatar")
