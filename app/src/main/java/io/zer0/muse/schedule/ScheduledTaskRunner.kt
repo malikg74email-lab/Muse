@@ -961,7 +961,7 @@ class ScheduledTaskRunner(
 
     private fun executeNotify(task: ScheduledTaskEntity, action: AutomationConfig.Action): String {
         val cfg = action.config
-        val title = cfg["title"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() } ?: "Muse"
+        val title = cfg["title"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() } ?: "Shaheen 2"
         val message = cfg["message"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() }
             ?: throw IllegalArgumentException("notify 缺少 message")
         if (restoreBlocksScheduledWrites(task.id, "定时通知")) return ""
