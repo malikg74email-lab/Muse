@@ -48,7 +48,17 @@ abstract class SyncA11yProviderApkTask : DefaultTask() {
     @TaskAction
     fun sync() {
         val targetDir = outputDir.get().asFile.resolve("a11y").apply { mkdirs() }
-        sourceApk.get().asFile.copyTo(targetDir.resolve("accessibility-provider.apk"), overwrite = true)
+        // Shaheen final route: with -PshaheenUnsignedRelease=true the provider packages
+        // UNSIGNED and AGP names the output "…-release-unsigned.apk" — fall back to that
+        // sibling file when the signed name is absent. Signed builds are unaffected.
+        var src = sourceApk.get().asFile
+        if (!src.isFile) {
+            val unsigned = src.parentFile?.resolve(src.name.replace(".apk", "-unsigned.apk"))
+            if (unsigned != null && unsigned.isFile) {
+                src = unsigned
+            }
+        }
+        src.copyTo(targetDir.resolve("accessibility-provider.apk"), overwrite = true)
     }
 }
 
@@ -75,7 +85,10 @@ androidComponents {
                     },
                 )
                 doFirst {
-                    check(providerApk.isFile) {
+                    // Shaheen unsigned route: accept the "…-release-unsigned.apk" sibling too.
+                    val unsignedSibling =
+                        providerApk.parentFile?.resolve(providerApk.name.replace(".apk", "-unsigned.apk"))
+                    check(providerApk.isFile || (unsignedSibling != null && unsignedSibling.isFile)) {
                         "未找到 Provider APK:${providerApk.path}" +
                             "(release 需要 keystore.properties 先产出已签名的 Provider)"
                     }
@@ -225,7 +238,14 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            // Shaheen final route: with -PshaheenUnsignedRelease=true (CI only, keystore
+            // never on GitHub), package UNSIGNED so the parent can sign locally with the
+            // dedicated off-GitHub keystore. Without the switch, behaviour is unchanged.
+            if (project.findProperty("shaheenUnsignedRelease") == "true") {
+                signingConfig = null
+            } else {
+                signingConfig = signingConfigs.getByName("release")
+            }
             // 用 optimize 版默认规则（AGP 9 已不再支持不带 optimize 的那份）。
             //
             // MessageBubble 是单个 2000+ 行、70+ 参数的 Composable，局部寄存器用量
