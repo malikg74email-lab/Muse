@@ -126,6 +126,7 @@ android {
 
     defaultConfig {
         applicationId = "io.zer0.muse"
+        resConfigs("en")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         minSdk = 26
         targetSdk = 36
