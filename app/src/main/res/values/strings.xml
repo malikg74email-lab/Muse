@@ -1,338 +1,322 @@
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+<resources>
     <!-- App -->
     <string name="app_name">Shaheen 2</string>
-    <!-- 启动页 -->
+    <!-- Splash -->
 
-    <!-- 桌面小部件 -->
-    <string name="widget_description">快捷启动 Muse 对话</string>
-    <string name="widget_new_session">新对话</string>
-    <string name="widget_recent_sessions">最近会话</string>
-    <!-- P3-16: 4x2 对话小部件 -->
-    <string name="widget_chat_description">显示最近一条 AI 回复</string>
-    <string name="widget_chat_no_content">暂无对话，点击开始</string>
-    <string name="widget_voice_input">快速语音输入</string>
-    <string name="widget_chat_pick_assistant">选择显示的助手</string>
-    <string name="widget_quick_pick_assistant">选择快捷操作对应的助手</string>
-    <!-- F-25: 桌面启动小部件 -->
-    <string name="widget_launcher_title">Muse</string>
-    <string name="widget_launcher_open">打开 Muse</string>
+    <!-- Widget -->
+    <string name="widget_description">Quick launch Shaheen 2 chat</string>
+    <string name="widget_new_session">New Chat</string>
+    <string name="widget_recent_sessions">Recent Chats</string>
+    <!-- P3-16: 4x2 chat widget -->
+    <string name="widget_chat_description">Show the latest AI reply</string>
+    <string name="widget_chat_no_content">No conversation yet, tap to start</string>
+    <string name="widget_voice_input">Quick voice input</string>
+    <string name="widget_chat_pick_assistant">Choose the assistant to display</string>
+    <string name="widget_quick_pick_assistant">Choose the assistant for shortcuts</string>
+    <!-- F-26: Launcher widget -->
+    <string name="widget_launcher_title">Shaheen 2</string>
+    <string name="widget_launcher_open">Open Shaheen 2</string>
 
-    <!-- 底部导航 -->
+    <!-- Bottom navigation -->
 
     <!-- Splash & Onboarding -->
 
-    <!-- 设置页分区标题 -->
-    <string name="section_about">关于</string>
-    <string name="section_asr">语音识别(ASR)</string>
-    <string name="section_theme">主题</string>
-    <string name="section_mcp">MCP 服务器</string>
+    <!-- Onboarding v2 (5-step redesign) -->
 
-    <!-- 关于页 -->
-    <string name="about_oss_licenses">开源许可</string>
-    <string name="licenses_title">开源许可</string>
-    <string name="licenses_total_count">共 %1$d 个依赖</string>
+    <!-- Settings sections -->
+    <string name="section_about">About</string>
+    <string name="section_asr">Speech Recognition (ASR)</string>
+    <string name="section_theme">Theme</string>
+    <string name="section_mcp">MCP Servers</string>
 
-    <!-- 通用按钮 -->
-    <string name="action_back">返回</string>
-    <string name="action_clear">清除</string>
-    <string name="action_save">保存</string>
-    <string name="action_cancel">取消</string>
-    <string name="action_delete">删除</string>
-    <string name="action_edit">编辑</string>
-    <string name="action_close">关闭</string>
-    <string name="action_more">更多</string>
-    <string name="action_send">发送</string>
-    <string name="action_copy">复制</string>
-    <string name="action_select_text">选择文本</string>
-    <string name="chat_select_text_hint">长按文字即可划选复制</string>
-    <string name="action_share">分享</string>
-    <string name="action_retry">重试</string>
-    <string name="common_load_failed">加载失败</string>
-    <string name="action_undo">撤销</string>
-    <string name="chat_unarchived">已取消归档</string>
-    <string name="action_expand">展开</string>
-    <string name="action_collapse">收起</string>
+    <!-- About page -->
+    <string name="about_oss_licenses">Open Source Licenses</string>
+    <string name="licenses_title">Open Source Licenses</string>
+    <string name="licenses_total_count">%1$d dependencies in total</string>
 
-    <!-- 引用回复 -->
-    <string name="message_action_quote">引用</string>
-    <string name="quote_label_user">引用 用户</string>
-    <string name="quote_label_assistant">引用 助手</string>
-    <string name="quote_clear">取消引用</string>
+    <!-- Common actions -->
+    <string name="action_back">Back</string>
 
-    <!-- 编辑消息 Sheet -->
-    <string name="edit_message_title">编辑消息</string>
-    <string name="edit_message_content_label">内容</string>
-
-    <!-- 录音/语音识别状态 -->
-    <string name="voice_release_to_recognize">松开识别 · 上滑取消</string>
-    <string name="voice_recognizing">识别中…</string>
-    <!-- v1.0.4 (P2): ASR 连接中状态文案(Connecting 阶段尚未开始录音,不能显示波形) -->
-    <string name="voice_connecting">正在连接识别服务…</string>
-    <!-- 任务 1: ASR 断网重连中状态文案(WebSocket 断线后指数退避重连,期间继续录音并缓冲音频帧) -->
-    <string name="voice_reconnecting">网络异常，正在重连…</string>
-    <!-- 前端修复 (i18n-6): 语音消息条停止按钮无障碍描述 -->
-    <string name="voice_stop_recording">停止录音</string>
-    <string name="voice_conversation_cd_idle">点击开始对话</string>
-    <string name="voice_conversation_cd_listening">正在录音，点一下结束并发送</string>
-    <string name="voice_conversation_cd_listening_waiting">点一下开始说话</string>
-    <string name="voice_conversation_cd_thinking">AI 思考中，点击中断</string>
-    <string name="voice_conversation_cd_speaking">正在朗读，点击中断</string>
-
-    <!-- ASR 配置提示 -->
-    <string name="asr_missing_api_key_error">当前未配置 API Key，语音输入将无法使用</string>
-    <string name="asr_error_connect_failed">建立连接失败</string>
-    <string name="asr_error_send_session_update_failed">发送会话更新指令失败</string>
-    <string name="asr_error_no_apikey">未配置 API 密钥</string>
-    <string name="asr_error_send_run_task_failed">发送语音识别任务失败</string>
-    <string name="asr_error_no_task_started">未收到识别任务确认</string>
-    <string name="asr_error_connection_exception">连接异常</string>
-    <string name="asr_error_mic_init_failed">麦克风初始化失败，请检查权限或录音设备</string>
-    <string name="asr_error_recording_start_failed">录音启动失败</string>
-
-    <string name="asr_error_recording_read_failed">麦克风读取失败（错误码：%1$d）</string>
-    <string name="asr_reconnecting_message">连接中断，正在重连…(第 %1$d/%2$d 次)</string>
-    <string name="asr_reconnect_exhausted">语音连接中断，自动重连 3 次仍未恢复。已识别的内容已保留，请检查网络后重新开始录音。</string>
-
-    <!-- 语音对话模式(全屏连续对话:ASR + AI + TTS) -->
-    <string name="voice_conversation_close_cd">关闭语音对话</string>
-    <string name="voice_conversation_change_voice">切换语音</string>
-    <string name="voice_conversation_idle_hint">点击下方按钮开始对话</string>
-    <string name="voice_conversation_idle_tap_hint">说话时自动识别并发送,AI 回复会自动朗读</string>
-    <string name="voice_conversation_listening">正在聆听…</string>
-    <string name="voice_conversation_listening_finish_hint">说完点一下按钮发送</string>
-    <string name="voice_conversation_retry_hint">没听清，再说一次</string>
-    <string name="voice_conversation_thinking">思考中…</string>
-    <string name="voice_conversation_speaking">正在朗读…</string>
-    <string name="voice_conversation_state_idle">点击开始</string>
-    <string name="voice_conversation_state_listening">聆听中</string>
-    <string name="voice_conversation_state_listening_idle">点一下开始</string>
-    <string name="voice_conversation_state_thinking">思考中</string>
-    <string name="voice_conversation_state_speaking">朗读中</string>
-    <string name="voice_conversation_pick_voice_title">选择语音</string>
-    <string name="voice_conversation_no_voices">未找到可用的系统语音，请先在系统设置中安装 TTS 引擎</string>
-
-    <!-- 网络代理 -->
-    <string name="proxy_title">网络代理</string>
-    <string name="proxy_enable">启用代理</string>
-    <string name="proxy_enabled">已启用</string>
-    <string name="proxy_disabled">未启用</string>
-    <string name="proxy_type">类型</string>
+    <!-- Network proxy -->
+    <string name="proxy_title">Network Proxy</string>
+    <string name="proxy_enable">Enable Proxy</string>
+    <string name="proxy_enabled">Enabled</string>
+    <string name="proxy_disabled">Disabled</string>
+    <string name="proxy_type">Type</string>
     <string name="proxy_type_http">HTTP</string>
     <string name="proxy_type_socks5">SOCKS5</string>
-    <string name="proxy_host">主机</string>
-    <string name="proxy_port">端口</string>
-    <string name="proxy_username">用户名</string>
-    <string name="proxy_password">密码</string>
-    <string name="proxy_restart_hint">保存后立即对新连接生效；已建立的长连接会沿用到回收为止</string>
+    <string name="proxy_host">Host</string>
+    <string name="proxy_port">Port</string>
+    <string name="proxy_username">Username</string>
+    <string name="proxy_password">Password</string>
+    <string name="proxy_restart_hint">Applies to new connections immediately; existing keep-alive connections last until they are recycled</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_close">Close</string>
+    <string name="action_more">More</string>
+    <string name="action_send">Send</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_share">Share</string>
+    <string name="action_expand">Expand</string>
+    <string name="action_collapse">Collapse</string>
 
-    <!-- 记忆页新增元事实 -->
-    <string name="memory_add_fact">新增元事实</string>
-    <string name="memory_add_fact_dialog_title">添加元事实</string>
+    <!-- Quote reply -->
+    <string name="message_action_quote">Quote</string>
+    <string name="quote_label_user">Quote User</string>
+    <string name="quote_label_assistant">Quote Assistant</string>
+    <string name="quote_clear">Cancel Quote</string>
 
-    <!-- v2.0: 收藏分组预设类别 -->
-    <string name="favorites_group_inspiration">灵感</string>
-    <string name="favorites_group_code">代码</string>
-    <string name="favorites_group_learning">学习</string>
-    <string name="favorites_group_custom">自定义</string>
+    <!-- Edit message sheet -->
+    <string name="edit_message_title">Edit Message</string>
+    <string name="edit_message_content_label">Content</string>
 
-    <!-- v2.0: 数据管理页 -->
-    <string name="data_management_title">数据管理</string>
-    <string name="data_management_sessions">对话数</string>
-    <string name="data_management_messages">消息数</string>
-    <string name="data_management_memories">记忆数</string>
-    <string name="data_management_db_size">数据库大小</string>
-    <string name="data_management_cache_size">缓存大小</string>
-    <string name="data_management_clear_chats">清空所有对话</string>
-    <string name="data_management_clear_chats_confirm">确定清空所有对话？此操作不可撤销。</string>
-    <string name="data_management_clear_chats_done">已清空所有对话</string>
-    <string name="data_management_clear_cache">清理缓存</string>
-    <string name="data_management_clear_cache_confirm">确定清理所有缓存？重新加载数据可能需要一些时间。</string>
-    <string name="data_management_clear_cache_done">缓存已清理</string>
-    <string name="data_management_reset_memory">重置记忆</string>
-    <string name="data_management_reset_memory_confirm">确定重置所有记忆？AI 将忘记对你的了解。</string>
-    <string name="data_management_reset_memory_done">记忆已重置</string>
-    <string name="data_management_entry">数据管理</string>
-    <string name="data_management_entry_desc">查看用量、清理缓存和管理数据</string>
+    <!-- Recording / speech recognition status -->
+<string name="voice_release_to_recognize">Release to recognize · swipe up to cancel</string>
+<string name="voice_recognizing">Recognizing…</string>
+<!-- Task 1: ASR reconnecting status (WebSocket dropped, exponential backoff reconnect, audio buffered meanwhile) -->
+<string name="voice_reconnecting">Network error, reconnecting…</string>
+<!-- 前端修复 (i18n-6): stop button a11y label on voice message bar -->
+<string name="voice_stop_recording">Stop recording</string>
+    <string name="voice_conversation_cd_idle">Tap to start conversation</string>
+    <string name="voice_conversation_cd_listening">Recording, tap to finish and send</string>
+    <string name="voice_conversation_cd_listening_waiting">Tap to start speaking</string>
+    <string name="voice_conversation_cd_thinking">AI thinking, tap to interrupt</string>
+    <string name="voice_conversation_cd_speaking">Speaking, tap to interrupt</string>
 
-    <!-- v2.0: 记忆筛选 -->
+    <!-- ASR config hint -->
+    <string name="asr_missing_api_key_error">No API Key configured. Voice input is unavailable.</string>
+    <string name="asr_error_connect_failed">Failed to establish the connection</string>
+    <string name="asr_error_send_session_update_failed">Failed to send session.update</string>
+    <string name="asr_error_no_apikey">API key not configured</string>
+    <string name="asr_error_send_run_task_failed">Failed to send run-task</string>
+    <string name="asr_error_no_task_started">No task-started received</string>
+    <string name="asr_error_connection_exception">Connection error</string>
+    <string name="asr_error_mic_init_failed">Microphone initialization failed. Check permissions or the recording device</string>
+    <string name="asr_error_recording_start_failed">Failed to start recording</string>
 
-    <!-- v9: 记忆分类(按参考图: 全部 / 核心事实 / 偏好 / 经历 / 关系 / 目标 / 医疗 / 其他) -->
-    <string name="memory_category_all">全部</string>
-    <string name="memory_category_identity">核心事实</string>
-    <string name="memory_category_preference">偏好</string>
-    <string name="memory_category_event">经历</string>
-    <string name="memory_category_relationship">关系</string>
-    <string name="memory_category_goal">目标</string>
-    <string name="memory_category_medical">医疗</string>
-    <string name="memory_category_other">其他</string>
-    <string name="memory_filter_today">今天</string>
-    <string name="memory_filter_week">本周</string>
-    <string name="memory_filter_month">本月</string>
+    <string name="asr_error_recording_read_failed">Microphone read failed (error code: %1$d)</string>
+    <string name="asr_reconnecting_message">Connection lost, reconnecting… (attempt %1$d/%2$d)</string>
+    <string name="asr_reconnect_exhausted">Voice connection lost. Auto-reconnect failed after 3 attempts. Recognized content has been preserved. Check your network and start recording again.</string>
 
-    <!-- v2.0: 回收站 -->
-    <string name="recently_deleted_title">最近删除</string>
-    <string name="recently_deleted_empty">暂无删除记录</string>
-    <string name="recently_deleted_restore">恢复</string>
-    <string name="recently_deleted_restore_done">已恢复</string>
-    <string name="recently_deleted_permanent_delete">永久删除</string>
-    <string name="recently_deleted_permanent_delete_confirm">确定永久删除？此操作不可撤销。</string>
-    <string name="recently_deleted_permanent_delete_done">已永久删除</string>
-    <string name="recently_deleted_auto_clear">7 天后自动永久删除</string>
+    <!-- Memory add fact -->
+    <string name="memory_add_fact">Add Fact</string>
+    <string name="memory_add_fact_dialog_title">Add Fact</string>
 
-    <!-- ai/memory 模块 ErrorCode 错误消息映射 -->
-    <string name="err_no_provider_configured">未配置任何 Provider，请先到设置页填写 API Key</string>
-    <string name="err_no_model_selected">Provider 未配置任何模型，请先到设置页添加模型</string>
-    <string name="err_auth_failed">鉴权失败，请检查 API Key</string>
-    <string name="err_rate_limited">请求过于频繁，请稍后重试</string>
-    <string name="err_request_timeout">请求超时</string>
-    <string name="err_service_unavailable">服务暂不可用，请稍后重试</string>
-    <string name="err_permission_denied">权限不足</string>
-    <string name="err_invalid_response">AI 响应格式异常（%1$s）</string>
-    <string name="err_api_error">AI 服务返回错误</string>
-    <string name="err_resource_exhausted">配额耗尽</string>
-    <string name="err_invalid_argument">请求参数错误</string>
-    <string name="err_precondition_failed">前置条件不满足</string>
-    <string name="err_overloaded">服务过载，请稍后重试</string>
-    <string name="err_not_found">资源不存在</string>
-    <string name="err_stream_interrupted">流式连接中断</string>
-    <string name="err_reply_truncated">（回复因长度限制被截断）</string>
-    <string name="err_network_error">网络连接中断，请检查网络</string>
-    <string name="err_image_response_too_large">图片生成响应过大（%1$sMB），上限 20MB</string>
-    <string name="err_image_empty_response">图片生成返回空响应</string>
-    <string name="err_image_no_results">图片生成返回空结果</string>
-    <string name="err_image_unsupported_model">当前 Provider 不支持图片生成（%1$s）</string>
-    <string name="err_image_reference_too_large">参考图过大（%1$sMB），上限 10MB</string>
-    <string name="err_image_reference_download_failed">参考图下载失败（%1$s）</string>
-    <string name="err_image_invalid_uri">不支持的图片 URI 格式</string>
-    <string name="err_image_api_key_missing">未配置 API Key</string>
-    <string name="err_vertex_ai_config_invalid">Vertex AI 配置无效（%1$s）</string>
-    <string name="err_vertex_ai_token_failed">Vertex AI 鉴权失败（%1$s）</string>
-    <string name="err_memory_token_budget_invalid">记忆 Token 预算无效（%1$s）</string>
-    <string name="err_memory_config_invalid">记忆配置无效（%1$s）</string>
-    <string name="memory_llm_empty_response">模型 %1$s 返回空响应（正文与思考内容均为空），记忆编译失败</string>
-    <!-- 功能1: 消息表情回应 -->
-    <!-- 功能2: 消息草稿 -->
-    <string name="chat_draft_label">草稿</string>
-    <!-- 功能3: 归档确认 -->
-    <string name="chat_list_status_in_progress">进行中</string>
-    <string name="chat_list_status_pending">待确认</string>
-    <string name="chat_list_status_completed">已完成</string>
-    <string name="chat_list_time_just_now">刚刚</string>
-    <string name="chat_list_time_minutes_ago">%1$d 分钟前</string>
-    <string name="chat_list_time_hours_ago">%1$d 小时前</string>
-    <string name="chat_list_time_yesterday">昨天</string>
-    <string name="chat_list_time_days_ago">%1$d 天前</string>
+    <!-- v2.0: Favorite groups -->
+    <string name="favorites_group_inspiration">Inspiration</string>
+    <string name="favorites_group_code">Code</string>
+    <string name="favorites_group_learning">Learning</string>
+    <string name="favorites_group_custom">Custom</string>
 
-    <!-- 工具审批卡片 -->
-    <string name="tool_approval_title">工具调用</string>
-    <string name="tool_approval_approve">批准</string>
-    <string name="tool_approval_write_summary">即将写入 %1$s（%2$d 字符）</string>
-    <string name="tool_approval_advanced_details">高级详情</string>
-    <string name="tool_approval_show_full_args">查看完整参数</string>
-    <string name="tool_approval_hide_full_args">收起完整参数</string>
-    <string name="tool_approval_args_hidden">另有 %1$d 字符未显示</string>
-    <string name="tool_approval_deny">拒绝</string>
-    <string name="tool_approval_confirm_deny">确认拒绝</string>
-    <string name="tool_approval_deny_reason">拒绝原因（可选）</string>
-    <!-- v1.0.20: 持久化策略按钮 — 点击后写入 ToolConfigStore,后续该工具不再弹审批卡片 -->
-    <string name="tool_approval_always_approve">始终允许</string>
-    <!-- v1.x: 会话级临时允许按钮 — 本会话不再问,切换会话/冷启动后自动失效 -->
-    <string name="tool_approval_allow_this_session">本会话允许</string>
+    <!-- v2.0: Data Management -->
+    <string name="data_management_title">Data Management</string>
+    <string name="data_management_sessions">Conversations</string>
+    <string name="data_management_messages">Messages</string>
+    <string name="data_management_memories">Memories</string>
+    <string name="data_management_db_size">Database size</string>
+    <string name="data_management_cache_size">Cache size</string>
+    <string name="data_management_clear_chats">Clear all conversations</string>
+    <string name="data_management_clear_chats_confirm">Clear all conversations? This cannot be undone.</string>
+    <string name="data_management_clear_chats_done">All conversations cleared</string>
+    <string name="data_management_clear_cache">Clear cache</string>
+    <string name="data_management_clear_cache_confirm">Clear all cache? Reloading data may take time.</string>
+    <string name="data_management_clear_cache_done">Cache cleared</string>
+    <string name="data_management_reset_memory">Reset memory</string>
+    <string name="data_management_reset_memory_confirm">Reset all memory? AI will forget what it knows about you.</string>
+    <string name="data_management_reset_memory_done">Memory reset</string>
+    <string name="data_management_entry">Data Management</string>
+    <string name="data_management_entry_desc">View usage, clear cache and manage data</string>
 
-    <!-- 消息分支选择器 -->
-    <string name="branch_previous">上一个版本</string>
-    <string name="branch_next">下一个版本</string>
+    <!-- v2.0: Memory filters -->
 
-    <!-- 通用错误提示 -->
+    <!-- v9: Memory categories (reference: All / Core Facts / Preferences / Experiences / Relationships / Goals / Medical / Other) -->
+    <string name="memory_category_all">All</string>
+    <string name="memory_category_identity">Core Facts</string>
+    <string name="memory_category_preference">Preferences</string>
+    <string name="memory_category_event">Experiences</string>
+    <string name="memory_category_relationship">Relationships</string>
+    <string name="memory_category_goal">Goals</string>
+    <string name="memory_category_medical">Medical</string>
+    <string name="memory_category_other">Other</string>
+    <string name="memory_filter_today">Today</string>
+    <string name="memory_filter_week">This week</string>
+    <string name="memory_filter_month">This month</string>
 
-    <!-- 定时任务未保存警告 -->
-    <string name="schedule_unsaved_title">放弃修改？</string>
-    <string name="schedule_unsaved_message">当前修改尚未保存，确定要关闭吗？</string>
-    <string name="schedule_discard">放弃</string>
+    <!-- v2.0: Recently Deleted -->
+    <string name="recently_deleted_title">Recently Deleted</string>
+    <string name="recently_deleted_empty">No deleted conversations</string>
+    <string name="recently_deleted_restore">Restore</string>
+    <string name="recently_deleted_restore_done">Restored</string>
+    <string name="recently_deleted_permanent_delete">Delete permanently</string>
+    <string name="recently_deleted_permanent_delete_confirm">Delete permanently? This cannot be undone.</string>
+    <string name="recently_deleted_permanent_delete_done">Permanently deleted</string>
+    <string name="recently_deleted_auto_clear">Auto-deleted after 7 days</string>
 
+    <string name="chat_draft_label">Draft</string>
+    <string name="chat_list_status_in_progress">In Progress</string>
+    <string name="chat_list_status_pending">Pending</string>
+    <string name="chat_list_status_completed">Completed</string>
+    <string name="chat_list_time_just_now">Just now</string>
+    <string name="chat_list_time_minutes_ago">%1$d min ago</string>
+    <string name="chat_list_time_hours_ago">%1$d hr ago</string>
+    <string name="chat_list_time_yesterday">Yesterday</string>
+    <string name="chat_list_time_days_ago">%1$d days ago</string>
+    <string name="err_api_error">API error occurred. Please try again.</string>
+    <string name="err_auth_failed">Authentication failed. Please check your API key.</string>
+    <string name="err_image_api_key_missing">Image generation requires an API key. Please configure it in Settings &gt; Provider.</string>
+    <string name="err_image_empty_response">Image generation returned an empty response.</string>
+    <string name="err_image_invalid_uri">Invalid image URI or path.</string>
+    <string name="err_image_no_results">No images were generated. Try a different prompt.</string>
+    <string name="err_image_reference_download_failed">Failed to download reference image. (%1$s)</string>
+    <string name="err_image_reference_too_large">Reference image is too large. Please use a smaller image. (%1$s)</string>
+    <string name="err_image_response_too_large">Generated image is too large to display. (%1$s)</string>
+    <string name="err_image_unsupported_model">The selected model does not support image generation. (%1$s)</string>
+    <string name="err_invalid_argument">Invalid argument provided.</string>
+    <string name="err_invalid_response">Invalid response from server. (%1$s)</string>
+    <string name="err_memory_config_invalid">Memory configuration is invalid. (%1$s)</string>
+    <string name="err_memory_token_budget_invalid">Invalid memory token budget. (%1$s)</string>
+    <string name="err_network_error">Network error. Please check your connection.</string>
+    <string name="err_no_model_selected">No model selected. Please choose a model in Settings.</string>
+    <string name="err_no_provider_configured">No provider configured. Please add a provider in Settings.</string>
+    <string name="err_not_found">Resource not found.</string>
+    <string name="err_overloaded">Server is overloaded. Please try again later.</string>
+    <string name="err_permission_denied">Permission denied.</string>
+    <string name="err_precondition_failed">Operation precondition failed.</string>
+    <string name="err_rate_limited">Rate limit exceeded. Please wait and try again.</string>
+    <string name="err_request_timeout">Request timed out. Please try again.</string>
+    <string name="err_resource_exhausted">Resource exhausted. Please try again later.</string>
+    <string name="err_service_unavailable">Service is temporarily unavailable.</string>
+    <string name="err_stream_interrupted">Stream was interrupted. Response may be incomplete.</string>
+    <string name="err_reply_truncated">(Reply truncated due to length limit)</string>
+    <string name="err_vertex_ai_config_invalid">Vertex AI configuration is invalid. (%1$s)</string>
+    <string name="err_vertex_ai_token_failed">Failed to obtain Vertex AI access token. (%1$s)</string>
+
+    <!-- Assistant detail: capabilities -->
+    <string name="assistant_detail_capabilities_title">Capabilities</string>
+    <string name="assistant_detail_capabilities_desc">Tag this assistant’s strengths for auto-routing</string>
+    <string name="assistant_detail_custom_capability">Custom capability</string>
+    <string name="assistant_detail_add">Add</string>
+
+    <!-- Multi-Agent team workflow -->
+    <string name="settings_multi_agent_workflow">Workflow</string>
+    <string name="settings_multi_agent_workflow_desc">Define execution order, dependencies and aggregation strategy</string>
+    <string name="settings_multi_agent_aggregation">Aggregation</string>
+    <string name="settings_multi_agent_no_workflow">No workflow configured; members will run sequentially</string>
+    <string name="settings_multi_agent_add_node">Add node</string>
+    <string name="settings_multi_agent_edit_node">Edit node</string>
+    <string name="settings_multi_agent_node_name">Node name</string>
+    <string name="settings_multi_agent_node_task">Task template</string>
+    <string name="settings_multi_agent_node_assistant">Agent</string>
+    <string name="settings_multi_agent_node_mode">Mode</string>
+    <string name="settings_multi_agent_node_dependencies">Dependencies</string>
+
+    <string name="action_retry">Retry</string>
+    <string name="common_load_failed">Failed to load</string>
+    <string name="action_undo">Undo</string>
     <!-- v1.0.75: AI 朋友圈互动 -->
-    <string name="moment_sender_user">我</string>
-    <string name="moment_banner_liked_by">%1$s 赞了你</string>
-    <string name="moment_banner_commented_by">%1$s 评论了你</string>
-    <string name="moment_separator_and">、</string>
-    <string name="moment_separator_dot">·</string>
+    <string name="moment_sender_user">Me</string>
+    <string name="moment_banner_liked_by">%1$s liked your post</string>
+    <string name="moment_banner_commented_by">%1$s commented on your post</string>
+    <string name="moment_separator_and">, </string>
+    <string name="moment_separator_dot"> · </string>
 
-    <!-- Agent 私信 -->
-    <string name="agent_dm_title">Agent 私信</string>
-    <string name="agent_dm_empty">暂无私信</string>
-    <string name="agent_dm_mark_all_read">全部已读</string>
-    <string name="agent_dm_unread_count">%d 条未读</string>
+    <string name="chat_unarchived">Unarchived</string>
+    <string name="agent_dm_empty">No private messages yet</string>
+    <string name="agent_dm_mark_all_read">Mark all as read</string>
+    <string name="agent_dm_title">Agent DMs</string>
+    <string name="agent_dm_unread_count">%d unread</string>
+    <string name="branch_next">Next version</string>
+    <string name="branch_previous">Previous version</string>
+    <string name="memory_llm_empty_response">Model %1$s returned an empty response (both text and reasoning empty), memory compilation failed</string>
+    <string name="schedule_discard">Discard</string>
+    <string name="schedule_unsaved_message">You have unsaved changes. Discard them?</string>
+    <string name="schedule_unsaved_title">Discard changes?</string>
+    <string name="tool_approval_allow_this_session">Allow for this session</string>
+    <string name="tool_approval_always_approve">Always allow</string>
+    <string name="tool_approval_approve">Approve</string>
+    <string name="tool_approval_write_summary">About to write to %1$s (%2$d chars)</string>
+    <string name="tool_approval_advanced_details">Advanced details</string>
+    <string name="tool_approval_show_full_args">Show full arguments</string>
+    <string name="tool_approval_hide_full_args">Hide full arguments</string>
+    <string name="tool_approval_args_hidden">%1$d more characters not shown</string>
+    <string name="tool_approval_confirm_deny">Confirm deny</string>
+    <string name="tool_approval_deny">Deny</string>
+    <string name="tool_approval_deny_reason">Reason for denial (optional)</string>
+    <string name="tool_approval_title">Tool call</string>
+    <string name="voice_connecting">Connecting to recognition service...</string>
+    <string name="voice_conversation_change_voice">Change voice</string>
+    <string name="voice_conversation_close_cd">Close voice conversation</string>
+    <string name="voice_conversation_idle_hint">Tap the button below to start</string>
+    <string name="voice_conversation_idle_tap_hint">Speak to auto-recognize and send; replies will be read aloud</string>
+    <string name="voice_conversation_listening">Listening...</string>
+    <string name="voice_conversation_listening_finish_hint">Tap the button when you\'re done</string>
+    <string name="voice_conversation_retry_hint">Didn\'t catch that, please say it again</string>
+    <string name="voice_conversation_no_voices">No system voice found. Install a TTS engine in system settings first</string>
+    <string name="voice_conversation_pick_voice_title">Choose voice</string>
+    <string name="voice_conversation_speaking">Speaking...</string>
+    <string name="voice_conversation_state_idle">Tap to start</string>
+    <string name="voice_conversation_state_listening">Listening</string>
+    <string name="voice_conversation_state_listening_idle">Tap to start</string>
+    <string name="voice_conversation_state_speaking">Speaking</string>
+    <string name="voice_conversation_state_thinking">Thinking</string>
+    <string name="voice_conversation_thinking">Thinking...</string>
+    <string name="chat_delete_selected_title">Delete selected messages</string>
+    <string name="chat_delete_selected_message">Are you sure you want to delete %1$d selected messages? This cannot be undone.</string>
+    <string name="settings_agent_night_patrol_subtitle">Outside allowed hours: quietly write diary/night notes, no notifications</string>
 
-    <!-- 助手详情页：能力标签 -->
-    <string name="assistant_detail_capabilities_title">能力标签</string>
-    <string name="assistant_detail_capabilities_desc">标注该助手擅长的领域，供自动路由匹配</string>
-    <string name="assistant_detail_custom_capability">自定义能力</string>
-    <string name="assistant_detail_add">添加</string>
-
-    <!-- 多 Agent 团队工作流 -->
-    <string name="settings_multi_agent_workflow">工作流编排</string>
-    <string name="settings_multi_agent_workflow_desc">定义团队内 Agent 的执行顺序、依赖与结果聚合策略</string>
-    <string name="settings_multi_agent_aggregation">结果聚合</string>
-    <string name="settings_multi_agent_no_workflow">未配置工作流，将按成员顺序串行执行</string>
-    <string name="settings_multi_agent_add_node">添加节点</string>
-    <string name="settings_multi_agent_edit_node">编辑节点</string>
-    <string name="settings_multi_agent_node_name">节点名称</string>
-    <string name="settings_multi_agent_node_task">任务模板</string>
-    <string name="settings_multi_agent_node_assistant">执行助手</string>
-    <string name="settings_multi_agent_node_mode">执行模式</string>
-    <string name="settings_multi_agent_node_dependencies">依赖节点</string>
-    <!-- Report Screen (统计报表页) -->
-    <string name="chat_delete_selected_title">删除所选消息</string>
-    <string name="chat_delete_selected_message">确定删除选中的 %1$d 条消息吗？此操作不可恢复。</string>
-    <string name="settings_agent_night_patrol_subtitle">允许时段外：安静写日记/夜记，不推送通知</string>
-
-    <string name="proxy_saved_needs_restart">代理已保存，新的请求立即生效</string>
-    <string name="proxy_bypass">不走代理的地址</string>
+    <!-- Shared actions -->
+    <string name="action_clear">Clear</string>
+    <string name="action_select_text">Select text</string>
+    <string name="chat_select_text_hint">Long press the text to select and copy it</string>
+    <string name="proxy_saved_needs_restart">Proxy saved. New requests use it immediately.</string>
+    <string name="proxy_bypass">Bypass hosts</string>
     <string name="proxy_bypass_placeholder">localhost,127.0.0.1,192.168.,*.local</string>
-    <string name="proxy_bypass_hint">逗号分隔。支持 .后缀、*.通配、IP 前缀。本地模型与内网服务建议放进来。</string>
-    <string name="proxy_test_action">测试连接</string>
-    <string name="proxy_test_running">测试中…</string>
-    <string name="launcher_alias_muse">Muse</string>
-    <string name="proxy_test_invalid_config">请先填写有效的代理地址与端口</string>
-    <string name="proxy_test_connected">代理连通，</string>
-    <string name="proxy_test_need_auth">代理要求认证，请检查用户名与密码</string>
-    <string name="proxy_test_reachable_failed">代理可达但探测失败：HTTP </string>
-    <string name="proxy_test_timeout">连接超时：代理地址不可达，或端口不对</string>
-    <string name="proxy_test_dns_failed">域名解析失败：请检查代理主机名</string>
-    <string name="proxy_test_connect_failed">连接失败：</string>
-    <string name="proxy_test_unexpected">测试异常：</string>
-    <string name="chat_favorite_selected_action">收藏选中</string>
-    <string name="chat_favorite_selected_ok">已收藏 %1$d 条</string>
-    <string name="chat_favorite_selected_partial">已收藏 %1$d 条，%2$d 条已在收藏夹</string>
-    <string name="chat_favorite_selected_all_exist">这 %1$d 条都已在收藏夹</string>
-    <string name="settings_chat_prefer_card_output">偏好卡片输出</string>
-    <string name="settings_chat_prefer_card_output_subtitle">鼓励模型优先用可交互卡片承载表格、对比与参数选择，而不是一长段文字。</string>
-    <string name="chat_card_state_only">（更新了卡片内容）</string>
-    <string name="moment_action_edit">编辑</string>
-    <string name="groupchat_stop_generating">停止生成</string>
-    <string name="translate_page_stop_speaking">停止朗读</string>
-    <string name="settings_screen_group_cards">卡片与生成式界面</string>
-    <string name="settings_screen_group_context_window">上下文窗口</string>
-    <string name="settings_screen_group_bubble">消息气泡</string>
-    <string name="settings_proactive_v2_ledger">牵挂账本</string>
-    <string name="settings_proactive_v2_ledger_sub">它最近惦记着 %1$d 件事</string>
-    <string name="settings_proactive_v2_intensity">主动等级</string>
-    <string name="settings_proactive_v2_budget">今天还能说 %1$d 次</string>
-    <string name="settings_proactive_v2_budget_unlimited">今天不限次数</string>
-    <string name="settings_proactive_v2_resume">恢复主动消息</string>
-    <string name="settings_proactive_v2_reset">重置</string>
-    <string name="settings_proactive_v2_cooldown">最近别烦我</string>
-    <string name="settings_proactive_v2_cooldown_sub">安静 7 天，这期间它只记着不说</string>
-    <string name="settings_proactive_v2_empty">暂时没什么惦记的事</string>
-    <string name="settings_proactive_v2_close">好</string>
-    <string name="proactive_intensity_quiet">安静 · 每天最多 3 条</string>
-    <string name="proactive_intensity_reserved">克制 · 每天最多 8 条</string>
-    <string name="proactive_intensity_standard">标准 · 每天最多 15 条</string>
-    <string name="proactive_intensity_active">主动 · 每天最多 30 条</string>
-    <string name="proactive_intensity_clingy">黏人 · 不限次数</string>
-    <string name="proactive_kind_reminder">提醒</string>
-    <string name="proactive_kind_follow_up">没聊完</string>
-    <string name="proactive_kind_care">关心</string>
-    <string name="proactive_kind_share">分享</string>
-    <string name="proactive_kind_milestone">节点</string>
+    <string name="proxy_bypass_hint">Comma separated. Supports .suffix, *. wildcards and IP prefixes. Add local models and LAN services here.</string>
+    <string name="proxy_test_action">Test connection</string>
+    <string name="proxy_test_running">Testing…</string>
+    <string name="launcher_alias_muse">Shaheen 2</string>
+    <string name="proxy_test_invalid_config">Fill in a valid proxy address and port first</string>
+    <string name="proxy_test_connected">Proxy reachable, </string>
+    <string name="proxy_test_need_auth">Proxy requires authentication; check username and password</string>
+    <string name="proxy_test_reachable_failed">Proxy reachable but probe failed: HTTP </string>
+    <string name="proxy_test_timeout">Connection timed out: proxy unreachable or wrong port</string>
+    <string name="proxy_test_dns_failed">DNS lookup failed: check the proxy hostname</string>
+    <string name="proxy_test_connect_failed">Connection failed: </string>
+    <string name="proxy_test_unexpected">Test error: </string>
+    <string name="chat_favorite_selected_action">Favorite selected</string>
+    <string name="chat_favorite_selected_ok">Favorited %1$d message(s)</string>
+    <string name="chat_favorite_selected_partial">Favorited %1$d; %2$d already in favorites</string>
+    <string name="chat_favorite_selected_all_exist">All %1$d are already in favorites</string>
+    <string name="settings_chat_prefer_card_output">Prefer card output</string>
+    <string name="settings_chat_prefer_card_output_subtitle">Encourage the model to put tables, comparisons and parameter choices into interactive cards instead of long text.</string>
+    <string name="chat_card_state_only">(card content updated)</string>
+    <string name="moment_action_edit">Edit</string>
+    <string name="groupchat_stop_generating">Stop generating</string>
+    <string name="translate_page_stop_speaking">Stop reading aloud</string>
+    <string name="settings_screen_group_cards">Cards &amp; Generative UI</string>
+    <string name="settings_screen_group_context_window">Context Window</string>
+    <string name="settings_screen_group_bubble">Message Bubbles</string>
+    <string name="settings_proactive_v2_ledger">Thought ledger</string>
+    <string name="settings_proactive_v2_ledger_sub">It is keeping %1$d things in mind</string>
+    <string name="settings_proactive_v2_intensity">Proactive level</string>
+    <string name="settings_proactive_v2_budget">Can speak %1$d more times today</string>
+    <string name="settings_proactive_v2_budget_unlimited">No limit today</string>
+    <string name="settings_proactive_v2_resume">Resume messages</string>
+    <string name="settings_proactive_v2_reset">Reset</string>
+    <string name="settings_proactive_v2_cooldown">Do not disturb me for a while</string>
+    <string name="settings_proactive_v2_cooldown_sub">Quiet for 7 days; it will still remember but stay silent</string>
+    <string name="settings_proactive_v2_empty">Nothing on its mind right now</string>
+    <string name="settings_proactive_v2_close">OK</string>
+    <string name="proactive_intensity_quiet">Quiet · up to 3 a day</string>
+    <string name="proactive_intensity_reserved">Reserved · up to 8 a day</string>
+    <string name="proactive_intensity_standard">Standard · up to 15 a day</string>
+    <string name="proactive_intensity_active">Active · up to 30 a day</string>
+    <string name="proactive_intensity_clingy">Clingy · no limit</string>
+    <string name="proactive_kind_reminder">Reminder</string>
+    <string name="proactive_kind_follow_up">Unfinished</string>
+    <string name="proactive_kind_care">Care</string>
+    <string name="proactive_kind_share">Share</string>
+    <string name="proactive_kind_milestone">Milestone</string>
 </resources>

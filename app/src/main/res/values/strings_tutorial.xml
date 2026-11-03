@@ -1,68 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-    <string name="settings_tutorial_search_placeholder">搜索教程内容...</string>
-    <string name="settings_tutorial_search_empty">未找到匹配内容</string>
-    <string name="settings_tutorial_ch1_s6_title">输入栏全功能详解</string>
-    <string name="settings_tutorial_ch1_s6_content">输入栏是聊天的核心入口，功能比看起来丰富得多：\n\n• 加号菜单（左侧）：点击展开工具面板，可发送图片、文件、选择知识库文档、添加 Prompt 模板、启用绘图模式、委托给其他助手、或重置当前对话上下文。\n\n• 麦克风（右侧）：点击开始语音输入，说话后松开，会自动转成文字（需配置语音识别服务，见第四章）。\n\n• 发送按钮（有文本时）：纸飞机图标，点击发送当前输入。\n\n• 停止按钮（流式中无新输入时）：红色实心圆形，点击停止当前 AI 回复生成。\n\n• 入队按钮（流式中有新输入时）：左侧出现入队图标，点击将当前消息加入待发送队列，不打断 AI 当前回复。\n\n• 插话按钮（流式中有新输入时）：右侧出现箭头图标，点击打断当前生成并发送新消息。\n\n• 深度思考开关：点击大脑图标高亮即开启，再次点击关闭。长按可循环切换思考级别（低/中/高/极高）。\n\n• 联网搜索开关：点击地球图标高亮即开启，再次点击关闭。\n\n• 回车发送：在设置中可以开启&quot;回车发送&quot;选项，开启后按 Enter 直接发送，Shift+Enter 换行。</string>
-    <string name="settings_tutorial_ch1_s7_title">消息长按菜单与分叉对话</string>
-    <string name="settings_tutorial_ch1_s7_content">长按任意一条消息（您的或 AI 的）会弹出操作菜单，常见选项包括：\n\n- 复制：复制消息文本到剪贴板。\n- 重新生成：对 AI 消息点击，AI 会生成一个新的回答替换原回答（旧回答保留在历史记录中）。\n- 编辑：对您自己发送的消息点击，修改后重新发送，会从这个位置生成新分支。\n- 分叉对话：从这条消息开始创建一个全新的对话分支，原对话不受影响，您可以在新分支上探索不同的方向。\n- 表情回应：对消息添加 Emoji 反应（点赞、爱心、惊讶等）。\n- 删除：删除该条消息（可选择是否连同后续消息一起删除）。\n\n这些操作让您在一场对话中可以同时走多条路线，随时回溯重选，怎么用都行。</string>
-    <string name="settings_tutorial_ch1_s8_title">会话管理：置顶、归档与文件夹</string>
-    <string name="settings_tutorial_ch1_s8_content">在聊天列表页面，除了新建和删除对话，还有一些实用的组织功能：\n\n- 置顶对话：在对话上长按或左滑，选择置顶。置顶的对话会固定在列表顶部，方便快速访问常用会话。\n\n- 归档对话：将不再需要但又不想删除的对话归档。归档后对话隐藏在日常列表中，在已归档文件夹中查看。可随时取消归档恢复显示。\n\n- 文件夹分类：高级用户可以在设置中创建文件夹，把不同主题的对话归类存放，比如工作、学习、生活，便于批量管理和查找。\n\n- 搜索历史：在列表顶部搜索框输入关键词，可快速定位包含该关键词的所有历史消息（跨对话搜索）。\n\n合理组织对话能让长期使用 Muse 时保持清爽有序。</string>
-    <string name="settings_tutorial_ch2_s7_title">任务模型路由（省Token神器）</string>
-    <string name="settings_tutorial_ch2_s7_content">设置 → 任务路由，可以指定一个便宜的小模型专门处理工具调用（读文件、查天气、搜索等），主模型只管对话。\n\n为什么重要？工具调用本身很费 Token，如果用昂贵的模型做简单工具调用，成本会很高。通过路由，日常工具调用用小模型（几分之一价格），只有复杂对话才用强模型，显著节省开销。\n\n建议新手也开启这个功能，在设置里选一个便宜可靠的模型（如 deepseek-chat）作为工具模型即可。</string>
-    <string name="settings_tutorial_ch3_s8_title">语音输入设置与使用</string>
-    <string name="settings_tutorial_ch3_s8_content">语音输入功能需要先配置语音识别(ASR）服务，然后才能在聊天页使用。\n\n- 配置：设置 → 语音设置，选择 ASR 供应商（如 DashScope、Whisper 等），填入对应的 API Key。\n\n- 使用：在聊天页输入框右侧点击麦克风图标，说话后松开，系统自动将语音转为文字。识别完成后仍可在发送前编辑文字。\n\n- 注意：语音识别质量取决于所选供应商和您的网络环境。首次使用建议先在设置中测试识别效果，满意后再常用。\n\n- 多语言：部分供应商支持多语言识别，可在设置中切换目标语言。</string>
-    <string name="settings_tutorial_ch3_s9_title">语音对话模式与声音切换</string>
-    <string name="settings_tutorial_ch3_s9_content">除了语音输入，Muse 还支持语音对话模式（TTS 朗读）和声音选择。\n\n- 语音对话：开启后 AI 会用语音朗读回复内容。在设置 → 语音设置 中可以开启/关闭语音对话模式。\n\n- 切换声音：部分供应商支持多种 TTS 声音（男声/女声/不同音色）。在设置 → 语音设置 中可以浏览并选择偏好的声音。选定后 AI 回复会用该声音朗读。\n\n- 发音质量：取决于 TTS 供应商和所选声音模型。建议先用默认声音熟悉功能，再根据个人偏好调整。\n\n- 注意：语音对话会消耗额外 Token（文本转语音），开启前请确认相关成本。</string>
-    <string name="settings_tutorial_ch3_s10_title">定时任务与主动消息</string>
-    <string name="settings_tutorial_ch3_s10_content">Muse 支持设定定时任务，让 AI 在指定时间主动给您发送消息或执行操作。\n\n- 设置路径：聊天列表页面底部有定时任务入口，或设置 → 任务管理 中配置。\n\n- 常见用法：\n  - 每天早上 8 点推送天气和今日待办\n  - 每周日晚上自动汇总本周对话要点\n  - 指定日期时间提醒某件事\n\n- 配置方法：点击新建定时任务，选择触发时间（单次或重复），填写触发内容或提示词，保存即可。任务会在指定时间自动执行并向您推送结果。\n\n- 查看与管理：在任务页可以看到所有定时任务的列表，支持启用/禁用/编辑/删除。</string>
-    <string name="settings_tutorial_ch4_s12_title">工具调用卡：展开查看与失败提示</string>
-    <string name="settings_tutorial_ch4_s12_content">当 AI 调用工具（如搜索、读文件、执行命令）时，聊天中会出现工具调用卡。\n\n- 折叠态：卡片显示工具名称图标 + 一句中文摘要（如&quot;搜索了网页 xxx&quot;），一目了然知道 AI 在做什么。\n\n- 展开态：点击卡片展开，可以看到参数键值对、完整结果文本，以及生成的图片/视频/文件预览（如果有）。\n\n- 执行中：卡片显示旋转进度条，告诉你正在处理。\n\n- 失败提示：如果工具调用失败，卡片会用红色错误容器背景 + 错误信息提示。点击展开可以看到具体错误原因，方便排查。\n\n- 结果中的链接：如果工具返回包含文件路径，会以附件芯片形式展示，可直接点击查看或下载。\n\n工具调用卡让你全程可见 AI 的每一步操作，透明且可控。</string>
-    <string name="settings_tutorial_ch4_s13_title">消息多选模式</string>
-    <string name="settings_tutorial_ch8_title">连接与扩展（2.0 新功能）</string>
-    <string name="settings_tutorial_ch8_s1_title">消息渠道：把 AI 接进飞书 / QQ</string>
-    <string name="settings_tutorial_ch8_s1_content">设置 → 消息渠道，把 Muse 接入日常 IM。
+    <string name="settings_tutorial_search_placeholder">Search tutorial content...</string>
+    <string name="settings_tutorial_search_empty">No matching content found</string>
+    <string name="settings_tutorial_ch1_s6_title">Input Bar - Full Feature Guide</string>
+    <string name="settings_tutorial_ch1_s6_content">The input bar is the core entry point for chatting, with far more functionality than it appears:\n\n- Plus menu (left): Tap to expand the tool panel - send images, files, select knowledge base documents, add prompt templates, enable drawing mode, delegate to other assistants, or restart context.\n\n- Microphone (right): Tap to start voice input, release to convert speech to text (requires ASR configuration, see Chapter 4).\n\n- Send button (when text exists): Paper airplane icon, tap to send.\n\n- Stop button (while streaming with no new input): Red filled circle, tap to stop the current AI response.\n\n- Enqueue button (while streaming with new input): Appears on the left - tap to queue your message without interrupting the current AI reply.\n\n- Interject button (while streaming with new input): Arrow icon on the right - tap to interrupt and send your new message.\n\n- Deep thinking toggle: Tap the brain icon to highlight and enable; tap again to disable. Long press to cycle thinking levels (low/medium/high/xhigh).\n\n- Web search toggle: Tap the globe icon to highlight and enable; tap again to disable.\n\n- Enter to send: Enable the &quot;Enter to send&quot; option in Settings. When on, press Enter to send directly, Shift+Enter for a new line.</string>
+    <string name="settings_tutorial_ch1_s7_title">Message Long-Press Menu &amp; Forking</string>
+    <string name="settings_tutorial_ch1_s7_content">Long-press any message (yours or AI\'s) to open the action menu. Common options include:\n\n- Copy: Copy the message text to clipboard.\n- Regenerate: Tap on an AI message to generate a new reply that replaces the old one (the original is kept in history).\n- Edit: Tap on your own message to modify and resend - a new branch grows from that point.\n- Fork: Start an entirely new conversation branch from this message. The original conversation is untouched, letting you explore different directions.\n- React: Add an Emoji reaction (like, heart, wow, etc.).\n- Delete: Remove the message (optionally including all following messages).\n\nThese operations let you branch out in multiple directions within one conversation and backtrack anytime.</string>
+    <string name="settings_tutorial_ch1_s8_title">Conversation Management: Pin, Archive &amp; Folders</string>
+    <string name="settings_tutorial_ch1_s8_content">On the chat list page, beyond new and delete, there are useful organization features:\n\n- Pin conversations: Long-press or swipe left on a conversation, select Pin. Pinned conversations stay fixed at the top of the list for quick access.\n\n- Archive conversations: Archive conversations you no longer need but don\'t want to delete. Archived chats are hidden from the main list and found under Archived. You can unarchive anytime.\n\n- Folder categorization: Advanced users can create folders in Settings to group conversations by topic, e.g. Work, Study, Life, making batch management and lookup easier.\n\n- History search: Type keywords in the search box at the top of the list to quickly locate all historical messages containing that keyword (cross-conversation search).\n\nProper organization keeps your Shaheen 2 experience clean and tidy over long-term use.</string>
+    <string name="settings_tutorial_ch2_s7_title">Task Model Routing (Token Saver)</string>
+    <string name="settings_tutorial_ch2_s7_content">Settings → Task Routing lets you specify a cheap small model to handle tool calls (file reading, weather check, search, etc.) while the main model handles dialogue.\n\nWhy important? Tool calls consume tokens, and using expensive models for simple tasks is costly. With routing, routine tool calls use a cheap model (fraction of the price), while only complex dialogues use the powerful model, significantly reducing costs.\n\nBeginners are also recommended to enable this — just pick an affordable reliable model (like deepseek-chat) as the tool model in settings.</string>
+    <string name="settings_tutorial_ch3_s8_title">Voice Input Setup &amp; Usage</string>
+    <string name="settings_tutorial_ch3_s8_content">Voice input requires configuring a speech recognition (ASR) service before use in the chat page.\n\n- Setup: Settings → Voice Settings, select an ASR provider (e.g. DashScope, Whisper), enter the corresponding API Key.\n\n- Usage: Tap the microphone icon on the right of the input box on the chat page, speak and release, the system automatically converts speech to text. You can still edit the text before sending after recognition.\n\n- Note: Recognition quality depends on the selected provider and your network environment. For first use, test the recognition effect in settings first, then use regularly once satisfied.\n\n- Multilingual: Some providers support multilingual recognition; switch target language in settings.</string>
+    <string name="settings_tutorial_ch3_s9_title">Voice Conversation Mode &amp; Voice Switching</string>
+    <string name="settings_tutorial_ch3_s9_content">Beyond voice input, Shaheen 2 supports voice conversation mode (TTS reading aloud) and voice selection.\n\n- Voice conversation: When enabled, the AI reads replies aloud using text-to-speech. Toggle in Settings → Voice Settings.\n\n- Switch voice: Some providers support multiple TTS voices (male/female/different tones). Browse and select preferred voices in Settings → Voice Settings. The selected voice will be used for AI reply narration.\n\n- Pronunciation quality: Depends on the TTS provider and selected voice model. Start with default voice to get familiar, then adjust per preference.\n\n- Note: Voice conversation consumes extra tokens (text-to-speech). Confirm related costs before enabling.</string>
+    <string name="settings_tutorial_ch3_s10_title">Scheduled Tasks &amp; Proactive Messages</string>
+    <string name="settings_tutorial_ch3_s10_content">Shaheen 2 supports setting up scheduled tasks for the AI to proactively message you or perform actions at specified times.\n\n- Setup path: Bottom of chat list page has a Scheduled Tasks entry, or configure in Settings → Task Management.\n\n- Common use cases:\n  - Push weather and today\'s to-dos every morning at 8 AM\n  - Auto-summarize weekly conversation highlights every Sunday evening\n  - Set reminders for specific events at designated times\n\n- How to configure: Tap New Scheduled Task, select trigger time (one-time or recurring), fill in trigger content or prompt, save. The task auto-executes at the specified time and pushes results to you.\n\n- View &amp; manage: On the Tasks page you can see all scheduled tasks, with support for enabling/disabling/editing/deleting.</string>
+    <string name="settings_tutorial_ch4_s12_title">Tool Call Cards: Expand &amp; Failure Feedback</string>
+    <string name="settings_tutorial_ch4_s12_content">When the AI calls tools (e.g. search, read file, execute command), a tool call card appears in the chat.\n\n- Collapsed state: Card shows tool name icon + a Chinese summary (e.g. \'searched web for xxx\'), giving instant clarity on what AI is doing.\n\n- Expanded state: Tap the card to expand and see parameter key-value pairs, full result text, and previews of generated images/videos/files (if any).\n\n- Running: Card shows a spinning progress indicator while processing.\n\n- Failure feedback: If a tool call fails, the card uses a red error container background + error message. Tap to expand and see the specific error reason for troubleshooting.\n\n- Links in results: If tool output contains file paths, they appear as attachment chips - tap to view or download directly.\n\nTool call cards let you see every step of AI\'s operation transparently and controllably.</string>
+    <string name="settings_tutorial_ch4_s13_title">Message Multi-Select Mode</string>
+    <string name="settings_tutorial_ch8_title">Connections &amp; Extensions (2.0)</string>
+    <string name="settings_tutorial_ch8_s1_title">Message channels: connect AI to Feishu / QQ</string>
+    <string name="settings_tutorial_ch8_s1_content">Settings → Message channels connects Shaheen 2 to your IM.
 
-- 飞书：在 open.feishu.cn 开发者后台创建自建应用，开通 im:message 权限，把机器人拉进群；API 调试台调 GET /im/v1/chats 复制群 chat_id（oc_ 开头）。回 Muse 填入 App ID / App Secret / chat_id 保存。
+- Feishu: create a custom app at open.feishu.cn, enable im:message, add the bot to a group; call GET /im/v1/chats in the API console to copy the chat_id (starts with oc_). Fill App ID / App Secret / chat_id in Shaheen 2.
 
-- QQ：在 QQ 开放平台（bot.q.qq.com）创建机器人，拿 AppID / AppSecret 填进 Muse；群或用户 openid 会在机器人收到消息后自动出现（需 WebServer 可达）。
+- QQ: create a bot at bot.q.qq.com, fill AppID / AppSecret. Group or user openid appears automatically after the bot receives a message (WebServer must be reachable).
 
-- 用法：直接对 AI 说“把这条结果发到飞书”，AI 会调用发送工具（走审批确认）。
+- Usage: say "send this to Feishu" and the AI calls the send tool (with approval).
 
-- 接收：平台推来的消息会出现在渠道页“最近收到”区域。</string>
-    <string name="settings_tutorial_ch8_s2_title">OAuth 连接器：授权外部服务</string>
-    <string name="settings_tutorial_ch8_s2_content">设置 → 连接器，可接入任意支持 OAuth2 的服务（GitHub、Notion、日历类等）。
+- Receiving: pushed messages appear in the channel page under Recently received.</string>
+    <string name="settings_tutorial_ch8_s2_title">OAuth connectors: authorize external services</string>
+    <string name="settings_tutorial_ch8_s2_content">Settings → Connectors connects any OAuth2 service (GitHub, Notion, calendar apps...).
 
-- 准备：在目标服务开发者后台创建 OAuth 应用，回调地址填 io.zer0.muse://oauth/callback。
+- Prepare: register an OAuth app in the provider console; set the redirect URI to io.zer0.muse://oauth/callback.
 
-- 配置：把授权端点、Token 端点、Scope、Client ID / Secret 填入连接器页并保存。
+- Configure: fill authorize URL, token URL, scope, Client ID / Secret on the connector page and save.
 
-- 连接：点“连接”跳系统浏览器完成授权，回到 Muse 即连接成功；凭证加密保存在本机。
+- Connect: tap Connect, finish authorization in the system browser and return to Shaheen 2. Credentials are encrypted locally.
 
-- 用途：为后续数据类能力提供统一授权通道。</string>
-    <string name="settings_tutorial_ch8_s3_title">交互式卡片：从展示到操作</string>
-    <string name="settings_tutorial_ch8_s3_content">AI 回复中的 HTML 卡片（用 html 代码块生成）现在可以交互。
+- Purpose: one shared authorization channel for future data features.</string>
+    <string name="settings_tutorial_ch8_s3_title">Interactive cards: from display to action</string>
+    <string name="settings_tutorial_ch8_s3_content">HTML cards in AI replies are now interactive.
 
-- 卡片里的按钮可通过卡片内脚本回传一条消息给 AI（例如“确认开始”），AI 收到后会响应。
+- Buttons inside a card can send a message back to the AI (e.g. "confirm start"); the AI responds to it.
 
-- 安全守卫：仅在你刚刚点击过卡片后的 1.5 秒内回传生效，防止卡片自动刷消息。
+- Safety guard: a callback only works within 1.5s after your last tap, preventing automatic message spam.
 
-- 保存为工件：点卡片右上角书签图标，把卡片存成工件，随消息长期保留。</string>
-    <string name="settings_tutorial_ch8_s4_title">技能包与插件面板</string>
-    <string name="settings_tutorial_ch8_s4_content">- 技能包：技能页右上角“分享”图标可把你自己创建的全部技能打成一个包，发给朋友；对方导入时自动识别并批量安装。
+- Save as artifact: tap the bookmark icon to keep the card as an artifact.</string>
+    <string name="settings_tutorial_ch8_s4_title">Skill packs and plugin panels</string>
+    <string name="settings_tutorial_ch8_s4_content">- Skill packs: tap the share icon on the Skills page to pack all your custom skills into one file and send it; importing it installs them in batch.
 
-- 插件面板：支持 uiPanel 声明的插件会在插件管理页出现“打开面板”入口，提供自定义界面（看板 / 报表等）。
+- Plugin panels: plugins declaring uiPanel show an "Open panel" entry with a custom UI (dashboards, reports...).
 
-（插件由开发者签名发布，安装时需确认信任。）</string>
-    <string name="settings_tutorial_ch8_s5_title">网页操作：让 AI 帮你逛网页</string>
-    <string name="settings_tutorial_ch8_s6_title">webhook 公网化：让平台消息走进手机</string>
-    <string name="settings_tutorial_ch8_s6_content">消息渠道的 webhook 需要平台服务器主动访问你的手机，但手机通常没有公网地址。\n\n- 推荐做法（电脑当"中转"）：手机与电脑连同一个 WiFi；在电脑上安装 cloudflared 等隧道工具，运行 cloudflared tunnel --url http://你的手机IP：端口，得到形如 https://xxx.trycloudflare.com 的公网地址。\n\n- 接线：把公网地址加上 /webhook/feishu 或 /webhook/qq 后缀，填入对应开放平台的回调地址；平台验证通过后，消息就会流入 Muse 收件箱，并可结合渠道的"自动回复"设置自动处理。\n\n- 注意：临时隧道地址重启后会变化，变更后需同步更新平台配置；手机与电脑需保持同一网络且电脑不休眠；安全性由平台验签保障——QQ 走 Ed25519 签名校验，飞书走回调挑战验证。</string>
-    <string name="settings_tutorial_ch8_s5_content">AI 现在能主动操作内置浏览器（headless，不打断你）。
+(Plugins are signed by their authors; trust is confirmed at install time.)</string>
+    <string name="settings_tutorial_ch8_s5_title">Web tasks: let AI browse for you</string>
+    <string name="settings_tutorial_ch8_s6_title">Webhook tunneling: let platforms reach your phone</string>
+    <string name="settings_tutorial_ch8_s6_content">Channel webhooks need the platform servers to reach your phone, but phones usually lack a public address.\n\n- Recommended setup (computer as a relay): keep the phone and computer on the same Wi-Fi; install a tunnel tool such as cloudflared on the computer and run cloudflared tunnel --url http://phone-ip:port; it prints a public URL like https://xxx.trycloudflare.com.\n\n- Wiring: append /webhook/feishu or /webhook/qq to that public URL and fill it into the platform callback settings; once verified, incoming messages flow into the Shaheen 2 inbox and can be handled by the channel auto-reply.\n\n- Notes: temporary tunnel URLs change after restart, so update the platform config when that happens; keep both devices on the same network and the computer awake; security is covered by platform signatures — Ed25519 for QQ, challenge verification for Feishu.</string>
+    <string name="settings_tutorial_ch8_s5_content">The AI can now drive the built-in browser (headless, non-intrusive).
 
-- 流程：AI 先“看”页面（生成结构化快照：链接 / 按钮 / 输入框带编号），再按编号点击或输入，像人一样翻页、填表、取数据。
+- Flow: first it "reads" the page (structured snapshot of links / buttons / inputs with numbers), then clicks or types by number to paginate, fill forms and collect data.
 
-- 触发：直接说“帮我打开某网站查一下某事”；需要登录的站点可先自己在浏览器里登录，AI 会复用登录态。
+- Trigger: just say "open "site" and check "something""; for login-required sites, log in manually first and the AI reuses the session.
 
-- 安全：点击 / 输入等操作会走审批确认；页面顶层跳转被拦截。</string>
-    <string name="settings_tutorial_ch4_s13_content">长按进入多选模式后，可以一次性选择多条消息进行批量操作。\n\n- 进入方式：长按任意消息，进入多选模式，此时所有消息左侧会出现勾选框。\n\n- 批量操作：选中多条消息后，可以进行批量复制、批量删除等操作。部分版本还支持批量收藏。\n\n- 退出方式：点击右上角的取消按钮，或点击空白区域退出多选模式，回到正常浏览状态。\n\n多选模式在处理大量消息时非常高效，比逐条操作节省大量时间。</string>
+- Safety: clicks and typing go through approval; top-level navigation is blocked.</string>
+    <string name="settings_tutorial_ch4_s13_content">After long-pressing to enter multi-select mode, you can select multiple messages at once for batch operations.\n\n- Entry: Long-press any message to enter multi-select mode; checkboxes appear on the left of all messages.\n\n- Batch operations: After selecting multiple messages, perform batch copy, batch delete, etc. Some versions also support batch favorite.\n\n- Exit: Tap the cancel button in the top-right corner, or tap blank area to exit multi-select mode and return to normal browsing.\n\nMulti-select mode is highly efficient when handling large numbers of messages, saving significant time compared to operating one by one.</string>
 </resources>

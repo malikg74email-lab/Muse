@@ -1,622 +1,620 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-    <!-- ===== ChatScreen 对话页 ===== -->
-    <!-- 顶部栏 -->
-    <string name="chat_session_cd">当前会话：%1$s，点击切换会话</string>
-    <string name="chat_video_play_cd">播放视频</string>
-    <string name="chat_generated_video_cd">生成的视频</string>
-    <string name="chat_msg_selected">已选中</string>
-    <string name="chat_msg_not_selected">未选中</string>
-    <string name="moment_images_selected">已选 %1$d 张（点击可继续选）</string>
-    <string name="moment_add_images_hint">添加图片（最多 %1$d 张）</string>
-    <!-- ===== 日记 (MiniDiaryScreen) ===== -->
-    <string name="diary_generate_failed">日记生成失败，稍后再试</string>
-    <string name="diary_title">Muse 的日记</string>
-    <string name="diary_date_title">%1$d 年 %2$d 月 %3$s 日</string>
-    <string name="diary_empty_today">今天还没有日记</string>
-    <string name="diary_empty_other_day">这一天没有日记</string>
-    <string name="diary_empty_today_hint">打开日记页会自动生成今天的日记</string>
-    <string name="diary_backfill_action">补写这一天</string>
-    <string name="diary_generating">生成中…</string>
-    <string name="diary_prev_month">上个月</string>
-    <string name="diary_month_title">%1$d 年 %2$d 月</string>
-    <string name="diary_next_month">下个月</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- ===== ChatScreen ===== -->
+    <!-- Top bar -->
+    <string name="chat_session_cd">Current chat: %1$s, tap to switch</string>
+    <string name="chat_video_play_cd">Play video</string>
+    <string name="chat_generated_video_cd">Generated video</string>
+    <string name="chat_msg_selected">Selected</string>
+    <string name="chat_msg_not_selected">Not selected</string>
+    <string name="moment_images_selected">%1$d selected (tap to add more)</string>
+    <string name="moment_add_images_hint">Add images (up to %1$d)</string>
+    <!-- ===== Diary (MiniDiaryScreen) ===== -->
+    <string name="diary_generate_failed">Diary generation failed, try again later</string>
+    <string name="diary_title">Shaheen 2 Diary</string>
+    <string name="diary_date_title">%1$d/%2$d/%3$s</string>
+    <string name="diary_empty_today">No diary for today yet</string>
+    <string name="diary_empty_other_day">No diary for this day</string>
+    <string name="diary_empty_today_hint">Opening the diary page will auto-generate today\'s diary</string>
+    <string name="diary_backfill_action">Write this day</string>
+    <string name="diary_generating">Generating…</string>
+    <string name="diary_prev_month">Previous month</string>
+    <string name="diary_month_title">%1$d/%2$d</string>
+    <string name="diary_next_month">Next month</string>
     <string-array name="diary_weekdays_short">
-        <item>日</item>
-        <item>一</item>
-        <item>二</item>
-        <item>三</item>
-        <item>四</item>
-        <item>五</item>
-        <item>六</item>
+        <item>Su</item>
+        <item>Mo</item>
+        <item>Tu</item>
+        <item>We</item>
+        <item>Th</item>
+        <item>Fr</item>
+        <item>Sa</item>
     </string-array>
-    <!-- ===== 天气 (MiniWeatherScreen) ===== -->
-    <string name="weather_title">天气</string>
-    <string name="weather_search_hint">输入城市名（如 成都）</string>
-    <string name="weather_search_action">查询</string>
-    <string name="weather_service_unavailable">天气服务暂时不可用</string>
-    <string name="weather_city_not_found">未找到城市 "%1$s"，换个名字试试</string>
-    <string name="weather_location_failed">无法获取定位，请输入城市名查询</string>
-    <string name="weather_permission_denied">未授权定位，请输入城市名查询</string>
-    <string name="weather_permission_guide">配置定位权限或手动输入城市名查询</string>
-    <string name="weather_feels_like_wind">体感 %1$d° · 风速 %2$s km/h</string>
-    <string name="weather_current_location">当前位置</string>
-    <string name="weather_condition_clear">晴</string>
-    <string name="weather_condition_partly_cloudy">多云</string>
-    <string name="weather_condition_overcast">阴</string>
-    <string name="weather_condition_fog">雾</string>
-    <string name="weather_condition_drizzle">毛毛雨</string>
-    <string name="weather_condition_freezing_drizzle">冻雨</string>
-    <string name="weather_condition_rain">雨</string>
-    <string name="weather_condition_snow">雪</string>
-    <string name="weather_condition_sleet">霰</string>
-    <string name="weather_condition_showers">阵雨</string>
-    <string name="weather_condition_snow_showers">阵雪</string>
-    <string name="weather_condition_thunderstorm">雷雨</string>
-    <string name="weather_condition_thunderstorm_hail">雷暴冰雹</string>
-    <string name="weather_condition_unknown">未知</string>
-    <string name="weather_day_today">今天</string>
-    <string name="weather_day_tomorrow">明天</string>
+    <!-- ===== Weather (MiniWeatherScreen) ===== -->
+    <string name="weather_title">Weather</string>
+    <string name="weather_search_hint">Enter city name (e.g. Chengdu)</string>
+    <string name="weather_search_action">Search</string>
+    <string name="weather_service_unavailable">Weather service temporarily unavailable</string>
+    <string name="weather_city_not_found">City "%1$s" not found, try another name</string>
+    <string name="weather_location_failed">Unable to get location, enter a city name to search</string>
+    <string name="weather_permission_denied">Location permission not granted, enter a city name to search</string>
+    <string name="weather_permission_guide">Enable location permission or enter a city name to search</string>
+    <string name="weather_feels_like_wind">Feels like %1$d° · Wind %2$s km/h</string>
+    <string name="weather_current_location">Current location</string>
+    <string name="weather_condition_clear">Clear</string>
+    <string name="weather_condition_partly_cloudy">Partly cloudy</string>
+    <string name="weather_condition_overcast">Overcast</string>
+    <string name="weather_condition_fog">Fog</string>
+    <string name="weather_condition_drizzle">Drizzle</string>
+    <string name="weather_condition_freezing_drizzle">Freezing drizzle</string>
+    <string name="weather_condition_rain">Rain</string>
+    <string name="weather_condition_snow">Snow</string>
+    <string name="weather_condition_sleet">Sleet</string>
+    <string name="weather_condition_showers">Showers</string>
+    <string name="weather_condition_snow_showers">Snow showers</string>
+    <string name="weather_condition_thunderstorm">Thunderstorm</string>
+    <string name="weather_condition_thunderstorm_hail">Thunderstorm with hail</string>
+    <string name="weather_condition_unknown">Unknown</string>
+    <string name="weather_day_today">Today</string>
+    <string name="weather_day_tomorrow">Tomorrow</string>
     <string-array name="weather_weekdays">
-        <item>周日</item>
-        <item>周一</item>
-        <item>周二</item>
-        <item>周三</item>
-        <item>周四</item>
-        <item>周五</item>
-        <item>周六</item>
+        <item>Sun</item>
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
     </string-array>
-    <!-- ===== 朋友圈动态 (MomentCard/MomentComponents) ===== -->
-    <string name="moment_expand_full">全文</string>
-    <string name="moment_like_cd">赞</string>
-    <string name="moment_like_cancel">取消赞</string>
-    <string name="moment_comment_cd">评论</string>
-    <string name="moment_favorite">收藏</string>
-    <string name="moment_more_actions">朋友圈动态更多操作</string>
-    <string name="moment_sender_muse">Muse</string>
-    <string name="moment_sender_me">我</string>
-    <string name="moment_comment_hint">发表评论：</string>
-    <string name="moment_delete_title">删除动态</string>
-    <string name="moment_image_cd">动态配图</string>
-    <string name="moment_image_cd_indexed">动态配图 %1$d</string>
-    <string name="moment_avatar_cd">头像</string>
-    <string name="moment_cover_cd">朋友圈封面</string>
-    <string name="moment_messages_cd">消息</string>
-    <string name="moment_publish_cd">发布动态（短按图文，长按纯文字）</string>
-    <string name="moment_empty_feed">还没有动态</string>
-    <string name="moment_empty_hint">点右上角 + 发第一条朋友圈\nMuse 和助手们也会分享它们的生活</string>
-    <string name="moment_messages_empty">还没有人赞你或评论你</string>
-    <string name="moment_notification_liked">%1$s 赞了你的动态</string>
-    <string name="moment_notification_commented">%1$s 评论了你的动态</string>
-    <string name="moment_profile_title">%1$s 的主页</string>
-    <string name="moment_moment_count">%1$d 条动态</string>
-    <string name="moment_publish_text_only">发纯文字</string>
-    <string name="moment_publish_feed">发朋友圈</string>
-    <string name="moment_publish_placeholder">这一刻的想法...</string>
-    <string name="moment_pending_image_cd">待发布图片</string>
-    <string name="moment_publish_confirm">发布</string>
-    <!-- v1.0.72: Telegram 风格顶栏三点菜单 -->
-    <string name="chat_top_menu_cd">更多操作</string>
-    <string name="chat_select_provider">选择供应商</string>
-    <string name="chat_switch_assistant">切换助手</string>
-    <string name="chat_proactive_toggle">主动消息</string>
-    <string name="chat_tool_run_summary">执行了 %1$d 个操作</string>
-    <string name="chat_tool_card_open">查看卡片</string>
-    <string name="chat_update_compress">压缩上下文</string>
-    <string name="chat_scroll_to_bottom_cd">滚到底</string>
-    <string name="chat_export_format_title">选择导出格式</string>
-    <string name="chat_export_format_confirm">导出</string>
-    <string name="chat_export_format_markdown">Markdown(.md)：纯文本格式，便于粘贴到笔记软件或再次编辑</string>
-    <string name="chat_export_format_html">HTML(.html)：单文件，内联样式与图片，可直接用浏览器打开分享</string>
-    <string name="chat_export_format_pdf">PDF(.pdf):A4 分页文档，适合打印或正式归档</string>
-    <string name="chat_doc_empty_or_unsupported">文档内容为空或不支持的格式</string>
-    <string name="chat_doc_truncated">\n\n…(文档过长，已截断 %1$d 字)</string>
-    <string name="chat_doc_default_name">文档</string>
-    <string name="chat_doc_parse_failed">文档解析失败： %1$s</string>
-    <string name="chat_attachment_workspace_ref">附件已存入工作区：%1$s（%2$s）</string>
-    <string name="chat_attachment_preview_unavailable">这个文件没法在应用内打开，原件在工作区：%1$s</string>
-    <string name="chat_attachment_import_failed">附件保存失败：%1$s</string>
-    <string name="chat_doc_char_count">%1$d 字</string>
-    <string name="chat_pasted_doc_name">粘贴文本_%1$s.txt</string>
-    <string name="chat_thinking_preview">思考 · %1$s</string>
-    <string name="chat_voice_playing_cd">语音播放中</string>
-    <string name="chat_voice_ready_cd">语音就绪</string>
-    <!-- v2.6.16: 语音消息条 -->
-    <string name="chat_voice_play_cd">播放语音</string>
-    <string name="chat_voice_pause_cd">暂停语音</string>
-    <string name="chat_voice_expired">语音已失效</string>
-    <string name="chat_knowledge_chunk_title">《%1$s》 · 片段 #%2$d</string>
-    <string name="chat_knowledge_chunk_score">分数 %1$s · %2$s</string>
-    <string name="chat_citation_chip_a11y">引用 [%1$d]:%2$s,%3$s</string>
-    <string name="chat_citation_open_doc">打开文档</string>
-    <string name="chat_citation_copy_snippet">复制摘要</string>
-    <string name="link_preview_loading">正在获取链接预览：%1$s</string>
-    <string name="link_preview_failed">抓取失败</string>
-    <string name="link_preview_no_title">无标题</string>
-    <string name="chat_task_todo_title">任务待办</string>
-    <string name="chat_tool_call_arguments">参数： %1$s</string>
-    <string name="chat_tool_call_result">结果： %1$s</string>
-    <string name="chat_share_failed_no_uri">分享失败：无法获取文件 URI</string>
-    <string name="chat_companion_days_zero">今天刚认识</string>
-    <string name="chat_companion_days">陪伴 %1$d 天</string>
-    <string name="chat_thinking">正在思考…</string>
+    <!-- ===== Moments (MomentCard/MomentComponents) ===== -->
+    <string name="moment_expand_full">Full text</string>
+    <string name="moment_like_cd">Like</string>
+    <string name="moment_like_cancel">Unlike</string>
+    <string name="moment_comment_cd">Comment</string>
+    <string name="moment_favorite">Favorite</string>
+    <string name="moment_more_actions">More actions for this moment</string>
+    <string name="moment_sender_muse">Shaheen 2</string>
+    <string name="moment_sender_me">Me</string>
+    <string name="moment_comment_hint">Post a comment:</string>
+    <string name="moment_delete_title">Delete moment</string>
+    <string name="moment_image_cd">Moment image</string>
+    <string name="moment_image_cd_indexed">Moment image %1$d</string>
+    <string name="moment_avatar_cd">Avatar</string>
+    <string name="moment_cover_cd">Moments cover</string>
+    <string name="moment_messages_cd">Messages</string>
+    <string name="moment_publish_cd">Publish moment (tap for media, long-press for text)</string>
+    <string name="moment_empty_feed">No moments yet</string>
+    <string name="moment_empty_hint">Tap + at top right to post your first moment\nShaheen 2 and assistants will share their life too</string>
+    <string name="moment_messages_empty">No likes or comments yet</string>
+    <string name="moment_notification_liked">%1$s liked your moment</string>
+    <string name="moment_notification_commented">%1$s commented on your moment</string>
+    <string name="moment_profile_title">%1$s\'s profile</string>
+    <string name="moment_moment_count">%1$d moments</string>
+    <string name="moment_publish_text_only">Post text only</string>
+    <string name="moment_publish_feed">Post moment</string>
+    <string name="moment_publish_placeholder">What are you thinking...</string>
+    <string name="moment_pending_image_cd">Pending image</string>
+    <string name="moment_publish_confirm">Post</string>
+    <string name="chat_scroll_to_bottom_cd">Scroll to bottom</string>
+    <string name="chat_export_format_title">Choose export format</string>
+    <string name="chat_export_format_confirm">Export</string>
+    <string name="chat_export_format_markdown">Markdown (.md): plain text, easy to paste into notes or edit again</string>
+    <string name="chat_export_format_html">HTML (.html): single file with inline styles and images, shareable in any browser</string>
+    <string name="chat_export_format_pdf">PDF (.pdf): A4 paginated document for printing or archival</string>
+    <string name="chat_doc_empty_or_unsupported">Document is empty or format is not supported</string>
+    <string name="chat_doc_truncated">\n\n…(document too long, truncated by %1$d characters)</string>
+    <string name="chat_doc_default_name">Document</string>
+    <string name="chat_doc_parse_failed">Document parsing failed: %1$s</string>
+    <string name="chat_attachment_workspace_ref">Attachment saved to workspace: %1$s (%2$s)</string>
+    <string name="chat_attachment_preview_unavailable">This file cannot be opened in the app. The original is in the workspace: %1$s</string>
+    <string name="chat_attachment_import_failed">Failed to save attachment: %1$s</string>
+    <string name="chat_doc_char_count">%1$d chars</string>
+    <string name="chat_pasted_doc_name">pasted-text_%1$s.txt</string>
+    <string name="chat_thinking_preview">Thinking · %1$s</string>
+    <string name="chat_voice_playing_cd">Voice playing</string>
+    <string name="chat_voice_ready_cd">Voice ready</string>
+    <!-- v2.6.16: voice message bar -->
+    <string name="chat_voice_play_cd">Play voice message</string>
+    <string name="chat_voice_pause_cd">Pause voice message</string>
+    <string name="chat_voice_expired">Voice message unavailable</string>
+    <string name="chat_knowledge_chunk_title">"%1$s" · Chunk #%2$d</string>
+    <string name="chat_knowledge_chunk_score">Score %1$s · %2$s</string>
+    <string name="chat_citation_chip_a11y">Citation [%1$d]: %2$s, %3$s</string>
+    <string name="chat_citation_open_doc">Open document</string>
+    <string name="chat_citation_copy_snippet">Copy snippet</string>
+    <string name="link_preview_loading">Loading link preview: %1$s</string>
+    <string name="link_preview_failed">Couldn\'t load preview</string>
+    <string name="link_preview_no_title">Untitled</string>
+    <string name="chat_task_todo_title">Task todo</string>
+    <string name="chat_tool_call_arguments">Arguments: %1$s</string>
+    <string name="chat_tool_call_result">Result: %1$s</string>
+    <string name="chat_share_failed_no_uri">Share failed: could not get file URI</string>
+    <string name="chat_companion_days_zero">Just met today</string>
+    <string name="chat_companion_days">Together for %1$d days</string>
+    <string name="chat_thinking">Thinking…</string>
 
-    <!-- 错误与权限提示 -->
-    <string name="chat_err_mic_permission">需要麦克风权限才能使用语音输入</string>
-    <string name="chat_mic_permission_granted">麦克风权限已授予，请再次长按麦克风开始录音</string>
-    <string name="chat_err_open_file_picker">无法打开文件选择器： %1$s</string>
-    <string name="chat_err_open_image_picker">无法打开图片选择器： %1$s</string>
-    <string name="chat_error_cd">错误：%1$s，可重试或关闭</string>
-    <string name="chat_retry">重试</string>
+    <!-- Errors and permissions -->
+    <string name="chat_err_mic_permission">Microphone permission is required for voice input</string>
+    <string name="chat_mic_permission_granted">Microphone permission granted. Long-press the microphone again to record.</string>
+    <string name="chat_err_open_file_picker">Cannot open file picker: %1$s</string>
+    <string name="chat_err_open_image_picker">Cannot open image picker: %1$s</string>
+    <string name="chat_error_cd">Error: %1$s, retry or close</string>
+    <string name="chat_retry">Retry</string>
 
-    <!-- 分享 -->
-    <string name="chat_share_subject">muse 对话记录</string>
-    <string name="chat_share_chooser_title">分享对话</string>
+    <!-- Share -->
+    <string name="chat_share_subject">Shaheen conversation</string>
+    <string name="chat_share_chooser_title">Share Chat</string>
 
-    <!-- 复制提示 -->
-    <string name="chat_copied_toast">已复制</string>
+    <!-- Copy toast -->
+    <string name="chat_copied_toast">Copied</string>
 
-    <!-- Prompt 模板 -->
-    <string name="chat_prompt_templates_title">Prompt 模板</string>
+    <!-- Prompt templates -->
+    <string name="chat_prompt_templates_title">Prompt Templates</string>
 
-    <!-- 知识库 -->
-    <string name="chat_knowledge_dialog_title">引用知识库文档</string>
-    <string name="chat_knowledge_empty">知识库为空，请先在设置中导入文档</string>
-    <string name="chat_knowledge_doc_meta">%1$s · %2$d 字</string>
+    <!-- Knowledge base -->
+    <string name="chat_knowledge_dialog_title">Reference Knowledge Base</string>
+    <string name="chat_knowledge_empty">Knowledge base is empty. Import documents in Settings first.</string>
+    <string name="chat_knowledge_doc_meta">%1$s · %2$d chars</string>
 
-    <!-- 会话切换 -->
-    <string name="chat_switch_session_title">切换会话</string>
-    <string name="chat_no_sessions">暂无会话</string>
-    <string name="chat_new_session">新会话</string>
-    <string name="chat_load_earlier_messages">加载更早的消息</string>
+    <!-- Session switch -->
+    <string name="chat_switch_session_title">Switch Chat</string>
+    <string name="chat_no_sessions">No chats yet</string>
+    <string name="chat_new_session">New Chat</string>
+    <string name="chat_load_earlier_messages">Load earlier messages</string>
 
-    <!-- v1.136 T1: 对话内更换助手 -->
-    <string name="chat_switch_assistant_title">更换助手</string>
-    <string name="chat_switch_assistant_empty">暂无可用助手</string>
-    <string name="chat_switch_assistant_current">当前</string>
+    <!-- v1.136 T1: Switch assistant within chat -->
+    <string name="chat_switch_assistant_title">Switch Assistant</string>
+    <string name="chat_switch_assistant_empty">No assistants available</string>
+    <string name="chat_switch_assistant_current">Current</string>
 
-    <!-- 委托给助手 -->
-    <string name="chat_delegate_title">委托给助手</string>
-    <string name="chat_delegate_empty">暂无可用的助手或团队，请先在助手管理中创建。</string>
-    <string name="chat_delegate_assistants">可用助手</string>
-    <string name="chat_delegate_unnamed_assistant">未命名助手</string>
-    <string name="chat_delegate_assistant_prompt_input">请委托给 %1$s 处理：%2$s</string>
-    <string name="chat_delegate_assistant_prompt_message">请委托给 %1$s 处理上面的内容：</string>
-    <string name="chat_delegate_no_text">该消息无可委托的文本内容</string>
-    <string name="chat_delegate_teams">协作团队</string>
-    <string name="chat_delegate_unnamed_team">未命名团队</string>
-    <string name="chat_delegate_team_prompt_input">请按 %1$s 团队协作处理：%2$s</string>
-    <string name="chat_delegate_team_prompt_message">请按 %1$s 团队协作处理上面的内容：</string>
+    <!-- Delegate to assistant -->
+    <string name="chat_delegate_title">Delegate to Assistant</string>
+    <string name="chat_delegate_empty">No assistants or teams available. Create one in Assistant management first.</string>
+    <string name="chat_delegate_assistants">Available Assistants</string>
+    <string name="chat_delegate_unnamed_assistant">Unnamed Assistant</string>
+    <string name="chat_delegate_assistant_prompt_input">Please delegate to %1$s: %2$s</string>
+    <string name="chat_delegate_assistant_prompt_message">Please delegate the content above to %1$s:</string>
+    <string name="chat_delegate_no_text">This message has no text content to delegate</string>
+    <string name="chat_delegate_teams">Collaborative Teams</string>
+    <string name="chat_delegate_unnamed_team">Unnamed Team</string>
+    <string name="chat_delegate_team_prompt_input">Please handle as %1$s team: %2$s</string>
+    <string name="chat_delegate_team_prompt_message">Please handle the content above as %1$s team:</string>
 
-    <!-- 空状态引导 -->
-    <string name="chat_avatar_assistant_cd">助手头像</string>
-    <string name="chat_avatar_muse_cd">Muse 图标</string>
-    <string name="chat_empty_guide_title">今天想聊点什么？</string>
-    <string name="chat_ignore_memory_option">此条对话不参考记忆</string>
+    <!-- Empty state guide -->
+    <string name="chat_avatar_assistant_cd">Assistant avatar</string>
+    <string name="chat_avatar_muse_cd">Shaheen 2 icon</string>
+    <string name="chat_empty_guide_title">What would you like to chat about today?</string>
 
-    <!-- 图片生成占位 -->
-    <string name="chat_image_generating">生成图片中…</string>
+    <!-- Image generation placeholder -->
+    <string name="chat_image_generating">Generating image…</string>
 
-    <!-- ===== MessageBubble 消息气泡 ===== -->
-    <!-- MOOD / 思考过程 / 反思 折叠块 -->
-    <string name="chat_mood_collapse_cd">收起 MOOD</string>
-    <string name="chat_mood_expand_cd">展开 MOOD</string>
-    <string name="chat_mood_label">心情</string>
-    <string name="chat_reasoning_title">思考过程</string>
-    <string name="chat_process_thinking">思考了一阵</string>
+    <!-- ===== MessageBubble ===== -->
+    <!-- MOOD / Reasoning / Reflection collapsible blocks -->
+    <string name="chat_mood_collapse_cd">Collapse MOOD</string>
+    <string name="chat_mood_expand_cd">Expand MOOD</string>
+    <string name="chat_mood_label">Mood</string>
+    <string name="chat_reasoning_title">Reasoning</string>
+    <string name="chat_process_thinking">Thought for a moment</string>
     <plurals name="chat_process_ops">
-        <item quantity="other">%1$d 项操作</item>
+        <item quantity="one">%1$d action</item>
+        <item quantity="other">%1$d actions</item>
     </plurals>
-    <string name="chat_reasoning_elapsed">%1$d 秒</string>
-    <string name="chat_reasoning_collapse_cd">收起思考过程</string>
-    <string name="chat_reasoning_expand_cd">展开思考过程</string>
-    <string name="chat_reflection_title">反思</string>
-    <string name="chat_reflection_collapse_cd">收起反思</string>
-    <string name="chat_reflection_expand_cd">展开反思</string>
+    <string name="chat_reasoning_elapsed">%1$ds</string>
+    <string name="chat_reasoning_collapse_cd">Collapse Reasoning</string>
+    <string name="chat_reasoning_expand_cd">Expand Reasoning</string>
+    <string name="chat_reflection_title">Reflection</string>
+    <string name="chat_reflection_collapse_cd">Collapse Reflection</string>
+    <string name="chat_reflection_expand_cd">Expand Reflection</string>
 
-    <!-- 图片 -->
-    <string name="chat_user_image_cd">用户图片</string>
-    <string name="chat_generated_image_cd">生成的图片</string>
-    <string name="chat_save_image_cd">保存图片</string>
-    <string name="chat_image_saved_toast">已保存到相册： %1$s</string>
-    <string name="chat_image_save_failed_toast">保存失败： %1$s</string>
-    <string name="chat_image_page_cd">图片 %1$d / %2$d</string>
+    <!-- Images -->
+    <string name="chat_user_image_cd">User image</string>
+    <string name="chat_generated_image_cd">Generated image</string>
+    <string name="chat_save_image_cd">Save Image</string>
+    <string name="chat_image_saved_toast">Saved to gallery: %1$s</string>
+    <string name="chat_image_save_failed_toast">Save failed: %1$s</string>
+    <string name="chat_image_page_cd">Image %1$d / %2$d</string>
 
-    <!-- 快捷按钮与长按菜单 -->
-    <string name="chat_regenerate_cd">重新生成</string>
-    <string name="chat_translate_action">翻译</string>
-    <string name="chat_translate_to_cd">翻译为 %1$s</string>
-    <string name="chat_delegate_action">委托给助手</string>
-    <string name="chat_tts_stop">停止朗读</string>
-    <string name="chat_tts_play">朗读</string>
-    <string name="chat_favorite_remove">取消收藏</string>
-    <string name="chat_favorite_add">收藏</string>
-    <string name="chat_fork_action">分叉对话</string>
-    <string name="chat_share_action">分享对话</string>
-    <!-- v1.0.47 P6: Agent Mode 增强提示 -->
-    <string name="chat_agent_weak_tool_title">工具调用降级提示</string>
-    <string name="chat_agent_hint_dismiss">知道了</string>
-    <string name="chat_agent_session_locked">Agent 模式已锁定会话</string>
-    <string name="chat_delete_message">删除消息</string>
-    <string name="chat_select_messages">选择</string>
-    <string name="chat_delete_message_confirm">此操作不可撤销，确认删除这条消息？</string>
-    <!-- U-16: 删除范围选择(仅此条 / 连同后续) -->
-    <string name="chat_delete_scope_only">仅删除此消息（含其回复）</string>
-    <string name="chat_delete_scope_with_following">删除此消息及其后全部消息</string>
-    <string name="chat_translate_in_progress">翻译中…</string>
+    <!-- Quick buttons and long-press menu -->
+    <string name="chat_regenerate_cd">Regenerate</string>
+    <string name="chat_translate_action">Translate</string>
+    <string name="chat_translate_to_cd">Translate to %1$s</string>
+    <string name="chat_delegate_action">Delegate to Assistant</string>
+    <string name="chat_tts_stop">Stop Reading</string>
+    <string name="chat_tts_play">Read Aloud</string>
+    <string name="chat_favorite_remove">Remove Favorite</string>
+    <string name="chat_favorite_add">Favorite</string>
+    <string name="chat_fork_action">Fork Chat</string>
+    <string name="chat_share_action">Share Chat</string>
+    <string name="chat_agent_weak_tool_title">Tool Call Degraded</string>
+    <string name="chat_agent_hint_dismiss">Got it</string>
+    <string name="chat_agent_session_locked">Session locked in Agent Mode</string>
+    <string name="chat_delete_message">Delete Message</string>
+    <string name="chat_select_messages">Select</string>
+    <string name="chat_delete_message_confirm">This action cannot be undone. Delete this message?</string>
+    <!-- U-16: Delete scope selection -->
+    <string name="chat_delete_scope_only">Delete only this message (and its replies)</string>
+    <string name="chat_delete_scope_with_following">Delete this message and all following messages</string>
+    <string name="chat_translate_in_progress">Translating…</string>
 
-    <!-- 加载与工具调用 -->
-    <string name="chat_loading_thinking">思考中</string>
-    <string name="chat_tool_params">参数</string>
-    <string name="chat_tool_result">结果</string>
-    <string name="chat_tool_copy">复制</string>
-    <string name="chat_tool_result_expand">展开全文（%1$d 字符）</string>
-    <string name="chat_tool_result_collapse">收起全文</string>
-    <string name="chat_tool_hidden_records">已隐藏较早的 %1$d 条记录</string>
-    <string name="chat_tool_latest">最近一次：%1$s</string>
-    <string name="chat_tool_latest_empty">最近一次：空结果</string>
-    <string name="chat_tool_stats">成功 %1$d · 失败 %2$d · 共 %3$d</string>
-    <string name="chat_tool_stats_running">成功 %1$d · 失败 %2$d · 共 %3$d · 进行中 %4$d</string>
-    <string name="tool_approval_countdown">剩余 %1$d 秒</string>
-    <string name="tool_approval_countdown_paused">已暂停</string>
-    <string name="tool_approval_pending_n">%1$d 项待审批</string>
-    <string name="tool_approval_timeout_hint">工具 %1$s 审批超时，已自动拒绝</string>
-    <string name="chat_pending_tools_discard_confirm_title">丢弃未完成的工具调用？</string>
-    <string name="chat_pending_tools_discard_confirm_msg">丢弃后这些工具调用将不再执行，且无法恢复。</string>
+    <!-- Loading and tool calls -->
+    <string name="chat_loading_thinking">Thinking</string>
+    <string name="chat_tool_params">Parameters</string>
+    <string name="chat_tool_result">Result</string>
 
-    <!-- ===== InputBar 输入栏 ===== -->
-    <!-- 顶部开关 -->
-    <string name="chat_web_search_cd">联网搜索</string>
-    <string name="chat_deep_thinking_cd">深度思考</string>
-    <!-- v1.94: 工具调用动态胶囊 -->
-    <string name="chat_tool_calls_title">工具调用记录</string>
-    <string name="chat_tool_calls_empty">暂无工具调用</string>
-    <string name="chat_tool_calls_chip">工具 %1$d/%2$d</string>
-    <string name="chat_tool_runs_title">任务谱系</string>
-    <string name="chat_tool_run_item_title">任务 %1$d</string>
-    <string name="chat_tool_run_steps">%1$d 步</string>
+    <!-- ===== InputBar ===== -->
+    <!-- Top toggles -->
+    <string name="chat_web_search_cd">Web Search</string>
+    <string name="chat_deep_thinking_cd">Deep Thinking</string>
+    <!-- v1.94: Tool call dynamic capsule -->
+    <string name="chat_tool_calls_title">Tool Call History</string>
+    <string name="chat_tool_calls_empty">No tool calls</string>
 
-    <!-- 断点续传(工具中断恢复)Banner -->
-    <string name="chat_pending_tools_banner_title">上次有 %1$d 个工具调用未完成</string>
-    <string name="chat_pending_tools_banner_subtitle">流式被中断，是否恢复执行？</string>
-    <string name="chat_pending_tools_resume">恢复执行</string>
-    <string name="chat_pending_tools_discard">丢弃</string>
-    <string name="chat_pending_tools_cd">未完成工具调用恢复提示</string>
+    <!-- Resume interrupted tool calls banner -->
+    <string name="chat_pending_tools_banner_title">%1$d tool call(s) unfinished last time</string>
+    <string name="chat_pending_tools_banner_subtitle">Streaming was interrupted. Resume?</string>
+    <string name="chat_pending_tools_resume">Resume</string>
+    <string name="chat_pending_tools_discard">Discard</string>
+    <string name="chat_pending_tools_cd">Pending tool calls recovery banner</string>
 
-    <!-- 快捷消息与图片 -->
-    <string name="chat_unnamed">未命名</string>
-    <string name="chat_pending_image_cd">待发送图片 %1$d</string>
-    <string name="chat_remove_image_cd">移除图片</string>
-    <!-- v1.136 T10: 待发送文档芯片 -->
-    <string name="chat_remove_document_cd">移除文档</string>
+    <!-- Quick messages and images -->
+    <string name="chat_unnamed">Unnamed</string>
+    <string name="chat_pending_image_cd">Pending image %1$d</string>
+    <string name="chat_remove_image_cd">Remove Image</string>
+    <!-- v1.136 T10: Pending document chip -->
+    <string name="chat_remove_document_cd">Remove Document</string>
 
-    <!-- 引用回复 -->
+    <!-- Quote reply -->
 
-    <!-- 工具菜单 -->
-    <string name="chat_tools_cd">工具</string>
-    <string name="chat_tools_pick_content">选择要发送的内容</string>
-    <string name="chat_tool_camera">摄像头</string>
-    <string name="chat_tool_photo">照片</string>
-    <!-- 视频输入支持:工具菜单卡片标签 -->
-    <string name="chat_gallery_image_cd">相册图片</string>
-    <string name="chat_gallery_cd">相册</string>
-    <string name="chat_authorize_gallery">授权访问相册</string>
-    <string name="chat_tool_attachment">附件</string>
-    <string name="chat_tool_knowledge">引用知识库</string>
-    <string name="chat_tool_knowledge_subtitle">@mention 文档</string>
-    <!-- v2.4.6: 消息下方译文可展开块 -->
-    <string name="chat_translation_block_title">翻译</string>
-    <string name="chat_tool_prompt_template_subtitle">从模板库选择场景提示词</string>
-    <string name="chat_tool_skills">技能</string>
-    <string name="chat_tool_skills_subtitle">管理和调用已启用的技能</string>
-    <string name="chat_tool_draw_mode">绘图模式</string>
-    <string name="chat_tool_draw_mode_subtitle_on">已开启 · 输入描述生成图片</string>
-    <string name="chat_tool_draw_mode_subtitle">输入描述生成图片</string>
-    <string name="chat_tool_delegate_subtitle">选择子助手协作处理当前消息</string>
-    <string name="chat_tool_restart_context">重启上下文</string>
-    <string name="chat_tool_restart_context_subtitle">清空当前对话，让 Agent 从头开始</string>
+    <!-- Tool menu -->
+    <string name="chat_tools_cd">Tools</string>
+    <string name="chat_tools_pick_content">Choose content to send</string>
+    <string name="chat_tool_camera">Camera</string>
+    <string name="chat_tool_photo">Photos</string>
+    <!-- Video input: tool menu card label -->
+    <string name="chat_gallery_image_cd">Gallery image</string>
+    <string name="chat_gallery_cd">Gallery</string>
+    <string name="chat_authorize_gallery">Allow Gallery Access</string>
+    <string name="chat_tool_attachment">Attachment</string>
+    <string name="chat_tool_knowledge">Reference Knowledge Base</string>
+    <string name="chat_tool_knowledge_subtitle">@mention documents</string>
+    <string name="chat_tool_prompt_template_subtitle">Pick a scene prompt from templates</string>
+    <string name="chat_tool_skills">Skills</string>
+    <string name="chat_tool_skills_subtitle">Manage and call enabled skills</string>
+    <string name="chat_tool_draw_mode">Draw Mode</string>
+    <string name="chat_tool_draw_mode_subtitle_on">On · Describe an image to generate</string>
+    <string name="chat_tool_draw_mode_subtitle">Describe an image to generate</string>
+    <string name="chat_tool_delegate_subtitle">Pick a sub-assistant to handle this message</string>
+    <string name="chat_tool_restart_context">Restart Context</string>
+    <string name="chat_tool_restart_context_subtitle">Clear current chat and let the Agent start over</string>
 
-    <!-- F-3: 长按加号展开/收起快捷工具栏 -->
-    <string name="chat_quickbar_hint_on">快捷工具栏已展开</string>
-    <string name="chat_quickbar_hint_off">快捷工具栏已收起</string>
-    <!-- F-4: /pin 消息级置顶 -->
-    <string name="slash_command_pin_message_done">已置顶最后一条消息</string>
-    <!-- F-4/F-5: /reset 真正重置 / 过程态反馈 -->
-    <string name="slash_command_reset_cleared">已重置当前对话</string>
-    <string name="slash_command_reset_starting">正在重置对话…</string>
-    <string name="slash_command_compact_starting">正在压缩对话…</string>
-    <!-- F-2: 跨会话转发 -->
-    <string name="chat_forward_action">转发到会话</string>
-    <string name="chat_forward_dialog_title">转发到…</string>
-    <string name="chat_forward_done">已转发到「%1$s」</string>
-    <string name="chat_forward_no_session">暂无可转发的会话</string>
-    <!-- F-41: 消息气泡圆角设置 -->
-    <string name="settings_bubble_radius_title">消息圆角</string>
-    <string name="settings_bubble_radius_subtitle">设置消息气泡的圆角档位</string>
-    <string name="settings_bubble_radius_none">方形</string>
-    <string name="settings_bubble_radius_small">圆角</string>
-    <string name="settings_bubble_radius_large">大圆角</string>
-    <string name="settings_bubble_radius_pill">胶囊</string>
+    <!-- F-3: Long-press plus expand/collapse quick toolbar -->
+    <string name="chat_quickbar_hint_on">Quick toolbar expanded</string>
+    <string name="chat_quickbar_hint_off">Quick toolbar collapsed</string>
+    <!-- F-4: /pin per-message pin -->
+    <string name="slash_command_pin_message_done">Pinned last message</string>
+    <!-- F-4/F-5: /reset real reset + process feedback -->
+    <string name="slash_command_reset_cleared">Current conversation reset</string>
+    <string name="slash_command_reset_starting">Resetting conversation…</string>
+    <string name="slash_command_compact_starting">Compressing conversation…</string>
+    <!-- F-2: Cross-session forwarding -->
+    <string name="chat_forward_action">Forward to session</string>
+    <string name="chat_forward_dialog_title">Forward to…</string>
 
-    <!-- 输入框与按钮 -->
-    <string name="chat_placeholder_draw">描述要生成的图片…</string>
-    <string name="chat_placeholder_send">回复 %1$s…</string>
-    <string name="chat_expand_input_cd">全屏编辑</string>
-    <string name="chat_expand_input_title">编辑消息</string>
-    <!-- v1.0.47 P5-3: Token 计数菜单 -->
-    <string name="chat_token_menu_title">Token 估算</string>
-    <string name="chat_token_input">当前输入</string>
-    <string name="chat_token_history">历史消息</string>
-    <string name="chat_token_context_window">上下文窗口</string>
-    <string name="chat_token_remaining">可用剩余</string>
-    <string name="chat_token_usage">上下文占用</string>
-    <string name="chat_token_disclaimer">基于 cl100k_base 的近似估算，仅供参考。</string>
-    <!-- v2.5.3 P4-3: 成本粗估（USD） -->
-    <string name="chat_token_estimated_cost">历史成本约 $%1$s（按当前模型定价粗估）</string>
-    <!-- v1.0.47 P5-2: 长文本粘贴转文件 -->
-    <string name="chat_paste_as_file_title">检测到大段文本</string>
-    <string name="chat_paste_as_file_msg">粘贴内容共 %1$d 字，是否作为文件附加？（避免输入框过长）</string>
-    <string name="chat_paste_as_file_attach">作为文件附加</string>
-    <string name="chat_paste_as_file_paste">直接粘贴</string>
-    <!-- 长按输入栏动作菜单 -->
-    <string name="chat_input_action_fullscreen">全屏输入模式</string>
-    <string name="chat_stop_generation_cd">停止生成</string>
-    <string name="chat_interject_cd">插话：打断当前生成并发送</string>
-    <string name="command_palette_placeholder">搜索会话和消息，或输入 / 查看命令</string>
-    <string name="command_palette_commands">命令</string>
-    <string name="command_palette_sessions">会话</string>
-    <string name="command_palette_messages">消息</string>
-    <string name="command_palette_new_chat">新建对话</string>
-    <string name="command_palette_settings">打开设置</string>
-    <string name="command_palette_full_search">完整搜索</string>
-    <string name="command_palette_no_results">无匹配结果</string>
-    <string name="command_palette_open_session">打开会话</string>
-    <string name="command_palette_clear">清空</string>
-    <string name="command_palette_empty_hint">输入关键词搜索，或输入 / 查看命令</string>
-    <string name="chat_recording_start_failed">录音启动失败，请检查权限或模型配置</string>
-    <string name="chat_recognizing_cd">识别中</string>
-    <string name="chat_recording_cd">录音中</string>
-    <string name="chat_hold_to_record_cd">长按录音</string>
-    <string name="chat_cancelled">已取消</string>
-    <!-- v1.95: 系统语音识别首次使用提示 -->
-    <string name="chat_asr_tip_title">语音识别提示</string>
-    <string name="chat_asr_tip_message">系统语音识别每次会弹出系统对话框。如需应用内录音体验，可在设置→语音识别中配置 DashScope 或 Step。</string>
-    <string name="chat_asr_tip_confirm">继续</string>
+    <!-- Input field and buttons -->
+    <string name="chat_placeholder_draw">Describe an image to generate…</string>
+    <string name="chat_placeholder_send">Reply to %1$s…</string>
+    <string name="chat_expand_input_cd">Full-screen edit</string>
+    <string name="chat_expand_input_title">Edit Message</string>
+    <!-- v1.0.47 P5-3: Token count menu -->
+    <string name="chat_token_menu_title">Token Estimate</string>
+    <string name="chat_token_input">Current input</string>
+    <string name="chat_token_history">History messages</string>
+    <string name="chat_token_context_window">Context window</string>
+    <string name="chat_token_remaining">Available</string>
+    <string name="chat_token_usage">Context usage</string>
+    <string name="chat_token_disclaimer">Approximate estimate based on cl100k_base, for reference only.</string>
+    <!-- v2.5.3 P4-3: rough cost estimate (USD) -->
+    <string name="chat_token_estimated_cost">Estimated historical cost: $%1$s (rough estimate from current model pricing)</string>
+    <!-- v1.0.47 P5-2: Paste long text as file -->
+    <string name="chat_paste_as_file_title">Large text detected</string>
+    <string name="chat_paste_as_file_msg">Pasted content is %1$d chars. Attach as a file? (keeps the input box short)</string>
+    <string name="chat_paste_as_file_attach">Attach as file</string>
+    <string name="chat_paste_as_file_paste">Paste directly</string>
+    <!-- Long-press input bar action menu -->
+    <string name="chat_input_action_fullscreen">Full-screen Input Mode</string>
+    <string name="chat_stop_generation_cd">Stop Generating</string>
+    <string name="chat_interject_cd">Interject: interrupt current generation and send</string>
+    <string name="command_palette_placeholder">Search conversations and messages, or type / for commands</string>
+    <string name="command_palette_commands">Commands</string>
+    <string name="command_palette_sessions">Conversations</string>
+    <string name="command_palette_messages">Messages</string>
+    <string name="command_palette_new_chat">New chat</string>
+    <string name="command_palette_settings">Open settings</string>
+    <string name="command_palette_full_search">Full search</string>
+    <string name="command_palette_no_results">No matching results</string>
+    <string name="command_palette_open_session">Open conversation</string>
+    <string name="command_palette_clear">Clear</string>
+    <string name="command_palette_empty_hint">Type to search, or type / for commands</string>
+    <string name="chat_recording_start_failed">Failed to start recording. Check permissions or model config.</string>
+    <string name="chat_recognizing_cd">Recognizing</string>
+    <string name="chat_recording_cd">Recording</string>
+    <string name="chat_hold_to_record_cd">Hold to Record</string>
+    <string name="chat_cancelled">Cancelled</string>
+    <!-- v1.95: System speech recognition first-use tip -->
+    <string name="chat_asr_tip_title">Speech Recognition Tip</string>
+    <string name="chat_asr_tip_message">System speech recognition shows a system dialog each time. For in-app recording, configure DashScope or Step in Settings → Speech Recognition.</string>
+    <string name="chat_asr_tip_confirm">Continue</string>
 
-    <!-- 绘图参数面板 -->
-    <string name="chat_image_too_large">图片过大或无法读取</string>
-    <string name="chat_ref_image_load_failed">参考图加载失败： %1$s</string>
-    <string name="chat_ref_image_compressed">参考图已压缩： %1$s</string>
-    <!-- 视频输入支持:无障碍描述 + 错误提示 -->
-    <string name="chat_pending_video_cd">待发送视频附件</string>
-    <string name="chat_remove_video_cd">移除视频</string>
-    <string name="chat_user_video_cd">用户发送的视频</string>
-    <string name="chat_video_open_failed">无法打开视频： %1$s</string>
-    <string name="chat_draw_params">绘图参数</string>
-    <string name="chat_ref_image_add">+ 参考图</string>
-    <string name="chat_ref_image_not_supported">当前模型不支持参考图</string>
-    <string name="chat_ref_image_cd">参考图</string>
-    <string name="chat_ref_image_clear_cd">清除参考图</string>
-    <string name="chat_quality_standard">标准</string>
-    <string name="chat_quality_hd">高清</string>
-    <string name="chat_quality_high">高</string>
-    <string name="chat_quality_medium">中</string>
-    <string name="chat_quality_low">低</string>
-    <string name="chat_quality_auto">自动</string>
-    <string name="chat_style_vivid">生动</string>
-    <string name="chat_style_natural">自然</string>
+    <!-- Draw params panel -->
+    <string name="chat_image_too_large">Image too large or unreadable</string>
+    <string name="chat_ref_image_load_failed">Reference image load failed: %1$s</string>
+    <string name="chat_ref_image_compressed">Reference image compressed: %1$s</string>
+    <!-- Video input: a11y descriptions + error messages -->
+    <string name="chat_pending_video_cd">Pending video attachment</string>
+    <string name="chat_remove_video_cd">Remove video</string>
+    <string name="chat_user_video_cd">Video sent by user</string>
+    <string name="chat_video_open_failed">Unable to open video: %1$s</string>
+    <string name="chat_draw_params">Draw Parameters</string>
+    <string name="chat_ref_image_add">+ Reference Image</string>
+    <string name="chat_ref_image_not_supported">Reference image not supported by current model</string>
+    <string name="chat_ref_image_cd">Reference Image</string>
+    <string name="chat_ref_image_clear_cd">Clear Reference Image</string>
+    <string name="chat_quality_standard">Standard</string>
+    <string name="chat_quality_hd">HD</string>
+    <string name="chat_quality_high">High</string>
+    <string name="chat_quality_medium">Medium</string>
+    <string name="chat_quality_low">Low</string>
+    <string name="chat_quality_auto">Auto</string>
+    <string name="chat_style_vivid">Vivid</string>
+    <string name="chat_style_natural">Natural</string>
 
-    <!-- ===== ChatListScreen 对话列表页 ===== -->
-    <!-- 大方块入口 -->
-    <string name="chat_list_scheduled_tasks">定时任务</string>
-    <string name="chat_list_quick_notes">快速记录</string>
-    <string name="chat_list_quick_translate">快速翻译</string>
+    <!-- ===== ChatListScreen ===== -->
+    <!-- Big entry cards -->
+    <string name="chat_list_scheduled_tasks">Scheduled Tasks</string>
+    <string name="chat_list_quick_notes">Quick Notes</string>
+    <string name="chat_list_quick_translate">Quick Translate</string>
 
-    <!-- 分类筛选 -->
-    <string name="chat_list_filter_archived">归档</string>
+    <!-- Filter cards -->
+    <string name="chat_list_filter_archived">Archived</string>
 
-    <!-- 空状态 -->
-    <string name="chat_list_empty_archived">还没有归档的任务</string>
-    <string name="chat_list_empty_archived_sub">长按会话可选择归档</string>
+    <!-- Empty states -->
+    <string name="chat_list_empty_archived">No archived tasks yet</string>
+    <string name="chat_list_empty_archived_sub">Long-press a chat to archive it</string>
 
-    <!-- 分组标题 -->
-    <string name="chat_list_section_recent">最近</string>
-    <string name="chat_list_section_pinned">已置顶</string>
-    <string name="chat_list_section_folders">文件夹</string>
-    <string name="chat_list_section_knowledge">资料</string>
-    <!-- v2.x: 回顾条 + 伙伴横排 -->
-    <string name="chat_list_recall_format">上次和 %1$s 聊到「%2$s」</string>
-    <string name="chat_list_add_partner">添加伙伴</string>
-    <string name="chat_list_new_folder">新建文件夹</string>
+    <!-- Section titles -->
+    <string name="chat_list_section_recent">Recent</string>
+    <string name="chat_list_section_pinned">Pinned</string>
+    <string name="chat_list_section_folders">Folders</string>
+    <string name="chat_list_section_knowledge">Library</string>
+    <!-- v2.x: recall bar + partners row -->
+    <string name="chat_list_recall_format">Last chat with %1$s: "%2$s"</string>
+    <string name="chat_list_add_partner">Add partner</string>
+    <string name="chat_list_new_folder">New Folder</string>
 
-    <!-- 任务首页 -->
-    <string name="chat_list_input_hint">输入任何想法…</string>
-    <string name="chat_list_send">发送</string>
-    <string name="chat_list_no_recent_title">暂无会话</string>
-    <string name="chat_list_no_recent_subtitle">点击下方 + 号开始新对话</string>
-    <string name="chat_list_knowledge_title">知识库</string>
-    <string name="chat_list_knowledge_count">%1$d 个文档</string>
-    <string name="chat_list_knowledge_empty">点击添加文档</string>
+    <!-- Task home -->
+    <string name="chat_list_input_hint">Enter any idea…</string>
+    <string name="chat_list_send">Send</string>
+    <string name="chat_list_no_recent_title">No chats yet</string>
+    <string name="chat_list_no_recent_subtitle">Tap the + button below to start a new chat</string>
+    <string name="chat_list_knowledge_title">Knowledge Base</string>
+    <string name="chat_list_knowledge_count">%1$d documents</string>
+    <string name="chat_list_knowledge_empty">Tap to add documents</string>
 
-    <!-- 底部按钮与对话框 -->
-    <string name="chat_list_new_task">新任务</string>
-    <string name="chat_list_folder_name_placeholder">文件夹名称</string>
-    <string name="chat_list_create">创建</string>
+    <!-- Bottom button and dialogs -->
+    <string name="chat_list_new_task">New Task</string>
+    <string name="chat_list_folder_name_placeholder">Folder name</string>
+    <string name="chat_list_create">Create</string>
 
-    <!-- 会话长按菜单 -->
-    <string name="chat_list_pin">置顶</string>
-    <string name="chat_list_unpin">取消置顶</string>
-    <string name="chat_list_archive">归档</string>
-    <string name="chat_list_move_ungrouped">移到未分组</string>
-    <string name="chat_list_move_to">移到： %1$s</string>
-    <string name="chat_list_rename">重命名</string>
-    <string name="chat_list_unarchive">取消归档</string>
+    <!-- Session long-press menu -->
+    <string name="chat_list_pin">Pin</string>
+    <string name="chat_list_unpin">Unpin</string>
+    <string name="chat_list_archive">Archive</string>
+    <string name="chat_list_move_ungrouped">Move to Ungrouped</string>
+    <string name="chat_list_move_to">Move to: %1$s</string>
+    <string name="chat_list_rename">Rename</string>
+    <string name="chat_list_unarchive">Unarchive</string>
 
-    <!-- 会话重命名/删除对话框 -->
-    <string name="chat_list_rename_session_title">重命名会话</string>
-    <string name="chat_list_confirm">确定</string>
-    <string name="chat_list_delete_session_title">删除会话</string>
-    <string name="chat_list_delete_session_confirm">此操作不可撤销，确认删除「%1$s」及其所有消息？</string>
-    <string name="chat_list_deleted_toast">已删除</string>
+    <!-- Session rename/delete dialogs -->
+    <string name="chat_list_rename_session_title">Rename Chat</string>
+    <string name="chat_list_confirm">OK</string>
+    <string name="chat_list_delete_session_title">Delete Chat</string>
+    <string name="chat_list_delete_session_confirm">This action cannot be undone. Delete \"%1$s\" and all its messages?</string>
+    <string name="chat_list_deleted_toast">Deleted</string>
 
-    <!-- 文件夹重命名/删除对话框 -->
-    <string name="chat_list_delete_folder_title">删除文件夹</string>
-    <string name="chat_list_rename_folder_title">重命名文件夹</string>
-    <string name="chat_list_delete_folder_confirm">删除文件夹「%1$s」后，其下会话将移到未分组。确认删除？</string>
+    <!-- Folder rename/delete dialogs -->
+    <string name="chat_list_delete_folder_title">Delete Folder</string>
+    <string name="chat_list_rename_folder_title">Rename Folder</string>
+    <string name="chat_list_delete_folder_confirm">Deleting folder \"%1$s\" will move its chats to Ungrouped. Confirm delete?</string>
 
-    <!-- v5: 对话分叉 -->
+    <!-- v5: chat fork -->
 
-    <!-- ===== v1.95: 表情包库 ===== -->
-    <!-- ChatSettingsPage 表情包库分区 -->
-    <string name="settings_chat_sticker_section">表情包库</string>
-    <string name="settings_sticker_enabled">启用表情包</string>
-    <string name="settings_sticker_enabled_subtitle">允许助手在回复时发送表情包</string>
-    <string name="settings_sticker_frequency">发送频率</string>
-    <string name="settings_sticker_frequency_subtitle">助手会在语境合适时自然带出表情包</string>
-    <string name="settings_sticker_freq_occasional">偶尔</string>
-    <string name="settings_sticker_freq_normal">正常</string>
-    <string name="settings_sticker_freq_frequent">频繁</string>
-    <string name="settings_sticker_upload_zip">导入压缩包</string>
-    <string name="settings_sticker_upload_zip_subtitle">选取 zip 文件，按文件夹结构自动分类</string>
-    <string name="settings_sticker_imported">已导入 %1$d 个表情包</string>
-    <string name="settings_sticker_import_failed">导入失败：%1$s</string>
-    <string name="settings_sticker_empty_title">还没有表情包</string>
-    <string name="settings_sticker_empty_subtitle">点击上方"导入压缩包"添加 zip 文件</string>
-    <string name="settings_sticker_delete_confirm">删除该表情包？</string>
-    <string name="settings_sticker_category_all">全部</string>
-    <!-- 前端修复 (i18n-3.x): 表情包批量删除/清空 i18n -->
-    <string name="settings_sticker_batch_done">完成</string>
-    <string name="settings_sticker_batch_delete">批量删除</string>
-    <string name="settings_sticker_delete_selected">删除选中的 %1$d 项</string>
-    <string name="settings_sticker_batch_confirm_title">批量删除确认</string>
-    <string name="settings_sticker_batch_confirm_content">确定删除选中的 %1$d 个表情包？此操作不可撤销。</string>
-    <string name="settings_sticker_deleted_toast">已删除 %1$d 个表情包</string>
-    <string name="settings_sticker_clear_all_title">清空全部表情包</string>
-    <string name="settings_sticker_clear_all_confirm_content">确定删除所有表情包？此操作不可撤销。</string>
-    <string name="settings_sticker_cleared_toast">已清空 %1$d 个表情包</string>
-    <string name="settings_sticker_import_progress">%1$s… %2$d 个文件</string>
+    <!-- ===== v1.95: Sticker Library ===== -->
+    <!-- ChatSettingsPage sticker library section -->
+    <string name="settings_chat_sticker_section">Sticker Library</string>
+    <string name="settings_sticker_enabled">Enable Stickers</string>
+    <string name="settings_sticker_enabled_subtitle">Allow the assistant to send stickers in replies</string>
+    <string name="settings_sticker_frequency">Frequency</string>
+    <string name="settings_sticker_frequency_subtitle">The assistant attaches stickers naturally when the context fits</string>
+    <string name="settings_sticker_freq_occasional">Occasionally</string>
+    <string name="settings_sticker_freq_normal">Normal</string>
+    <string name="settings_sticker_freq_frequent">Frequent</string>
+    <string name="settings_sticker_upload_zip">Import ZIP</string>
+    <string name="settings_sticker_upload_zip_subtitle">Pick a ZIP file; categories are derived from folder structure</string>
+    <string name="settings_sticker_imported">Imported %1$d stickers</string>
+    <string name="settings_sticker_import_failed">Import failed: %1$s</string>
+    <string name="settings_sticker_empty_title">No stickers yet</string>
+    <string name="settings_sticker_empty_subtitle">Tap \"Import ZIP\" above to add a ZIP file</string>
+    <string name="settings_sticker_delete_confirm">Delete this sticker?</string>
+    <string name="settings_sticker_category_all">All</string>
+    <!-- 前端修复 (i18n-3.x): Sticker batch delete / clear i18n -->
+    <string name="settings_sticker_batch_done">Done</string>
+    <string name="settings_sticker_batch_delete">Batch delete</string>
+    <string name="settings_sticker_delete_selected" tools:ignore="PluralsCandidate">Delete %1$d selected</string>
+    <string name="settings_sticker_batch_confirm_title">Confirm batch delete</string>
+    <string name="settings_sticker_batch_confirm_content" tools:ignore="PluralsCandidate">Delete %1$d selected stickers? This cannot be undone.</string>
+    <string name="settings_sticker_deleted_toast" tools:ignore="PluralsCandidate">Deleted %1$d stickers</string>
+    <string name="settings_sticker_clear_all_title">Clear all stickers</string>
+    <string name="settings_sticker_clear_all_confirm_content">Delete all stickers? This cannot be undone.</string>
+    <string name="settings_sticker_cleared_toast" tools:ignore="PluralsCandidate">Cleared %1$d stickers</string>
+    <string name="settings_sticker_import_progress" tools:ignore="PluralsCandidate">%1$s… %2$d files</string>
 
-    <!-- SkillExecutor 表情包工具反馈 -->
-    <string name="skill_sticker_not_configured">表情包库未配置</string>
-    <string name="skill_sticker_not_found">未找到 ID 为 %1$s 的表情包</string>
-    <string name="skill_sticker_sent">已发送表情包：%1$s</string>
-    <string name="skill_sticker_list_empty">表情包库为空</string>
+    <!-- SkillExecutor sticker tool feedback -->
+    <string name="skill_sticker_not_configured">Sticker library is not configured</string>
+    <string name="skill_sticker_not_found">Sticker with ID %1$s not found</string>
+    <string name="skill_sticker_sent">Sticker sent: %1$s</string>
+    <string name="skill_sticker_list_empty">Sticker library is empty</string>
 
-    <!-- v1.97: 斜杠命令 -->
-    <string name="slash_command_new">/new 新建会话</string>
-    <string name="slash_command_compact">/compact 压缩会话历史</string>
-    <string name="slash_command_reset">/reset 重置上下文</string>
-    <string name="slash_command_pin">/pin 置顶/取消置顶</string>
-    <string name="slash_command_archive">/archive 归档当前会话</string>
-    <string name="slash_command_unknown">未知命令： %1$s</string>
-    <string name="slash_command_new_done">已新建会话</string>
-    <string name="slash_command_reset_busy">生成中无法重置，请先停止生成</string>
-    <string name="slash_command_archive_done">已归档会话</string>
+    <!-- v1.97: Slash commands -->
+    <string name="slash_command_new">/new New session</string>
+    <string name="slash_command_compact">/compact Compress session history</string>
+    <string name="slash_command_reset">/reset Reset context</string>
+    <string name="slash_command_pin">/pin Toggle pin</string>
+    <string name="slash_command_archive">/archive Archive session</string>
+    <string name="slash_command_unknown">Unknown command: %1$s</string>
+    <string name="slash_command_new_done">New session created</string>
+    <string name="slash_command_reset_busy">Cannot reset while generating, stop first</string>
+    <string name="slash_command_archive_done">Session archived</string>
     <string name="chat_agent_tab_title">Agent</string>
+
+    <!-- Telegram-style top-bar three-dot menu -->
+    <string name="chat_top_menu_cd">More actions</string>
+    <string name="chat_select_provider">Select provider</string>
+    <string name="chat_switch_assistant">Switch assistant</string>
+    <string name="chat_proactive_toggle">Proactive messages</string>
+    <string name="chat_tool_run_summary">Ran %1$d operations</string>
+    <string name="chat_tool_card_open">View card</string>
+    <string name="chat_update_compress">Compress context</string>
+    <!-- Empty-state guide / conversation memory -->
+    <string name="chat_ignore_memory_option">This conversation will not reference memory</string>
     <!-- A5: 消息信息弹层(模型/耗时/Token 用量) -->
-    <string name="msg_info_title">消息信息</string>
-    <string name="msg_info_model">模型</string>
-    <string name="msg_info_time">时间</string>
-    <string name="msg_info_duration">生成耗时</string>
-    <string name="msg_info_tokens_title">Token 用量</string>
-    <string name="msg_info_prompt">输入 (prompt)</string>
-    <string name="msg_info_completion">输出 (completion)</string>
-    <string name="msg_info_reasoning">推理 (reasoning)</string>
-    <string name="msg_info_cached">缓存读取</string>
-    <string name="msg_info_cache_write">缓存写入</string>
-    <string name="msg_info_total">合计</string>
-    <string name="msg_info_measured">实测</string>
-    <string name="msg_info_estimated">估算</string>
-    <string name="msg_info_no_data">无生成数据</string>
-    <string name="msg_info_unknown">未知</string>
-    <string name="chat_debug_model_label">模型</string>
-    <string name="chat_debug_duration_label">耗时</string>
+    <string name="msg_info_title">Message info</string>
+    <string name="msg_info_model">Model</string>
+    <string name="msg_info_time">Time</string>
+    <string name="msg_info_duration">Generation time</string>
+    <string name="msg_info_tokens_title">Token usage</string>
+    <string name="msg_info_prompt">Input (prompt)</string>
+    <string name="msg_info_completion">Output (completion)</string>
+    <string name="msg_info_reasoning">Reasoning (reasoning)</string>
+    <string name="msg_info_cached">Cache read</string>
+    <string name="msg_info_cache_write">Cache write</string>
+    <string name="msg_info_total">Total</string>
+    <string name="msg_info_measured">Measured</string>
+    <string name="msg_info_estimated">Estimated</string>
+    <string name="msg_info_no_data">No generation data</string>
+    <string name="msg_info_unknown">Unknown</string>
+    <string name="chat_debug_model_label">Model</string>
+    <string name="chat_debug_duration_label">Duration</string>
     <string name="chat_debug_ttft_label">TTFT</string>
-    <string name="chat_debug_rate_label">速率</string>
-    <string name="chat_debug_chars_label">字符</string>
-    <string name="chat_debug_tool_calls_label">工具调用</string>
-    <string name="chat_debug_round_label">轮次</string>
+    <string name="chat_debug_rate_label">Rate</string>
+    <string name="chat_debug_chars_label">Characters</string>
+    <string name="chat_debug_tool_calls_label">Tool calls</string>
+    <string name="chat_debug_round_label">Rounds</string>
     <!-- A1: 会话内查找(聊天页就地查找框) -->
-    <string name="chat_find_in_conversation">会话内查找</string>
-    <!-- P1-1: 实时语音对话入口 -->
-    <string name="chat_find_placeholder">搜索当前会话</string>
-    <string name="chat_find_count">第 %1$d / %2$d 条</string>
-    <string name="chat_find_no_match">无匹配</string>
-    <string name="chat_find_prev">上一条</string>
-    <string name="chat_find_next">下一条</string>
-    <string name="chat_find_close">关闭查找</string>
+    <string name="chat_find_in_conversation">Find in conversation</string>
+    <string name="chat_find_placeholder">Search current conversation</string>
+    <string name="chat_find_count">%1$d / %2$d</string>
+    <string name="chat_find_no_match">No matches</string>
+    <string name="chat_find_prev">Previous</string>
+    <string name="chat_find_next">Next</string>
+    <string name="chat_find_close">Close search</string>
     <!-- C2: 会话列表即时搜索 -->
 
-    <string name="chat_pending_queue_title">待发送</string>
-    <string name="chat_pending_count">%1$d 条</string>
-    <string name="chat_pending_enqueue_cd">加入待发送队列</string>
-    <string name="chat_pending_send_cd">发送该条</string>
-    <string name="chat_pending_remove_cd">移除该条</string>
-    <string name="chat_pending_clear">清空队列</string>
-    <string name="chat_pending_image_only">[图片]</string>
-    <string name="chat_region_error">该区域加载失败，可点击重试</string>
-    <string name="settings_chat_gradient_title">渐变背景</string>
-    <string name="settings_chat_gradient_subtitle">双色线性渐变，未设置背景图时生效</string>
-    <string name="chat_reaction_title">表情回应</string>
-    <string name="chat_reaction_like">喜欢</string>
-    <string name="chat_reaction_love">爱心</string>
-    <string name="chat_reaction_laugh">大笑</string>
-    <string name="chat_reaction_wow">惊讶</string>
-    <string name="chat_reaction_sad">难过</string>
-    <string name="chat_reaction_angry">生气</string>
-    <string name="chat_reaction_clear">清除回应</string>
-    <string name="tool_running">正在执行 %1$s…</string>
-    <string name="chat_pending_queue_full">待发送队列已满（最多 8 条），请先清空或发送</string>
-    <string name="chat_pending_send_busy">正在生成回复，请先停止当前生成再发送队列消息</string>
-    <string name="chat_draft_save_failed">草稿保存失败，输入内容可能丢失</string>
-
-    <!-- ===== UI链路体验修复 ===== -->
-    <!-- U-1: 未配置模型服务常驻提示条(点击跳转模型设置) -->
-    <string name="chat_model_not_configured_hint">尚未配置模型服务，请先设置 API Key</string>
-    <!-- U-6: 手势操作一次性提示 -->
-    <!-- U-17: 语音服务尚未就绪(区别于权限缺失) -->
-    <string name="chat_voice_not_ready">语音尚未就绪，请稍后再试</string>
-    <string name="moment_mood_prefix">心情：%1$s</string>
-    <string name="moment_published">动态已发布</string>
-    <string name="moment_search_hint">搜索动态、发布者或类型</string>
-    <string name="moment_search_clear_cd">清空搜索</string>
-    <string name="moment_favorites_only_cd">只看收藏</string>
-    <string name="moment_generating">生成中…</string>
-    <string name="moment_generate_now">立即生成一条动态</string>
-    <string name="chat_token_output">输出</string>
-    <string name="chat_token_prompt">输入上下文</string>
+    <string name="chat_pending_queue_title">Pending sends</string>
+    <string name="chat_pending_count">%1$d items</string>
+    <string name="chat_pending_enqueue_cd">Add to pending queue</string>
+    <string name="chat_pending_send_cd">Send this item</string>
+    <string name="chat_pending_remove_cd">Remove this item</string>
+    <string name="chat_pending_clear">Clear queue</string>
+    <string name="chat_pending_image_only">[Image]</string>
+    <string name="chat_region_error">This section failed to load. Tap to retry</string>
+    <string name="settings_chat_gradient_title">Gradient background</string>
+    <string name="settings_chat_gradient_subtitle">Two-color linear gradient, applied when no background image is set</string>
+    <string name="chat_reaction_title">React</string>
+    <string name="chat_reaction_like">Like</string>
+    <string name="chat_reaction_love">Love</string>
+    <string name="chat_reaction_laugh">Laugh</string>
+    <string name="chat_reaction_wow">Wow</string>
+    <string name="chat_reaction_sad">Sad</string>
+    <string name="chat_reaction_angry">Angry</string>
+    <string name="chat_reaction_clear">Clear reaction</string>
+    <string name="tool_running">Running %1$s…</string>
+    <string name="chat_pending_queue_full">Pending queue is full (max 8). Clear or send first.</string>
+    <string name="chat_draft_save_failed">Failed to save draft. Your input may be lost.</string>
+    <string name="tool_approval_countdown">Remaining %1$d s</string>
+    <string name="tool_approval_countdown_paused">Paused</string>
+    <string name="tool_approval_pending_n">%1$d pending approval(s)</string>
+    <string name="chat_pending_tools_discard_confirm_title">Discard unfinished tool calls?</string>
+    <string name="chat_pending_tools_discard_confirm_msg">These unfinished tool calls will not be executed and cannot be recovered.</string>
+    <string name="moment_mood_prefix">Mood: %1$s</string>
+    <string name="moment_published">Moment published</string>
+    <string name="moment_search_hint">Search moments, authors or types</string>
+    <string name="moment_search_clear_cd">Clear search</string>
+    <string name="moment_favorites_only_cd">Favorites only</string>
+    <string name="moment_generating">Generating…</string>
+    <string name="moment_generate_now">Generate a moment now</string>
+    <!-- U-24: Moments "Generate now" result feedback -->
+    <string name="moment_generate_success">Moment generated</string>
+    <string name="moment_generate_no_material">No material to generate today</string>
+    <string name="moment_generate_failed">Generation failed: try again later</string>
+    <string name="settings_bubble_radius_large">Large radius</string>
+    <string name="settings_bubble_radius_none">Square</string>
+    <string name="settings_bubble_radius_pill">Pill</string>
+    <string name="settings_bubble_radius_small">Small radius</string>
+    <string name="settings_bubble_radius_subtitle">Set the rounding level of message bubbles</string>
+    <string name="settings_bubble_radius_title">Message rounding</string>
+    <string name="chat_forward_done">Forwarded to \"%1$s\"</string>
+    <string name="chat_forward_no_session">No sessions available to forward to</string>
+    <string name="chat_model_not_configured_hint">The model service is not configured yet. Set an API Key first.</string>
+    <string name="chat_pending_send_busy">A reply is being generated. Stop the current generation before sending queued messages.</string>
+    <string name="chat_tool_calls_chip">Tools %1$d/%2$d</string>
+    <string name="chat_tool_runs_title">Task lineage</string>
+    <string name="chat_tool_run_item_title">Task %1$d</string>
+    <string name="chat_tool_run_steps">%1$d steps</string>
+    <string name="chat_tool_copy">Copy</string>
+    <string name="chat_tool_hidden_records">%1$d earlier records hidden</string>
+    <string name="chat_tool_latest">Latest: %1$s</string>
+    <string name="chat_tool_latest_empty">Latest: empty result</string>
+    <string name="chat_tool_result_collapse">Collapse full text</string>
+    <string name="chat_tool_result_expand">Expand full text (%1$d characters)</string>
+    <string name="chat_tool_stats">%1$d succeeded · %2$d failed · %3$d total</string>
+    <string name="chat_tool_stats_running">%1$d succeeded · %2$d failed · %3$d total · %4$d running</string>
+    <string name="chat_voice_not_ready">Voice is not ready yet. Please try again later.</string>
+    <string name="tool_approval_timeout_hint">Approval for tool %1$s timed out and was automatically rejected</string>
+    <string name="chat_token_output">Output</string>
+    <string name="chat_token_prompt">Prompt</string>
 
     <!-- 上下文压缩分隔线（仅界面展示，不进模型上下文） -->
-    <string name="chat_context_divider_title">上下文已压缩</string>
-    <string name="chat_context_divider_title_count">上下文已压缩 · %1$d 条并入摘要</string>
-    <string name="chat_context_divider_hint_collapsed">点击展开原文</string>
-    <string name="chat_context_divider_hint_expanded">点击收起原文</string>
-    <string name="moment_comment_reply">回复</string>
-    <string name="diary_export_action">导出</string>
-    <string name="moment_visibility_title">谁可以看</string>
-    <string name="moment_visibility_public">公开</string>
-    <string name="diary_perspective_character">当前为角色视角：这是 TA 写的日记</string>
+    <string name="chat_context_divider_title">Context compressed</string>
+    <string name="chat_context_divider_title_count">Context compressed · %1$d messages summarized</string>
+    <string name="chat_context_divider_hint_collapsed">Tap to show original messages</string>
+    <string name="chat_context_divider_hint_expanded">Tap to hide original messages</string>
+    <string name="chat_translation_block_title">Translation</string>
+    <string name="moment_comment_reply">Reply</string>
+    <string name="diary_export_action">Export</string>
+    <string name="moment_visibility_title">Visible to</string>
+    <string name="moment_visibility_public">Everyone</string>
+    <string name="diary_perspective_character">In-character view: this diary is written by them</string>
     <!-- v2.6.7: 工具执行被全局暂停时的可见提示（否则用户只看到"已暂停"却不知为何） -->
-    <string name="chat_tool_paused_banner">工具执行已暂停，本轮不会真的调用工具。</string>
-    <string name="chat_tool_paused_banner_action">去设置</string>
-    <string name="settings_chat_show_assistant_name">显示助手名字</string>
-    <string name="settings_chat_show_assistant_name_subtitle">消息顶部显示是谁在说话，多助手场景更容易分辨</string>
-    <string name="chat_placeholder_simple">发消息…</string>
-    <string name="chat_ignore_memory_option_on">不参考记忆：已开启</string>
-    <string name="chat_ignore_memory_option_off">不参考记忆：未开启</string>
-    <string name="chat_process_tool_count">%1$d 个工具</string>
-    <string name="chat_process_thinking_count">%1$d 次思考</string>
-    <string name="chat_process_failed_count">%1$d 次未成功</string>
-    <string name="chat_process_thinking_done">思考完成</string>
-    <string name="chat_process_thinking_now">思考中…</string>
-    <string name="channel_chat_empty">还没有对话记录</string>
-    <string name="channel_chat_readonly_hint">这里只查看，回复由自动回复负责</string>
-    <string name="channel_last_failure">最近一次发送失败：%1$s</string>
-    <string name="chat_process_sheet_title">本次执行的步骤</string>
-    <string name="chat_process_sheet_empty">这一轮还没有步骤</string>
-    <string name="settings_screen_sticker_desc">导入和管理它用的表情包</string>
-    <string name="chat_process_delegating">正在委派给 %1$s…</string>
-    <string name="chat_process_running_command">正在运行命令</string>
-    <string name="chat_process_subagent_running">%1$d 个子任务在后台</string>
-    <string name="chat_process_subagent_section">后台子任务</string>
+    <string name="chat_tool_paused_banner">Tool execution is paused, so tools will not really run.</string>
+    <string name="chat_tool_paused_banner_action">Settings</string>
+    <string name="settings_chat_show_assistant_name">Show assistant name</string>
+    <string name="settings_chat_show_assistant_name_subtitle">Show who is speaking above each message; useful with several assistants</string>
+    <string name="chat_placeholder_simple">Message…</string>
+    <string name="chat_ignore_memory_option_on">Ignore memory: on</string>
+    <string name="chat_ignore_memory_option_off">Ignore memory: off</string>
+    <string name="chat_process_tool_count">%1$d tools</string>
+    <string name="chat_process_thinking_count">%1$d thoughts</string>
+    <string name="chat_process_failed_count">%1$d failed</string>
+    <string name="chat_process_thinking_done">Thought</string>
+    <string name="chat_process_thinking_now">Thinking…</string>
+    <string name="channel_chat_empty">No conversation yet</string>
+    <string name="channel_chat_readonly_hint">View only; replies are handled automatically</string>
+    <string name="channel_last_failure">Last send failed: %1$s</string>
+    <string name="chat_process_sheet_title">Steps in this run</string>
+    <string name="chat_process_sheet_empty">No steps yet in this run</string>
+    <string name="settings_screen_sticker_desc">Import and manage its stickers</string>
+    <string name="chat_process_delegating">Delegating to %1$s…</string>
+    <string name="chat_process_running_command">Running a command</string>
+    <string name="chat_process_subagent_running">%1$d subagent tasks running</string>
+    <string name="chat_process_subagent_section">Background subagents</string>
 </resources>

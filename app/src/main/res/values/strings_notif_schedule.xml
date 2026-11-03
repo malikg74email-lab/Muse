@@ -1,147 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+<resources>
     <!-- ===== notification ===== -->
-    <!-- 通知渠道名 -->
-    <string name="notif_channel_chat_completed_name">消息生成完成</string>
-    <string name="notif_channel_chat_completed_desc">后台流式生成完成时通知</string>
-    <string name="notif_channel_chat_live_update_name">生成进度</string>
-    <string name="notif_channel_chat_live_update_desc">流式生成中的实时进度通知</string>
-    <string name="notif_channel_web_server_name">Web 服务器</string>
-    <string name="notif_channel_web_server_desc">Web 服务器运行状态通知</string>
-    <string name="notif_channel_proactive_message_name">主动消息</string>
-    <string name="notif_channel_proactive_message_desc">助手主动给你发消息时的通知</string>
-    <!-- 通知标题/正文 -->
-    <string name="notif_chat_completed_title">回复完成 · %1$s</string>
-    <string name="notif_chat_pending_approval_title">MUSE 在等你批准</string>
-    <string name="notif_chat_pending_approval_text">%1$s 需要你的确认</string>
-    <string name="notif_proactive_message_title">%1$s 来消息了</string>
-    <string name="notif_proactive_action_dismiss">这次不用</string>
-    <string name="notif_live_progress_title">正在生成 · %1$s</string>
-    <string name="notif_live_progress_text">%1$d 字</string>
-    <string name="notif_web_server_title">muse Web 服务器运行中</string>
-    <string name="notif_web_server_text">端口 %1$d · LAN 设备可访问</string>
-    <!-- v1.133: 应用更新通知(复用 CHANNEL_CHAT_COMPLETED 渠道) -->
-    <string name="update_notif_title">发现新版本</string>
-    <string name="update_notif_text">%1$s 已发布，点击查看详情</string>
-    <!-- v1.133: 应用内更新 Banner -->
-    <string name="update_banner_published">%1$s 已发布</string>
-    <string name="update_banner_view_detail">查看详情</string>
-    <string name="update_banner_download_apk">下载 APK</string>
-    <string name="update_banner_close_cd">关闭新版本提示</string>
-    <string name="update_found_new">发现新版本，详情见顶部 Banner</string>
-    <string name="update_already_latest">当前已是最新版本</string>
+    <!-- Notification channel names -->
+    <string name="notif_channel_chat_completed_name">Message generation completed</string>
+    <string name="notif_channel_chat_completed_desc">Notification when background streaming generation completes</string>
+    <string name="notif_channel_chat_live_update_name">Generation progress</string>
+    <string name="notif_channel_chat_live_update_desc">Real-time progress notification during streaming generation</string>
+    <string name="notif_channel_web_server_name">Web server</string>
+    <string name="notif_channel_web_server_desc">Web server running status notification</string>
+    <string name="notif_channel_proactive_message_name">Proactive message</string>
+    <string name="notif_channel_proactive_message_desc">Notification when assistant proactively sends you a message</string>
+    <!-- Notification title/content -->
+    <string name="notif_chat_completed_title">Reply completed · %1$s</string>
+    <string name="notif_chat_pending_approval_title">SHAHEEN 2 is waiting for your approval</string>
+    <string name="notif_chat_pending_approval_text">%1$s needs your confirmation</string>
+    <string name="notif_proactive_message_title">%1$s sent a message</string>
+    <string name="notif_proactive_action_dismiss">Not now</string>
+    <string name="notif_live_progress_title">Generating · %1$s</string>
+    <string name="notif_live_progress_text">%1$d chars</string>
+    <string name="notif_web_server_title">Shaheen Web server running</string>
+    <string name="notif_web_server_text">Port %1$d · LAN devices can access</string>
+    <!-- v1.133: App update notification (reuses CHANNEL_CHAT_COMPLETED) -->
+    <string name="update_notif_title">New version available</string>
+    <string name="update_notif_text">%1$s has been released, tap to view details</string>
+    <!-- v1.133: In-app update banner -->
+    <string name="update_banner_published">%1$s released</string>
+    <string name="update_banner_view_detail">View details</string>
+    <string name="update_banner_download_apk">Download APK</string>
+    <string name="update_banner_close_cd">Dismiss new version banner</string>
+    <string name="update_found_new">New version found, see banner at top</string>
+    <string name="update_already_latest">Already up to date</string>
 
     <!-- ===== schedule ===== -->
-    <!-- 定时任务通知渠道 -->
-    <string name="schedule_channel_name">定时任务</string>
-    <string name="schedule_channel_desc">定时任务到期的通知</string>
-    <!-- 定时任务默认会话名 -->
-    <string name="schedule_default_session_name">定时任务</string>
-    <!-- 聊天生成前台服务默认通知标题 -->
-    <string name="schedule_generating_default_title">正在生成</string>
-    <!-- v1.137: 自动化条件未满足时的执行摘要 -->
-    <string name="schedule_condition_not_met">条件未满足，已跳过</string>
-
-    <!-- U-13: CALL_TOOL 动作校验与常见工具速填模板 -->
-    <string name="schedule_tool_templates_title">常见工具速填（点选自动填充）</string>
-    <string name="schedule_tool_advanced_hint">提示： 高级功能，通常用 AI 描述更简单</string>
-    <string name="schedule_err_tool_id_required">工具 ID 不能为空</string>
-    <string name="schedule_err_tool_params_invalid">工具参数不是合法 JSON: %1$s</string>
-
-    <!-- U-25: 立即执行结果反馈(成功/失败 + 输出预览) -->
-    <string name="schedule_run_success_detail">执行成功： %1$s</string>
-    <string name="schedule_run_failed_detail">执行失败： %1$s</string>
-    <!-- U-25: 查看全部执行历史 -->
-    <string name="schedule_view_all_history">查看全部历史</string>
-
-    <!-- U-24: 朋友圈"立即生成"反馈 -->
-    <string name="moment_generate_success">动态已生成</string>
-    <string name="moment_generate_no_material">今天还没有可生成的素材</string>
-    <string name="moment_generate_failed">生成失败： 稍后再试</string>
+    <!-- Scheduled task notification channel -->
+    <string name="schedule_channel_name">Scheduled tasks</string>
+    <string name="schedule_channel_desc">Notification for scheduled task due</string>
+    <!-- Scheduled task default session name -->
+    <string name="schedule_default_session_name">Scheduled task</string>
+    <!-- Chat generation foreground service default notification title -->
+    <string name="schedule_generating_default_title">Generating</string>
+    <!-- v1.137: Execution summary when automation condition is not met -->
+    <string name="schedule_condition_not_met">Condition not met, skipped</string>
 
     <!-- ===== main activity ===== -->
-    <!-- 安全模式 -->
-    <string name="main_activity_safe_mode_desc">Muse 上次启动时发生了崩溃，但聊天记录和设置不会被删除。请从下面选择处理方式。</string>
-    <string name="main_activity_crash_log_copied">崩溃日志已复制到剪贴板</string>
-    <!-- v2.0+: SafeModeScreen 新增文案 -->
-    <string name="safe_mode_warning_title">Muse 启动遇到问题</string>
-    <string name="safe_mode_continue_normal">直接正常打开 Muse</string>
-    <string name="safe_mode_continue_normal_desc">保留聊天记录和设置，退出安全模式后再次启动</string>
-    <string name="safe_mode_view_full_log">查看崩溃日志</string>
-    <string name="safe_mode_view_full_log_desc">查看或分享完整日志，方便定位问题</string>
-    <string name="safe_mode_clear_data_restart">删除全部数据并重新开始（不可撤销）</string>
-    <string name="safe_mode_clear_data_restart_desc">删除聊天、设置和本地文件，只在 Muse 无法正常启动时使用</string>
-    <string name="safe_mode_clear_data_confirm_title">确定要删除全部数据吗？</string>
-    <string name="safe_mode_clear_data_confirm_desc">这会删除聊天记录、设置、头像和本地文件，而且无法恢复。只有在 Muse 始终无法正常打开时才建议使用。</string>
-    <string name="safe_mode_clear_data_confirm_action">删除全部数据</string>
-    <string name="safe_mode_copy_crash_info">复制崩溃信息</string>
-    <string name="safe_mode_copy_crash_info_desc">复制时间和错误堆栈，方便反馈给开发者</string>
-    <string name="safe_mode_crash_time_label">崩溃时间</string>
-    <string name="safe_mode_stack_trace_label">崩溃堆栈</string>
-    <string name="safe_mode_no_crash_log">无崩溃日志记录</string>
-    <string name="safe_mode_share_log_failed">分享崩溃日志失败</string>
-    <!-- PIN 锁屏 -->
+    <!-- Safe mode -->
+    <string name="main_activity_safe_mode_desc">A crash occurred last time. The crash log has been saved. Tap the button below to clear the flag and restart normally.</string>
+    <string name="main_activity_crash_log_copied">Crash log copied to clipboard</string>
+    <!-- v2.0+: SafeModeScreen new copy  -->
+    <string name="safe_mode_warning_title">Last launch crashed</string>
+    <string name="safe_mode_continue_normal">Continue normal startup</string>
+    <string name="safe_mode_view_full_log">View full crash log</string>
+    <string name="safe_mode_clear_data_restart">Clear all data and restart</string>
+    <string name="safe_mode_copy_crash_info">Copy crash info</string>
+    <string name="safe_mode_crash_time_label">Crash time</string>
+    <string name="safe_mode_stack_trace_label">Stack trace</string>
+    <string name="safe_mode_no_crash_log">No crash log recorded</string>
+    <string name="safe_mode_share_log_failed">Failed to share crash log</string>
+    <!-- PIN lock screen -->
 
     <!-- ===== NotificationListenerScreen.kt ===== -->
-    <string name="notif_listener_screen_title">通知监听</string>
-    <string name="notif_memory_title">通知记忆</string>
-    <string name="notif_memory_desc">开启后，助手会定期梳理收到的通知（快递、日程、账单、约定等），记入记忆并在主动消息中自然提起。通知可能含私人信息，请自行决定是否开启。</string>
-    <string name="notif_bridge_title">消息桥授权</string>
-    <string name="notif_bridge_desc">为某个来源开启后，它的通知正文可进入对话上下文（仅本地处理；其余来源仍隐藏）</string>
-    <string name="notif_listener_open_settings_failed">无法打开系统设置</string>
-    <string name="notif_listener_auth_settings">授权设置</string>
-    <string name="notif_listener_cleared_toast">已清空通知记录</string>
-    <string name="notif_listener_clear_records">清空记录</string>
-    <string name="notif_listener_feature_title">功能说明</string>
-    <string name="notif_listener_feature_desc">授权后,Muse 可感知其他 App 的通知作为事件源，供 AI 在聊天中查询。例如你可以问：\"今天微信有什么通知？\"\"未读消息里有没有重要的\"</string>
-    <string name="notif_listener_privacy_title">隐私边界</string>
-    <string name="notif_listener_privacy_desc">• 通知内容仅存储在本地（最多 200 条，超出自动丢弃最旧）\n• 系统 UI、Muse 自身通知已过滤，不会被采集\n• 不上报任何通知数据到服务器\n• 可随时在此页\"清空记录\"或到系统设置撤销授权</string>
-    <string name="notif_listener_recent_header">最近通知（%1$d/200）</string>
-    <string name="notif_listener_empty_connected">暂无通知记录\n授权后新通知会自动出现在这里</string>
-    <string name="notif_listener_empty_disconnected">尚未授权\n请先点击上方\"授权设置\"</string>
-    <string name="notif_listener_authorized">已授权</string>
-    <string name="notif_listener_unauthorized">未授权</string>
-    <string name="notif_listener_recent_count_disconnected">最近通知： %1$d 条 · 请先到系统设置授权</string>
-    <string name="notif_listener_refresh_cd">刷新状态</string>
-    <string name="notif_listener_search_hint">搜索通知</string>
-    <string name="notif_listener_all_apps">全部应用</string>
-    <string name="notif_listener_show_all">显示全部</string>
-    <string name="notif_listener_unread_only">仅看未读</string>
-    <string name="notif_listener_mark_all_read">全部已读</string>
-    <string name="notif_listener_export">导出</string>
-    <string name="notif_listener_export_success">通知记录已导出</string>
-    <string name="notif_listener_export_failed">通知记录导出失败： %1$s</string>
-    <string name="notif_listener_export_write_failed">无法写入导出文件</string>
-    <string name="notif_listener_filter_empty">没有符合当前筛选条件的通知</string>
-    <string name="notif_listener_no_text">该通知没有可显示的正文</string>
-    <string name="notif_listener_unread_label">未读</string>
-    <string name="notif_listener_active_only">仅看通知栏中</string>
-    <string name="notif_listener_show_history">显示历史记录</string>
-    <string name="notif_listener_counts">共 %1$d 条 · 活跃 %2$d 条 · 未读 %3$d 条</string>
-    <string name="notif_listener_active_label">通知栏中</string>
-    <string name="notif_listener_removed_label">已移除</string>
-    <string name="notif_listener_channel_label">渠道： %1$s</string>
-    <string name="notif_listener_category_label">类别： %1$s</string>
-    <!-- v1.x: 问候语个性化提醒(记忆里有近期事项时,每天最多一次) -->
+    <string name="notif_listener_screen_title">Notification Listener</string>
+    <string name="notif_memory_title">Notification memory</string>
+    <string name="notif_memory_desc">When on, the assistant periodically digests your notifications (deliveries, calendar, bills, commitments) into memory and brings them up in proactive messages. Notifications may contain private info — enable at your own discretion.</string>
+    <string name="notif_bridge_title">Message bridge access</string>
+    <string name="notif_bridge_desc">Once enabled for a source, its notification text can enter the chat context (processed locally only; others stay hidden)</string>
+    <string name="notif_listener_open_settings_failed">Unable to open system settings</string>
+    <string name="notif_listener_auth_settings">Grant Access</string>
+    <string name="notif_listener_cleared_toast">Notification records cleared</string>
+    <string name="notif_listener_clear_records">Clear Records</string>
+    <string name="notif_listener_feature_title">Feature Description</string>
+    <string name="notif_listener_feature_desc">Once authorized, Shaheen 2 can sense notifications from other apps as event sources for AI to query in chat. For example, you can ask: \"What notifications did I get on WeChat today?\" \"Are there any important unread messages?\"</string>
+    <string name="notif_listener_privacy_title">Privacy Boundary</string>
+    <string name="notif_listener_privacy_desc">• Notification content is stored locally only (max 200 entries, oldest dropped when full)\n• System UI and Shaheen 2\'s own notifications are filtered out\n• No notification data is uploaded to any server\n• You can \"Clear Records\" here or revoke access in system settings at any time</string>
+    <string name="notif_listener_recent_header">Recent Notifications (%1$d/200)</string>
+    <string name="notif_listener_empty_connected">No notification records yet\nNew notifications will appear here automatically once authorized</string>
+    <string name="notif_listener_empty_disconnected">Not authorized yet\nPlease tap \"Grant Access\" above first</string>
+    <string name="notif_listener_authorized">Authorized</string>
+    <string name="notif_listener_unauthorized">Not Authorized</string>
+    <string name="notif_listener_recent_count_disconnected">Recent notifications: %1$d · Please grant access in system settings first</string>
+    <string name="notif_listener_refresh_cd">Refresh status</string>
+    <string name="notif_listener_search_hint">Search notifications</string>
+    <string name="notif_listener_all_apps">All apps</string>
+    <string name="notif_listener_show_all">Show all</string>
+    <string name="notif_listener_unread_only">Unread only</string>
+    <string name="notif_listener_mark_all_read">Mark all read</string>
+    <string name="notif_listener_export">Export</string>
+    <string name="notif_listener_export_success">Notification records exported</string>
+    <string name="notif_listener_export_failed">Failed to export notifications: %1$s</string>
+    <string name="notif_listener_export_write_failed">Unable to write the export file</string>
+    <string name="notif_listener_filter_empty">No notifications match the current filters</string>
+    <string name="notif_listener_no_text">This notification has no visible text</string>
+    <string name="notif_listener_unread_label">Unread</string>
+    <string name="notif_listener_active_only">Active only</string>
+    <string name="notif_listener_show_history">Show history</string>
+    <string name="notif_listener_counts">%1$d total · %2$d active · %3$d unread</string>
+    <string name="notif_listener_active_label">Active</string>
+    <string name="notif_listener_removed_label">Removed</string>
+    <string name="notif_listener_channel_label">Channel: %1$s</string>
+    <string name="notif_listener_category_label">Category: %1$s</string>
+    <string name="safe_mode_data_recovery">Data Recovery Guide</string>
+    <string name="safe_mode_data_recovery_title">Data Recovery Guide</string>
+    <string name="safe_mode_data_recovery_desc">This crash does not affect your local data; chats and settings are intact. To restore from a cloud backup: after restarting, go to Settings → Data Backup → Restore from Cloud.</string>
+    <string name="safe_mode_data_recovery_ok">Got it</string>
+    <string name="safe_mode_continue_normal_desc">Keep chats and settings, then try opening Shaheen 2 again</string>
+    <string name="safe_mode_view_full_log_desc">View or share the full log to help diagnose the problem</string>
+    <string name="safe_mode_clear_data_restart_desc">Deletes chats, settings and local files; use only when Shaheen 2 cannot open normally</string>
+    <string name="safe_mode_clear_data_confirm_title">Delete all data?</string>
+    <string name="safe_mode_clear_data_confirm_desc">This deletes chats, settings, avatars and local files and cannot be undone. Use only if Shaheen 2 still cannot open normally.</string>
+    <string name="safe_mode_clear_data_confirm_action">Delete all data</string>
+    <string name="safe_mode_copy_crash_info_desc">Copy the time and stack trace to send with a bug report</string>
+    <string name="safe_mode_data_recovery_desc_short">Learn what will be kept and how to restore a backup</string>
+    <string name="notif_auto_backup_success_title">Auto backup succeeded</string>
+    <string name="notif_auto_backup_success_text">Your data was backed up to the cloud</string>
+    <string name="notif_auto_backup_failed_title">Auto backup failed</string>
+    <string name="notif_auto_backup_failed_write_text">Failed to write to cloud. Check your network and backup config.</string>
+    <string name="notif_auto_backup_failed_verify_text">Backup written but verification failed. Data may be incomplete.</string>
+    <string name="notif_permission_status_on">Notification permission enabled</string>
+    <string name="notif_permission_status_off">Notification permission disabled</string>
+    <string name="notif_permission_guide">Enable to receive message completion and backup notifications</string>
+    <string name="notif_permission_open">Enable</string>
     <string-array name="greeting_notify_titles">
-        <item>注意哦</item>
-        <item>别忘了</item>
-        <item>提醒你一下</item>
-        <item>有个事跟你说</item>
-        <item>悄悄告诉你</item>
+        <item>Hey there</item>
+        <item>Don\'t forget</item>
+        <item>Just a reminder</item>
+        <item>Something to tell you</item>
+        <item>Just so you know</item>
     </string-array>
-    <string name="safe_mode_data_recovery">先看数据恢复说明</string>
-    <string name="safe_mode_data_recovery_desc_short">了解哪些数据会保留，以及如何从备份恢复</string>
-    <string name="safe_mode_data_recovery_title">数据恢复引导</string>
-    <string name="safe_mode_data_recovery_desc">本次崩溃不影响本地数据，聊天记录与设置均完好保留。如需从云端备份恢复数据：启动后进入 设置 → 数据备份 → 从云端恢复。</string>
-    <string name="safe_mode_data_recovery_ok">知道了</string>
-    <string name="notif_auto_backup_success_title">自动备份成功</string>
-    <string name="notif_auto_backup_success_text">您的数据已自动备份到云端</string>
-    <string name="notif_auto_backup_failed_title">自动备份失败</string>
-    <string name="notif_auto_backup_failed_write_text">写入云端失败，请检查网络与云备份配置</string>
-    <string name="notif_auto_backup_failed_verify_text">备份写入成功但校验失败，数据可能不完整</string>
-    <string name="notif_permission_status_on">通知权限已开启</string>
-    <string name="notif_permission_status_off">通知权限未开启</string>
-    <string name="notif_permission_guide">开启后 Muse 才能推送消息完成提醒与备份通知</string>
-    <string name="notif_permission_open">去开启</string>
+    <string name="schedule_err_tool_id_required">Tool ID cannot be empty</string>
+    <string name="schedule_err_tool_params_invalid">Tool parameters are not valid JSON: %1$s</string>
+    <string name="schedule_run_failed_detail">Execution failed: %1$s</string>
+    <string name="schedule_run_success_detail">Executed successfully: %1$s</string>
+    <string name="schedule_tool_advanced_hint">Tip: advanced features are usually easier to describe with AI</string>
+    <string name="schedule_tool_templates_title">Common tools quick-fill (select to auto-fill)</string>
+    <string name="schedule_view_all_history">View all history</string>
+    <string name="moment_generate_success">Moment generated</string>
+    <string name="moment_generate_no_material">No material to generate today</string>
+    <string name="moment_generate_failed">Generation failed: try again later</string>
 </resources>
