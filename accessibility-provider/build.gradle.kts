@@ -39,7 +39,14 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            // Shaheen final route: same unsigned switch as the app module (see
+            // app/build.gradle.kts) — with -PshaheenUnsignedRelease=true, package
+            // UNSIGNED for local signing; otherwise behaviour is unchanged.
+            if (project.findProperty("shaheenUnsignedRelease") == "true") {
+                signingConfig = null
+            } else {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
