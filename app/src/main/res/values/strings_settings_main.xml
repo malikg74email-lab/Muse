@@ -491,10 +491,6 @@
     <string name="settings_rag_onnx_section">Offline model</string>
     <string name="settings_slider_input_confirm">Apply</string>
     <string name="settings_slider_input_hint">Type a value directly</string>
-    <string name="permission_termux_copy_cmd">Copy command</string>
-    <string name="permission_termux_copy_cmd_done">Command copied</string>
-    <string name="knowledge_doc_index_broken">Index lost (rebuild failed midway), search will not match it. Long-press to reindex.</string>
-    <string name="knowledge_fts_repaired_partial_with_reason">Index repaired, but %1$d document(s) failed to reindex: %2$s</string>
     <string name="settings_screen_desc_user_profile">Name / preferences / communication style</string>
     <string name="settings_screen_desc_appearance_customize">Bubbles / background / theme details</string>
     <string name="settings_screen_desc_vision">Vision model / image understanding</string>

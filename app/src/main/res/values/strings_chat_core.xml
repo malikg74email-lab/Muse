@@ -553,9 +553,6 @@
     <string name="moment_generating">Generating…</string>
     <string name="moment_generate_now">Generate a moment now</string>
     <!-- U-24: Moments "Generate now" result feedback -->
-    <string name="moment_generate_success">Moment generated</string>
-    <string name="moment_generate_no_material">No material to generate today</string>
-    <string name="moment_generate_failed">Generation failed: try again later</string>
     <string name="settings_bubble_radius_large">Large radius</string>
     <string name="settings_bubble_radius_none">Square</string>
     <string name="settings_bubble_radius_pill">Pill</string>
