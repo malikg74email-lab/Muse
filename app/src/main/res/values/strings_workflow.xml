@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ===== Workflow 编辑器 WorkflowEditorScreen ===== -->
+    <!-- ===== Workflow Editor (WorkflowEditorScreen) ===== -->
 
-    <!-- 清空画布确认 -->
+    <!-- Clear canvas confirmation -->
 
-    <!-- 导出 JSON -->
+    <!-- Export JSON -->
 
-    <!-- 聚合策略 -->
+    <!-- Aggregation strategy -->
 
     <!-- contentDescription -->
 
-    <!-- 节点编辑面板 WorkflowNodeEditor -->
+    <!-- Node editor panel (WorkflowNodeEditor) -->
 
-    <!-- 执行模式 -->
+    <!-- Execution modes -->
 
-    <!-- 画布 WorkflowCanvas -->
+    <!-- Canvas (WorkflowCanvas) -->
 </resources>

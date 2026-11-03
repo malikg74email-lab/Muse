@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ===== v1.0.53: 封面库(Beautify 封面工作流) ===== -->
-    <string name="cover_imported">封面已导入</string>
-    <string name="cover_import_failed">封面导入失败： %1$s</string>
-    <string name="cover_import">导入封面</string>
-    <string name="cover_delete_confirm">删除这张封面？</string>
-    <string name="cover_delete">删除封面</string>
-    <string name="cover_pick">使用此封面</string>
-    <string name="cover_generate">生成封面</string>
-    <string name="cover_generating">正在生成封面…</string>
-    <string name="cover_generate_failed">封面生成失败： %1$s</string>
-    <string name="cover_generate_no_provider">未配置绘图模型，请到 设置→模型与服务 中配置后重试</string>
-    <string name="cover_applied">封面已应用</string>
-    <string name="cover_library_title">封面库</string>
-    <string name="cover_count">%1$d 张封面</string>
-    <string name="cover_empty_title">还没有封面</string>
-    <string name="cover_empty_hint">点击右下角按钮导入图片，或让 AI 生成封面</string>
+    <!-- ===== v1.0.53: Cover library (Beautify cover workflow) ===== -->
+    <string name="cover_imported">Cover imported</string>
+    <string name="cover_import_failed">Cover import failed: %1$s</string>
+    <string name="cover_import">Import cover</string>
+    <string name="cover_delete_confirm">Delete this cover?</string>
+    <string name="cover_delete">Delete cover</string>
+    <string name="cover_pick">Use this cover</string>
+    <string name="cover_generate">Generate cover</string>
+    <string name="cover_generating">Generating cover…</string>
+    <string name="cover_generate_failed">Cover generation failed: %1$s</string>
+    <string name="cover_generate_no_provider">No image model configured. Configure one in Settings → Models &amp; Services and try again.</string>
+    <string name="cover_applied">Cover applied</string>
+    <string name="cover_library_title">Cover Library</string>
+    <string name="cover_count">%1$d covers</string>
+    <string name="cover_empty_title">No covers yet</string>
+    <string name="cover_empty_hint">Tap the bottom-right button to import an image, or let AI generate a cover</string>
 </resources>

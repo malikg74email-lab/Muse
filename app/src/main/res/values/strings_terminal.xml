@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="terminal_title">终端</string>
-    <string name="terminal_input_hint">输入命令…</string>
-    <string name="terminal_back_cd">返回</string>
-    <string name="terminal_clear_cd">清屏</string>
-    <string name="terminal_restart_cd">重启会话</string>
-    <string name="terminal_interrupt_cd">中断(Ctrl-C)</string>
-    <string name="terminal_send_cd">发送</string>
-    <string name="terminal_session_exited">[会话进程已退出 code=%1$d，点右上角重启]</string>
-    <string name="terminal_session_restarted">[会话已重启]</string>
-    <string name="terminal_probe_after_seconds">%1$d秒后</string>
+    <string name="terminal_title">Terminal</string>
+    <string name="terminal_input_hint">Type a command…</string>
+    <string name="terminal_back_cd">Back</string>
+    <string name="terminal_clear_cd">Clear</string>
+    <string name="terminal_restart_cd">Restart session</string>
+    <string name="terminal_interrupt_cd">Interrupt (Ctrl-C)</string>
+    <string name="terminal_send_cd">Send</string>
+    <string name="terminal_session_exited">[Session process exited with code %1$d; tap the top-right button to restart]</string>
+    <string name="terminal_session_restarted">[Session restarted]</string>
+    <string name="terminal_probe_after_seconds">after %1$ds</string>
 </resources>

@@ -1,75 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  P1-2: Worldbook 动态世界书字符串。
-  与 Lorebook(strings_settings_misc.xml)独立,Worldbook 支持更高级的注入特性。
--->
+<!-- P1-2: Worldbook dynamic world info strings (English). -->
 <resources>
     <!-- Screen -->
-    <string name="worldbook_screen_title">动态世界书</string>
-    <string name="worldbook_intro">动态世界书可根据对话内容自动注入相关知识设定。支持常驻激活、关键词触发、正则匹配和深度注入，兼容 SillyTavern World Info 格式导入导出。</string>
-    <string name="worldbook_new_cd">新建世界书条目</string>
-    <string name="worldbook_new_default_name">新世界书条目</string>
-    <string name="worldbook_new_title">新建世界书</string>
-    <string name="worldbook_edit_title">编辑世界书</string>
-    <string name="worldbook_save">保存</string>
-    <string name="worldbook_unsaved_title">未保存的更改</string>
-    <string name="worldbook_unsaved_content">当前编辑的内容尚未保存，确定要丢弃吗？</string>
-    <string name="worldbook_discard">丢弃</string>
-    <string name="worldbook_unnamed">未命名</string>
-    <string name="worldbook_disabled">已禁用</string>
-    <string name="worldbook_enabled_cd">已启用</string>
-    <string name="worldbook_disabled_cd">已禁用</string>
-    <string name="worldbook_edit_cd">编辑</string>
-    <string name="worldbook_delete_cd">删除</string>
-    <string name="worldbook_delete_title">删除世界书</string>
-    <string name="worldbook_empty_title">暂无世界书条目</string>
-    <string name="worldbook_empty_subtitle">点击右下角按钮创建第一个条目</string>
-    <string name="worldbook_keywords_label">关键词： %1$s</string>
-    <string name="worldbook_badge_always_active">常驻</string>
-    <string name="worldbook_export">导出</string>
-    <string name="worldbook_import_failed">导入失败： %1$s</string>
-    <string name="worldbook_import_success">成功导入 %1$d 条</string>
-    <string name="worldbook_import_empty">未找到可导入条目</string>
-    <string name="worldbook_export_failed">导出失败： %1$s</string>
+    <string name="worldbook_screen_title">Dynamic Worldbook</string>
+    <string name="worldbook_intro">Dynamic Worldbook injects relevant lore based on conversation context. Supports constant activation, keyword triggers, regex matching and depth injection. Compatible with SillyTavern World Info import/export.</string>
+    <string name="worldbook_new_cd">New worldbook entry</string>
+    <string name="worldbook_new_default_name">New entry</string>
+    <string name="worldbook_new_title">New Worldbook</string>
+    <string name="worldbook_edit_title">Edit Worldbook</string>
+    <string name="worldbook_save">Save</string>
+    <string name="worldbook_unsaved_title">Unsaved Changes</string>
+    <string name="worldbook_unsaved_content">You have unsaved changes. Discard them?</string>
+    <string name="worldbook_discard">Discard</string>
+    <string name="worldbook_unnamed">Unnamed</string>
+    <string name="worldbook_disabled">Disabled</string>
+    <string name="worldbook_enabled_cd">Enabled</string>
+    <string name="worldbook_disabled_cd">Disabled</string>
+    <string name="worldbook_edit_cd">Edit</string>
+    <string name="worldbook_delete_cd">Delete</string>
+    <string name="worldbook_delete_title">Delete Worldbook</string>
+    <string name="worldbook_empty_title">No worldbook entries</string>
+    <string name="worldbook_empty_subtitle">Tap the button below to create your first entry</string>
+    <string name="worldbook_keywords_label">Keywords: %1$s</string>
+    <string name="worldbook_badge_always_active">Constant</string>
+    <string name="worldbook_export">Export</string>
+    <string name="worldbook_import_failed">Import failed: %1$s</string>
+    <string name="worldbook_import_success">Imported %1$d entries</string>
+    <string name="worldbook_import_empty">No importable entries found</string>
+    <string name="worldbook_export_failed">Export failed: %1$s</string>
 
     <!-- Sections -->
-    <string name="worldbook_section_basic">基础信息</string>
-    <string name="worldbook_section_content">注入内容</string>
-    <string name="worldbook_section_injection">注入配置</string>
-    <string name="worldbook_section_behavior">匹配行为</string>
+    <string name="worldbook_section_basic">Basic</string>
+    <string name="worldbook_section_content">Content</string>
+    <string name="worldbook_section_injection">Injection</string>
+    <string name="worldbook_section_behavior">Matching</string>
 
     <!-- Fields -->
-    <string name="worldbook_field_name">名称</string>
-    <string name="worldbook_field_keywords">关键词</string>
-    <string name="worldbook_field_keywords_placeholder">多个关键词用英文逗号分隔</string>
-    <string name="worldbook_field_content">注入内容</string>
-    <string name="worldbook_field_priority">优先级（数值越大越先注入）</string>
-    <string name="worldbook_field_inject_target">注入目标</string>
-    <string name="worldbook_field_inject_position">注入位置</string>
-    <!-- v2.0.1: 注入目标/位置选项本地化显示名 -->
-    <string name="worldbook_inject_target_system">系统</string>
-    <string name="worldbook_inject_target_user">用户</string>
-    <string name="worldbook_inject_target_assistant">助手</string>
-    <string name="worldbook_inject_position_prepend">前置</string>
-    <string name="worldbook_inject_position_append">后置</string>
-    <string name="worldbook_inject_position_at_depth">指定深度</string>
-    <string name="worldbook_field_insertion_depth">插入深度（倒数第 N 层 USER）</string>
-    <string name="worldbook_field_scan_depth">扫描深度（最近 N 层 USER 消息）</string>
-    <string name="worldbook_field_case_sensitive">区分大小写</string>
-    <string name="worldbook_field_case_sensitive_desc">关键词匹配时区分字母大小写</string>
-    <string name="worldbook_field_whole_word">全词匹配</string>
-    <string name="worldbook_field_whole_word_desc">关键词需完整成词才触发（仅子串模式；中文关键词自动退化）</string>
-    <string name="worldbook_field_is_regex">正则匹配</string>
-    <string name="worldbook_field_is_regex_desc">关键词作为正则表达式匹配（高级）</string>
-    <string name="worldbook_field_always_active">常驻激活</string>
-    <string name="worldbook_field_always_active_desc">无需关键词命中，始终注入到系统提示</string>
-    <string name="worldbook_field_enabled">启用</string>
-    <string name="worldbook_field_enabled_desc">禁用后该条目不会被注入</string>
+    <string name="worldbook_field_name">Name</string>
+    <string name="worldbook_field_keywords">Keywords</string>
+    <string name="worldbook_field_keywords_placeholder">Separate multiple keywords with commas</string>
+    <string name="worldbook_field_content">Content</string>
+    <string name="worldbook_field_priority">Priority (higher = injected first)</string>
+    <string name="worldbook_field_inject_target">Inject Target</string>
+    <string name="worldbook_field_inject_position">Inject Position</string>
+    <!-- v2.0.1: Localized inject option labels -->
+    <string name="worldbook_inject_target_system">System</string>
+    <string name="worldbook_inject_target_user">User</string>
+    <string name="worldbook_inject_target_assistant">Assistant</string>
+    <string name="worldbook_inject_position_prepend">Prepend</string>
+    <string name="worldbook_inject_position_append">Append</string>
+    <string name="worldbook_inject_position_at_depth">At Depth</string>
+    <string name="worldbook_field_insertion_depth">Insertion Depth (Nth USER from end)</string>
+    <string name="worldbook_field_scan_depth">Scan Depth (last N USER messages)</string>
+    <string name="worldbook_field_case_sensitive">Case Sensitive</string>
+    <string name="worldbook_field_case_sensitive_desc">Match keywords with case sensitivity</string>
+    <string name="worldbook_field_whole_word">Whole Word</string>
+    <string name="worldbook_field_whole_word_desc">Keyword must match as a whole word (substring mode only; CJK keywords fall back automatically)</string>
+    <string name="worldbook_field_is_regex">Regex Match</string>
+    <string name="worldbook_field_is_regex_desc">Treat keywords as regular expressions (advanced)</string>
+    <string name="worldbook_field_always_active">Always Active</string>
+    <string name="worldbook_field_always_active_desc">Inject without keyword trigger (constant)</string>
+    <string name="worldbook_field_enabled">Enabled</string>
+    <string name="worldbook_field_enabled_desc">Disabled entries are not injected</string>
 
-    <!-- 前端修复 (i18n-8): 导出提示 -->
-    <string name="worldbook_exported_to">已导出到 %1$s</string>
+    <!-- 前端修复 (i18n-8): export toast -->
+    <string name="worldbook_exported_to">Exported to %1$s</string>
 
     <!-- Settings entry -->
-    <string name="settings_assistant_worldbook">动态世界书</string>
-    <string name="settings_assistant_worldbook_subtitle">高级动态提示注入（常驻/关键词/正则/深度）</string>
+    <string name="settings_assistant_worldbook">Dynamic Worldbook</string>
+    <string name="settings_assistant_worldbook_subtitle">Advanced dynamic prompt injection</string>
 </resources>
