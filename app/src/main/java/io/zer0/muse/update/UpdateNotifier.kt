@@ -64,6 +64,15 @@ class UpdateNotifier(
      * @param forceCheck true 时跳过 24 小时间隔检查(用户手动触发时使用)
      */
     suspend fun checkAndNotify(context: Context, forceCheck: Boolean = false): UpdateCheckResult {
+        // Shaheen 2: upstream update checks are permanently disabled. Every check
+        // path (auto at startup, manual from Settings) funnels through this
+        // function, so returning Skipped here means the app never polls
+        // museai.ltd or the Zer0Qing/Muse releases, and never shows an upstream
+        // update prompt, home banner, or notification. Shaheen 2 updates are
+        // delivered manually from Malik's own fork
+        // (https://github.com/malikg74email-lab/Muse). The original logic below
+        // is intentionally left in place but unreachable.
+        return UpdateCheckResult.Skipped
         // 用户可在设置中关闭自动检查;手动检查(forceCheck=true)仍允许
         val enabled = settings.updateCheckEnabledFlow.firstSafe() ?: true
         val allowedByInterval = forceCheck || (enabled && shouldCheck())
