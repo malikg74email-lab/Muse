@@ -101,7 +101,7 @@
 
     <!-- ===== data/assistant ===== -->
     <!-- Default assistant name (persisted to Room) -->
-    <string name="assistant_repo_default_name">Default Assistant</string>
+    <string name="assistant_repo_default_name">Shaheen 2</string>
 
     <!-- ===== data/session/FolderRepository ===== -->
     <!-- New folder default name (persisted to Room) -->
