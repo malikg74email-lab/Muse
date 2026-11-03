@@ -512,8 +512,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.core.ktx)
 
-    // LeakCanary 内存泄漏检测(仅 debug)
-    debugImplementation(libs.leakcanary.android)
     // v1.55: 真实 tokenizer(BPE 编码,cl100k_base — GPT-4/3.5 通用,其他模型近似)
     implementation(libs.jtokkit)
 
