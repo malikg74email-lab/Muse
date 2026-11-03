@@ -4,7 +4,7 @@
     <!-- Splash -->
 
     <!-- Widget -->
-    <string name="widget_description">Quick launch Muse chat</string>
+    <string name="widget_description">Quick launch Shaheen 2 chat</string>
     <string name="widget_new_session">New Chat</string>
     <string name="widget_recent_sessions">Recent Chats</string>
     <!-- P3-16: 4x2 chat widget -->
@@ -14,8 +14,8 @@
     <string name="widget_chat_pick_assistant">Choose the assistant to display</string>
     <string name="widget_quick_pick_assistant">Choose the assistant for shortcuts</string>
     <!-- F-26: Launcher widget -->
-    <string name="widget_launcher_title">Muse</string>
-    <string name="widget_launcher_open">Open Muse</string>
+    <string name="widget_launcher_title">Shaheen 2</string>
+    <string name="widget_launcher_open">Open Shaheen 2</string>
 
     <!-- Bottom navigation -->
 
@@ -276,7 +276,7 @@
     <string name="proxy_bypass_hint">Comma separated. Supports .suffix, *. wildcards and IP prefixes. Add local models and LAN services here.</string>
     <string name="proxy_test_action">Test connection</string>
     <string name="proxy_test_running">Testing…</string>
-    <string name="launcher_alias_muse">Muse</string>
+    <string name="launcher_alias_muse">Shaheen 2</string>
     <string name="proxy_test_invalid_config">Fill in a valid proxy address and port first</string>
     <string name="proxy_test_connected">Proxy reachable, </string>
     <string name="proxy_test_need_auth">Proxy requires authentication; check username and password</string>

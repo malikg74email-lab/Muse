@@ -62,7 +62,7 @@
     <string name="memory_summary_title">Session %1$s</string>
 
     <!-- v6: Error trace labels -->
-    <string name="memory_error_trace_header">== Muse Memory Error ==</string>
+    <string name="memory_error_trace_header">== Shaheen 2 Memory Error ==</string>
     <string name="memory_error_trace_time">Time: </string>
     <string name="memory_error_trace_exception">Exception: </string>
     <string name="memory_error_trace_message">Message: </string>
@@ -143,7 +143,7 @@
     <string name="memory_menu_delete">Delete</string>
     <string name="memory_center_fact_count">facts</string>
     <string name="memory_center_empty_title">No memories yet</string>
-    <string name="memory_center_empty_subtitle">Keep talking with Muse, or say “remember this” to add a fact.</string>
+    <string name="memory_center_empty_subtitle">Keep talking with Shaheen 2, or say “remember this” to add a fact.</string>
     <string name="memory_center_open_facts">Open fact library</string>
     <string name="memory_center_tab_stream">Memory stream</string>
     <string name="memory_center_tab_constellation">Memory constellation</string>

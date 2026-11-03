@@ -2,7 +2,7 @@
 <resources>
     <!-- P3-3: Permission wizard -->
     <string name="permission_wizard_title">Permission Wizard</string>
-    <string name="permission_wizard_desc">Muse UI automation relies on a three-channel permission model. Enable each below; higher levels unlock more operations. UI actions need only Accessibility; shell commands need Shizuku or Root.</string>
+    <string name="permission_wizard_desc">Shaheen 2 UI automation relies on a three-channel permission model. Enable each below; higher levels unlock more operations. UI actions need only Accessibility; shell commands need Shizuku or Root.</string>
     <string name="permission_current_level">Current Permission Level</string>
     <string name="permission_level_none">None (UI automation unavailable)</string>
     <string name="permission_level_accessibility">Accessibility enabled (UI actions available)</string>
@@ -12,14 +12,14 @@
     <!-- Accessibility -->
     <string name="accessibility_section_title">Accessibility Service</string>
     <string name="accessibility_status_enabled">Accessibility service enabled. UI actions available (click/swipe/input/screenshot/read UI tree).</string>
-    <string name="accessibility_status_disabled">Not enabled. Authorize \"Muse UI automation\" in system settings.</string>
+    <string name="accessibility_status_disabled">Not enabled. Authorize \"Shaheen 2 UI automation\" in system settings.</string>
     <string name="accessibility_enable_btn">Open system settings</string>
 
     <!-- Shizuku -->
     <string name="shizuku_section_title">Shizuku (Recommended)</string>
-    <string name="shizuku_status_authorized">Muse authorized to use Shizuku</string>
+    <string name="shizuku_status_authorized">Shaheen 2 authorized to use Shizuku</string>
     <string name="shizuku_install_btn">Download Shizuku</string>
-    <string name="shizuku_authorize_btn">Authorize Muse</string>
+    <string name="shizuku_authorize_btn">Authorize Shaheen 2</string>
 
     <!-- Root -->
     <string name="root_section_title">Root Permission</string>

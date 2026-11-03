@@ -11,7 +11,7 @@
     <string name="moment_add_images_hint">Add images (up to %1$d)</string>
     <!-- ===== Diary (MiniDiaryScreen) ===== -->
     <string name="diary_generate_failed">Diary generation failed, try again later</string>
-    <string name="diary_title">Muse Diary</string>
+    <string name="diary_title">Shaheen 2 Diary</string>
     <string name="diary_date_title">%1$d/%2$d/%3$s</string>
     <string name="diary_empty_today">No diary for today yet</string>
     <string name="diary_empty_other_day">No diary for this day</string>
@@ -73,7 +73,7 @@
     <string name="moment_comment_cd">Comment</string>
     <string name="moment_favorite">Favorite</string>
     <string name="moment_more_actions">More actions for this moment</string>
-    <string name="moment_sender_muse">Muse</string>
+    <string name="moment_sender_muse">Shaheen 2</string>
     <string name="moment_sender_me">Me</string>
     <string name="moment_comment_hint">Post a comment:</string>
     <string name="moment_delete_title">Delete moment</string>
@@ -84,7 +84,7 @@
     <string name="moment_messages_cd">Messages</string>
     <string name="moment_publish_cd">Publish moment (tap for media, long-press for text)</string>
     <string name="moment_empty_feed">No moments yet</string>
-    <string name="moment_empty_hint">Tap + at top right to post your first moment\nMuse and assistants will share their life too</string>
+    <string name="moment_empty_hint">Tap + at top right to post your first moment\nShaheen 2 and assistants will share their life too</string>
     <string name="moment_messages_empty">No likes or comments yet</string>
     <string name="moment_notification_liked">%1$s liked your moment</string>
     <string name="moment_notification_commented">%1$s commented on your moment</string>
@@ -142,7 +142,7 @@
     <string name="chat_retry">Retry</string>
 
     <!-- Share -->
-    <string name="chat_share_subject">muse conversation</string>
+    <string name="chat_share_subject">Shaheen conversation</string>
     <string name="chat_share_chooser_title">Share Chat</string>
 
     <!-- Copy toast -->
@@ -182,7 +182,7 @@
 
     <!-- Empty state guide -->
     <string name="chat_avatar_assistant_cd">Assistant avatar</string>
-    <string name="chat_avatar_muse_cd">Muse icon</string>
+    <string name="chat_avatar_muse_cd">Shaheen 2 icon</string>
     <string name="chat_empty_guide_title">What would you like to chat about today?</string>
 
     <!-- Image generation placeholder -->

@@ -264,6 +264,7 @@
     <string name="knowledge_repairing">Repairing FTS index and reindexing...</string>
     <string name="knowledge_fts_repaired">Knowledge index repaired</string>
     <string name="knowledge_fts_repaired_partial">Index repaired, but %1$d documents failed to reindex</string>
+    <string name="knowledge_fts_repaired_partial_with_reason">Index repaired, but %1$d document(s) failed to reindex: %2$s</string>
     <string name="knowledge_fts_repair_failed">Index repair failed: %1$s</string>
     <string name="knowledge_importing">Importing</string>
     <string name="knowledge_reindexing">Reindexing</string>
@@ -306,6 +307,7 @@
     <!-- 前端修复 (i18n-7): PDF metadata card -->
     <string name="knowledge_doc_info">Document info</string>
     <string name="knowledge_doc_outline">Outline (%1$d items)</string>
+    <string name="knowledge_doc_index_broken">Index lost (rebuild failed midway), search will not match it. Long-press to reindex.</string>
     <string name="knowledge_sort_updated">By updated time</string>
     <string name="knowledge_sort_created">By created time</string>
     <string name="knowledge_sort_title">By title</string>
@@ -336,7 +338,7 @@
     <string name="stats_dashboard_subtitle">%1$d sessions · %2$d active days</string>
     <string name="stats_export_cd">Export stats summary</string>
     <string name="stats_export_chooser">Share stats summary</string>
-    <string name="stats_export_subject">Muse stats summary</string>
+    <string name="stats_export_subject">Shaheen 2 stats summary</string>
     <string name="stats_empty_title">Stats will appear here after you start chatting</string>
     <string name="stats_empty_action">Start a conversation</string>
     <string name="stats_view_all">View all</string>
@@ -356,7 +358,7 @@
     <string name="stats_hourly_chart_cd">24-hour message distribution bar chart</string>
     <string name="stats_other">Other</string>
     <string name="stats_model_donut_cd">Model usage donut chart</string>
-    <string name="stats_summary_header">===== Muse stats summary =====</string>
+    <string name="stats_summary_header">===== Shaheen 2 stats summary =====</string>
     <string name="stats_summary_total_sessions">Total sessions: %1$d</string>
     <string name="stats_summary_total_messages">Total messages: %1$d</string>
     <string name="stats_summary_ai_replies">AI replies: %1$d</string>
@@ -577,11 +579,11 @@
     <string name="groupchat_streaming_title">Typing...</string>
     <string name="quick_notes_settings_title">Quick Capture Settings</string>
     <string name="quick_capture_swipe_title">Show swipe quick capture</string>
-    <string name="quick_capture_swipe_desc">Show the quick capture handle at the right edge inside Muse</string>
+    <string name="quick_capture_swipe_desc">Show the quick capture handle at the right edge inside Shaheen 2</string>
     <string name="quick_capture_overlay_title">Enable system overlay</string>
-    <string name="quick_capture_overlay_desc">Keep the floating capsule available after leaving Muse for quick capture</string>
+    <string name="quick_capture_overlay_desc">Keep the floating capsule available after leaving Shaheen 2 for quick capture</string>
     <string name="quick_capture_overlay_permission_error">Unable to open overlay permission settings</string>
-    <string name="quick_capture_overlay_hint">The overlay is off by default. When enabled, the system must allow Muse to display over other apps.</string>
+    <string name="quick_capture_overlay_hint">The overlay is off by default. When enabled, the system must allow Shaheen 2 to display over other apps.</string>
     <string name="chat_background_cd">Chat background</string>
     <string name="chat_analyzing_image">Analyzing image %1$d/%2$d…</string>
     <string name="msg_compressed">Compressed</string>
