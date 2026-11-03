@@ -32,13 +32,13 @@ class AppSettingsStore(private val context: Context) {
     private val languageSyncCache = context.getSharedPreferences("muse_language_cache", Context.MODE_PRIVATE)
     private val cacheScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    val languageFlow: Flow<String> = store.data.mapDistinct { prefs -> prefs[KEY_LANGUAGE] ?: "system" }
+    val languageFlow: Flow<String> = store.data.mapDistinct { prefs -> prefs[KEY_LANGUAGE] ?: "en" }
 
     init {
         // 历史用户升级到 v1.131+ 时 SP 为空，需从 DataStore 拷贝一次；异步执行不阻塞启动。
         cacheScope.launch {
             try {
-                val dsLang = store.data.mapDistinct { prefs -> prefs[KEY_LANGUAGE] ?: "system" }.first()
+                val dsLang = store.data.mapDistinct { prefs -> prefs[KEY_LANGUAGE] ?: "en" }.first()
                 if (languageSyncCache.getString(KEY_LANGUAGE_SP, null) == null) {
                     languageSyncCache.edit().putString(KEY_LANGUAGE_SP, dsLang).apply()
                 }
@@ -54,7 +54,7 @@ class AppSettingsStore(private val context: Context) {
     }
 
     /** 同步读取语言设置，避免冷启动时主线程阻塞读 DataStore。 */
-    fun getLanguageSync(): String = languageSyncCache.getString(KEY_LANGUAGE_SP, "system") ?: "system"
+    fun getLanguageSync(): String = languageSyncCache.getString(KEY_LANGUAGE_SP, "en") ?: "en"
 
     private companion object {
         private val KEY_LANGUAGE = stringPreferencesKey("language")

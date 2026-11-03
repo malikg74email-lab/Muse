@@ -27,8 +27,12 @@ class AppearanceSettingsStore(private val context: Context) {
 
     private val store get() = context.museSettingsDataStore
 
-    val themeModeFlow: Flow<String> = store.data.mapDistinct { prefs -> prefs[KEY_THEME_MODE] ?: "system" }
-    val themeIdFlow: Flow<String> = store.data.mapDistinct { prefs -> prefs[KEY_THEME_ID] ?: "mono" }
+    // Shaheen 2: fresh installs open in DARK appearance by default (the approved
+    // midnight-navy v5 look is the Shaheen preset's dark scheme). Only the DEFAULT
+    // changed — a stored user choice (system/light/dark) always wins, and the
+    // Settings → Appearance picker still offers all three options.
+    val themeModeFlow: Flow<String> = store.data.mapDistinct { prefs -> prefs[KEY_THEME_MODE] ?: "dark" }
+    val themeIdFlow: Flow<String> = store.data.mapDistinct { prefs -> prefs[KEY_THEME_ID] ?: DEFAULT_THEME_ID }
     val darkThemeIdFlow: Flow<String> = store.data.mapDistinct { prefs -> prefs[KEY_DARK_THEME_ID] ?: "" }
     val themeScheduleFlow: Flow<ThemeScheduleConfig> = store.data.mapDistinct { prefs ->
         decodePrefsOrNull(prefs[KEY_THEME_SCHEDULE], ThemeScheduleConfig.serializer(), "ThemeSchedule") ?: ThemeScheduleConfig()
