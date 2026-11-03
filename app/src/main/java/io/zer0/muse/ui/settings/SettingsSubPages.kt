@@ -889,9 +889,20 @@ fun SettingsAboutPage(
                     modifier = Modifier.padding(MusePaddings.cardInner),
                 ) {
                     Text(
-                        text = "muse",
+                        text = "Shaheen 2",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    // Shaheen 2: creator credit + bio (Malik's data, replaces upstream branding)
+                    Text(
+                        text = "Azhar Farooq — Pakistani",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "Mobile Technician & Software",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = stringResource(R.string.settings_about_version_full, versionName, versionCode),
@@ -918,14 +929,6 @@ fun SettingsAboutPage(
                 SettingsItemRow(
                     title = stringResource(R.string.settings_about_feedback),
                     onClick = { sendFeedback(context, versionName) },
-                ) {
-                    ChevronRight()
-                }
-                SettingsGroupDivider()
-                SettingsItemRow(
-                    title = stringResource(R.string.settings_about_join_qq_group),
-                    subtitle = stringResource(R.string.settings_about_join_qq_group_subtitle),
-                    onClick = { openQQGroup(context) },
                 ) {
                     ChevronRight()
                 }
@@ -1012,21 +1015,21 @@ fun SettingsAboutPage(
             ) {
                 SettingsItemRow(
                     title = stringResource(R.string.settings_about_repo_home),
-                    onClick = { openUrl(context, "https://github.com/Zer0Qing/Muse") },
+                    onClick = { openUrl(context, "https://github.com/malikg74email-lab/Muse") },
                 ) {
                     ChevronRight()
                 }
                 SettingsGroupDivider()
                 SettingsItemRow(
                     title = stringResource(R.string.settings_about_star),
-                    onClick = { openUrl(context, "https://github.com/Zer0Qing/Muse") },
+                    onClick = { openUrl(context, "https://github.com/malikg74email-lab/Muse") },
                 ) {
                     ChevronRight()
                 }
                 SettingsGroupDivider()
                 SettingsItemRow(
                     title = stringResource(R.string.settings_about_issues),
-                    onClick = { openUrl(context, "https://github.com/Zer0Qing/Muse/issues") },
+                    onClick = { openUrl(context, "https://github.com/malikg74email-lab/Muse/issues") },
                 ) {
                     ChevronRight()
                 }
@@ -1091,35 +1094,6 @@ private fun openUrl(context: Context, url: String) {
 }
 
 /**
- * 打开 QQ 群卡片;未安装 QQ 时把群号复制到剪贴板并提示。
- */
-private fun openQQGroup(context: Context) {
-    val uri = Uri.parse(
-        "mqqapi://card/show_pslcard?src_type=internal&version=1&uin=905451314" +
-            "&card_type=group&source=external&jump_from=webapi",
-    )
-    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-        setPackage("com.tencent.mobileqq")
-        if (context !is android.app.Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    runCatching {
-        if (intent.resolveActivity(context.packageManager) == null) {
-            error("QQ is not installed")
-        }
-        context.startActivity(intent)
-    }.onFailure {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        clipboard?.setPrimaryClip(
-            ClipData.newPlainText(
-                context.getString(R.string.settings_about_join_qq_group),
-                "905451314",
-            ),
-        )
-        MuseToast.show(context.getString(R.string.settings_about_qq_not_installed))
-    }
-}
-
-/**
  * P3-14: 发送反馈 — 调起邮件 Intent 预填收件地址/主题/设备信息,
  * 无邮件应用时 fallback 到复制反馈内容到剪贴板 + Toast 提示。
  */
@@ -1137,7 +1111,7 @@ private fun sendFeedback(context: Context, versionName: String) {
     }
     val intent = Intent(Intent.ACTION_SENDTO).apply {
         data = Uri.parse("mailto:")
-        putExtra(Intent.EXTRA_EMAIL, arrayOf("2119280571@qq.com"))
+        putExtra(Intent.EXTRA_EMAIL, arrayOf("malikg74.email@gmail.com"))
         putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.settings_feedback_subject))
         putExtra(Intent.EXTRA_TEXT, deviceInfo)
     }
