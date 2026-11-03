@@ -343,6 +343,12 @@ fun ChatScreen(
     onOpenPromptTemplateManager: () -> Unit = {},
     /** C4: 双栏嵌入模式(宽屏任务 tab 右栏)时传入栏级布局修饰符。 */
     modifier: Modifier = Modifier,
+    /**
+     * Shaheen 2 v5: 首页 Live Call 圆环的直达信号。每次自增代表一次新的
+     * 「打开语音对话」请求,ChatScreen 收到后自动进入既有的实时语音对话模式
+     * (VoiceConversationMode)。0 = 无请求。同一信号只消费一次,避免翻页回来重复弹出。
+     */
+    openVoiceSignal: Int = 0,
 ) {
     // v2.6.7（P0-3）: 形态解析。优先用 [surface]；未传时退回旧的 [isAgentMode]。
     // 旧分支（isAgentMode 的十几处读取）统一改读这里的局部变量，
@@ -456,6 +462,15 @@ fun ChatScreen(
     var currentMatchIndex by rememberSaveable { mutableStateOf(0) }
     // P1-1: 实时语音对话全屏模式开关(语音对话状态机接线到聊天页)
     var showVoiceConversation by remember { mutableStateOf(false) }
+    // Shaheen 2 v5: 首页 Live Call 圆环直达 — 外部信号自增时自动打开语音对话;
+    // 记录已消费的信号值,同一信号只打开一次(翻页/重组不重复触发)。
+    var lastHandledVoiceSignal by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(openVoiceSignal) {
+        if (openVoiceSignal > 0 && openVoiceSignal != lastHandledVoiceSignal) {
+            lastHandledVoiceSignal = openVoiceSignal
+            showVoiceConversation = true
+        }
+    }
     // v2.x: 委员会 — 从对话召唤临时群聊讨论(结论经 DeferredResultStore 回灌本条会话)
     var showCommitteeDialog by remember { mutableStateOf(false) }
     // 命中列表:当前会话已加载消息中,内容含查询词(忽略大小写)的消息 id;空查询或未开启查找时返回空。
@@ -1748,7 +1763,7 @@ fun ChatScreen(
                                 RichInputBar(
                                     // v1.0.20 (Task 3): input/isStreaming 读派生值,避免其他字段变化触发 bottomBar 重组
                                     text = currentInput,
-                                    assistantName = state.currentAssistant?.name?.takeIf { it.isNotBlank() } ?: "Muse",
+                                    assistantName = state.currentAssistant?.name?.takeIf { it.isNotBlank() } ?: "Shaheen 2",
                                     isStreaming = isStreaming,
                                     isWaitingFirstToken = isWaitingFirstToken,
                                     isDrawMode = state.isDrawMode,

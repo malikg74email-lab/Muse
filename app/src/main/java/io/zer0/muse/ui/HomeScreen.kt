@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,7 +52,6 @@ import io.zer0.muse.ui.common.media.rememberWindowWidthClass
 import io.zer0.muse.ui.common.navigation.MuseTopBarIconButton
 import io.zer0.muse.ui.common.navigation.MuseTopBarMenu
 import io.zer0.muse.ui.common.surface.MusePageScaffold
-import io.zer0.muse.ui.groupchat.GroupChatListScreen
 import io.zer0.muse.ui.theme.MuseActionColors
 import io.zer0.muse.ui.theme.MuseAnimation
 import io.zer0.muse.ui.theme.MuseMotion
@@ -67,16 +67,18 @@ import org.koin.compose.koinInject
 
 // M-CS7: tabs 列表提为文件级 val,避免每次 recomposition 重新创建(原在 Composable 内 listOf)
 // 存资源 id(Int) 与页面序号,UI 层统一用 stringResource 解析。
-private val HomeTabs = listOf(R.string.home_tab_tasks to 0, R.string.home_tab_agent to 1, R.string.home_tab_group_chat to 2)
+// Shaheen 2 v5: 第 3 个 Tab 由「群聊」改为「Recent」(最近会话),群聊入口从首页移除。
+private val HomeTabs = listOf(R.string.home_tab_tasks to 0, R.string.home_tab_agent to 1, R.string.home_tab_recent to 2)
 
 /**
  * v0.22 首页 — 顶部双分页导航。
  *
  * 架构(极简功能主义设计语言):
  *  - 顶部固定栏: 左侧头像(→设置) | 中间胶囊Tab(任务/Agent) | 右侧搜索
- *  - 内容区: HorizontalPager(2页),两 Tab 完全独立,不互相跳转
+ *  - 内容区: HorizontalPager(3页),各 Tab 独立,不互相跳转
  *    - Tab 0 "任务": 任务列表(用户日常工作调研)
  *    - Tab 1 "Agent": 长效日常聊天搭子(独立聊天区域)
+ *    - Tab 2 "Recent": 最近会话(Shaheen 2 v5 起取代原群聊 Tab)
  *
  * 设计要点(极简功能主义):
  *  - 暖灰背景(WarmPaper LightBg #FAFAF8),不纯白
@@ -122,7 +124,7 @@ fun HomeScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     // P2-13: 桌面端快捷键总开关(Expanded 窗口 + 物理键盘)
     val desktopShortcutsEnabled = rememberDesktopShortcutsEnabled()
-    // v1.95: 启动默认页由设置决定(0=任务, 1=Agent, 2=群聊),initialPage 仅首次组合生效
+    // v1.95: 启动默认页由设置决定(0=任务, 1=Agent, 2=Recent),initialPage 仅首次组合生效
     val settings: SettingsRepository = koinInject()
     val defaultPage by settings.defaultHomePageFlow.collectAsStateWithLifecycle(initialValue = 0)
     // v1.133: 订阅缓存的 ReleaseInfo,有值则渲染 Banner
@@ -131,6 +133,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     // v1.41: Agent Tab 模型切换面板展开状态
     var showModelSheet by remember { mutableStateOf(false) }
+    // Shaheen 2 v5: 首页 Live Call 圆环的直达信号 — 每次点击自增一次,
+    // Agent 页(或宽屏右栏)的 ChatScreen 消费后自动打开实时语音对话。
+    var voiceSignal by remember { mutableIntStateOf(0) }
     // v1.133: 用户主动关闭 Banner 后,本次会话不再展示(下次冷启动恢复)
     var bannerDismissed by remember { mutableStateOf(false) }
     // v1.136 T8: 首页右下快捷工具栏展开/收起状态(长按 Plus 切换)
@@ -167,9 +172,25 @@ fun HomeScreen(
         }
     }
 
+    // Shaheen 2 v5: Live Call 圆环点击 — 自增直达信号并切到 Agent 页;
+    // 宽屏时右栏聊天区已同屏可见,无需翻页。ChatScreen 收到信号后自动打开
+    // 既有的实时语音对话模式(VoiceConversationMode)。
+    val onOpenLiveCall: () -> Unit = {
+        voiceSignal += 1
+        if (!isWideTasks && pagerState.currentPage != 1) {
+            scope.launch {
+                if (reducedMotion) {
+                    pagerState.scrollToPage(1)
+                } else {
+                    pagerState.animateScrollToPage(1)
+                }
+            }
+        }
+    }
+
     MusePageScaffold(
         floatingActionButton = {
-            // v1.0.17: 悬浮胶囊仅在"任务"Tab(首页)显示,Agent/群聊页不显示
+            // v1.0.17: 悬浮胶囊仅在"任务"Tab(首页)显示,Agent/Recent 页不显示
             // C4: 宽屏双栏时隐藏(FAB 会悬浮在右栏输入区上方遮挡;左栏已有新建入口)
             if (pagerState.currentPage == 0 && !isWideTasks) {
                 HomeQuickActionCapsule(
@@ -299,7 +320,7 @@ fun HomeScreen(
         ) {
             // v1.0.16: 新任务/新会话入口 — 放在 3 大切换 tab 栏正下方,
             // 从原来的 ChatListScreen 顶部上提到这里,方便所有 Tab 可见。
-            // 仅在"任务"Tab 显示(Agent 页自己就能输入,群聊页有群聊列表入口)。
+            // 仅在"任务"Tab 显示(Agent 页自己就能输入,Recent 页是会话列表)。
             // v1.133: 顶部"新版本可用"Banner — 有缓存 ReleaseInfo 且未被关闭时显示
             // v1.0.72: 用户点过忽略的版本不再展示(持久化,下次冷启动也不弹)
             // v1.0.72: 升级到同版本/更高版本后即使缓存未清也不显示(24h 检查间隔内缓存会残留)
@@ -392,6 +413,7 @@ fun HomeScreen(
                                     onOpenAssistantChat = { id ->
                                         viewModel.createNewSession(assistantIdOverride = id)
                                     },
+                                    onOpenLiveCall = onOpenLiveCall,
                                     onCreateWithText = { text ->
                                         viewModel.sendToNewChat(text)
                                     },
@@ -408,6 +430,7 @@ fun HomeScreen(
                                 ChatScreen(
                                     onOpenAssistants = onOpenAssistants,
                                     isAgentMode = false,
+                                    openVoiceSignal = voiceSignal,
                                     onHtmlPreview = onHtmlPreview,
                                     onOpenSkills = onOpenSkills,
                                     onOpenPromptTemplateManager = onOpenPromptTemplateManager,
@@ -458,6 +481,7 @@ fun HomeScreen(
                                 onOpenAssistantChat = { id ->
                                     viewModel.createNewSession(onReady = onOpenChat, assistantIdOverride = id)
                                 },
+                                onOpenLiveCall = onOpenLiveCall,
                                 onCreateWithText = { text ->
                                     if (isWideTasks) {
                                         viewModel.sendToNewChat(text)
@@ -478,14 +502,33 @@ fun HomeScreen(
                     1 -> ChatScreen(
                         onOpenAssistants = onOpenAssistants,
                         isAgentMode = true,
+                        // 宽屏时语音直达信号由任务页右栏 ChatScreen 消费,本页不重复响应。
+                        openVoiceSignal = if (isWideTasks) 0 else voiceSignal,
                         onHtmlPreview = onHtmlPreview,
                         onOpenSkills = onOpenSkills,
                         onOpenPromptTemplateManager = onOpenPromptTemplateManager,
                     )
-                    // Tab 2 "群聊": 多 Agent 群聊列表
-                    // 点击群聊卡片 → 跳转到群聊详情页(通过 NavHost 路由)
-                    2 -> GroupChatListScreen(
-                        onOpenChat = onOpenGroupChat,
+                    // Tab 2 "Recent"(Shaheen 2 v5): 最近会话 — 取代原群聊 Tab。
+                    // 点击会话 → 切换会话并 push 聊天详情页(与任务页窄屏行为一致)。
+                    // 群聊入口已按 v5 设计稿从首页移除;onOpenGroupChat 参数保留,
+                    // 仅为兼容 MainActivity 既有导航注入,不再被首页消费。
+                    2 -> RecentConversationsTab(
+                        sessions = state.sessions,
+                        folders = state.folders,
+                        onSelect = { id ->
+                            viewModel.switchSession(id)
+                            onOpenChat()
+                        },
+                        onCreate = {
+                            viewModel.createNewSession(onReady = onOpenChat)
+                        },
+                        onDelete = viewModel::deleteSession,
+                        onRenameTo = { session, newName ->
+                            viewModel.renameSession(session.id, newName)
+                        },
+                        onTogglePinned = viewModel::togglePinned,
+                        onMoveSessionToFolder = viewModel::moveSessionToFolder,
+                        onArchive = { id -> viewModel.setSessionArchived(id, true) },
                     )
                 }
             }

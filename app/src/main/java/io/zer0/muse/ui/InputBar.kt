@@ -136,7 +136,7 @@ internal fun InputBar(state: MuseInputState = MuseInputState(), callbacks: Input
     val reducedMotion = MuseMotion.isReducedMotion()
     // B7-07: 从聚合状态/回调中解包,保持函数体原有逻辑不变
     val text = state.text
-    val assistantName = state.assistantName.ifBlank { "Muse" }
+    val assistantName = state.assistantName.ifBlank { "Shaheen 2" }
     val isStreaming = state.isStreaming
     val isWaitingFirstToken = state.isWaitingFirstToken
     val isDrawMode = state.isDrawMode

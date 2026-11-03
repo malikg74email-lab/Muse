@@ -1271,7 +1271,7 @@ internal fun MessageBubble(
                         AssistantAvatar(
                             assistant = assistant ?: io.zer0.muse.data.assistant.AssistantEntity(
                                 id = "default",
-                                name = "Muse",
+                                name = "Shaheen 2",
                             ),
                             avatarSize = MuseAvatarSize.inline,
                         )
@@ -1282,7 +1282,7 @@ internal fun MessageBubble(
                         val showTime = showTimestamp && chatPrefs.showTimestamp
                         if (showName || showTime) {
                             Spacer(Modifier.width(MusePaddings.contentGap))
-                            val nameText = assistant?.name?.takeIf { it.isNotBlank() } ?: "Muse"
+                            val nameText = assistant?.name?.takeIf { it.isNotBlank() } ?: "Shaheen 2"
                             val timeText =
                                 formatMessageTime(msg.createdAt, use24Hour = chatPrefs.use24Hour)
                             Text(

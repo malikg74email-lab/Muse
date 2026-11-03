@@ -1,5 +1,10 @@
 package io.zer0.muse.ui
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -99,6 +105,7 @@ import io.zer0.muse.ui.theme.MuseCornerRadius
 import io.zer0.muse.ui.theme.MuseDateFormats
 import io.zer0.muse.ui.theme.MuseHaptics
 import io.zer0.muse.ui.theme.MuseIconSizes
+import io.zer0.muse.ui.theme.MuseMotion
 import io.zer0.muse.ui.theme.MusePaddings
 import io.zer0.muse.ui.theme.MuseShapes
 import io.zer0.muse.ui.theme.huge
@@ -114,6 +121,9 @@ import kotlin.math.roundToInt
 
 /** v1.x: 问候语个性化提醒通知 ID(与其它通知 ID 错开)。 */
 private const val GREETING_NOTIFY_ID = 1010
+
+/** Shaheen 2 v5: Live Call 圆环的细红边强调色(设计稿 v5 的红色描边点缀)。 */
+private val LiveCallRedRim = Color(0xFFE5484D)
 
 /**
  * 任务中心页 —— 按设计稿重构为任务首页。
@@ -176,6 +186,8 @@ fun ChatListScreen(
     onOpenAssistants: () -> Unit = {},
     /** v2.x: 伙伴横排 — 以指定助手开新聊天(assistantId)。 */
     onOpenAssistantChat: (String) -> Unit = {},
+    /** Shaheen 2 v5: 点击首页 Live Call 中心圆环(直达 Agent 语音对话)。 */
+    onOpenLiveCall: () -> Unit = {},
     /** v1.72: 会话列表首次加载标志(避免闪空状态) */
     isSessionsLoading: Boolean = false,
     /** v1.0.62: 会话列表加载失败信息(null=正常)。 */
@@ -430,6 +442,15 @@ fun ChatListScreen(
                             }
                         }
 
+                        // Shaheen 2 v5: Live Call 中心圆环 — 首页视觉中心(问候/伙伴行之下、
+                        // 会话列表之上),点击直达 Agent 页的实时语音对话。
+                        item(key = "live_call_ring") {
+                            LiveCallRing(
+                                onClick = onOpenLiveCall,
+                                modifier = Modifier.padding(top = MusePaddings.sectionGap),
+                            )
+                        }
+
                         // 已置顶(标题 + 每条会话独立 item,平铺懒加载)
                         if (pinned.isNotEmpty()) {
                             pinnedSectionItems(
@@ -515,6 +536,60 @@ fun ChatListScreen(
     } // I3: 列表区错误边界收尾
 }
 
+/**
+ * Shaheen 2 v5: 首页第 3 个 Tab「Recent」— 最近会话(按最近活动排序,平铺全量)。
+ *
+ * 复用任务页「最近」分区的同一套行组件与操作(点开/删除/重命名/置顶/移动文件夹/归档),
+ * 数据同为 [ChatViewModel] 的会话列表。本 Tab 取代原「群聊」在首页的位置;
+ * 群聊功能本身不在此页提供入口(按 v5 设计稿从首页移除)。
+ */
+@Composable
+fun RecentConversationsTab(
+    sessions: List<SessionEntity>,
+    folders: List<FolderEntity>,
+    onSelect: (String) -> Unit,
+    onCreate: () -> Unit,
+    onDelete: (String) -> Unit,
+    onRenameTo: (SessionEntity, String) -> Unit,
+    onTogglePinned: (String) -> Unit,
+    onMoveSessionToFolder: (String, String?) -> Unit,
+    onArchive: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // 「最后的历史」:全部未归档会话按最近活动倒序(置顶也包含,与任务页的分区口径不同,
+    // 这里是纯时间线)。distinctBy 防御同一会话重复 emit 时的重复 key。
+    val recent = remember(sessions) {
+        sessions
+            .distinctBy { it.id }
+            .sortedByDescending { it.updatedAt }
+    }
+    MusePageScaffold(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .navigationBarsPadding()
+                .padding(horizontal = MusePaddings.screen),
+            contentPadding = PaddingValues(bottom = MusePaddings.listBottomClearance),
+        ) {
+            recentSectionItems(
+                recent = recent,
+                folders = folders,
+                onSelect = onSelect,
+                onDelete = onDelete,
+                onRenameTo = onRenameTo,
+                onTogglePinned = onTogglePinned,
+                onMoveSessionToFolder = onMoveSessionToFolder,
+                onArchive = onArchive,
+                onCreate = onCreate,
+            )
+        }
+    }
+}
+
 /** 顶部问候标题 + 日期行 + 个性化提醒。 */
 @Suppress("LongParameterList") // Compose 参数只能平铺；合并成对象会让预览/重组更糟
 @Composable
@@ -549,7 +624,9 @@ private fun GreetingHeader(
         }
         val memoryHint = GreetingHelper.getMemoryHint(facts, res = resources)
         Text(
-            text = timeGreeting,
+            // Shaheen 2 v5: 标题问候语固定为设计稿文案;时段问候(timeGreeting)
+            // 仍保留用于下方提醒文案的去重剥离,不再直接作标题展示。
+            text = stringResource(R.string.home_greeting_hero),
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
             ),
@@ -680,6 +757,85 @@ private fun PartnerRow(
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+    }
+}
+
+/**
+ * Shaheen 2 v5: 首页中心 Live Call 圆环 — 深蓝玻璃圆盘 + 青色辉光环 + 细红边,
+ * 中央麦克风,下方「Live Call」标签。点击直达 Agent 页既有的实时语音对话
+ * (VoiceConversationMode,ASR+TTS 循环),不在此伪造通话界面。
+ * 辉光呼吸动画遵循系统减动效设置(减动效时静止)。
+ */
+@Composable
+private fun LiveCallRing(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    val callCd = stringResource(R.string.home_live_call_cd)
+    val reducedMotion = MuseMotion.isReducedMotion()
+    val glowTransition = rememberInfiniteTransition(label = "liveCallGlow")
+    val animatedGlowAlpha by glowTransition.animateFloat(
+        initialValue = 0.30f,
+        targetValue = 0.60f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "liveCallGlowAlpha",
+    )
+    val glowAlpha = if (reducedMotion) 0.45f else animatedGlowAlpha
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            // 外层辉光:径向渐变向外消散(呼吸透明度)
+            Box(
+                modifier = Modifier
+                    .size(224.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                primary.copy(alpha = glowAlpha),
+                                primary.copy(alpha = 0f),
+                            ),
+                        ),
+                    ),
+            )
+            // 细红边圈(v5 设计稿的红色描边点缀,略大于主盘形成外圈细线)
+            Box(
+                modifier = Modifier
+                    .size(190.dp)
+                    .clip(CircleShape)
+                    .border(1.5.dp, LiveCallRedRim, CircleShape),
+            )
+            // 主圆盘:主题深色容器(深蓝玻璃)+ 青色亮环 + 麦克风
+            Box(
+                modifier = Modifier
+                    .size(178.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .border(3.dp, primary, CircleShape)
+                    .clickable { onClick() }
+                    .semantics { contentDescription = callCd },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MuseIcons.microphone,
+                    contentDescription = null,
+                    tint = primary,
+                    modifier = Modifier.size(54.dp),
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = stringResource(R.string.home_live_call),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 

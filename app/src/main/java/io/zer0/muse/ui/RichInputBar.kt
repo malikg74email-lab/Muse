@@ -24,7 +24,7 @@ import io.zer0.muse.ui.chat.VideoAttachment
 @Suppress("FunctionNaming", "LongParameterList")
 internal fun RichInputBar(
     text: String,
-    assistantName: String = "Muse",
+    assistantName: String = "Shaheen 2",
     isStreaming: Boolean,
     isWaitingFirstToken: Boolean = false,
     isDrawMode: Boolean,

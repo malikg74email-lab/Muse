@@ -38,7 +38,7 @@ import io.zer0.muse.ui.theme.pill
 @Composable
 internal fun MuseExpandedInputEditor(
     text: String,
-    assistantName: String = "Muse",
+    assistantName: String = "Shaheen 2",
     onTextChanged: (String) -> Unit,
     onSend: () -> Unit,
     onClose: () -> Unit,
@@ -83,7 +83,7 @@ internal fun MuseExpandedInputEditor(
                 minLines = 10,
                 maxLines = 100,
                 placeholder = {
-                    Text(stringResource(R.string.chat_placeholder_send, assistantName.ifBlank { "Muse" }))
+                    Text(stringResource(R.string.chat_placeholder_send, assistantName.ifBlank { "Shaheen 2" }))
                 },
             )
             Spacer(Modifier.height(MusePaddings.itemGap))

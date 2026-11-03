@@ -318,7 +318,7 @@ object GreetingHelper {
     }
 
     // 记忆提示语（人性化）— I18N-01: 文案走资源,测试回退中文。
-    fun getMemoryCountText(count: Int, assistantName: String = "Muse", res: Resources? = null): String {
+    fun getMemoryCountText(count: Int, assistantName: String = "Shaheen 2", res: Resources? = null): String {
         return when (count) {
             0 -> zh(res, R.string.greeting_memory_0, "$assistantName 还跟你不够熟悉", assistantName)
             in 1..9 -> zh(res, R.string.greeting_memory_few, "$assistantName 正在慢慢认识你", assistantName)
