@@ -69,6 +69,7 @@
     <string name="html_preview_download_failed">下载失败： %1$s</string>
 
     <!-- ===== ui/theme 预设主题名称 ===== -->
+    <string name="theme_shaheen">Shaheen</string>
     <string name="theme_warm_paper">暖纸</string>
     <string name="theme_sakura">樱花</string>
     <string name="theme_ocean">海洋</string>
