@@ -1542,7 +1542,7 @@ class OpenAIProvider(
         // 上报应用名 + 来源,既符合 OpenRouter 排名榜规则,也避免被识别为匿名流量
         if (url.contains("openrouter.ai")) {
             builder.header("HTTP-Referer", "https://github.com/zer0/muse")
-                .header("X-Title", "Muse")
+                .header("X-Title", "Shaheen 2")
         }
         val httpRequest = builder.get().build()
         // v1.132: listModels 使用独立短超时 client(30s),与 chat 长超时分离
