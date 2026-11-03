@@ -347,10 +347,10 @@ object PresetCharacters {
 
     val MUSE = PresetCharacter(
         id = "preset_muse",
-        name = "Muse",
+        name = "Shaheen 2",
         tagline = "你的灵感，温柔地展开",
         personality = listOf("自适应", "温和", "平衡"),
-        avatarEmoji = "🌿",
+        avatarEmoji = "🦅",
         recommendedTemperature = 0.8f,
         recommendedTopP = 0.95f,
         matchingTraits = listOf(0 to 0, 1 to 0, 2 to 1, 3 to 2, 0 to 3, 1 to 1, 2 to 2, 3 to 3),

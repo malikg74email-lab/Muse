@@ -91,7 +91,7 @@ data class SillyTavernCardV2(
                     systemPrompt = a.systemPrompt,
                     firstMes = a.messageTemplate,
                     tags = tags,
-                    creator = "Muse",
+                    creator = "Shaheen 2",
                     characterVersion = "1.0",
                     extensions = buildMap {
                         if (a.id.isNotBlank()) put("muse_id", JsonPrimitive(a.id))
