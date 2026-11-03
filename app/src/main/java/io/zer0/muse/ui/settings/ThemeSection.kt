@@ -872,9 +872,8 @@ private fun ThemeGridCard(
 }
 
 /**
- * v1.60-C: 语言选择区 — 胶囊分段控件,仿 ThemeModeOption 模式。
- * 选项:跟随系统 / 中文 / 英文 / 日语 / 韩语 / 俄语。
- * v1.132: 新增 ja/ko/ru 三种语言,6 选项改用 FlowRow 两行三列布局,避免窄屏挤压。
+ * Language picker section — capsule segmented control (ThemeModeOption pattern).
+ * Shaheen 2: options are Follow system / English only (all other UI languages removed).
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -886,11 +885,7 @@ internal fun LanguageSection(language: String, settings: SettingsRepository) {
         modifier = Modifier.padding(top = 8.dp),
     ) {
         val followSystem = stringResource(R.string.settings_theme_follow_system)
-        val zhLabel = stringResource(R.string.settings_theme_language_zh)
         val enLabel = stringResource(R.string.settings_theme_language_en)
-        val jaLabel = stringResource(R.string.settings_theme_language_ja)
-        val koLabel = stringResource(R.string.settings_theme_language_ko)
-        val ruLabel = stringResource(R.string.settings_theme_language_ru)
         // v1.132: 6 个选项用 FlowRow 包装,每行最多 3 个,避免窄屏挤压。
         androidx.compose.foundation.layout.FlowRow(
             modifier = Modifier
@@ -908,20 +903,11 @@ internal fun LanguageSection(language: String, settings: SettingsRepository) {
                 scope.launch { settings.saveLanguage(lang) }
             }
             ThemeModeOption(followSystem, language == "system") { switchLanguage("system") }
-            ThemeModeOption(zhLabel, language == "zh") { switchLanguage("zh") }
             ThemeModeOption(enLabel, language == "en") { switchLanguage("en") }
-            // v1.132: 新增日语/韩语/俄语三种语言选项
-            ThemeModeOption(jaLabel, language == "ja") { switchLanguage("ja") }
-            ThemeModeOption(koLabel, language == "ko") { switchLanguage("ko") }
-            ThemeModeOption(ruLabel, language == "ru") { switchLanguage("ru") }
         }
         SettingsGroupDivider()
         val langLabel = when (language) {
-            "zh" -> zhLabel
             "en" -> enLabel
-            "ja" -> jaLabel
-            "ko" -> koLabel
-            "ru" -> ruLabel
             else -> followSystem
         }
         SettingsItemRow(
@@ -934,7 +920,7 @@ internal fun LanguageSection(language: String, settings: SettingsRepository) {
 
 /**
  * v1.95: 启动默认页选择区 — 胶囊分段控件,仿 LanguageSection 模式。
- * 选项:任务 / Agent / 群聊。仅在启动时决定初始页,运行中切换设置不会重置当前页。
+ * 选项:任务 / Agent / Recent(Shaheen 2 v5 起第 3 页为最近会话)。仅在启动时决定初始页,运行中切换设置不会重置当前页。
  */
 @Composable
 internal fun DefaultHomePageSection(settings: SettingsRepository) {
@@ -947,7 +933,8 @@ internal fun DefaultHomePageSection(settings: SettingsRepository) {
     ) {
         val taskLabel = stringResource(R.string.home_tab_tasks)
         val agentLabel = "Agent"
-        val groupChatLabel = stringResource(R.string.home_tab_group_chat)
+        // Shaheen 2 v5: 首页第 3 页已由群聊改为 Recent(最近会话),标签随之更新。
+        val recentLabel = stringResource(R.string.home_tab_recent)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -960,14 +947,14 @@ internal fun DefaultHomePageSection(settings: SettingsRepository) {
             ThemeModeOption(agentLabel, defaultPage == 1) {
                 scope.launch { settings.saveDefaultHomePage(1) }
             }
-            ThemeModeOption(groupChatLabel, defaultPage == 2) {
+            ThemeModeOption(recentLabel, defaultPage == 2) {
                 scope.launch { settings.saveDefaultHomePage(2) }
             }
         }
         SettingsGroupDivider()
         val pageLabel = when (defaultPage) {
             1 -> agentLabel
-            2 -> groupChatLabel
+            2 -> recentLabel
             else -> taskLabel
         }
         SettingsItemRow(

@@ -696,7 +696,7 @@ fun SettingsDataPage(onBack: () -> Unit, onOpenCloudBackup: () -> Unit = {}) {
 @Composable
 fun SettingsAppearancePage(onBack: () -> Unit) {
     val settings: SettingsRepository = koinInject()
-    val themeMode by settings.themeModeFlow.collectAsStateWithLifecycle(initialValue = "system")
+    val themeMode by settings.themeModeFlow.collectAsStateWithLifecycle(initialValue = "dark")
     val fontSizeScale by settings.fontSizeScaleFlow.collectAsStateWithLifecycle(initialValue = "medium")
     val language by settings.languageFlow.collectAsStateWithLifecycle(initialValue = "system")
     SettingsSubPageScaffold(title = stringResource(R.string.settings_theme_appearance), onBack = onBack) {
