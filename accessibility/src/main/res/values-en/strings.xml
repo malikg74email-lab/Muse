@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="accessibility_service_description">Muse UI automation service. Allows Muse to read the screen content of any app and perform click/swipe/input actions to control the device. Only enable if you trust this; it does not monitor in the background.</string>
+    <string name="accessibility_service_description">Shaheen 2 UI automation service. Allows Shaheen 2 to read the screen content of any app and perform click/swipe/input actions to control the device. Only enable if you trust this; it does not monitor in the background.</string>
 </resources>
