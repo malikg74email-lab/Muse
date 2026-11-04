@@ -81,9 +81,9 @@ internal object DingtalkClient {
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             StreamConnection(
                 endpoint = obj["endpoint"]?.jsonPrimitive?.contentOrNull
-                    ?: error("Stream 响应缺少 endpoint: ${resp.take(200)}"),
+                    ?: error("Stream response is missing endpoint: ${resp.take(200)}"),
                 ticket = obj["ticket"]?.jsonPrimitive?.contentOrNull
-                    ?: error("Stream 响应缺少 ticket: ${resp.take(200)}"),
+                    ?: error("Stream response is missing ticket: ${resp.take(200)}"),
             )
         }
     }
@@ -103,7 +103,7 @@ internal object DingtalkClient {
             val obj = runCatching { AppJson.parseToJsonElement(resp).jsonObject }.getOrNull()
             val errcode = obj?.get("errcode")?.jsonPrimitive?.contentOrNull?.toIntOrNull()
             if (errcode != null && errcode != 0) {
-                error("钉钉回发失败: errcode=$errcode ${obj["errmsg"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
+                error("DingTalk reply-back failed: errcode=$errcode ${obj["errmsg"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
             }
         }
     }
@@ -124,7 +124,7 @@ internal object DingtalkClient {
                 val obj = AppJson.parseToJsonElement(resp).jsonObject
                 TokenInfo(
                     accessToken = obj["accessToken"]?.jsonPrimitive?.contentOrNull
-                        ?: error("钉钉 token 响应缺 accessToken: ${resp.take(200)}"),
+                        ?: error("DingTalk token response is missing accessToken: ${resp.take(200)}"),
                     expireInSeconds = obj["expireIn"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 7200L,
                 )
             }
@@ -183,7 +183,7 @@ internal object DingtalkClient {
         val obj = runCatching { AppJson.parseToJsonElement(resp).jsonObject }.getOrNull() ?: return
         val code = obj["code"]?.jsonPrimitive?.contentOrNull
         if (!code.isNullOrBlank() && code != "0") {
-            error("钉钉发送失败: code=$code ${obj["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
+            error("DingTalk send failed: code=$code ${obj["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
         }
     }
 

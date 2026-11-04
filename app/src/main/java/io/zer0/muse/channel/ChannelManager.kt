@@ -78,10 +78,10 @@ class ChannelManager(context: Context) {
         val config = _channels.value.firstOrNull { it.id == channelId }
         val sender = config?.let { senders[it.platform] }
         val result = when {
-            config == null -> ChannelSendResult(false, "渠道不存在: $channelId")
-            !config.enabled -> ChannelSendResult(false, "渠道已停用: ${config.name.ifBlank { channelId }}")
-            text.isBlank() -> ChannelSendResult(false, "发送内容为空")
-            sender == null -> ChannelSendResult(false, "平台未支持: ${config.platform}")
+            config == null -> ChannelSendResult(false, "Channel does not exist: $channelId")
+            !config.enabled -> ChannelSendResult(false, "Channel is disabled: ${config.name.ifBlank { channelId }}")
+            text.isBlank() -> ChannelSendResult(false, "Send content is empty")
+            sender == null -> ChannelSendResult(false, "Platform not supported: ${config.platform}")
             else -> sender.sendText(
                 config,
                 text,
@@ -90,10 +90,10 @@ class ChannelManager(context: Context) {
                 options.sourceEventIdOverride,
                 options.sourceEventSequenceOverride,
             ).fold(
-                onSuccess = { ChannelSendResult(true, "已发送到 ${config.name.ifBlank { config.platform.name }}") },
+                onSuccess = { ChannelSendResult(true, "Sent to ${config.name.ifBlank { config.platform.name }}") },
                 onFailure = { error ->
-                    Logger.w(TAG, "渠道发送失败: ${error.message}")
-                    ChannelSendResult(false, error.message ?: "发送失败")
+                    Logger.w(TAG, "Channel send failed: ${error.message}")
+                    ChannelSendResult(false, error.message ?: "Send failed")
                 },
             )
         }
@@ -107,15 +107,15 @@ class ChannelManager(context: Context) {
     suspend fun validate(config: ChannelConfig): Result<String> = withContext(Dispatchers.IO) {
         when (config.platform) {
             ChannelPlatform.FEISHU -> runCatching { FeishuChannelSender().fetchToken(config) }
-                .mapCatching { "tenant_access_token 获取成功" }
+                .mapCatching { "tenant_access_token fetched successfully" }
             ChannelPlatform.QQ -> QqClient.fetchAccessToken(config.appId.trim(), config.appSecret.trim())
-                .map { "access_token 获取成功" }
+                .map { "access_token fetched successfully" }
             ChannelPlatform.DINGTALK ->
                 DingtalkClient
                     .fetchAccessToken(config.appId.trim(), config.appSecret.trim(), config.dingtalkApiBase)
-                    .map { "access_token 获取成功" }
+                    .map { "access_token fetched successfully" }
             ChannelPlatform.TELEGRAM -> TelegramClient.getMe(config.appSecret.trim())
-            ChannelPlatform.WECLAW -> Result.success("微信渠道由扫码绑定完成,无需单独检测")
+            ChannelPlatform.WECLAW -> Result.success("The WeChat channel is bound by scanning a code; no separate check is needed")
         }
     }
 

@@ -139,7 +139,7 @@ object McpDynamicRegistration {
                 )
             }
             null
-        }.onError { msg, t -> Logger.w(TAG, "discoverMetadata 失败: $msg", t) }
+        }.onError { msg, t -> Logger.w(TAG, "discoverMetadata failed: $msg", t) }
             .getOrNull()
     }
 
@@ -185,7 +185,7 @@ object McpDynamicRegistration {
                 .build()
             httpClient.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) {
-                    Logger.w(TAG, "registerClient 失败: HTTP ${resp.code}")
+                    Logger.w(TAG, "registerClient failed: HTTP ${resp.code}")
                     return@resultOf null
                 }
                 val body = resp.body.string()
@@ -198,7 +198,7 @@ object McpDynamicRegistration {
                     clientSecretExpiresAt = obj["client_secret_expires_at"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L,
                 )
             }
-        }.onError { msg, t -> Logger.w(TAG, "registerClient 失败: $msg", t) }
+        }.onError { msg, t -> Logger.w(TAG, "registerClient failed: $msg", t) }
             .getOrNull()
     }
 
@@ -221,7 +221,7 @@ object McpDynamicRegistration {
         val regBase = baseUrl(regEndpoint)
         val serverBase = baseUrl(serverUrl)
         if (regBase == null || serverBase == null || regBase != serverBase) {
-            Logger.w(TAG, "registrationEndpoint 与 serverUrl 不同源: $regEndpoint vs $serverUrl,拒绝")
+            Logger.w(TAG, "registrationEndpoint is cross-origin with serverUrl: $regEndpoint vs $serverUrl; refused")
             return@withContext null
         }
         val registered = registerClient(regEndpoint, redirectUri, scopes = scopes) ?: return@withContext null
@@ -255,7 +255,7 @@ object McpDynamicRegistration {
                 val body = resp.body.string()
                 AppJson.decodeFromString(JsonObject.serializer(), body)
             }
-        }.onFailure { Logger.w(TAG, "fetchJson($url) 失败: ${it.message}") }
+        }.onFailure { Logger.w(TAG, "fetchJson($url) failed: ${it.message}") }
             .getOrNull()
     }
 

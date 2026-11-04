@@ -39,7 +39,7 @@ object AvatarStorage {
         if (normalized.startsWith("/")) {
             val sourceFile = File(normalized)
             if (!sourceFile.exists() || !sourceFile.isFile) {
-                Logger.w("AvatarStorage", "头像文件不存在: $normalized")
+                Logger.w("AvatarStorage", "Avatar file does not exist: $normalized")
                 return null
             }
             if (isPrivateAvatarFile(context, sourceFile)) {
@@ -61,7 +61,7 @@ object AvatarStorage {
         val avatarDir = File(context.filesDir, "avatar").canonicalFile
         file.canonicalFile.parentFile == avatarDir
     } catch (e: IOException) {
-        Logger.w("AvatarStorage", "无法判断头像文件是否属于私有目录", e)
+        Logger.w("AvatarStorage", "Could not determine whether the avatar file belongs to the private directory", e)
         false
     }
 
@@ -71,10 +71,10 @@ object AvatarStorage {
                 copyInputStream(context, input, sourceFile.extension)
             }
         } catch (e: IOException) {
-            Logger.e("AvatarStorage", "头像文件复制失败", e)
+            Logger.e("AvatarStorage", "Avatar file copy failed", e)
             null
         } catch (e: SecurityException) {
-            Logger.e("AvatarStorage", "头像文件读取权限失败", e)
+            Logger.e("AvatarStorage", "Avatar file read permission failed", e)
             null
         }
     }
@@ -84,7 +84,7 @@ object AvatarStorage {
         try {
             val input = resolver.openInputStream(sourceUri)
             if (input == null) {
-                Logger.w("AvatarStorage", "无法读取头像 URI: $sourceUri")
+                Logger.w("AvatarStorage", "Could not read the avatar URI: $sourceUri")
                 return@withContext null
             }
             val extension = when (resolver.getType(sourceUri)?.lowercase()) {
@@ -95,10 +95,10 @@ object AvatarStorage {
             }
             input.use { copyInputStream(context, it, extension) }
         } catch (e: IOException) {
-            Logger.e("AvatarStorage", "头像复制失败", e)
+            Logger.e("AvatarStorage", "Avatar copy failed", e)
             null
         } catch (e: SecurityException) {
-            Logger.e("AvatarStorage", "头像读取权限失败", e)
+            Logger.e("AvatarStorage", "Avatar read permission failed", e)
             null
         }
     }
@@ -106,7 +106,7 @@ object AvatarStorage {
     private fun copyInputStream(context: Context, input: InputStream, extension: String): String? {
         val dir = File(context.filesDir, "avatar")
         if (!dir.exists() && !dir.mkdirs()) {
-            Logger.e("AvatarStorage", "无法创建头像目录: ${dir.absolutePath}")
+            Logger.e("AvatarStorage", "Could not create the avatar directory: ${dir.absolutePath}")
             return null
         }
         val normalizedExtension = when (extension.lowercase()) {
@@ -119,22 +119,22 @@ object AvatarStorage {
             val copied = temp.outputStream().use { output -> copyStream(input, output) }
             if (!copied) {
                 temp.delete()
-                Logger.w("AvatarStorage", "头像超过 ${MAX_AVATAR_BYTES / 1024 / 1024}MB 上限,已拒绝")
+                Logger.w("AvatarStorage", "Avatar exceeds the ${MAX_AVATAR_BYTES / 1024 / 1024}MB limit; rejected")
                 return null
             }
             if (!temp.renameTo(target)) {
                 temp.delete()
-                Logger.e("AvatarStorage", "头像文件提交失败: ${target.absolutePath}")
+                Logger.e("AvatarStorage", "Avatar file commit failed: ${target.absolutePath}")
                 return null
             }
             return target.absolutePath
         } catch (e: IOException) {
             temp.delete()
-            Logger.e("AvatarStorage", "头像写入失败", e)
+            Logger.e("AvatarStorage", "Avatar write failed", e)
             return null
         } catch (e: SecurityException) {
             temp.delete()
-            Logger.e("AvatarStorage", "头像目录写入权限失败", e)
+            Logger.e("AvatarStorage", "Avatar directory write permission failed", e)
             return null
         }
     }

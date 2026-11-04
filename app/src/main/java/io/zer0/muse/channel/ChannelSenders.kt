@@ -135,7 +135,7 @@ internal class FeishuChannelSender : ChannelSender {
             }.fold(
                 onSuccess = { Result.success(Unit) },
                 onFailure = { e ->
-                    Logger.w(TAG, "飞书发送失败: ${e.message}")
+                    Logger.w(TAG, "Feishu send failed: ${e.message}")
                     Result.failure(e)
                 },
             )
@@ -157,8 +157,8 @@ internal class FeishuChannelSender : ChannelSender {
         ).getOrThrow()
         val obj = AppJson.parseToJsonElement(resp).jsonObject
         val code = obj["code"]?.jsonPrimitive?.contentOrNull
-        if (code != null && code != "0") error("飞书 token 错误: ${resp.take(200)}")
-        val token = obj["tenant_access_token"]?.jsonPrimitive?.contentOrNull ?: error("飞书 token 响应缺字段")
+        if (code != null && code != "0") error("Feishu token error: ${resp.take(200)}")
+        val token = obj["tenant_access_token"]?.jsonPrimitive?.contentOrNull ?: error("Feishu token response is missing fields")
         val expires = obj["expire"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 7200L
         return token to expires
     }
@@ -192,7 +192,7 @@ internal class QqChannelSender : ChannelSender {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         val token = tokenCache.get() ?: run {
             val info = QqClient.fetchAccessToken(config.appId, config.appSecret).getOrElse { e ->
-                Logger.w(TAG, "QQ access_token 获取失败: ${e.message}")
+                Logger.w(TAG, "QQ access_token fetch failed: ${e.message}")
                 return@withContext Result.failure<Unit>(e)
             }
             tokenCache.put(info.accessToken, info.expiresInSeconds)
@@ -223,13 +223,13 @@ internal class QqChannelSender : ChannelSender {
         if (isGroup && reply == null) {
             Logger.w(
                 TAG,
-                "QQ 群聊无被动回复上下文 | target=$rawTarget " +
-                    "eventId=${sourceEventIdOverride?.let { if (it.isBlank()) "<空串>" else it } ?: "<null>"} " +
-                    "cached=${QqMsgIdCache.get(rawTarget) ?: "<无>"}",
+                "QQ group chat has no passive-reply context | target=$rawTarget " +
+                    "eventId=${sourceEventIdOverride?.let { if (it.isBlank()) "<empty string>" else it } ?: "<null>"} " +
+                    "cached=${QqMsgIdCache.get(rawTarget) ?: "<none>"}",
             )
             return@withContext Result.failure(
                 IllegalStateException(
-                    "QQ 群聊只能被动回复：未拿到 5 分钟内的消息 ID（可能已超时或事件已失效）",
+                    "QQ group chats only support passive replies: no message ID from within the last 5 minutes was obtained (it may have timed out or the event has expired)",
                 ),
             )
         }
@@ -256,7 +256,7 @@ internal class QqChannelSender : ChannelSender {
             onFailure = { e ->
                 // 把 QQ 的错误码翻成能照它排查的一句话；原始文本仍进日志。
                 val reason = QqSendErrorMapper.describe(e.message, isGroup)
-                Logger.w(TAG, "QQ 发送失败(${if (isGroup) "群聊" else "单聊"}): ${e.message}")
+                Logger.w(TAG, "QQ send failed (${if (isGroup) "group chat" else "private chat"}): ${e.message}")
                 Result.failure(IllegalStateException(reason, e))
             },
         )
@@ -287,9 +287,9 @@ internal class WeClawChannelSender : ChannelSender {
         val target = targetOverride?.takeIf { it.isNotBlank() } ?: config.targetId
         val result = when {
             botToken.isBlank() ->
-                Result.failure(IllegalStateException("ClawBot 未绑定(缺少 bot_token,请先扫码绑定)"))
+                Result.failure(IllegalStateException("ClawBot not bound (bot_token missing; please scan the code to bind first)"))
             target.isBlank() ->
-                Result.failure(IllegalStateException("缺少接收方 ID(ilink_user_id)"))
+                Result.failure(IllegalStateException("Missing recipient ID (ilink_user_id)"))
             else -> WeClawClient.sendMessage(
                 botToken = botToken,
                 toUserId = target,
@@ -311,11 +311,11 @@ internal class TelegramChannelSender : ChannelSender {
     override suspend fun sendText(config: ChannelConfig, text: String, targetOverride: String?): Result<Unit> {
         val token = config.appSecret.trim()
         if (token.isBlank()) {
-            return Result.failure(IllegalStateException("Telegram Bot Token 未配置(请填 App Secret)"))
+            return Result.failure(IllegalStateException("Telegram Bot Token not configured (please fill in the App Secret)"))
         }
         val target = targetOverride?.takeIf { it.isNotBlank() } ?: config.targetId
         if (target.isBlank()) {
-            return Result.failure(IllegalStateException("缺少 chat_id(发送目标)"))
+            return Result.failure(IllegalStateException("Missing chat_id (send target)"))
         }
         return TelegramClient.sendMessage(token, target, text)
     }
@@ -343,7 +343,7 @@ internal class DingtalkChannelSender : ChannelSender {
     ): Result<Unit> {
         val target = targetOverride?.takeIf { it.isNotBlank() } ?: config.targetId
         if (target.isBlank()) {
-            return Result.failure(IllegalStateException("缺少发送目标(会话或用户 id)"))
+            return Result.failure(IllegalStateException("Missing send target (conversation or user id)"))
         }
         // 1. sessionWebhook 优先(临时地址自带会话凭据)
         (contextTokenOverride?.takeIf { it.isNotBlank() } ?: DingtalkSessionCache.get(target))?.let { webhook ->
@@ -354,7 +354,7 @@ internal class DingtalkChannelSender : ChannelSender {
         val appSecret = config.appSecret.trim()
         if (appKey.isBlank() || appSecret.isBlank()) {
             return Result.failure(
-                IllegalStateException("钉钉凭据未配置(ClientID/ClientSecret),且会话窗口已过期"),
+                IllegalStateException("DingTalk credentials not configured (ClientID/ClientSecret), and the conversation window has expired"),
             )
         }
         val token = tokenCache.get() ?: run {

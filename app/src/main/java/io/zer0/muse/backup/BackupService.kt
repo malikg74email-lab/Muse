@@ -95,7 +95,7 @@ import java.util.zip.ZipInputStream
  *  - 不含图片二进制(只存 URL,URL 可能失效)
  */
 internal suspend fun <T> withBackupImportWriteGate(block: suspend () -> T): T {
-    require(io.zer0.common.ProcessWriteGate.begin()) { "已有备份导入或恢复正在进行,请勿重复操作" }
+    require(io.zer0.common.ProcessWriteGate.begin()) { "A backup import or restore is already in progress; please do not repeat the operation" }
     return try {
         block()
     } finally {
@@ -152,7 +152,7 @@ class BackupService(
 
     private suspend fun invalidateRagAfterRestore() {
         resultOf { ragIndexInvalidator?.invoke() }
-            .onError { msg, _ -> Logger.w("BackupService", "恢复后 HNSW 索引失效处理失败: $msg") }
+            .onError { msg, _ -> Logger.w("BackupService", "Post-restore HNSW index invalidation handling failed: $msg") }
     }
 
     /**
@@ -385,11 +385,11 @@ class BackupService(
             // B-25: 单 JSON 备份防 OOM — 逐行读入时累计 UTF-8 体量,超过上限立即抛错。
             val text = readSingleJsonWithLimit(source, firstLine)
             val backup = resultOf { json.decodeFromString(Backup.serializer(), text) }
-                .onError { msg, t -> Logger.w("BackupService", "单 JSON 备份解析失败", t) }
+                .onError { msg, t -> Logger.w("BackupService", "Single-JSON backup parsing failed", t) }
                 .getOrNull()
                 ?: error(context.getString(R.string.backup_format_unrecognized))
             if (!backup.hasAnyData()) {
-                error("空备份文件,已拒绝导入")
+                error("Empty backup file; import refused")
             }
             val imported = applyBackup(backup)
             warmUpRoomAfterImport()
@@ -433,8 +433,8 @@ class BackupService(
 
     /** B-23: 生成单 JSON 备份超限错误信息,反映实例配置的实际上限(默认 64MB)。 */
     private fun singleJsonTooLargeConfiguredMessage(cumulativeUtf8Bytes: Long): String =
-        "单 JSON 备份体量 ${(cumulativeUtf8Bytes + 1024 * 1024 - 1) / (1024 * 1024)}MB 超过上限 " +
-            "${singleJsonMaxBytes / (1024 * 1024)}MB,已拒绝导入"
+        "Single-JSON backup size ${(cumulativeUtf8Bytes + 1024 * 1024 - 1) / (1024 * 1024)}MB exceeds the limit " +
+            "${singleJsonMaxBytes / (1024 * 1024)}MB; import refused"
 
     /**
      * Phase 11.2.2: 流式分片导出(NDJSON 格式)。
@@ -451,7 +451,7 @@ class BackupService(
             BufferedWriter(OutputStreamWriter(os, Charsets.UTF_8)).use { writer ->
                 val wrote = writeNdJson(writer, includeSecrets)
                 writer.flush()
-                Logger.i("BackupService", "流式导出完成: ${wrote.sessions} 会话, ${wrote.messages} 消息")
+                Logger.i("BackupService", "Streaming export complete: ${wrote.sessions} sessions, ${wrote.messages} messages")
                 wrote
             }
         } ?: error(context.getString(R.string.backup_cannot_write, uri))
@@ -948,27 +948,27 @@ class BackupService(
             resultOf {
                 val obj = json.decodeFromString(JsonObject.serializer(), firstLine)
                 val type = obj["type"]?.let { (it as? JsonPrimitive)?.content }
-                require(type == "meta") { "NDJSON 备份缺少 meta 首行,已拒绝导入" }
+                require(type == "meta") { "NDJSON backup is missing the meta first line; import refused" }
                 // B-21/B-34: meta 既用于空备份守卫，也用于完整性对账。
                 // 当前生成器声明所有类型计数；旧版本缺失的计数字段保留兼容，
                 // 但只对实际声明的字段做严格校验。
                 typeToMetaKey.values.distinct().forEach { key ->
                     obj[key]?.let { value ->
                         val count = (value as? JsonPrimitive)?.contentOrNull?.toIntOrNull()
-                            ?: error("备份 meta 计数非法: $key")
-                        require(count >= 0) { "备份 meta 计数不能为负数: $key" }
+                            ?: error("Backup meta count invalid: $key")
+                        require(count >= 0) { "Backup meta count must not be negative: $key" }
                         expectedCounts[key] = count
                     }
                 }
                 if (!allowEmptyBackup && (expectedCounts.isEmpty() || expectedCounts.values.sum() == 0)) {
-                    throw IllegalArgumentException("空备份文件(meta 无任何数据),已拒绝导入")
+                    throw IllegalArgumentException("Empty backup file (meta has no data); import refused")
                 }
             }.onError { msg, t ->
                 // meta 解析失败或空备份:抛给调用方,不清空任何表
                 throw IllegalArgumentException(t?.message ?: msg)
             }
         } else {
-            throw IllegalArgumentException("备份文件为空,已拒绝导入")
+            throw IllegalArgumentException("Backup file is empty; import refused")
         }
         val remaining = sequenceOf(firstLine).plus(lineIter.asSequence())
 
@@ -1096,7 +1096,7 @@ class BackupService(
                     // 这样外层 MuseDb 事务才能真正回滚,不会出现“导入成功但数据半缺失”。
                     val obj = resultOf { json.decodeFromString(JsonObject.serializer(), line) }
                         .onError { msg, t ->
-                            Logger.w("BackupService", "第 ${idx + 1} 行 JSON 解析失败,跳过: ${t?.message ?: msg}", t)
+                            Logger.w("BackupService", "Line ${idx + 1} JSON parsing failed, skipped: ${t?.message ?: msg}", t)
                         }
                         .getOrNull()
                         ?: return@forEachIndexed
@@ -1105,7 +1105,7 @@ class BackupService(
                     if (type != "meta" && type in typeToMetaKey) {
                         // fileStore/binaryFile 使用 name/content 或 path/content 结构，不属于实体型 data 记录。
                         if (type != "fileStore" && type != "binaryFile") {
-                            require(obj["data"] != null) { "备份记录缺少 data: $type" }
+                            require(obj["data"] != null) { "Backup record missing data: $type" }
                         }
                         val key = typeToMetaKey.getValue(type)
                         actualCounts[key] = (actualCounts[key] ?: 0) + 1
@@ -1557,15 +1557,15 @@ class BackupService(
                 expectedCounts.forEach { (key, expected) ->
                     val actual = actualCounts[key] ?: 0
                     check(actual == expected) {
-                        "备份记录数不一致: $key 声明 $expected, 实际 $actual"
+                        "Backup record count mismatch: $key declared $expected, actual $actual"
                     }
                 }
                 // 跳过不是静默行为:旧小手机会话被丢弃时要留下痕迹
                 if (skippedMiniPhoneSessions > 0) {
                     Logger.w(
                         "BackupService",
-                        "跳过 ${skippedMiniPhoneSessions} 条旧小手机会话及其 ${skippedMiniPhoneMessages} 条消息" +
-                            "（该功能已下线，不再作为普通会话恢复）",
+                        "Skipped ${skippedMiniPhoneSessions} legacy mini-phone sessions and their ${skippedMiniPhoneMessages} messages" +
+                            "(That feature has been retired and is no longer restored as regular sessions)",
                     )
                 }
 
@@ -1678,7 +1678,7 @@ class BackupService(
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.e("BackupService", "流式导入失败,已回滚: ${e.message}", e)
+            Logger.e("BackupService", "Streaming import failed, rolled back: ${e.message}", e)
             throw e
         }
         // v1.0.74 fix: 直插 messages 绕过 FTS 同步,启动时 ensureFtsIndexConsistent 的计数启发式
@@ -1694,13 +1694,13 @@ class BackupService(
         if (binaryFileBuf.stats.skippedFiles > 0) {
             Logger.w(
                 "BackupService",
-                "NDJSON 导入跳过了 ${binaryFileBuf.stats.skippedFiles} 个目录文件" +
-                    "(${binaryFileBuf.stats.skippedBytes} 字节),恢复后的附件/头像可能不完整",
+                "NDJSON import skipped ${binaryFileBuf.stats.skippedFiles} directory files" +
+                    "(${binaryFileBuf.stats.skippedBytes} bytes); attachments/avatars may be incomplete after restore",
             )
         }
         if (binaryFileBuf.toMap().isNotEmpty()) writeBinaryFiles(binaryFileBuf.toMap())
 
-        Logger.i("BackupService", "流式导入完成: $sessionCount 会话, $messageCount 消息")
+        Logger.i("BackupService", "Streaming import complete: $sessionCount sessions, $messageCount messages")
         return sessionCount to messageCount
     }
 
@@ -1763,7 +1763,7 @@ class BackupService(
     private suspend fun rollbackNdJsonRestore(entry: RestoreJournal.Entry, originalError: Throwable): Boolean =
         withContext(kotlinx.coroutines.NonCancellable) {
             try {
-                Logger.w("BackupService", "NDJSON 恢复失败,回滚持久化恢复点: ${originalError.message}", originalError)
+                Logger.w("BackupService", "NDJSON restore failed, rolling back to the persisted recovery point: ${originalError.message}", originalError)
                 var rollbackJournal = restoreJournal.advance(entry, RestoreJournal.Phase.ROLLING_BACK)
                 restoreStagingStore.readRecoveryNdJson(entry) { recoveryLines ->
                     applyNdJsonStreaming(recoveryLines, allowEmptyBackup = true)
@@ -1783,7 +1783,7 @@ class BackupService(
                 restoreStagingStore.cleanup(rollbackJournal)
                 true
             } catch (rollbackError: Exception) {
-                Logger.e("BackupService", "NDJSON 恢复点回滚失败,保留账本和副本: ${rollbackError.message}", rollbackError)
+                Logger.e("BackupService", "NDJSON recovery-point rollback failed, keeping the ledger and copies: ${rollbackError.message}", rollbackError)
                 false
             }
         }
@@ -1846,11 +1846,11 @@ class BackupService(
     /** v2.0: 文件级导入后显式预热 Room,避免后续首次写入撞上 closed connection。 */
     private fun warmUpRoomAfterImport() {
         runCatching { db.openHelper.writableDatabase }
-            .onFailure { Logger.w("BackupService", "导入后 Room 重开失败", it) }
+            .onFailure { Logger.w("BackupService", "Reopening Room after import failed", it) }
         // v2.6.7 fix (AUDIT F7): DB 已被整体替换，内存里的待办快照必须作废。
         // UI 只订阅 TodoTool 的内存流，不清理会继续显示恢复前的旧清单。
         runCatching { io.zer0.muse.tools.TodoTool.clearAll() }
-            .onFailure { Logger.w("BackupService", "导入后清理待办快照失败", it) }
+            .onFailure { Logger.w("BackupService", "Cleaning up todo snapshots after import failed", it) }
     }
     companion object {
         /** v4: 纳入备份的文件型存储(相对 filesDir)。 */
@@ -1893,8 +1893,8 @@ class BackupService(
 
         /** B-25: 生成单 JSON 备份超限的明确错误信息(含当前体量字节与默认上限 64MB)。 */
         internal fun singleJsonTooLargeMessage(cumulativeUtf8Bytes: Long): String =
-            "单 JSON 备份体量 ${(cumulativeUtf8Bytes + 1024 * 1024 - 1) / (1024 * 1024)}MB 超过上限 " +
-                "${MAX_SINGLE_JSON_BACKUP_BYTES / (1024 * 1024)}MB,已拒绝导入"
+            "Single-JSON backup size ${(cumulativeUtf8Bytes + 1024 * 1024 - 1) / (1024 * 1024)}MB exceeds the limit " +
+                "${MAX_SINGLE_JSON_BACKUP_BYTES / (1024 * 1024)}MB; import refused"
 
         /**
          * P0-1: 备份密码失效判定(导出/上传共用的单一守卫)。
@@ -2024,8 +2024,8 @@ class BackupService(
         // v1.x 诊断: 记录导出规模,便于排查"备份不完整/恢复后数据丢失"类问题
         Logger.i(
             "BackupService",
-            "导出云端备份: ${writeSummary.sessions} 会话 / ${writeSummary.messages} 消息" +
-                " / ${writeSummary.facts} 记忆 / ${writeSummary.groupChatMessages} 群聊消息",
+            "Exporting cloud backup: ${writeSummary.sessions} sessions / ${writeSummary.messages} messages" +
+                " / ${writeSummary.facts} memories / ${writeSummary.groupChatMessages} group chat messages",
         )
         val data = if (config.backupPassword.isNotEmpty()) {
             BackupCrypto.encrypt(plaintext, config.backupPassword)
@@ -2034,7 +2034,7 @@ class BackupService(
         }
         val uploaded = cloudBackupService.uploadBackupWithLatest(config, data)
         if (!uploaded) {
-            Logger.w("BackupService", "云备份上传失败(写入阶段)")
+            Logger.w("BackupService", "Cloud backup upload failed (write stage)")
             logCloudBackup(
                 status = "write_failed",
                 size = data.size.toLong(),
@@ -2066,8 +2066,8 @@ class BackupService(
         if (!byteVerified) {
             Logger.w(
                 "BackupService",
-                "云备份读回校验失败(字节): 上传 ${write.bytes} bytes/hash=${write.sha256}, " +
-                    "读回 ${readBack?.size ?: -1} bytes/hash=${readBackHash ?: "-"}",
+                "Cloud backup read-back verification failed (bytes): uploaded ${write.bytes} bytes/hash=${write.sha256}, " +
+                    "read back ${readBack?.size ?: -1} bytes/hash=${readBackHash ?: "-"}",
             )
             logCloudBackup(
                 status = "verify_failed",
@@ -2086,7 +2086,7 @@ class BackupService(
                 config.backupPasswordSet,
             )
         if (contentError != null) {
-            Logger.w("BackupService", "云备份读回校验失败(内容): $contentError")
+            Logger.w("BackupService", "Cloud backup read-back verification failed (content): $contentError")
             logCloudBackup(
                 status = "verify_failed",
                 size = write.bytes,
@@ -2147,9 +2147,9 @@ class BackupService(
     @Suppress("TooGenericExceptionCaught")
     suspend fun restoreFromAutoBackup(path: String): Pair<Int, Int> = withContext(Dispatchers.IO) {
         val bundle = File(path)
-        require(bundle.exists() && bundle.isFile) { "自动备份文件不存在: $path" }
+        require(bundle.exists() && bundle.isFile) { "Auto backup file not found: $path" }
         // B-7: 进入进程级写入门控,暂停记忆 tick/任务轮询/自动备份等后台写入,避免窗口期在途写丢失。
-        require(io.zer0.common.ProcessWriteGate.begin()) { "已有备份恢复正在进行,请勿重复操作" }
+        require(io.zer0.common.ProcessWriteGate.begin()) { "A backup restore is already in progress; please do not repeat the operation" }
         val tmpDir = File(context.cacheDir, "auto_restore_${UUID.randomUUID()}")
         tmpDir.mkdirs()
         try {
@@ -2163,13 +2163,13 @@ class BackupService(
                 museSnap = bundle
                 memSnap = null
                 factSnap = null
-                Logger.i("BackupService", "restoreFromAutoBackup: 检测到旧版单库备份,仅恢复 muse.db: $path")
+                Logger.i("BackupService", "restoreFromAutoBackup: legacy single-database backup detected, restoring muse.db only: $path")
             } else {
                 extractAutoBackupBundle(bundle, tmpDir)
                 museSnap = File(tmpDir, io.zer0.muse.data.stats.AutoBackupHelper.ENTITY_MUSE_DB)
                 memSnap = File(tmpDir, io.zer0.muse.data.stats.AutoBackupHelper.ENTITY_MEMORY_DB)
                 factSnap = File(tmpDir, io.zer0.muse.data.stats.AutoBackupHelper.ENTITY_FACTS_DB)
-                require(museSnap.exists()) { "备份包缺少 muse.db,无法恢复" }
+                require(museSnap.exists()) { "Backup package is missing muse.db; cannot restore" }
             }
             // 文件级替换(含失败回滚)在锁内执行,均为非挂起操作,保证原子性;
             // FTS 重建与结果统计(reopen Room)在锁外执行,避免挂起点进入临界区。
@@ -2196,9 +2196,9 @@ class BackupService(
                     factSnap?.takeIf { it.exists() }?.let { swapDatabase(it, currentFactFile) }
 
                     // 4. 完整性校验主库
-                    require(verifyDbIntegrity(currentDbFile)) { "恢复后 muse.db 完整性校验失败" }
+                    require(verifyDbIntegrity(currentDbFile)) { "Post-restore muse.db integrity verification failed" }
                 } catch (e: Exception) {
-                    Logger.e("BackupService", "restoreFromAutoBackup 文件替换失败,回滚当前库: ${e.message}", e)
+                    Logger.e("BackupService", "restoreFromAutoBackup file replacement failed, rolling back the current database: ${e.message}", e)
                     // 回滚:用预拷贝还原;回滚失败时保留副本并如实报告
                     val rolledBack = listOf(
                         rollbackMuse to currentDbFile,
@@ -2208,7 +2208,7 @@ class BackupService(
                         .map { (src, dst) -> runCatching { swapDatabase(src!!, dst) }.isSuccess }
                         .all { it }
                     if (!rolledBack) {
-                        Logger.e("BackupService", "restoreFromAutoBackup 回滚未完全成功,请重启应用检查数据")
+                        Logger.e("BackupService", "restoreFromAutoBackup rollback did not fully succeed; please restart the app and check the data")
                     }
                     throw e
                 } finally {
@@ -2219,23 +2219,23 @@ class BackupService(
             // 5a. v2.0: 显式重开 Room 并校验;close 后依赖"后续访问自动重开"在部分环境会失效,故当场重开、失败即提示重启。
             runCatching { db.openHelper.writableDatabase }
                 .onFailure { e ->
-                    Logger.e("BackupService", "恢复后数据库重开失败", e)
-                    error("数据库连接重建失败,请重启应用后重试")
+                    Logger.e("BackupService", "Reopening the database after restore failed", e)
+                    error("Database connection rebuild failed; please restart the app and retry")
                 }
             restoreSettingsFromAutoBackup(path, isLegacySingleDb)
             // 5. 锁外:重建 FTS(快照的 FTS 影子表在 VACUUM 后可能不一致)与结果统计。
             //    这些操作触发 Room 重新打开新文件,失败不阻断恢复(索引可后续重建)。
             resultOf { sessionRepository.rebuildFtsIndex() }
-                .onError { msg, t -> Logger.w("BackupService", "恢复后消息 FTS 重建失败: $msg", t) }
+                .onError { msg, t -> Logger.w("BackupService", "Post-restore message FTS rebuild failed: $msg", t) }
             resultOf { factStore.rebuildFtsIndex() }
-                .onError { msg, t -> Logger.w("BackupService", "恢复后事实 FTS 重建失败: $msg", t) }
+                .onError { msg, t -> Logger.w("BackupService", "Post-restore fact FTS rebuild failed: $msg", t) }
             invalidateRagAfterRestore()
 
             val sessions = db.sessionDao().observeAll().first()
             val messageCount = sessions.sumOf { session ->
                 db.messageDao().observeBySession(session.id).first().size
             }
-            Logger.i("BackupService", "restoreFromAutoBackup 完成: ${sessions.size} 会话, $messageCount 消息")
+            Logger.i("BackupService", "restoreFromAutoBackup complete: ${sessions.size} sessions, $messageCount messages")
             sessions.size to messageCount
         } finally {
             // B-7: 退出写入门控(无论成功与否都必须复位)
@@ -2315,7 +2315,7 @@ class BackupService(
      * 避免残留帧污染新库。快照不存在时抛异常,交由调用方回滚。
      */
     private fun swapDatabase(snapshot: File, target: File) {
-        require(snapshot.exists()) { "快照不存在: ${snapshot.absolutePath}" }
+        require(snapshot.exists()) { "Snapshot does not exist: ${snapshot.absolutePath}" }
         snapshot.copyTo(target, overwrite = true)
         File(target.absolutePath + "-wal").delete()
         File(target.absolutePath + "-shm").delete()
@@ -2344,17 +2344,17 @@ class BackupService(
      */
     private suspend fun applyCloudBackupData(config: CloudBackupConfig, data: ByteArray): Pair<Int, Int>? {
         if (shouldRejectPlaintextCloudBackup(data, config.backupPasswordSet, config.backupPassword)) {
-            Logger.w("BackupService", "拒绝明文云备份: 当前设备已配置备份加密")
+            Logger.w("BackupService", "Refusing a plaintext cloud backup: backup encryption is configured on this device")
             return null
         }
         val plaintext = if (BackupCrypto.isEncrypted(data)) {
             if (config.backupPassword.isEmpty()) {
-                Logger.w("BackupService", "云端备份已加密但未设置备份密码,无法解密")
+                Logger.w("BackupService", "The cloud backup is encrypted but no backup password is set; cannot decrypt it")
                 return null
             }
             resultOf { BackupCrypto.decrypt(data, config.backupPassword) }
                 .onError { msg, t ->
-                    Logger.w("BackupService", "云端备份解密失败(密码错误?)", t)
+                    Logger.w("BackupService", "Cloud backup decryption failed (wrong password?)", t)
                     return null
                 }
                 .getOrNull() ?: return null
@@ -2386,7 +2386,7 @@ class BackupService(
                     }
                 }
                 resultOf { applyNdJsonStreamingWithImageCleanup(sequenceOf(firstLine) + rest) }
-                    .onError { _, t -> Logger.w("BackupService", "云端 NDJSON 流式导入失败", t) }
+                    .onError { _, t -> Logger.w("BackupService", "Cloud NDJSON streaming import failed", t) }
                     .getOrNull()
             }
         } else {
@@ -2397,12 +2397,12 @@ class BackupService(
                 val backup = resultOf {
                     json.decodeFromString(Backup.serializer(), readSingleJsonWithLimit(reader, firstLine))
                 }.onError { msg, t ->
-                    Logger.w("BackupService", "云端单 JSON 备份读取/解析失败,拒绝恢复: ${t?.message ?: msg}", t)
+                    Logger.w("BackupService", "Reading/parsing the cloud single-JSON backup failed; restore refused: ${t?.message ?: msg}", t)
                 }.getOrNull() ?: return null
                 // v1.x 数据安全: 云端备份为空(0 会话 0 消息)时拒绝恢复,
                 // 避免"空备份覆盖本地数据"导致对话全部丢失(用户反馈 WebDAV 恢复后对话全没了)。
                 if (!backup.hasAnyData()) {
-                    Logger.w("BackupService", "云端备份为空,拒绝恢复以免覆盖本地数据")
+                    Logger.w("BackupService", "Cloud backup is empty; restore refused to avoid overwriting local data")
                     return null
                 }
                 applyBackup(backup)
@@ -2677,7 +2677,7 @@ class BackupService(
      */
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private suspend fun applyBackup(backup: Backup): Pair<Int, Int> {
-        require(backup.hasAnyData()) { "空备份文件,已拒绝导入" }
+        require(backup.hasAnyData()) { "Empty backup file; import refused" }
         // 问题7.2: 版本迁移(v1/v2 → v3),Backup data class 字段都有默认值,补 version 即可
         val migrated = migrateBackup(backup)
         val journalEntry = restoreJournal.begin(
@@ -2709,7 +2709,7 @@ class BackupService(
             try {
                 sessionRepository.rebuildFtsIndex()
             } catch (error: Exception) {
-                Logger.w("BackupService", "恢复后 FTS 重建失败，保留恢复账本: ${error.message}", error)
+                Logger.w("BackupService", "Post-restore FTS rebuild failed, keeping the restore ledger: ${error.message}", error)
                 throw error
             }
             invalidateRagAfterRestore()
@@ -2745,11 +2745,11 @@ class BackupService(
         withContext(kotlinx.coroutines.NonCancellable) {
             val recovery = restoreStagingStore.readRecoveryPoint(entry)
             if (recovery == null) {
-                Logger.e("BackupService", "恢复失败且找不到持久化 recovery point: ${originalError.message}", originalError)
+                Logger.e("BackupService", "Restore failed and no persisted recovery point was found: ${originalError.message}", originalError)
                 return@withContext false
             }
             try {
-                Logger.w("BackupService", "恢复失败,回滚到持久化 recovery point: ${originalError.message}", originalError)
+                Logger.w("BackupService", "Restore failed, rolling back to the persisted recovery point: ${originalError.message}", originalError)
                 val imageFilesBeforeRollback = messageImageStore.snapshotStoredFilePaths()
                 var rollbackJournal = restoreJournal.advance(entry, RestoreJournal.Phase.ROLLING_BACK)
                 applyBackupInternal(recovery)
@@ -2771,7 +2771,7 @@ class BackupService(
                 pruneRestoredMessageImages(imageFilesBeforeRollback)
                 true
             } catch (rollbackError: Exception) {
-                Logger.e("BackupService", "恢复点回滚失败,保留账本和副本: ${rollbackError.message}", rollbackError)
+                Logger.e("BackupService", "Recovery-point rollback failed, keeping the ledger and copies: ${rollbackError.message}", rollbackError)
                 false
             }
         }
@@ -2797,7 +2797,7 @@ class BackupService(
                     }
                 } else {
                     val recovery = restoreStagingStore.readRecoveryPoint(entry)
-                        ?: error("恢复账本存在，但找不到持久化 recovery point")
+                        ?: error("A restore ledger exists, but no persisted recovery point was found")
                     applyBackupInternal(recovery)
                     sessionRepository.rebuildFtsIndex()
                     invalidateRagAfterRestore()
@@ -2816,16 +2816,16 @@ class BackupService(
                 restoreJournal.complete(current)
                 restoreStagingStore.cleanup(current)
                 pruneRestoredMessageImages(imageFilesBeforeRollback)
-                Logger.w("BackupService", "启动恢复检查已回滚未完成恢复: phase=${entry.phase}")
+                Logger.w("BackupService", "Startup restore check rolled back an incomplete restore: phase=${entry.phase}")
                 true
             } catch (error: Exception) {
                 restoreJournal.fail(current, error)
-                Logger.e("BackupService", "启动恢复检查失败，保留恢复副本供诊断: ${error.message}", error)
+                Logger.e("BackupService", "Startup restore check failed, keeping the restore copies for diagnosis: ${error.message}", error)
                 false
             }
         }
         if (gateAlreadyHeld) {
-            require(io.zer0.common.ProcessWriteGate.restoring) { "恢复闸门未持有" }
+            require(io.zer0.common.ProcessWriteGate.restoring) { "Restore gate not held" }
             restoreBody()
         } else {
             withBackupImportWriteGate { restoreBody() }
@@ -2847,13 +2847,13 @@ class BackupService(
             restoreJournal.advance(
                 entry,
                 RestoreJournal.Phase.FAILED,
-                failureReason = "启动回滚失败已放弃: ${cause.message ?: cause::class.java.simpleName}",
+                failureReason = "Startup rollback failure abandoned: ${cause.message ?: cause::class.java.simpleName}",
             )
-        }.onError { msg, t -> Logger.w("BackupService", "记录放弃原因失败: ${t?.message ?: msg}", t) }
+        }.onError { msg, t -> Logger.w("BackupService", "Recording the abandonment reason failed: ${t?.message ?: msg}", t) }
 
         // complete() 会把相位推到 COMPLETED 并删除账本，使启动自检不再命中。
         restoreJournal.complete(restoreJournal.read() ?: entry)
-        Logger.w("BackupService", "已放弃未完成恢复 restoreId=${entry.restoreId}，副本保留供诊断")
+        Logger.w("BackupService", "Abandoned incomplete restore restoreId=${entry.restoreId}; copies kept for diagnosis")
         true
     }
 
@@ -2882,11 +2882,11 @@ class BackupService(
     private fun migrateBackup(backup: Backup): Backup = when (backup.version) {
         4, 3 -> backup
         1, 2 -> {
-            Logger.i("BackupService", "迁移备份 v${backup.version} → v4:补默认扩展表字段")
+            Logger.i("BackupService", "Migrating backup v${backup.version} → v4: filling default extension-table fields")
             backup.copy(version = 4)
         }
         else -> {
-            Logger.w("BackupService", "未知备份版本 v${backup.version},按当前版本 v4 处理")
+            Logger.w("BackupService", "Unknown backup version v${backup.version}, treating as the current version v4")
             backup.copy(version = 4)
         }
     }
@@ -2907,9 +2907,9 @@ class BackupService(
             if (miniPhoneSessionIds.isNotEmpty()) {
                 Logger.w(
                     "BackupService",
-                    "跳过 ${miniPhoneSessionIds.size} 条旧小手机会话及其" +
-                        " ${backup.messages.count { it.sessionId in miniPhoneSessionIds }} 条消息" +
-                        "（该功能已下线，不再作为普通会话恢复）",
+                    "Skipping ${miniPhoneSessionIds.size} legacy mini-phone sessions and their" +
+                        " ${backup.messages.count { it.sessionId in miniPhoneSessionIds }} messages" +
+                        "(That feature has been retired and is no longer restored as regular sessions)",
                 )
             }
             backup.sessions.forEach {
@@ -2981,7 +2981,7 @@ class BackupService(
             if (backup.conversationEvents.isNotEmpty()) {
                 val insertedEventIds = db.conversationEventDao().insertAll(backup.conversationEvents)
                 check(insertedEventIds.all { it != -1L }) {
-                    "备份 conversation_events 存在 eventId/主键冲突，拒绝静默丢失事件"
+                    "Backup conversation_events has an eventId/primary-key conflict; refusing to silently lose events"
                 }
             }
             backup.conversationTurns.forEach { db.conversationTurnDao().upsert(it) }
@@ -3066,7 +3066,7 @@ class BackupService(
     private suspend fun readReferencedMessageImagePaths(): Set<String>? {
         val referenced = mutableSetOf<String>()
         val encodedPaths = resultOf { db.messageDao().getMessagesWithPersistedImagePaths() }
-            .onError { message, error -> Logger.w("BackupService", "消息图片路径查询失败，跳过 sidecar 清理: $message", error) }
+            .onError { message, error -> Logger.w("BackupService", "Querying message image paths failed, skipping sidecar cleanup: $message", error) }
             .getOrNull()
         if (encodedPaths == null) return null
         var failedToParse = false
@@ -3074,7 +3074,7 @@ class BackupService(
             val paths = resultOf {
                 json.decodeFromString(ListSerializer(String.serializer()), encoded)
             }
-                .onError { message, error -> Logger.w("BackupService", "消息图片路径读取失败，跳过 sidecar 清理: $message", error) }
+                .onError { message, error -> Logger.w("BackupService", "Reading message image paths failed, skipping sidecar cleanup: $message", error) }
                 .getOrNull()
             if (paths == null) {
                 failedToParse = true
@@ -3117,10 +3117,10 @@ class BackupService(
                     else -> return@forEach
                 }
             }.onError { msg, t ->
-                Logger.w("BackupService", "入库对账取数失败($key): $msg", t)
+                Logger.w("BackupService", "Stored-count reconciliation fetch failed ($key): $msg", t)
             }.getOrNull() ?: return@forEach
             check(actual >= base) {
-                "备份入库数不一致: $key 声明 $base, 实际入库 $actual"
+                "Backup stored-count check failed: $key declared $base, actually stored $actual"
             }
         }
     }

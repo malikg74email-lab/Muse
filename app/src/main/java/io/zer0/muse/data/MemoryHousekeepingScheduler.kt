@@ -36,7 +36,7 @@ class MemoryHousekeepingScheduler(
                 runCatching { sweep() }
                     .onFailure {
                         if (it is kotlinx.coroutines.CancellationException) throw it
-                        Logger.w(TAG, "记忆清理失败: ${it.message}")
+                        Logger.w(TAG, "Memory cleanup failed: ${it.message}")
                     }
                 delay(INTERVAL_MS)
             }
@@ -54,9 +54,9 @@ class MemoryHousekeepingScheduler(
         if (!settings.isMemoryEnabled()) return
         val keepDays = RETENTION_DAYS
         resultOf { groupChatMemoryRepository.cleanupOlderThan(keepDays) }
-            .onError { msg, t -> Logger.w(TAG, "清理群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to clean group chat memory: $msg", t) }
         resultOf { agentDmRepository.cleanupOlderThan(keepDays) }
-            .onError { msg, t -> Logger.w(TAG, "清理 Agent 私信失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to clean Agent private messages: $msg", t) }
     }
 
     companion object {

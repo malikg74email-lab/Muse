@@ -52,7 +52,7 @@ internal class McpFeishuTenantTokenClient(
                 httpClient.newCall(request).execute().use { response ->
                     val responseBody = response.body.string()
                     if (!response.isSuccessful) {
-                        Logger.w(TAG, "飞书 TAT 获取失败: HTTP ${response.code}")
+                        Logger.w(TAG, "Feishu TAT fetch failed: HTTP ${response.code}")
                         return@withContext null
                     }
                     parseTokenResponse(responseBody, now)
@@ -60,7 +60,7 @@ internal class McpFeishuTenantTokenClient(
             } catch (ce: kotlinx.coroutines.CancellationException) {
                 throw ce
             } catch (e: Exception) {
-                Logger.w(TAG, "飞书 TAT 获取异常: ${e.message}")
+                Logger.w(TAG, "Feishu TAT fetch exception: ${e.message}")
                 null
             }
         }
@@ -76,7 +76,7 @@ internal class McpFeishuTenantTokenClient(
         if (token.isBlank()) {
             val code = json["code"]?.jsonPrimitive?.contentOrNull
             val message = json["msg"]?.jsonPrimitive?.contentOrNull
-            Logger.w(TAG, "飞书 TAT 响应缺少 token: code=$code, msg=$message")
+            Logger.w(TAG, "Feishu TAT response is missing the token: code=$code, msg=$message")
             return null
         }
         val expiresInSeconds = json["expire"]

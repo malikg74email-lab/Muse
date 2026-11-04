@@ -54,16 +54,16 @@ data class SillyTavernCardV2(
             parts += sp
         } else {
             if (data.description.isNotBlank()) parts += data.description
-            if (data.personality.isNotBlank()) parts += "性格特点: ${data.personality}"
-            if (data.scenario.isNotBlank()) parts += "场景设定: ${data.scenario}"
+            if (data.personality.isNotBlank()) parts += "Personality traits: ${data.personality}"
+            if (data.scenario.isNotBlank()) parts += "Scenario: ${data.scenario}"
         }
         if (data.postHistoryInstructions.isNotBlank()) {
-            parts += "后置指令: ${data.postHistoryInstructions}"
+            parts += "Post-history instructions: ${data.postHistoryInstructions}"
         }
         val combined = parts.joinToString("\n\n")
         return AssistantEntity(
             id = "",
-            name = data.name.ifBlank { "导入角色" },
+            name = data.name.ifBlank { "Imported Character" },
             systemPrompt = combined,
             messageTemplate = data.firstMes,
             tagsJson = serializeStringListSafe(data.tags),
@@ -213,7 +213,7 @@ internal object PngChunkUtil {
         }
         // 构造 tEXt chunk data: keyword + 0x00 + text
         val keywordBytes = keyword.toByteArray(Charsets.ISO_8859_1)
-        require(keywordBytes.size in 1..79) { "tEXt keyword 长度须在 1..79" }
+        require(keywordBytes.size in 1..79) { "tEXt keyword length must be within 1..79" }
         val textBytes = text.toByteArray(Charsets.ISO_8859_1)
         val chunkData = ByteArray(keywordBytes.size + 1 + textBytes.size)
         System.arraycopy(keywordBytes, 0, chunkData, 0, keywordBytes.size)

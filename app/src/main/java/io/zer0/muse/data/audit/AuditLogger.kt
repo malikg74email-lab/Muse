@@ -66,7 +66,7 @@ class AuditLogger(private val dao: AuditLogDao) {
                 )
             } catch (t: Throwable) {
                 // 审计日志失败不应影响调用方业务,仅记录到 Logger
-                Logger.w("AuditLogger", "写入审计日志失败: $category/$action", t)
+                Logger.w("AuditLogger", "Failed to write the audit log: $category/$action", t)
             }
         }
     }
@@ -81,7 +81,7 @@ class AuditLogger(private val dao: AuditLogDao) {
         return try {
             dao.query(limit, offset)
         } catch (t: Throwable) {
-            Logger.w("AuditLogger", "查询审计日志失败", t)
+            Logger.w("AuditLogger", "Failed to query the audit log", t)
             emptyList()
         }
     }
@@ -94,7 +94,7 @@ class AuditLogger(private val dao: AuditLogDao) {
             val cutoff = System.currentTimeMillis() - RETENTION_DAYS * 24L * 60L * 60L * 1000L
             dao.deleteOlderThan(cutoff)
         } catch (t: Throwable) {
-            Logger.w("AuditLogger", "清理旧审计日志失败", t)
+            Logger.w("AuditLogger", "Failed to clean old audit logs", t)
         }
     }
 
@@ -105,7 +105,7 @@ class AuditLogger(private val dao: AuditLogDao) {
         try {
             dao.deleteAll()
         } catch (t: Throwable) {
-            Logger.w("AuditLogger", "清空审计日志失败", t)
+            Logger.w("AuditLogger", "Failed to clear the audit log", t)
         }
     }
 

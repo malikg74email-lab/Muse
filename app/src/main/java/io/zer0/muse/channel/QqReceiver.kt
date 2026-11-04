@@ -77,7 +77,7 @@ class QqReceiver(
                 // 旧写法 delay(5s)+continue 让五个接收器每分钟合计唤醒 60 次，阻止深度休眠。
                 // 配置变更由 ChannelManager.upsert/remove/refresh 写入 channels；
                 // 设置页保存后还会调 restart() 重进本循环，两条路径都能唤醒。
-                Logger.i(TAG, "无启用中的 QQ 渠道,接收循环挂起等待配置")
+                Logger.i(TAG, "No enabled QQ channel; the receive loop is suspended waiting for configuration")
                 channelManager.channels.first { list ->
                     list.any {
                         it.enabled && it.platform == ChannelPlatform.QQ &&
@@ -86,9 +86,9 @@ class QqReceiver(
                 }
                 continue
             }
-            Logger.i(TAG, "QQ 接收循环: 找到渠道 ${config.id},建立连接…")
+            Logger.i(TAG, "QQ receive loop: found channel ${config.id}, establishing connection…")
             runCatching { connectOnce(config) }
-                .onFailure { e -> Logger.w(TAG, "QQ 连接异常: ${e.message}") }
+                .onFailure { e -> Logger.w(TAG, "QQ connection exception: ${e.message}") }
             if (!currentCoroutineContext().isActive) return
             delay(RECONNECT_DELAY_MS)
         }
@@ -108,17 +108,17 @@ class QqReceiver(
 
     /** 建立一次 WebSocket 并挂起至断开。 */
     private suspend fun connectOnce(config: ChannelConfig) {
-        Logger.i(TAG, "获取 QQ access_token…")
+        Logger.i(TAG, "Fetching QQ access_token…")
         val token = QqClient.fetchAccessToken(config.appId, config.appSecret).getOrElse { e ->
-            Logger.w(TAG, "QQ access_token 获取失败: ${e.message}")
+            Logger.w(TAG, "QQ access_token fetch failed: ${e.message}")
             return
         }
-        Logger.i(TAG, "access_token 就绪(有效期 ${token.expiresInSeconds}s),获取 gateway…")
+        Logger.i(TAG, "access_token ready (valid for ${token.expiresInSeconds}s), fetching gateway…")
         val gateway = QqClient.getGateway(token.accessToken).getOrElse { e ->
-            Logger.w(TAG, "QQ gateway 获取失败: ${e.message}")
+            Logger.w(TAG, "QQ gateway fetch failed: ${e.message}")
             return
         }
-        Logger.i(TAG, "gateway 就绪(${gateway.take(60)}),建立 WebSocket…")
+        Logger.i(TAG, "gateway ready (${gateway.take(60)}), establishing WebSocket…")
         val disconnected = CompletableDeferred<Unit>()
         val heartbeatInterval = AtomicLong(DEFAULT_HEARTBEAT_MS)
         val frameContext = FrameContext(token.accessToken, config.id, heartbeatInterval, lastSeqRef)
@@ -139,29 +139,29 @@ class QqReceiver(
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     runCatching {
                         handleFrame(webSocket, text, frameContext)
-                    }.onFailure { e -> Logger.w(TAG, "QQ 帧处理失败: ${e.message}") }
+                    }.onFailure { e -> Logger.w(TAG, "QQ frame processing failed: ${e.message}") }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Logger.w(TAG, "QQ WS 断开: ${t.message} (http=${response?.code})")
+                    Logger.w(TAG, "QQ WS disconnected: ${t.message} (http=${response?.code})")
                     disconnected.complete(Unit)
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    Logger.i(TAG, "QQ WS 关闭(code=$code, reason=$reason)")
+                    Logger.i(TAG, "QQ WS closed (code=$code, reason=$reason)")
                     // 4006 无效 session id / 4007 seq 错误：只能重新 Identify；
                     // 其余（4008 频控、4009 连接过期、4900~4913 内部错误）保留会话走 Resume。
                     if (code == 4006 || code == 4007) {
                         sessionIdRef.set(null)
                         lastSeqRef.set(0L)
                         identifyRequired.set(true)
-                        Logger.w(TAG, "QQ 会话不可恢复(code=$code),下次重新 Identify")
+                        Logger.w(TAG, "QQ session is not resumable (code=$code); will Identify again next time")
                     }
                     disconnected.complete(Unit)
                 }
 
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    Logger.i(TAG, "QQ WS 已连接,等待 Hello…")
+                    Logger.i(TAG, "QQ WS connected, waiting for Hello…")
                 }
             },
         )
@@ -187,11 +187,11 @@ class QqReceiver(
                 if (canResume) {
                     Logger.i(
                         TAG,
-                        "QQ Hello(心跳周期 ${frameContext.heartbeatInterval.get()}ms),发送 Resume(seq=$seq) 以补回断档事件",
+                        "QQ Hello (heartbeat interval ${frameContext.heartbeatInterval.get()}ms), sending Resume (seq=$seq) to recover missed events",
                     )
                     webSocket.send(resumePayload(frameContext.accessToken, sessionId, seq))
                 } else {
-                    Logger.i(TAG, "QQ Hello(心跳周期 ${frameContext.heartbeatInterval.get()}ms),发送 Identify")
+                    Logger.i(TAG, "QQ Hello (heartbeat interval ${frameContext.heartbeatInterval.get()}ms), sending Identify")
                     identifyRequired.set(false)
                     webSocket.send(identifyPayload(frameContext.accessToken))
                 }
@@ -199,11 +199,11 @@ class QqReceiver(
             11 -> Unit // Heartbeat ACK
             0 -> handleDispatch(obj, frameContext.channelId)
             7 -> {
-                Logger.i(TAG, "QQ Gateway 要求重连")
+                Logger.i(TAG, "QQ Gateway requests a reconnect")
                 webSocket.close(1000, "reconnect")
             }
             9 -> {
-                Logger.w(TAG, "QQ Invalid Session(intents 权限或参数问题,请检查 QQ 开放平台的单聊/群聊消息权限)")
+                Logger.w(TAG, "QQ Invalid Session (intents permission or parameter problem; please check the QQ open platform's private/group message permissions)")
                 // 平台已经明确拒绝这个会话，留着它只会让下一次 Resume 继续被拒。
                 sessionIdRef.set(null)
                 lastSeqRef.set(0L)
@@ -226,7 +226,7 @@ class QqReceiver(
                 "GROUP_AT_MESSAGE_CREATE" -> handleGroupMessage(d, channelId)
                 // 开启「接收所有消息」后群里每条消息都会推这个事件。直接当 @ 消息处理
                 // 会让机器人对群里每句话都回复（刷屏），这里只留痕，不触发回复。
-                "GROUP_MESSAGE_CREATE" -> Logger.i(TAG, "QQ 群全量消息(未@机器人),不自动回复")
+                "GROUP_MESSAGE_CREATE" -> Logger.i(TAG, "QQ group full-message (bot not @-mentioned); no auto-reply")
                 "READY" -> {
                     val username = d["user"]?.jsonObject
                         ?.get("username")?.jsonPrimitive?.contentOrNull.orEmpty()
@@ -234,9 +234,9 @@ class QqReceiver(
                     sessionIdRef.set(d["session_id"]?.jsonPrimitive?.contentOrNull)
                     lastSeqRef.set(0L)
                     identifyRequired.set(false)
-                    Logger.i(TAG, "QQ 已连接($username),session 已记录")
+                    Logger.i(TAG, "QQ connected ($username), session recorded")
                 }
-                "RESUMED" -> Logger.i(TAG, "QQ 会话已恢复,断档事件由平台补发")
+                "RESUMED" -> Logger.i(TAG, "QQ session resumed; missed events will be re-delivered by the platform")
             }
         }
     }
@@ -250,7 +250,7 @@ class QqReceiver(
         if (openid.isNotBlank() && text.isNotBlank()) {
             recordQqInbound(appScope, ChannelInbox.Source("QQ", openid, channelId, messageId), data, text)
         } else {
-            Logger.i(TAG, "QQ 单聊消息无可用文本,跳过($messageId ← $openid)")
+            Logger.i(TAG, "QQ private message has no usable text, skipped ($messageId ← $openid)")
         }
     }
 
@@ -260,7 +260,7 @@ class QqReceiver(
         val messageId = data["id"]?.jsonPrimitive?.contentOrNull.orEmpty()
         // 全量模式下 @ 消息会同时命中两个事件，同一条消息只处理一次。
         if (messageId.isNotBlank() && QqMsgIdCache.get(target) == messageId) {
-            Logger.i(TAG, "QQ 群消息重复推送,已忽略($messageId)")
+            Logger.i(TAG, "QQ group message pushed repeatedly, ignored ($messageId)")
             return
         }
         if (groupOpenId.isNotBlank() && messageId.isNotBlank()) QqMsgIdCache.put(target, messageId)
@@ -269,7 +269,7 @@ class QqReceiver(
             recordQqInbound(appScope, ChannelInbox.Source("QQ", target, channelId, messageId), data, text)
         } else {
             // 只有 @ 不带文字(且无附件)会落到这里:以前是无声丢弃,排查时完全看不出。
-            Logger.i(TAG, "QQ 群消息无可用文本,跳过($messageId ← $target)")
+            Logger.i(TAG, "QQ group message has no usable text, skipped ($messageId ← $target)")
         }
     }
 
@@ -281,10 +281,10 @@ class QqReceiver(
         val contentType = attachment?.get("content_type")?.jsonPrimitive?.contentOrNull.orEmpty()
         return when {
             contentType == "voice" -> attachment?.get("asr_refer_text")
-                ?.jsonPrimitive?.contentOrNull.orEmpty().ifBlank { "[语音]" }
-            contentType.startsWith("image/") -> "[图片]"
-            contentType.startsWith("video/") -> "[视频]"
-            contentType.isNotBlank() -> "[附件]"
+                ?.jsonPrimitive?.contentOrNull.orEmpty().ifBlank { "[Voice]" }
+            contentType.startsWith("image/") -> "[Image]"
+            contentType.startsWith("video/") -> "[Video]"
+            contentType.isNotBlank() -> "[Attachment]"
             else -> ""
         }
     }

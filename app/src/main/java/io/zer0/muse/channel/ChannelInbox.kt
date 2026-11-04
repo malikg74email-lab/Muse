@@ -201,7 +201,7 @@ internal class ChannelInboxJournal(
                 webhookEventDeduplicationFailure = null
             }.onFailure { error ->
                 webhookEventDeduplicationFailure = error
-                Logger.e(TAG, "Webhook 事件去重账本不可用，拒绝处理带事件 ID 的消息", error)
+                Logger.e(TAG, "Webhook event dedup ledger unavailable; refusing to process messages with event IDs", error)
             }
     }
 
@@ -231,7 +231,7 @@ internal class ChannelInboxJournal(
                 // 没有日志的话它们就是无声消失,事后完全查不到痕迹。
                 Logger.i(
                     TAG,
-                    "事件已被去重账本认领,跳过(platform=${source.platform}, from=${source.from}, " +
+                    "The event has been claimed by the dedup ledger, skipped (platform=${source.platform}, from=${source.from}, " +
                         "eventId=${source.eventId})",
                 )
                 false
@@ -256,7 +256,7 @@ internal class ChannelInboxJournal(
         }
         observerItem?.let { inbound ->
             runCatching { onInbound?.invoke(inbound) }
-                .onFailure { error -> Logger.w(TAG, "入站监听回调失败: ${error.message}") }
+                .onFailure { error -> Logger.w(TAG, "Inbound listener callback failed: ${error.message}") }
         }
         if (wake) notifyPendingListener()
         ledgerFailure?.let { throw it }
@@ -466,7 +466,7 @@ internal class ChannelInboxJournal(
     }
 
     private fun claimEvent(source: ChannelInbox.Source): Boolean {
-        check(!ProcessWriteGate.restoring) { "备份恢复进行中，暂不接受渠道事件" }
+        check(!ProcessWriteGate.restoring) { "A backup restore is in progress; channel events are not accepted for now" }
         if (source.eventId.isBlank() || source.channelId.isBlank() || file == null) return true
         val deduplicator = webhookEventDeduplicator
             ?: error("Webhook event deduplication is unavailable: ${webhookEventDeduplicationFailure?.message}")
@@ -537,7 +537,7 @@ internal class ChannelInboxJournal(
                 runCatching {
                     AppJson.decodeFromString(ChannelInbox.Inbound.serializer(), shard.readText())
                 }.onFailure { error ->
-                    Logger.w(TAG, "分片读取失败,跳过 ${shard.name}: ${error.message}")
+                    Logger.w(TAG, "Shard read failed, skipping ${shard.name}: ${error.message}")
                     AtomicFileStore.quarantine(shard, "inbox_shard_parse")
                 }.getOrNull()
             }
@@ -566,10 +566,10 @@ internal class ChannelInboxJournal(
             val allWritten = normalized.all { persistItem(it) }
             val cost = System.currentTimeMillis() - startedAt
             if (allWritten && inboxFile.renameTo(File(inboxFile.parentFile, inboxFile.name + ".migrated"))) {
-                Logger.i(TAG, "收件箱已迁移为分片存储(${normalized.size} 条, 耗时 ${cost}ms)")
+                Logger.i(TAG, "Inbox migrated to sharded storage (${normalized.size} entries, took ${cost}ms)")
             }
         }.onFailure { error ->
-            Logger.w(TAG, "收件箱恢复失败,隔离坏文件: ${error.message}")
+            Logger.w(TAG, "Inbox recovery failed, quarantining the corrupt file: ${error.message}")
             AtomicFileStore.quarantine(inboxFile, "inbox_restore_failed")
         }
     }
@@ -593,14 +593,14 @@ internal class ChannelInboxJournal(
         return runCatching {
             AtomicFileStore.writeText(target, AppJson.encodeToString(ChannelInbox.Inbound.serializer(), item))
             true
-        }.onFailure { error -> Logger.w(TAG, "收件箱分片写入失败: ${error.message}") }.getOrDefault(false)
+        }.onFailure { error -> Logger.w(TAG, "Inbox shard write failed: ${error.message}") }.getOrDefault(false)
     }
 
     private fun deleteItem(item: ChannelInbox.Inbound) {
         val target = shardFile(item) ?: return
         runCatching {
-            if (target.exists() && !target.delete()) Logger.w(TAG, "分片删除失败: ${target.name}")
-        }.onFailure { error -> Logger.w(TAG, "分片删除异常: ${error.message}") }
+            if (target.exists() && !target.delete()) Logger.w(TAG, "Shard deletion failed: ${target.name}")
+        }.onFailure { error -> Logger.w(TAG, "Shard deletion exception: ${error.message}") }
     }
 
     /** 删除 [dropped] 里所有条目的分片（裁剪 / 清空历史用）。 */
@@ -608,7 +608,7 @@ internal class ChannelInboxJournal(
 
     private fun notifyPendingListener() {
         runCatching { pendingListener?.invoke() }
-            .onFailure { error -> Logger.w(TAG, "唤醒入站派发失败: ${error.message}") }
+            .onFailure { error -> Logger.w(TAG, "Waking inbound dispatch failed: ${error.message}") }
     }
 
     private fun retryDelayMillis(attempt: Int): Long {

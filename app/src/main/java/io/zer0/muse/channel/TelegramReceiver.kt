@@ -57,14 +57,14 @@ class TelegramReceiver(
                 // 旧实现在这个分支上每 5 秒循环一轮并打一行日志：没有配置渠道的用户会看到
                 // 每分钟 12 行同样的「接收循环退出」，同时无谓地唤醒线程。
                 if (!reportedEmpty) {
-                    Logger.i(TAG, "无启用中的 Telegram 渠道,接收循环挂起等待配置")
+                    Logger.i(TAG, "No enabled Telegram channel; the receive loop is suspended waiting for configuration")
                     reportedEmpty = true
                 }
                 delay(NO_CHANNEL_BACKOFF_MS)
                 continue
             }
             if (reportedEmpty) {
-                Logger.i(TAG, "Telegram 渠道已启用,恢复接收")
+                Logger.i(TAG, "Telegram channel enabled; resuming receiving")
                 reportedEmpty = false
             }
             // v2.6.0 (AUD-CHANNEL-F2): 单轮轮询抽成函数 —— 游标失败/网络异常/
@@ -110,14 +110,14 @@ class TelegramReceiver(
         if (base64 != null) {
             ChannelInbox.record(
                 source = source,
-                text = msg.text.ifBlank { "[图片]" },
+                text = msg.text.ifBlank { "[Image]" },
                 rawPayload = "",
                 media = ChannelInbox.Media(kind = "image", base64 = base64),
             )
         } else {
-            Logger.w(TAG, "Telegram 图片获取失败(chat=${msg.chatId})")
+            Logger.w(TAG, "Telegram image fetch failed (chat=${msg.chatId})")
 
-            ChannelInbox.record(source, msg.text.ifBlank { "[图片(未能获取)]" }, "")
+            ChannelInbox.record(source, msg.text.ifBlank { "[Image (Could not fetch)]" }, "")
         }
     }
 
@@ -136,7 +136,7 @@ class TelegramReceiver(
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
-            Logger.w(TAG, "Telegram 更新未能写入本地收件箱,保留轮询游标: ${error.message}")
+            Logger.w(TAG, "Telegram update could not be written to the local inbox; keeping the polling cursor: ${error.message}")
             next
         }
     }
@@ -159,7 +159,7 @@ class TelegramReceiver(
         if (cursor.channelId == config.id) return cursor
         return runCatching { TelegramCursor(config.id, loadOffset(config.id)) }
             .onFailure { error ->
-                Logger.w(TAG, "Telegram 游标初始化失败: ${error.message}")
+                Logger.w(TAG, "Telegram cursor initialization failed: ${error.message}")
             }
             .getOrNull()
     }
@@ -175,7 +175,7 @@ class TelegramReceiver(
         if (!target.exists()) return null
         val parsed = target.readText().trim().toLongOrNull()
         if (parsed == null) {
-            Logger.w(TAG, "Telegram offset 文件损坏(内容非数字),丢弃游标重新拉取")
+            Logger.w(TAG, "Telegram offset file is corrupt (content is not a number); discarding the cursor and re-fetching")
             // 清掉坏文件,避免每次启动都重复告警
             runCatching { target.delete() }
         }

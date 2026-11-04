@@ -37,7 +37,7 @@ internal class PluginMarketToolService(
     /** 检索插件目录；返回给模型阅读的文本清单。 */
     override suspend fun search(query: String): String {
         val catalog = ensureCatalog().getOrElse { error ->
-            return "插件市场暂时不可用：${error.message ?: "未知错误"}"
+            return "Plugin market is temporarily unavailable: ${error.message ?: "Unknown error"}"
         }
         return renderSearchResult(catalog, query)
     }
@@ -45,42 +45,42 @@ internal class PluginMarketToolService(
     /** 下载并安装指定插件；返回给模型阅读的执行结果。 */
     override suspend fun install(entryId: String, trustPublisher: Boolean): String {
         val id = entryId.trim()
-        if (id.isBlank()) return "安装失败：缺少 plugin_id。"
+        if (id.isBlank()) return "Installation failed: missing plugin_id."
         return runInstall(id, trustPublisher)
     }
 
     /** 卸载已安装插件；返回给模型阅读的执行结果。 */
     override suspend fun uninstall(pluginId: String): String {
         val id = pluginId.trim()
-        if (id.isBlank()) return "卸载失败：缺少 plugin_id。"
+        if (id.isBlank()) return "Uninstall failed: missing plugin_id."
         val installed = pluginManager.list().firstOrNull { it.id == id }
-            ?: return "未找到已安装的插件「$id」。可以先用 plugin_market_search 查看市场里的插件 id。"
+            ?: return "Installed plugin \"$id\" not found. You can use plugin_market_search to look up plugin ids in the market first."
         return try {
             pluginManager.uninstall(id)
-            "已卸载插件「${installed.name}」($id)，其技能与本地副本一并清理。"
+            "Uninstalled plugin \"${installed.name}\" ($id); its skills and local copies were cleaned up as well."
         } catch (e: Exception) {
-            "卸载失败：${e.message ?: "未知错误"}"
+            "Uninstall failed: ${e.message ?: "Unknown error"}"
         }
     }
 
     /** 启用/停用已安装插件；返回给模型阅读的执行结果。 */
     override suspend fun setEnabled(pluginId: String, enabled: Boolean): String {
         val id = pluginId.trim()
-        if (id.isBlank()) return "操作失败：缺少 plugin_id。"
+        if (id.isBlank()) return "Operation failed: missing plugin_id."
         val installed = pluginManager.list().firstOrNull { it.id == id }
-            ?: return "未找到已安装的插件「$id」。"
+            ?: return "Installed plugin \"$id\" not found."
         if (enabled && !installed.installationConfirmed) {
-            return "该插件尚未完成安装确认，已拒绝启用。请先在插件管理页完成安装确认。"
+            return "This plugin has not completed installation confirmation, so enabling was refused. Please complete the installation confirmation on the plugin management page first."
         }
         return try {
             pluginManager.setEnabled(id, enabled)
             if (enabled) {
-                "已启用插件「${installed.name}」($id)。"
+                "Enabled plugin \"${installed.name}\" ($id)."
             } else {
-                "已停用插件「${installed.name}」($id)，安装保留，可随时重新启用。"
+                "Disabled plugin \"${installed.name}\" ($id). The installation is kept and can be re-enabled at any time."
             }
         } catch (e: Exception) {
-            "操作失败：${e.message ?: "未知错误"}"
+            "Operation failed: ${e.message ?: "Unknown error"}"
         }
     }
 
@@ -102,13 +102,13 @@ internal class PluginMarketToolService(
         }
         if (matched.isEmpty()) {
             return if (entries.isEmpty()) {
-                "插件市场目前没有可安装的插件。"
+                "The plugin market currently has no installable plugins."
             } else {
-                "没有匹配「$query」的插件。"
+                "No plugins match \"$query\"."
             }
         }
         val builder = StringBuilder()
-        builder.appendLine("插件市场 ${entries.size} 个插件，匹配 ${matched.size} 个：")
+        builder.appendLine("Plugin market: ${entries.size} plugins, ${matched.size} matched:")
         matched.take(MAX_SEARCH_RESULTS).forEach { entry ->
             val installedVersion = installedById[entry.id]?.version
             val publisherTrusted = trustedPublishers.any { publisher ->
@@ -117,18 +117,18 @@ internal class PluginMarketToolService(
             }
             builder.appendLine(
                 "- ${entry.id} v${entry.version}「${entry.name}」：${entry.description.take(DESCRIPTION_LIMIT)}" +
-                    "（发行者 ${entry.publisherId}" +
-                    (if (publisherTrusted) "，已受信任" else "，未受本机信任") +
-                    "；" + (if (installedVersion != null) "已安装 v$installedVersion" else "未安装") + "）",
+                    "(publisher ${entry.publisherId}" +
+                    (if (publisherTrusted) ", trusted" else ", not trusted by this device") +
+                    "；" + (if (installedVersion != null) "Installed v$installedVersion" else "Not installed") + "）",
             )
         }
         if (matched.size > MAX_SEARCH_RESULTS) {
-            builder.appendLine("（共 ${matched.size} 个，仅列出前 $MAX_SEARCH_RESULTS 个）")
+            builder.appendLine("(${matched.size} in total; only the first $MAX_SEARCH_RESULTS are listed)")
         }
         builder.append(
-            "安装用 plugin_market_install（plugin_id 见上）。安装会弹出审批卡片；" +
-                "发行者未受信任时，工具会先返回待确认信息，请把发行者信息展示给用户，" +
-                "用户确认后再带 trust_publisher=true 重新调用。",
+            "Install with plugin_market_install (see plugin_id above). Installation pops up an approval card;" +
+                "when the publisher is not trusted, the tool first returns the information awaiting confirmation — show the publisher information to the user," +
+                "and after the user confirms, call again with trust_publisher=true.",
         )
         return builder.toString()
     }
@@ -147,7 +147,7 @@ internal class PluginMarketToolService(
         var planCreated = false
         return try {
             val catalog = ensureCatalog().getOrElse { error ->
-                throw InstallFailed("安装失败：${error.message ?: "插件市场暂时不可用"}")
+                throw InstallFailed("Installation failed: ${error.message ?: "Plugin market is temporarily unavailable"}")
             }
             val staged = requireStaged(catalog, id)
             stagedFile = staged.artifact.file
@@ -163,12 +163,12 @@ internal class PluginMarketToolService(
                 )
                 installer.discard(plan)
                 val installed = result.getOrElse { error ->
-                    throw InstallFailed("安装失败：${error.message ?: "安装提交失败"}")
+                    throw InstallFailed("Installation failed: ${error.message ?: "Installation commit failed"}")
                 }
-                "已安装并启用插件：${installed.name} v${installed.version}（${installed.id}）。"
+                "Installed and enabled plugin: ${installed.name} v${installed.version} (${installed.id})."
             }
         } catch (failed: InstallFailed) {
-            failed.message ?: "安装失败"
+            failed.message ?: "Installation failed"
         } finally {
             val staged = stagedFile
             if (!planCreated && staged != null) runCatching { staged.delete() }
@@ -178,25 +178,25 @@ internal class PluginMarketToolService(
     /** 定位目录条目并下载产物到 staging（大小/摘要校验在下载客户端内完成）；失败抛 [InstallFailed]。 */
     private suspend fun requireStaged(catalog: SignedPluginCatalog, id: String): StagedPlugin {
         val entry = catalog.payload.entries.firstOrNull { it.id == id }
-            ?: throw InstallFailed("安装失败：目录中不存在插件 $id（先用 plugin_market_search 检索确认 id）。")
+            ?: throw InstallFailed("Installation failed: plugin $id does not exist in the catalog (use plugin_market_search to confirm the id first).")
         val artifact = withContext(Dispatchers.IO) { downloadClient.download(entry) }.artifact
-            ?: throw InstallFailed("安装失败：下载失败")
+            ?: throw InstallFailed("Installation failed: download failed")
         return StagedPlugin(entry, artifact)
     }
 
     /** 审查插件包（结构/能力/发行者签名）；异常或不可预览时抛 [InstallFailed]。 */
     private suspend fun reviewArtifact(artifact: DownloadedArtifact): PluginSecurityGate.Decision =
         pluginManager.reviewFromFile(artifact.file).getOrElse { error ->
-            throw InstallFailed("安装失败：${error.message ?: "插件审查失败"}")
+            throw InstallFailed("Installation failed: ${error.message ?: "Plugin review failed"}")
         }
 
     /** 拒绝不可安装的审查结果：市场包必须签名有效且未被篡改。 */
     private fun requireAllowed(decision: PluginSecurityGate.Decision): PluginSecurityGate.Decision {
         if (!decision.allowed) {
-            throw InstallFailed("安装失败：${decision.reason ?: "插件未通过安全审查"}")
+            throw InstallFailed("Installation failed: ${decision.reason ?: "Plugin did not pass the security review"}")
         }
         if (decision.signature.status == PluginSecurityGate.SignatureStatus.UNSIGNED) {
-            throw InstallFailed("安装失败：市场包必须带有发行者签名。")
+            throw InstallFailed("Installation failed: market packages must carry a publisher signature.")
         }
         return decision
     }
@@ -225,7 +225,7 @@ internal class PluginMarketToolService(
             )
         ) {
             is InstallPlanResult.Ready -> planResult.plan
-            is InstallPlanResult.Rejected -> throw InstallFailed("安装失败：${planResult.reason}")
+            is InstallPlanResult.Rejected -> throw InstallFailed("Installation failed: ${planResult.reason}")
         }
     }
 
@@ -243,14 +243,14 @@ internal class PluginMarketToolService(
         if (cached != null) return Result.success(cached)
         val url = marketSettings.catalogUrl()
         return if (url.isBlank()) {
-            Result.failure(IllegalStateException("插件目录未配置"))
+            Result.failure(IllegalStateException("Plugin catalog not configured"))
         } else {
             when (val refreshed = repository.refresh(url)) {
                 is CatalogRefreshResult.Updated -> Result.success(refreshed.signedCatalog)
                 is CatalogRefreshResult.Rejected ->
-                    Result.failure(IllegalStateException("目录刷新失败：${refreshed.reason}"))
+                    Result.failure(IllegalStateException("Catalog refresh failed: ${refreshed.reason}"))
                 CatalogRefreshResult.NotConfigured ->
-                    Result.failure(IllegalStateException("插件目录未配置"))
+                    Result.failure(IllegalStateException("Plugin catalog not configured"))
             }
         }
     }
@@ -259,13 +259,13 @@ internal class PluginMarketToolService(
     private fun publisherTrustPrompt(decision: PluginSecurityGate.Decision, entry: PluginCatalogEntry): String {
         val capabilities = (decision.preview.capabilities + decision.preview.permissions).distinct()
         return buildString {
-            appendLine("需要用户确认信任发行者后才能安装（本机第一次安装该发行者的插件）。")
-            appendLine("请先把下面信息展示给用户；用户确认后，重新调用 plugin_market_install 并带 trust_publisher=true：")
-            appendLine("- 插件：${entry.name} v${entry.version}（${entry.id}）")
-            appendLine("- 用途：${entry.description}")
-            appendLine("- 发行者：${decision.signature.publisherId}")
-            appendLine("- 公钥指纹：${decision.signature.fingerprint}")
-            append("- 声明能力：${if (capabilities.isEmpty()) "无（仅提供工具）" else capabilities.joinToString()}")
+            appendLine("Installation requires the user to confirm trusting the publisher (first time installing a plugin from this publisher on this device).")
+            appendLine("Show the following information to the user first; after the user confirms, call plugin_market_install again with trust_publisher=true:")
+            appendLine("- Plugin: ${entry.name} v${entry.version} (${entry.id})")
+            appendLine("- Purpose: ${entry.description}")
+            appendLine("- Publisher: ${decision.signature.publisherId}")
+            appendLine("- Public key fingerprint: ${decision.signature.fingerprint}")
+            append("- Declared capabilities: ${if (capabilities.isEmpty()) "None (tools only)" else capabilities.joinToString()}")
         }
     }
 

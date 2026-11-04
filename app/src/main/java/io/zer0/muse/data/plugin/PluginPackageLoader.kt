@@ -71,7 +71,7 @@ object PluginPackageLoader {
                 while (entry != null) {
                     val name = entry.name
                     if (!isSafeRelativePath(name)) {
-                        return Result.Err("非法路径: $name")
+                        return Result.Err("Illegal path: $name")
                     }
                     if (entry.isDirectory) {
                         entry = zis.nextEntry
@@ -89,7 +89,7 @@ object PluginPackageLoader {
                     val bytes = readZipEntryWithLimit(zis, MAX_ENTRY_SIZE, name)
                     totalSize += bytes.size
                     if (totalSize > MAX_TOTAL_SIZE) {
-                        return Result.Err("解压总大小超过限制(${MAX_TOTAL_SIZE / 1024 / 1024}MB)")
+                        return Result.Err("Total extracted size exceeds the limit (${MAX_TOTAL_SIZE / 1024 / 1024}MB)")
                     }
 
                     val content = bytes.toString(Charsets.UTF_8)
@@ -102,49 +102,49 @@ object PluginPackageLoader {
                 }
             }
         } catch (e: IOException) {
-            return Result.Err("ZIP 读取失败: ${e.message}")
+            return Result.Err("ZIP read failed: ${e.message}")
         }
 
-        val json = manifestJson ?: return Result.Err("缺少 manifest.json")
+        val json = manifestJson ?: return Result.Err("Missing manifest.json")
         val manifest = runCatching {
             AppJson.decodeFromString<PluginManifest>(json)
         }.getOrElse { e ->
-            return Result.Err("manifest.json 解析失败: ${e.message}")
+            return Result.Err("manifest.json parse failed: ${e.message}")
         }
 
         if (manifest.id.isBlank() || manifest.name.isBlank()) {
-            return Result.Err("manifest.json 缺少 id/name")
+            return Result.Err("manifest.json is missing id/name")
         }
         if (!PLUGIN_ID_REGEX.matches(manifest.id)) {
-            return Result.Err("插件 id 只能包含小写字母、数字、下划线和连字符: ${manifest.id}")
+            return Result.Err("Plugin id may only contain lowercase letters, digits, underscores and hyphens: ${manifest.id}")
         }
         if (manifest.tools.isEmpty() && manifest.kind != PluginSecurityGate.UI_SKIN_KIND) {
-            return Result.Err("manifest.json 未声明任何工具")
+            return Result.Err("manifest.json declares no tools")
         }
         // 外部包没有作者签名和内置信任根，不能通过清单自报 full-access。
         if (manifest.trust != "sandboxed") {
-            return Result.Err("外部插件必须使用 sandboxed 信任级别")
+            return Result.Err("External plugins must use the sandboxed trust level")
         }
 
         // ── Phase 4: 声明式 ui-skin 包(无 tools、无 JS,只分发皮肤 JSON) ──
         if (manifest.kind == PluginSecurityGate.UI_SKIN_KIND) {
             if (manifest.tools.isNotEmpty()) {
-                return Result.Err("ui-skin 插件不得声明可执行工具")
+                return Result.Err("ui-skin plugins must not declare executable tools")
             }
             if (PluginSecurityGate.UI_SKIN_CAPABILITY !in manifest.capabilities) {
-                return Result.Err("ui-skin 插件必须声明 ${PluginSecurityGate.UI_SKIN_CAPABILITY} 能力")
+                return Result.Err("ui-skin plugins must declare the ${PluginSecurityGate.UI_SKIN_CAPABILITY} capability")
             }
             if (allFiles.keys.any { key -> FORBIDDEN_SKIN_EXTENSIONS.any { key.lowercase().endsWith(it) } }) {
-                return Result.Err("ui-skin 插件不得包含 JS 文件")
+                return Result.Err("ui-skin plugins must not contain JS files")
             }
             val skinJson = allFiles[UI_SKIN_ENTRY]
-                ?: return Result.Err("ui-skin 插件缺少皮肤资源: $UI_SKIN_ENTRY")
+                ?: return Result.Err("ui-skin plugin is missing its skin resource: $UI_SKIN_ENTRY")
             val skin = runCatching {
                 AppJson.decodeFromString<io.zer0.muse.ui.theme.BubbleSkin>(skinJson)
             }.getOrElse { e ->
-                return Result.Err("$UI_SKIN_ENTRY 解析失败: ${e.message}")
+                return Result.Err("$UI_SKIN_ENTRY parse failed: ${e.message}")
             }
-            Logger.i(TAG, "已加载 ui-skin 插件包: ${manifest.id} v${manifest.version} (皮肤 ${skin.id})")
+            Logger.i(TAG, "Loaded ui-skin plugin package: ${manifest.id} v${manifest.version} (skin ${skin.id})")
             return Result.Ok(
                 LoadedPluginPackage(
                     manifest = manifest,
@@ -162,14 +162,14 @@ object PluginPackageLoader {
         val expectedExt = expectedEntryExtension(manifest)
         if (!isSafeRelativePath(manifest.entry) || !manifest.entry.lowercase().endsWith(expectedExt)) {
             return Result.Err(
-                "manifest.json 的入口文件路径非法（runtime=${manifest.runtime} 需要 $expectedExt 入口）: ${manifest.entry}",
+                "Illegal entry file path in manifest.json (runtime=${manifest.runtime} requires a $expectedExt entry): ${manifest.entry}",
             )
         }
 
         val entryCode = allFiles.remove(manifest.entry)
-            ?: return Result.Err("缺少入口文件: ${manifest.entry}")
+            ?: return Result.Err("Missing entry file: ${manifest.entry}")
 
-        Logger.i(TAG, "已加载插件包: ${manifest.id} v${manifest.version} (${manifest.tools.size} 工具)")
+        Logger.i(TAG, "Loaded plugin package: ${manifest.id} v${manifest.version} (${manifest.tools.size} tools)")
         return Result.Ok(
             LoadedPluginPackage(
                 manifest = manifest,

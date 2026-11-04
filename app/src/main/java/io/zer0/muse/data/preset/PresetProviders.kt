@@ -481,7 +481,7 @@ class PresetProviders(
 */
     private fun openaiCodex() = ProviderConfig(
         id = "preset_openai_codex",
-        displayName = "OpenAI Codex (ChatGPT 账号)",
+        displayName = "OpenAI Codex (ChatGPT account)",
         type = ProviderType.OPENAI,
         baseUrl = "https://chatgpt.com/backend-api/codex",
         apiKey = "",
@@ -859,14 +859,14 @@ class PresetProviders(
             chatModel(
                 SiliconFlowFreeModels.PROVIDER_ID,
                 "THUDM/GLM-4-9B-0414",
-                "GLM-4-9B 0414 (免费)",
+                "GLM-4-9B 0414 (Free)",
                 contextWindow = 32_768,
                 supportsTools = true,
             ),
             chatModel(
                 SiliconFlowFreeModels.PROVIDER_ID,
                 "Qwen/Qwen3-8B",
-                "Qwen3-8B (免费)",
+                "Qwen3-8B (Free)",
                 contextWindow = 32_768,
                 supportsTools = true,
             ),

@@ -217,7 +217,7 @@ class ModelCatalogStore(
         if (!remoteCatalogFile.exists()) return null
         val loaded = runCatching {
             AppJson.decodeFromString(RemoteCatalog.serializer(), remoteCatalogFile.readText())
-        }.onFailure { Logger.w(TAG, "远端模型目录解析失败,按空处理", it) }.getOrNull()
+        }.onFailure { Logger.w(TAG, "Remote model catalog parse failed; treating it as empty", it) }.getOrNull()
         remoteCache = loaded
         return loaded
     }
@@ -270,40 +270,40 @@ class ModelCatalogStore(
     suspend fun refreshRemote(forceFresh: Boolean = false): RemoteRefreshResult = withContext(Dispatchers.IO) {
         val url = remoteUrl.trim()
         if (url.isEmpty()) {
-            return@withContext RemoteRefreshResult(enabled = false, ok = false, updated = false, message = "远端目录未启用")
+            return@withContext RemoteRefreshResult(enabled = false, ok = false, updated = false, message = "Remote catalog is not enabled")
         }
         val text = try {
             httpGet(url)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "远端目录拉取失败: ${e.message}")
+            Logger.w(TAG, "Remote catalog fetch failed: ${e.message}")
             null
         }
         if (text.isNullOrBlank()) {
-            return@withContext RemoteRefreshResult(enabled = true, ok = false, updated = false, message = "网络请求失败")
+            return@withContext RemoteRefreshResult(enabled = true, ok = false, updated = false, message = "Network request failed")
         }
         val parsed = runCatching {
             AppJson.decodeFromString(RemoteCatalog.serializer(), text)
-        }.onFailure { Logger.w(TAG, "远端目录格式不合法: ${it.message}") }.getOrNull()
+        }.onFailure { Logger.w(TAG, "Remote catalog format is invalid: ${it.message}") }.getOrNull()
         if (parsed == null || parsed.items.isEmpty()) {
-            return@withContext RemoteRefreshResult(enabled = true, ok = false, updated = false, message = "远端目录为空或格式不合法")
+            return@withContext RemoteRefreshResult(enabled = true, ok = false, updated = false, message = "Remote catalog is empty or its format is invalid")
         }
         val currentPublished = remoteCatalog()?.publishedAt.orEmpty()
         if (!forceFresh && currentPublished.isNotBlank() && currentPublished == parsed.publishedAt) {
-            return@withContext RemoteRefreshResult(enabled = true, ok = true, updated = false, message = "已是最新(${parsed.publishedAt})")
+            return@withContext RemoteRefreshResult(enabled = true, ok = true, updated = false, message = "Already up to date (${parsed.publishedAt})")
         }
         runCatching {
             catalogDir.mkdirs()
             remoteCatalogFile.writeText(text)
             remoteCache = parsed
             remoteLoaded = true
-            Logger.i(TAG, "远端模型目录已更新: ${parsed.publishedAt}, ${parsed.items.size} 条")
+            Logger.i(TAG, "Remote model catalog updated: ${parsed.publishedAt}, ${parsed.items.size} entries")
         }.onFailure { e ->
-            Logger.w(TAG, "远端模型目录写入失败: ${e.message}")
-            return@withContext RemoteRefreshResult(enabled = true, ok = false, updated = false, message = "写入缓存失败")
+            Logger.w(TAG, "Failed to write the remote model catalog: ${e.message}")
+            return@withContext RemoteRefreshResult(enabled = true, ok = false, updated = false, message = "Failed to write the cache")
         }
-        RemoteRefreshResult(enabled = true, ok = true, updated = true, message = "已更新到 ${parsed.publishedAt}")
+        RemoteRefreshResult(enabled = true, ok = true, updated = true, message = "Updated to ${parsed.publishedAt}")
     }
 
     /** 远端目录状态摘要（设置页/诊断用）。 */
@@ -464,7 +464,7 @@ class ModelCatalogStore(
                 ),
             )
         }.onFailure { e ->
-            Logger.w(TAG, "模型目录导入失败", e)
+            Logger.w(TAG, "Model catalog import failed", e)
         }.isSuccess
     }
 
@@ -598,7 +598,7 @@ class ModelCatalogStore(
         }.onSuccess {
             userCache = UserOverrides(items = it)
         }.getOrElse { e ->
-            Logger.w(TAG, "用户模型覆盖解析失败,按空处理", e)
+            Logger.w(TAG, "User model override parse failed; treating it as empty", e)
             emptyList()
         }
     }
@@ -609,7 +609,7 @@ class ModelCatalogStore(
             userOverridesFile.writeText(AppJson.encodeToString(UserOverrides.serializer(), overrides))
             userCache = overrides
         }.onFailure { e ->
-            Logger.w(TAG, "用户模型覆盖写入失败", e)
+            Logger.w(TAG, "Failed to write the user model override", e)
         }
     }
 

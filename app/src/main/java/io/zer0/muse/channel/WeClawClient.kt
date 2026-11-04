@@ -98,7 +98,7 @@ internal object WeClawClient {
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             QrCodeInfo(
                 qrcode = obj["qrcode"]?.jsonPrimitive?.contentOrNull
-                    ?: error("二维码响应缺少 qrcode 字段"),
+                    ?: error("QR code response is missing the qrcode field"),
                 imgContent = obj["qrcode_img_content"]?.jsonPrimitive?.contentOrNull.orEmpty(),
             )
         }
@@ -230,7 +230,7 @@ internal object WeClawClient {
                             ?.get("text")?.jsonPrimitive?.contentOrNull.orEmpty()
                         result += InboundMsg(
                             fromUserId = from,
-                            text = asr.ifBlank { "[语音]" },
+                            text = asr.ifBlank { "[Voice]" },
                             contextToken = contextToken,
                         )
                     }
@@ -282,7 +282,7 @@ internal object WeClawClient {
      */
     suspend fun downloadMedia(media: MediaRef, baseUrl: String = DEFAULT_BASE_URL): Result<ByteArray> = withContext(Dispatchers.IO) {
         runCatching {
-            require(media.aesKeyBase64.isNotBlank()) { "媒体缺少 aes_key" }
+            require(media.aesKeyBase64.isNotBlank()) { "Media is missing aes_key" }
             val url = mediaUrl(media, baseUrl)
             val ciphertext = requestBytes(url).getOrThrow()
             decryptAesEcb(ciphertext, media.aesKeyBase64)
@@ -304,7 +304,7 @@ internal object WeClawClient {
         withContext(Dispatchers.IO) {
             val ctx = coroutineContext
             try {
-                require(media.aesKeyBase64.isNotBlank()) { "媒体缺少 aes_key" }
+                require(media.aesKeyBase64.isNotBlank()) { "Media is missing aes_key" }
                 val url = mediaUrl(media, baseUrl)
                 val key = parseAesKey(media.aesKeyBase64)
                 val cipher = javax.crypto.Cipher.getInstance("AES/ECB/PKCS5Padding").apply {
@@ -317,7 +317,7 @@ internal object WeClawClient {
                 val request = Request.Builder().url(url).get().build()
                 val total = HTTP.newCall(request).execute().use { resp ->
                     if (!resp.isSuccessful) error("HTTP ${resp.code}")
-                    val body = resp.body ?: error("响应体为空")
+                    val body = resp.body ?: error("Response body is empty")
                     body.byteStream().use { raw ->
                         javax.crypto.CipherInputStream(raw, cipher).use { decrypted ->
                             targetFile.outputStream().buffered().use { out ->
@@ -330,7 +330,7 @@ internal object WeClawClient {
                                     written += read
                                     if (written > maxBytes) {
                                         throw MediaTooLargeException(
-                                            "媒体超出大小上限(${maxBytes / 1024 / 1024}MB)",
+                                            "Media exceeds the size limit (${maxBytes / 1024 / 1024}MB)",
                                         )
                                     }
                                     out.write(buffer, 0, read)
@@ -355,7 +355,7 @@ internal object WeClawClient {
     private fun mediaUrl(media: MediaRef, baseUrl: String): String {
         val full = media.fullUrl.trim()
         if (full.isNotBlank()) return full
-        require(media.encryptedQueryParam.isNotBlank()) { "媒体缺少下载参数" }
+        require(media.encryptedQueryParam.isNotBlank()) { "Media is missing download parameters" }
         return "${baseUrl.trimEnd('/')}/download?encrypted_query_param=" +
             java.net.URLEncoder.encode(media.encryptedQueryParam, "UTF-8")
     }
@@ -384,7 +384,7 @@ internal object WeClawClient {
         val decoded = android.util.Base64.decode(aesKeyBase64, android.util.Base64.DEFAULT)
         if (decoded.size == 16) return decoded
         if (decoded.size == 32) return hexToBytes(String(decoded, Charsets.US_ASCII))
-        error("aes_key 长度异常: ${decoded.size} bytes")
+        error("aes_key length abnormal: ${decoded.size} bytes")
     }
 
     /** 原始 hex(32 字符) → base64(16 raw bytes);用于 image_item.aeskey 的兼容转换。 */
@@ -394,7 +394,7 @@ internal object WeClawClient {
     }
 
     private fun hexToBytes(hex: String): ByteArray {
-        require(hex.length % 2 == 0) { "hex 长度非法: ${hex.length}" }
+        require(hex.length % 2 == 0) { "hex length invalid: ${hex.length}" }
         return ByteArray(hex.length / 2) { i ->
             hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
         }

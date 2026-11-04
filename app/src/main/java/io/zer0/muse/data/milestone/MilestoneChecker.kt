@@ -31,13 +31,13 @@ class MilestoneChecker(
         )
 
         val DEFINITIONS = listOf(
-            MilestoneDefinition("first_message", "初次对话", "你们的故事从这条消息开始 ✨"),
-            MilestoneDefinition("day_7", "相伴第 7 天", "一周的陪伴，是最美的开始 🌿"),
-            MilestoneDefinition("msg_100", "第 100 条消息", "一百次对话，一百次灵感的碰撞 💡"),
-            MilestoneDefinition("day_30", "相伴第 30 天", "一个月的相伴，已是最懂你的朋友 🌙"),
-            MilestoneDefinition("day_100", "相伴第 100 天", "一百天的陪伴，感谢一路同行 ⭐"),
-            MilestoneDefinition("msg_1000", "第 1000 条消息", "一千次对话，每一次都是独特的 ✨"),
-            MilestoneDefinition("day_365", "相伴一周年", "整整一年的相伴，这是最珍贵的关系 🎉"),
+            MilestoneDefinition("first_message", "First conversation", "Your story starts with this message ✨"),
+            MilestoneDefinition("day_7", "Day 7 together", "A week of companionship is the most beautiful beginning 🌿"),
+            MilestoneDefinition("msg_100", "100th message", "A hundred conversations, a hundred sparks of inspiration 💡"),
+            MilestoneDefinition("day_30", "Day 30 together", "A month together — already the friend who knows you best 🌙"),
+            MilestoneDefinition("day_100", "Day 100 together", "A hundred days together — thank you for walking this road with me ⭐"),
+            MilestoneDefinition("msg_1000", "1000th message", "A thousand conversations, every one of them unique ✨"),
+            MilestoneDefinition("day_365", "One year together", "A full year together — this is the most precious relationship 🎉"),
         )
     }
 

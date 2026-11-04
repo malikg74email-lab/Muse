@@ -63,7 +63,7 @@ internal object TelegramClient {
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             if (obj["ok"]?.jsonPrimitive?.booleanOrNull == false) {
                 error(
-                    "Telegram getUpdates 失败: " +
+                    "Telegram getUpdates failed: " +
                         obj["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                 )
             }
@@ -116,13 +116,13 @@ internal object TelegramClient {
             val obj = AppJson.parseToJsonElement(resp).jsonObject
 
             if (obj["ok"]?.jsonPrimitive?.booleanOrNull == false) {
-                error("Telegram getFile 失败")
+                error("Telegram getFile failed")
             }
 
             obj["result"]?.jsonObject
 
                 ?.get("file_path")?.jsonPrimitive?.contentOrNull.orEmpty()
-                .ifBlank { error("getFile 未返回 file_path") }
+                .ifBlank { error("getFile did not return file_path") }
         }
     }
 
@@ -159,7 +159,7 @@ internal object TelegramClient {
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             if (obj["ok"]?.jsonPrimitive?.booleanOrNull == false) {
                 error(
-                    "Telegram 发送失败: " +
+                    "Telegram send failed: " +
                         obj["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                 )
             }
@@ -173,7 +173,7 @@ internal object TelegramClient {
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             if (obj["ok"]?.jsonPrimitive?.booleanOrNull == false) {
                 error(
-                    "Telegram 校验失败: " +
+                    "Telegram validation failed: " +
                         obj["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                 )
             }

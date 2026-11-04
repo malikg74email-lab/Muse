@@ -95,7 +95,7 @@ class FeishuReceiver(
                 // 旧写法 delay(5s)+continue 让五个接收器每分钟合计唤醒 60 次，阻止深度休眠。
                 // 配置变更由 ChannelManager.upsert/remove/refresh 写入 channels；
                 // 设置页保存后还会调 restart() 重进本循环，两条路径都能唤醒。
-                Logger.i(TAG, "无启用中的飞书渠道,接收循环挂起等待配置")
+                Logger.i(TAG, "No enabled Feishu channel; the receive loop is suspended waiting for configuration")
                 channelManager.channels.first { list ->
                     list.any {
                         it.enabled && it.platform == ChannelPlatform.FEISHU &&
@@ -104,9 +104,9 @@ class FeishuReceiver(
                 }
                 continue
             }
-            Logger.i(TAG, "飞书接收循环: 找到渠道 ${config.id},建立连接…")
+            Logger.i(TAG, "Feishu receive loop: found channel ${config.id}, establishing connection…")
             runCatching { connectOnce(config) }
-                .onFailure { e -> Logger.w(TAG, "飞书连接异常: ${e.message}") }
+                .onFailure { e -> Logger.w(TAG, "Feishu connection exception: ${e.message}") }
             if (!currentCoroutineContext().isActive) return
             delay(RECONNECT_DELAY_MS)
         }
@@ -116,7 +116,7 @@ class FeishuReceiver(
     private suspend fun connectOnce(config: ChannelConfig) {
         val endpoint = requestEndpoint(config) ?: return
         val serviceId = queryParam(endpoint.url, "service_id")?.toIntOrNull() ?: 0
-        Logger.i(TAG, "endpoint 就绪(service=$serviceId, ping=${endpoint.pingIntervalSeconds}s),建立 WebSocket…")
+        Logger.i(TAG, "endpoint ready (service=$serviceId, ping=${endpoint.pingIntervalSeconds}s), establishing WebSocket…")
         val disconnected = CompletableDeferred<Unit>()
         val socketRef = AtomicReference<WebSocket?>(null)
         val pingJob = appScope.launch {
@@ -131,21 +131,21 @@ class FeishuReceiver(
             request,
             object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    Logger.i(TAG, "飞书 WS 已连接")
+                    Logger.i(TAG, "Feishu WS connected")
                 }
 
                 override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
                     runCatching { handleFrame(bytes.toByteArray(), webSocket, config.id) }
-                        .onFailure { e -> Logger.w(TAG, "飞书帧处理失败: ${e.message}") }
+                        .onFailure { e -> Logger.w(TAG, "Feishu frame processing failed: ${e.message}") }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Logger.w(TAG, "飞书 WS 断开: ${t.message}")
+                    Logger.w(TAG, "Feishu WS disconnected: ${t.message}")
                     disconnected.complete(Unit)
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    Logger.i(TAG, "飞书 WS 关闭(code=$code, reason=$reason)")
+                    Logger.i(TAG, "Feishu WS closed (code=$code, reason=$reason)")
                     disconnected.complete(Unit)
                 }
             },
@@ -232,9 +232,9 @@ class FeishuReceiver(
                     media = ChannelInbox.Media(kind = "image", base64 = base64),
                 )
             } else {
-                Logger.w(TAG, "飞书图片获取失败(from=${event.from})")
+                Logger.w(TAG, "Feishu image fetch failed (from=${event.from})")
 
-                ChannelInbox.record(source, "[图片(未能获取)]", "")
+                ChannelInbox.record(source, "[Image (Could not fetch)]", "")
             }
         }
     }
@@ -285,11 +285,11 @@ class FeishuReceiver(
      */
     internal fun feishuInboundText(message: JsonObject?, messageType: String): String = when (messageType) {
         "text" -> parseFeishuTextContent(message?.get("content")?.jsonPrimitive?.contentOrNull.orEmpty())
-        "image" -> "[图片]"
-        "audio" -> "[语音]"
-        "media" -> "[视频]"
-        "file" -> "[文件]"
-        "post" -> "[富文本]"
+        "image" -> "[Image]"
+        "audio" -> "[Voice]"
+        "media" -> "[Video]"
+        "file" -> "[File]"
+        "post" -> "[Rich text]"
         else -> if (messageType.isBlank()) "" else "[$messageType]"
     }
 
@@ -313,17 +313,17 @@ class FeishuReceiver(
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             val code = obj["code"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: -1
             if (code != 0) {
-                error("endpoint 响应 code=$code ${obj["msg"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
+                error("endpoint response code=$code ${obj["msg"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
             }
-            val data = obj["data"]?.jsonObject ?: error("endpoint 响应缺 data")
+            val data = obj["data"]?.jsonObject ?: error("endpoint response is missing data")
             val url = data["URL"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                ?: error("endpoint 响应缺 URL")
+                ?: error("endpoint response is missing the URL")
             val pingSeconds = data["ClientConfig"]?.jsonObject
                 ?.get("PingInterval")?.jsonPrimitive?.contentOrNull?.toLongOrNull()
                 ?.takeIf { it > 0 } ?: DEFAULT_PING_SECONDS
             EndpointInfo(url = url, pingIntervalSeconds = pingSeconds)
         }.onFailure { e ->
-            Logger.w(TAG, "飞书长连接 endpoint 获取失败: ${e.message}")
+            Logger.w(TAG, "Fetching the Feishu long-connection endpoint failed: ${e.message}")
         }.getOrNull()
     }
 
@@ -377,11 +377,11 @@ class FeishuReceiver(
                     .replace(AT_PLACEHOLDER_REGEX, "")
                     .trim()
             }.getOrDefault("")
-            "image" -> "[图片]"
-            "audio" -> "[语音]"
-            "media" -> "[视频]"
-            "file" -> "[文件]"
-            "post" -> "[富文本]"
+            "image" -> "[Image]"
+            "audio" -> "[Voice]"
+            "media" -> "[Video]"
+            "file" -> "[File]"
+            "post" -> "[Rich text]"
             else -> "[$messageType]"
         }
 

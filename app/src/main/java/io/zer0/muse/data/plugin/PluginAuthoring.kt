@@ -47,46 +47,46 @@ object PluginAuthoringRules {
     /** 校验请求；返回中文可读原因，null 表示通过。 */
     fun validate(request: AuthoredPluginRequest): String? {
         if (!PLUGIN_ID_REGEX.matches(request.id)) {
-            return "插件 id 非法: 只能包含小写字母、数字、下划线和连字符，且以字母或数字开头"
+            return "Illegal plugin id: only lowercase letters, digits, underscores and hyphens are allowed, and it must start with a letter or digit"
         }
         if (request.name.isBlank()) {
-            return "插件名称不能为空"
+            return "Plugin name must not be empty"
         }
         if (PluginVersion.parse(request.version) == null) {
-            return "插件版本号必须是语义化版本（如 1.0.0）: ${request.version}"
+            return "Plugin version must be a semantic version (e.g. 1.0.0): ${request.version}"
         }
         if (request.code.isBlank()) {
-            return "插件代码不能为空"
+            return "Plugin code must not be empty"
         }
         val codeBytes = request.code.toByteArray(Charsets.UTF_8).size
         if (codeBytes > MAX_CODE_BYTES) {
-            return "插件代码超过大小上限(${MAX_CODE_BYTES / 1024}KB): 当前 $codeBytes 字节"
+            return "Plugin code exceeds the size limit (${MAX_CODE_BYTES / 1024}KB): currently $codeBytes bytes"
         }
         if (request.tools.isEmpty()) {
-            return "插件至少需要声明一个工具"
+            return "A plugin must declare at least one tool"
         }
         if (request.tools.size > MAX_TOOLS) {
-            return "插件工具数量超过上限($MAX_TOOLS): 当前 ${request.tools.size} 个"
+            return "Plugin tool count exceeds the limit ($MAX_TOOLS): currently ${request.tools.size}"
         }
         val duplicate = request.tools.groupBy { it.name }.entries.firstOrNull { it.value.size > 1 }
         if (duplicate != null) {
-            return "插件工具名重复: ${duplicate.key}"
+            return "Duplicate plugin tool name: ${duplicate.key}"
         }
         request.tools.forEach { tool ->
             if (!TOOL_NAME_REGEX.matches(tool.name)) {
-                return "工具名非法: ${tool.name}（只允许字母、数字、下划线和连字符，长度 1-64）"
+                return "Illegal tool name: ${tool.name} (only letters, digits, underscores and hyphens are allowed, length 1-64)"
             }
             if (!FUNCTION_NAME_REGEX.matches(tool.functionName)) {
-                return "工具函数名非法: ${tool.functionName}（只允许字母、数字、下划线和 $，且不能以数字开头）"
+                return "Illegal tool function name: ${tool.functionName} (only letters, digits, underscores and $ are allowed, and it must not start with a digit)"
             }
             if (!definesFunction(request.code, tool.functionName)) {
-                return "插件代码中没有定义工具函数 ${tool.functionName}（需要顶层 function 声明）"
+                return "The plugin code does not define the tool function ${tool.functionName} (a top-level function declaration is required)"
             }
         }
         // v2.x（沙盒放开）：能力不再按固定名单拒绝，仅校验名称格式合法。
         val invalidCapability = request.capabilities.firstOrNull { !PluginSecurityGate.isValidCapabilityName(it) }
         if (invalidCapability != null) {
-            return "插件声明的能力名格式非法: $invalidCapability"
+            return "Illegal format for a plugin's declared capability name: $invalidCapability"
         }
         return null
     }

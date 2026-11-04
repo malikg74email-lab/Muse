@@ -78,7 +78,7 @@ class AutomationManager(
         } else {
             val updated = current.copy(accessibilityEnabled = a11y)
             _permissionState.value = updated
-            Logger.i(TAG, "无障碍状态实时刷新: a11y=$a11y")
+            Logger.i(TAG, "Accessibility status live refresh: a11y=$a11y")
             updated
         }
     }
@@ -101,7 +101,7 @@ class AutomationManager(
             Logger.w(TAG, "shizuku diagnostic failed: ${e.message}", e)
             ShizukuAuthorizer.ShizukuStatus(
                 ShizukuAuthorizer.ShizukuState.USER_SERVICE_UNAVAILABLE,
-                "Shizuku 状态探测失败",
+                "Shizuku status probe failed",
             )
         }
         val rt = probe("root") { root.isAvailable() }
@@ -482,7 +482,7 @@ class AutomationManager(
         val shellEnabled: Boolean = false,
         val rootEnabled: Boolean = false,
         val shizukuState: ShizukuAuthorizer.ShizukuState = ShizukuAuthorizer.ShizukuState.NOT_INSTALLED,
-        val shizukuMessage: String = "未探测",
+        val shizukuMessage: String = "Not probed",
     ) {
         /** 是否至少有一层可用。 */
         val anyEnabled: Boolean get() = accessibilityEnabled || shellEnabled || rootEnabled
@@ -491,8 +491,8 @@ class AutomationManager(
         fun highestLevelName(): String = when {
             rootEnabled -> "Root"
             shellEnabled -> "Shell(Shizuku/adb)"
-            accessibilityEnabled -> "无障碍"
-            else -> "无（仅应用内操作）"
+            accessibilityEnabled -> "Accessibility"
+            else -> "None (in-app operations only)"
         }
     }
 

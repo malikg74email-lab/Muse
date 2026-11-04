@@ -15,9 +15,9 @@ internal object TelegramMediaSender {
     suspend fun send(config: ChannelConfig, media: OutboundMedia, targetOverride: String?): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val token = config.appSecret.trim()
-            require(token.isNotBlank()) { "Telegram Bot Token 未配置" }
+            require(token.isNotBlank()) { "Telegram Bot Token not configured" }
             val chatId = targetOverride?.takeIf { it.isNotBlank() } ?: config.targetId
-            require(chatId.isNotBlank()) { "缺少 chat_id" }
+            require(chatId.isNotBlank()) { "Missing chat_id" }
             val (method, field) = methodOf(media.kind)
             val body = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -25,7 +25,7 @@ internal object TelegramMediaSender {
             if (media is OutboundMedia.RemoteUrl) {
                 body.addFormDataPart(field, media.url)
             } else {
-                val payload = MediaPayload.from(media) ?: error("无法读取媒体内容")
+                val payload = MediaPayload.from(media) ?: error("Cannot read the media content")
                 body.addFormDataPart(
                     field,
                     payload.fileName,
@@ -37,7 +37,7 @@ internal object TelegramMediaSender {
                 .post(body.build())
                 .build()
             MediaHttp.postAndCheck(req, "Telegram")
-        }.onFailure { e -> Logger.w(TAG, "Telegram 媒体发送失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Telegram media send failed: ${e.message}") }
     }
 
     private fun methodOf(kind: MediaKind): Pair<String, String> = when (kind) {

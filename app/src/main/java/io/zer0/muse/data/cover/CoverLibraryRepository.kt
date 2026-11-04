@@ -90,7 +90,7 @@ class CoverLibraryRepository(private val appContext: Context) {
     suspend fun importFromUri(uri: Uri): Result<CoverItem> = withContext(Dispatchers.IO) {
         resultOf {
             val bitmap = decodeSampledBitmap(uri)
-                ?: error("无法解码所选图片")
+                ?: error("Could not decode the selected image")
             val (w, h) = bitmap.width to bitmap.height
             val fileName = "cover_${UUID.randomUUID().toString().take(8)}.jpg"
             val targetFile = File(rootDir, fileName)
@@ -114,7 +114,7 @@ class CoverLibraryRepository(private val appContext: Context) {
             }
             item
         }.onError { msg, t ->
-            Logger.w(TAG, "导入封面失败: $msg", t)
+            Logger.w(TAG, "Failed to import the cover: $msg", t)
         }
     }
 
@@ -137,7 +137,7 @@ class CoverLibraryRepository(private val appContext: Context) {
                 file.inputStream().use { input -> targetFile.outputStream().use { output -> input.copyTo(output) } }
             } else {
                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                    ?: error("无法解码生图结果")
+                    ?: error("Could not decode the image generation result")
                 targetFile.outputStream().use { out ->
                     bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
                 }
@@ -159,7 +159,7 @@ class CoverLibraryRepository(private val appContext: Context) {
             }
             item
         }.onError { msg, t ->
-            Logger.w(TAG, "登记生成封面失败: $msg", t)
+            Logger.w(TAG, "Failed to register the generated cover: $msg", t)
         }
     }
 
@@ -171,7 +171,7 @@ class CoverLibraryRepository(private val appContext: Context) {
             resultOf {
                 val file = File(rootDir, target.fileName)
                 if (file.exists()) file.delete()
-            }.onError { msg, t -> Logger.w(TAG, "删除封面文件失败: $msg", t) }
+            }.onError { msg, t -> Logger.w(TAG, "Failed to delete the cover file: $msg", t) }
             current.remove(target)
             writeManifest(current)
             true
@@ -233,7 +233,7 @@ class CoverLibraryRepository(private val appContext: Context) {
         return resultOf {
             AppJson.decodeFromString(ListSerializer(CoverItem.serializer()), manifestFile.readText())
         }.onError { msg, t ->
-            Logger.w(TAG, "封面清单解析失败,回退空列表: $msg", t)
+            Logger.w(TAG, "Cover manifest parse failed, falling back to an empty list: $msg", t)
         }.getOrNull() ?: emptyList()
     }
 

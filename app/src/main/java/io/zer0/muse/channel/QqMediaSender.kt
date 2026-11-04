@@ -40,7 +40,7 @@ internal object QqMediaSender {
                 config.targetType == "group"
             }
             val target = rawTarget.removePrefix("group:")
-            val payload = MediaPayload.from(media) ?: error("无法读取媒体内容")
+            val payload = MediaPayload.from(media) ?: error("Cannot read the media content")
             val path = if (isGroup) "groups" else "users"
             val fileInfo = upload(
                 Upload(
@@ -63,7 +63,7 @@ internal object QqMediaSender {
                 .post(body.toRequestBody(MediaHttp.jsonMediaType))
                 .build()
             MediaHttp.postAndCheck(req, "QQ")
-        }.onFailure { e -> Logger.w(TAG, "QQ 媒体发送失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "QQ media send failed: ${e.message}") }
     }
 
     /** QQ 富媒体类型：1 图片 / 2 视频 / 3 语音 / 4 文件。 */
@@ -98,7 +98,7 @@ internal object QqMediaSender {
             return (obj["file_info"] ?: obj["file_uuid"] ?: obj["id"])
                 ?.jsonPrimitive?.contentOrNull
                 ?.takeIf { it.isNotBlank() }
-                ?: error("上传响应缺 file_info: ${text.take(200)}")
+                ?: error("Upload response is missing file_info: ${text.take(200)}")
         }
     }
 }

@@ -41,6 +41,6 @@ internal suspend fun pruneMessageImageSnapshot(
             imageStore.deleteSnapshotFilesNotReferenced(snapshot, referenced)
         }
     } catch (error: Exception) {
-        Logger.w("BackupRestore", "恢复后图片清理未完成: ${error.message}", error)
+        Logger.w("BackupRestore", "Post-restore image cleanup incomplete: ${error.message}", error)
     }
 }

@@ -78,7 +78,7 @@ class RestoreStagingStore(context: Context) {
             .forEach { name ->
                 val file = fileFor(name)
                 if (file.exists() && !file.delete()) {
-                    Logger.w(TAG, "清理恢复副本失败: ${file.name}")
+                    Logger.w(TAG, "Cleaning up restore copies failed: ${file.name}")
                 }
             }
         if (directory.exists() && directory.listFiles().isNullOrEmpty()) {
@@ -97,7 +97,7 @@ class RestoreStagingStore(context: Context) {
         return runCatching {
             json.decodeFromString(BackupService.Backup.serializer(), file.readText())
         }.onFailure {
-            Logger.w(TAG, "恢复副本解析失败: ${file.name}", it)
+            Logger.w(TAG, "Restore copy parsing failed: ${file.name}", it)
         }.getOrNull()
     }
 

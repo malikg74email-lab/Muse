@@ -29,8 +29,8 @@ internal fun recordQqInbound(scope: CoroutineScope, source: ChannelInbox.Source,
                 media = ChannelInbox.Media(kind = "image", base64 = base64),
             )
         } else {
-            Logger.w("QqReceiver", "QQ 图片获取失败(from=${source.from})")
-            ChannelInbox.record(source, "[图片(未能获取)]", "")
+            Logger.w("QqReceiver", "QQ image fetch failed (from=${source.from})")
+            ChannelInbox.record(source, "[Image (Could not fetch)]", "")
         }
     }
 }

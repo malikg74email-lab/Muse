@@ -92,7 +92,7 @@ object PendingToolCallStore {
 
     /** 内部:取当前文件(若未初始化则报错并返回 null,调用方需处理)。 */
     private fun file(): File? = fileRef ?: run {
-        Logger.w(TAG, "fileRef 未初始化,请先调用 init(context);本次操作将被忽略")
+        Logger.w(TAG, "fileRef not initialized; please call init(context) first; this operation will be ignored")
         null
     }
 
@@ -111,7 +111,7 @@ object PendingToolCallStore {
             }
         }.onError { msg, t ->
             AtomicFileStore.quarantine(f, "pending_tool_calls_parse")
-            Logger.w(TAG, "loadAll 解析失败: $msg(文件已隔离，待处理调用不会被静默丢弃)", t)
+            Logger.w(TAG, "loadAll parsing failed: $msg (the file has been quarantined; pending calls will not be silently dropped)", t)
         }.getOrNull() ?: emptyList()
     }
 
@@ -127,7 +127,7 @@ object PendingToolCallStore {
             // 审批/断点状态同样需要 fsync + 原子替换，避免停止或进程被杀时写半个 JSON。
             AtomicFileStore.writeText(f, stored)
         }.onError { msg, t ->
-            Logger.e(TAG, "saveAllInternal 写入失败: $msg", t)
+            Logger.e(TAG, "saveAllInternal write failed: $msg", t)
         }.getOrThrow()
     }
 

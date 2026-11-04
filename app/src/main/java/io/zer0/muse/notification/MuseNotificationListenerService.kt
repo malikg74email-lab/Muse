@@ -132,7 +132,7 @@ class MuseNotificationListenerService : NotificationListenerService() {
                     markRecordsNotActive(active.map(::sourceKey).toSet())
                     active.forEach(service::recordNotification)
                 }.onFailure { error ->
-                    Logger.w(TAG, "手动同步当前通知失败: ${error.message}", error)
+                    Logger.w(TAG, "Manual sync of current notifications failed: ${error.message}", error)
                 }
             }
         }
@@ -155,7 +155,7 @@ class MuseNotificationListenerService : NotificationListenerService() {
                                 raw,
                             )
                         }.onFailure { error ->
-                            Logger.w(TAG, "通知记录恢复失败,清空损坏缓存: ${error.message}", error)
+                            Logger.w(TAG, "Failed to restore notification records; clearing corrupted cache: ${error.message}", error)
                             prefs.edit().remove(KEY_RECORDS).apply()
                         }.getOrNull()
                     }
@@ -172,7 +172,7 @@ class MuseNotificationListenerService : NotificationListenerService() {
         fun hasListenerAccess(context: Context): Boolean = runCatching {
             NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
         }.onFailure { error ->
-            Logger.w(TAG, "读取通知使用权失败: ${error.message}", error)
+            Logger.w(TAG, "Failed to read notification access state: ${error.message}", error)
         }.getOrDefault(connected)
 
         /** 查询最近通知(供 ToolRegistry 调用)。 */
@@ -270,7 +270,7 @@ class MuseNotificationListenerService : NotificationListenerService() {
             val encoded = runCatching {
                 AppJson.encodeToString(ListSerializer(NotificationRecord.serializer()), snapshot)
             }.getOrElse { error ->
-                Logger.w(TAG, "通知记录序列化失败: ${error.message}", error)
+                Logger.w(TAG, "Failed to serialize notification records: ${error.message}", error)
                 return
             }
             val sequence = synchronized(stateLock) {
@@ -310,20 +310,20 @@ class MuseNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         connected = true
-        Logger.i(TAG, "通知监听服务已连接")
+        Logger.i(TAG, "Notification listener service connected")
         // 系统重新绑定服务时补读当前仍存在的通知,避免授权重连期间页面长期空白。
         runCatching {
             val active = activeNotifications.orEmpty()
             markRecordsNotActive(active.map(::sourceKey).toSet())
             active.forEach(::recordNotification)
         }.onFailure { error ->
-            Logger.w(TAG, "恢复当前通知失败: ${error.message}", error)
+            Logger.w(TAG, "Failed to restore current notifications: ${error.message}", error)
         }
     }
 
     override fun onListenerDisconnected() {
         connected = false
-        Logger.w(TAG, "通知监听服务已断开")
+        Logger.w(TAG, "Notification listener service disconnected")
         // Android 可能因系统回收/权限切换主动解绑;请求一次系统重绑,但做退避防止日志/IPC 风暴。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val now = System.currentTimeMillis()
@@ -332,7 +332,7 @@ class MuseNotificationListenerService : NotificationListenerService() {
                 runCatching {
                     requestRebind(ComponentName(this, MuseNotificationListenerService::class.java))
                 }.onFailure { error ->
-                    Logger.w(TAG, "请求通知监听服务重绑失败: ${error.message}", error)
+                    Logger.w(TAG, "Failed to request notification listener rebinding: ${error.message}", error)
                 }
             }
         }
@@ -340,7 +340,7 @@ class MuseNotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         runCatching { recordNotification(sbn) }
-            .onFailure { error -> Logger.w(TAG, "处理通知失败: ${error.message}", error) }
+            .onFailure { error -> Logger.w(TAG, "Failed to process notification: ${error.message}", error) }
     }
 
     private fun recordNotification(sbn: StatusBarNotification) {
@@ -367,13 +367,13 @@ class MuseNotificationListenerService : NotificationListenerService() {
         // 该包正文经 PII 遮蔽保留(未授权仍隐藏)。其余通知正文一律过 PII 遮蔽。
         val bodyHidden = pkg in SENSITIVE_PACKAGES && !isPackageUnlocked(pkg)
         val (safeTitle, safeText) = if (bodyHidden) {
-            "[敏感通知]" to "(已隐藏正文,来源: $pkg)"
+            "[Sensitive notification]" to "(Body hidden, source: $pkg)"
         } else {
             scrubText(rawTitle) to scrubText(rawText)
         }
         val appLabel = runCatching {
             packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
-        }.onFailure { error -> Logger.d(TAG, "读取通知应用名称失败($pkg): ${error.message}") }
+        }.onFailure { error -> Logger.d(TAG, "Failed to read notification app name ($pkg): ${error.message}") }
             .getOrDefault(pkg)
 
         val record = NotificationRecord(

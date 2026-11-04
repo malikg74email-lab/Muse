@@ -69,12 +69,12 @@ class PluginMarketSettings(private val context: Context) {
      */
     suspend fun saveCatalogRootKey(keyId: String, publicKeyBase64: String): Result<String> {
         val id = keyId.trim()
-        if (id.isEmpty()) return Result.failure(IllegalArgumentException("keyId 不能为空"))
+        if (id.isEmpty()) return Result.failure(IllegalArgumentException("keyId must not be empty"))
         if (id in PluginMarketDefaults.catalogRootKeys) {
-            return Result.failure(IllegalArgumentException("不能覆盖内置的官方目录信任根"))
+            return Result.failure(IllegalArgumentException("Cannot overwrite the built-in official catalog trust root"))
         }
         val normalized = PluginSecurityGate.canonicalPublicKey(publicKeyBase64.trim())
-            .getOrElse { return Result.failure(IllegalArgumentException("公钥不是合法的 Base64 X.509 公钥")) }
+            .getOrElse { return Result.failure(IllegalArgumentException("The public key is not a valid Base64 X.509 public key")) }
         // 只持久化用户自己追加的信任根：内置项始终由安装包提供，不写进设置。
         val next = userRootKeys() + (id to normalized)
         store.edit { prefs ->
@@ -106,7 +106,7 @@ class PluginMarketSettings(private val context: Context) {
                 .filterKeys { it.isNotBlank() }
                 .filterValues { it.isNotBlank() }
         }.getOrElse { error ->
-            Logger.w(TAG, "目录信任根解析失败，按未配置处理", error)
+            Logger.w(TAG, "Catalog trust root parse failed; treating it as not configured", error)
             emptyMap()
         }
     }

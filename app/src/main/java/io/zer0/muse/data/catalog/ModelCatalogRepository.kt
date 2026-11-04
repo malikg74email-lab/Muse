@@ -73,28 +73,28 @@ class ModelCatalogRepository(
      */
     fun refresh(): RefreshResult {
         val remoteText = runCatching { httpGet(REMOTE_URL) }
-            .onFailure { Logger.w(TAG, "拉取目录失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Failed to fetch the catalog: ${it.message}") }
             .getOrNull()
-            ?: return RefreshResult(ok = false, message = "网络请求失败")
+            ?: return RefreshResult(ok = false, message = "Network request failed")
 
         val remote = ModelCatalogLoader.loadOrEmpty(remoteText)
         if (remote.providers.isEmpty()) {
-            return RefreshResult(ok = false, message = "远程目录为空或格式不合法")
+            return RefreshResult(ok = false, message = "Remote catalog is empty or its format is invalid")
         }
 
         val currentPublished = current().publishedAt
         if (currentPublished.isNotBlank() && currentPublished == remote.publishedAt) {
-            return RefreshResult(ok = true, updated = false, message = "已是最新(${remote.publishedAt})")
+            return RefreshResult(ok = true, updated = false, message = "Already up to date (${remote.publishedAt})")
         }
 
         return runCatching {
             cacheFile.writeText(remoteText)
             memCache = null
-            Logger.i(TAG, "目录已更新: ${remote.publishedAt}, ${remote.providers.size} 个供应商")
-            RefreshResult(ok = true, updated = true, message = "已更新到 ${remote.publishedAt}")
+            Logger.i(TAG, "Catalog updated: ${remote.publishedAt}, ${remote.providers.size} providers")
+            RefreshResult(ok = true, updated = true, message = "Updated to ${remote.publishedAt}")
         }.getOrElse {
-            Logger.w(TAG, "写入目录缓存失败: ${it.message}")
-            RefreshResult(ok = false, message = "写入缓存失败")
+            Logger.w(TAG, "Failed to write the catalog cache: ${it.message}")
+            RefreshResult(ok = false, message = "Failed to write the cache")
         }
     }
 

@@ -47,7 +47,7 @@ object DiagnosticExporter {
         val zipFile = buildDiagnosticZip(context) ?: return@withContext null
         runCatching {
             FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", zipFile)
-        }.onFailure { Logger.w("DiagnosticExporter", "导出失败: ${it.message}") }.getOrNull()
+        }.onFailure { Logger.w("DiagnosticExporter", "Export failed: ${it.message}") }.getOrNull()
     }
 
     /**
@@ -61,7 +61,7 @@ object DiagnosticExporter {
         val backgroundWork = resultOf {
             BackgroundWakeDiagnostics.formatSnapshot(BackgroundWakeDiagnostics.collectWithSettings(context))
         }.onError { message, throwable ->
-            Logger.w("DiagnosticExporter", "后台唤醒状态采集失败: $message", throwable)
+            Logger.w("DiagnosticExporter", "Collecting the background wake state failed: $message", throwable)
         }.getOrNull()
         runCatching {
             val zipFile = File(context.cacheDir, "muse_diagnostic_${exportDateFormat.format(Date())}.zip")
@@ -112,7 +112,7 @@ object DiagnosticExporter {
                 }
             }
             zipFile
-        }.onFailure { Logger.w("DiagnosticExporter", "导出失败: ${it.message}") }.getOrNull()
+        }.onFailure { Logger.w("DiagnosticExporter", "Export failed: ${it.message}") }.getOrNull()
     }
 
     /** 调起系统分享。 */

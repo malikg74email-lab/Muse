@@ -66,7 +66,7 @@ class OcrManager {
                 cont.resume(sb.toString())
             }
             .addOnFailureListener { e ->
-                Logger.w("OcrManager", "OCR 识别失败: ${e.message}", e)
+                Logger.w("OcrManager", "OCR recognition failed: ${e.message}", e)
                 cont.resume("")
             }
         cont.invokeOnCancellation { }
@@ -120,7 +120,7 @@ class OcrManager {
             }
         }.recoverCatching { e ->
             // L-OCR4: 解码失败记日志,避免静默返回 null 难以排查
-            Logger.w("OcrManager", "Bitmap 解码失败: uri=$uri, ${e.message}", e)
+            Logger.w("OcrManager", "Bitmap decoding failed: uri=$uri, ${e.message}", e)
             null
         }.getOrNull()
     }

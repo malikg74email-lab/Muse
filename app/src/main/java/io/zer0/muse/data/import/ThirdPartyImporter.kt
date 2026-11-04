@@ -101,7 +101,7 @@ object ThirdPartyImporter {
                 tempFile.outputStream().use { output -> source.copyTo(output) }
             }
         } catch (e: Exception) {
-            Logger.w(TAG, "无法读取导入文件", e)
+            Logger.w(TAG, "Could not read the import file", e)
             tempFile.delete()
             return@withContext ImportResult(errors = listOf(context.getString(R.string.import_error_read_file_failed)))
         }
@@ -146,7 +146,7 @@ object ThirdPartyImporter {
                     if (!entry.isDirectory) {
                         // M-IMP2: 校验条目名,防止路径穿越
                         if (entry.name.contains("..") || entry.name.startsWith("/")) {
-                            Logger.w(TAG, "跳过可疑路径条目: ${entry.name}")
+                            Logger.w(TAG, "Skipping suspicious path entry: ${entry.name}")
                             entry = zis.nextEntry
                             continue
                         }
@@ -165,7 +165,7 @@ object ThirdPartyImporter {
                                 }
                                 totalSize += entryBytes
                                 if (totalSize > MAX_TOTAL_SIZE) {
-                                    throw IllegalStateException("解压内容总大小超过限制(${MAX_TOTAL_SIZE / 1024 / 1024 / 1024}GB)")
+                                    throw IllegalStateException("Total extracted content size exceeds the limit (${MAX_TOTAL_SIZE / 1024 / 1024 / 1024}GB)")
                                 }
                                 extracted.remove(name)?.delete()
                                 extracted[name] = tmp
@@ -179,12 +179,12 @@ object ThirdPartyImporter {
                 }
             }
         } catch (e: IllegalStateException) {
-            Logger.w(TAG, "解压终止: ${e.message}")
+            Logger.w(TAG, "Extraction aborted: ${e.message}")
             extracted.values.forEach { it.delete() }
             tempFile.delete()
             return@withContext ImportResult(errors = listOf(e.message ?: context.getString(R.string.import_error_unzip_size_exceeded)))
         } catch (e: Exception) {
-            Logger.w(TAG, "无法解压文件", e)
+            Logger.w(TAG, "Could not extract the file", e)
             extracted.values.forEach { it.delete() }
             tempFile.delete()
             return@withContext ImportResult(errors = listOf(context.getString(R.string.import_error_unzip_failed, e.message)))
@@ -438,7 +438,7 @@ object ThirdPartyImporter {
         } catch (ce: CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.w(TAG, "RikkaHub 备份解析失败", e)
+            Logger.w(TAG, "RikkaHub backup parse failed", e)
             errors.add(context.getString(R.string.import_error_rikka_parse_failed, e.message))
         }
 
@@ -572,7 +572,7 @@ object ThirdPartyImporter {
                             throw ce
                         } catch (e: Exception) {
                             skippedMessages++
-                            Logger.w(TAG, "ChatGPT 消息节点解析失败: ${e.message}")
+                            Logger.w(TAG, "ChatGPT message node parse failed: ${e.message}")
                         }
                     }
 
@@ -630,7 +630,7 @@ object ThirdPartyImporter {
         } catch (ce: CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.w(TAG, "ChatGPT 导出解析失败", e)
+            Logger.w(TAG, "ChatGPT export parse failed", e)
             errors.add(context.getString(R.string.import_error_chatgpt_parse_failed, e.message))
         }
 
@@ -742,7 +742,7 @@ object ThirdPartyImporter {
                             throw ce
                         } catch (e: Exception) {
                             skippedMessages++
-                            Logger.w(TAG, "Claude 消息解析失败: ${e.message}")
+                            Logger.w(TAG, "Claude message parse failed: ${e.message}")
                         }
                     }
                     if (parsed.isEmpty()) continue
@@ -772,7 +772,7 @@ object ThirdPartyImporter {
         } catch (ce: CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.w(TAG, "Claude 导出解析失败", e)
+            Logger.w(TAG, "Claude export parse failed", e)
             errors.add(context.getString(R.string.import_error_chatgpt_parse_failed, e.message))
         }
 
@@ -932,7 +932,7 @@ object ThirdPartyImporter {
                         } catch (e: Exception) {
                             // v1.71: 统计跳过的消息并记录日志,原静默吞导致用户不知道丢了哪些消息
                             skippedMessages++
-                            Logger.w(TAG, "Kelivo 消息解析失败已跳过", e)
+                            Logger.w(TAG, "Kelivo message parse failed; skipped", e)
                         }
                     }
                 }
@@ -961,7 +961,7 @@ object ThirdPartyImporter {
                                     existingAssistantIds.contains(id) -> id
                                     existingAssistantIds.contains("kelivo_$id") -> "kelivo_$id"
                                     else -> {
-                                        Logger.w(TAG, "Kelivo 会话 assistantId '$id' 不存在,回退默认助手")
+                                        Logger.w(TAG, "Kelivo conversation assistantId '$id' does not exist; falling back to the default assistant")
                                         defaultAssistantId
                                     }
                                 }
@@ -989,7 +989,7 @@ object ThirdPartyImporter {
         } catch (ce: CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.w(TAG, "Kelivo 备份解析失败", e)
+            Logger.w(TAG, "Kelivo backup parse failed", e)
             errors.add(context.getString(R.string.import_error_kelivo_parse_failed, e.message))
         }
 

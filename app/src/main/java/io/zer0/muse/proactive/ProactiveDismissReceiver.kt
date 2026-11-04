@@ -31,13 +31,13 @@ class ProactiveDismissReceiver : BroadcastReceiver() {
         val notifId = intent.getIntExtra(ProactiveDismissProtocol.EXTRA_NOTIFICATION_ID, 0)
         if (notifId != 0) {
             resultOf { NotificationManagerCompat.from(context).cancel(notifId) }
-                .onError { msg, _ -> Logger.w(TAG, "收起通知失败: $msg") }
+                .onError { msg, _ -> Logger.w(TAG, "Failed to dismiss the notification:  $msg") }
         }
 
         val scheduler = resultOf { GlobalContext.get().get<ProactiveScheduler>() }.getOrNull()
         if (scheduler == null) {
             // 依赖没就绪（进程被重启到一半）时宁可丢这一次表态，也不在主线程上做 I/O。
-            Logger.w(TAG, "收到「这次不用」，但调度器未就绪，本次忽略")
+            Logger.w(TAG, "Received a 'not this time' tap, but the scheduler is not ready; ignoring it this time")
             return
         }
         // onReceive 只有十秒左右的返回时限，落库交给应用级 scope，别把广播悬在这里。

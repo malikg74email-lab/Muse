@@ -124,7 +124,7 @@ object ChannelConversationStore {
                     val decoded = ChannelConversationFiles.decode(text)
                     if (decoded != null) restored[decoded.first] = decoded.second
                 }
-                .onFailure { e -> Logger.w(TAG, "分片读取失败,跳过 ${shard.name}: ${e.message}") }
+                .onFailure { e -> Logger.w(TAG, "Shard read failed, skipping ${shard.name}: ${e.message}") }
         }
         _conversations.value = restored
             .entries
@@ -154,11 +154,11 @@ object ChannelConversationStore {
             }
             val cost = System.currentTimeMillis() - startedAt
             if (migrated && target.renameTo(File(target.parentFile, LEGACY_FILE_NAME + ".migrated"))) {
-                Logger.i(TAG, "旧单文件已迁移为分片存储(${restored.size} 个会话, 耗时 ${cost}ms)")
+                Logger.i(TAG, "Legacy single file migrated to sharded storage (${restored.size} conversations, took ${cost}ms)")
             }
         }.onFailure { e ->
             // v2.6.0 (AUD-CHANNEL-F4): 恢复失败时隔离坏文件,避免被后续写入覆盖。
-            Logger.w(TAG, "对话历史恢复失败,隔离坏文件: ${e.message}")
+            Logger.w(TAG, "Conversation history recovery failed, quarantining the corrupt file: ${e.message}")
             io.zer0.muse.data.AtomicFileStore.quarantine(target, "conversation_restore_failed")
         }
     }
@@ -306,7 +306,7 @@ object ChannelConversationStore {
                 ChannelConversationFiles.encode(key, conversation),
             )
             true
-        }.onFailure { e -> Logger.w(TAG, "对话历史持久化失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Conversation history persistence failed: ${e.message}") }
             .getOrDefault(false)
     }
 
@@ -316,7 +316,7 @@ object ChannelConversationStore {
         return runCatching {
             val target = shardFile(dir, key)
             !target.exists() || target.delete()
-        }.onFailure { e -> Logger.w(TAG, "对话分片删除失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Conversation shard deletion failed: ${e.message}") }
             .getOrDefault(false)
     }
 }

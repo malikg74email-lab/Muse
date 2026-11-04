@@ -40,28 +40,28 @@ class LlmFactDedupJudge(
             throw e
         } catch (e: Exception) {
             // 超时/网络/解析失败: 保守降级,不阻塞记忆写入主流程
-            Logger.w(TAG, "LLM 去重判定失败,降级为不同一: ${e.message}")
+            Logger.w(TAG, "LLM dedup judgement failed; degrading to treating them as different: ${e.message}")
             DedupVerdict.NOT_SAME
         }
     }
 
     private fun buildSystemPrompt(): String = """
-        你是记忆系统的去重判定器。给定两条记忆事实,判断它们是否描述同一个事实(同一件事)。
-        - 表述措辞不同但语义相同(如"用户养了一只柯基"与"他养了只柯基犬")→ same=true
-        - 同一实体下的不同事实(如"喜欢咖啡"与"讨厌香菜")→ same=false
-        - 其中 [REDACTED] 代表已被脱敏的敏感信息(人名/电话/地址等),视为同一实体的不同写法
-        - 不确定时 same=false(宁可不合并,不可误合并)
-        只输出严格 JSON,不要 markdown 围栏,不要额外文字:
-        {"same": true/false, "confidence": 0.0~1.0, "reason": "简短理由"}
+        You are the memory system's dedup judge. Given two memory facts, decide whether they describe the same fact (the same thing).
+        - worded differently but semantically the same (e.g. "the user keeps a corgi" and "he keeps a corgi dog") → same=true
+        - different facts about the same entity (e.g. "likes coffee" and "dislikes coriander") → same=false
+        - [REDACTED] stands for redacted sensitive information (names/phone numbers/addresses, etc.); treat it as a different writing of the same entity
+        - when unsure, same=false (rather not merge than merge wrongly)
+        Output strict JSON only, no markdown fences, no extra text:
+        {"same": true/false, "confidence": 0.0~1.0, "reason": "short reason"}
     """.trimIndent()
 
     private fun buildUserContent(a: String, b: String, entityKeyA: String?, entityKeyB: String?): String = buildString {
-        append("事实 A: ").append(a).append('\n')
-        append("事实 B: ").append(b).append('\n')
+        append("Fact A: ").append(a).append('\n')
+        append("Fact B: ").append(b).append('\n')
         if (!entityKeyA.isNullOrBlank() || !entityKeyB.isNullOrBlank()) {
-            append("实体键 A: ").append(entityKeyA ?: "null").append('\n')
-            append("实体键 B: ").append(entityKeyB ?: "null").append('\n')
-            append("(实体键相同通常表示同一实体,但事实内容仍可能不同,请以语义为准)")
+            append("Entity key A: ").append(entityKeyA ?: "null").append('\n')
+            append("Entity key B: ").append(entityKeyB ?: "null").append('\n')
+            append("(Identical entity keys usually mean the same entity, but the fact content may still differ; judge by semantics)")
         }
     }
 

@@ -53,7 +53,7 @@ object CharacterCardExporter {
                 context.contentResolver.openOutputStream(destUri)?.use { os ->
                     os.write(finalBytes)
                     os.flush()
-                } ?: error("无法写入目标 URI")
+                } ?: error("Could not write to the target URI")
             }.onFailure { Logger.w(TAG, "exportToPng failed: ${it.message}") }
         }
 
@@ -67,7 +67,7 @@ object CharacterCardExporter {
             context.contentResolver.openOutputStream(destUri)?.use { os ->
                 os.write(json.toByteArray(Charsets.UTF_8))
                 os.flush()
-            } ?: error("无法写入目标 URI")
+            } ?: error("Could not write to the target URI")
         }.onFailure { Logger.w(TAG, "exportToJson failed: ${it.message}") }
     }
 

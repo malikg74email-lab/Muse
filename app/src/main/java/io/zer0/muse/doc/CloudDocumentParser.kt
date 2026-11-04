@@ -43,8 +43,8 @@ internal class CloudDocumentParser(
      * @param mineruMode 是否为 MinerU 专用模式
      */
     fun parse(bytes: ByteArray, fileName: String, endpoint: String, token: String = "", mineruMode: Boolean = false): Result<String> {
-        if (endpoint.isBlank()) return Result.Error("云端解析 endpoint 未配置")
-        if (bytes.isEmpty()) return Result.Error("待解析文件内容为空")
+        if (endpoint.isBlank()) return Result.Error("Cloud parsing endpoint not configured")
+        if (bytes.isEmpty()) return Result.Error("The file to parse is empty")
         return resultOf {
             val uploadUrl = resolveUploadUrl(endpoint, mineruMode)
             val multipart = MultipartBody.Builder()
@@ -64,14 +64,14 @@ internal class CloudDocumentParser(
             httpClient.newCall(request).execute().use { response ->
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
-                    error("云端解析请求失败(HTTP ${response.code}): ${response.message} ${body.take(200)}")
+                    error("Cloud parsing request failed (HTTP ${response.code}): ${response.message} ${body.take(200)}")
                 }
                 val taskId = extractTaskId(body)
                 if (taskId != null) {
                     pollResult(taskId, endpoint, body, token, mineruMode)
                 } else {
                     extractResultText(body)
-                        ?: error("云端解析成功，但响应中未找到可读文本: ${body.take(200)}")
+                        ?: error("Cloud parsing succeeded, but no readable text was found in the response: ${body.take(200)}")
                 }
             }
         }
@@ -92,13 +92,13 @@ internal class CloudDocumentParser(
             ).execute().use { response ->
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
-                    error("云端解析轮询失败(HTTP ${response.code}): ${response.message} ${body.take(200)}")
+                    error("Cloud parsing polling failed (HTTP ${response.code}): ${response.message} ${body.take(200)}")
                 }
                 when (classifyStatus(extractStatus(body))) {
-                    CloudTaskStatus.FAILED -> error("云端解析任务失败: ${extractError(body)}")
+                    CloudTaskStatus.FAILED -> error("Cloud parsing task failed: ${extractError(body)}")
                     CloudTaskStatus.DONE -> {
                         extractResultText(body)
-                            ?: error("云端解析任务已完成，但结果为空")
+                            ?: error("Cloud parsing task completed, but the result is empty")
                     }
                     CloudTaskStatus.RUNNING, CloudTaskStatus.UNKNOWN -> {
                         extractResultUrl(body)?.let { pollUrl = it }
@@ -108,7 +108,7 @@ internal class CloudDocumentParser(
             }
             if (text != null) return text
         }
-        error("云端解析超时(已等待 ${maxPollAttempts * pollIntervalMs / 1000} 秒)")
+        error("Cloud parsing timed out (waited ${maxPollAttempts * pollIntervalMs / 1000} seconds)")
     }
 
     internal fun resolveUploadUrl(endpoint: String, mineruMode: Boolean): String {

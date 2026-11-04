@@ -48,7 +48,7 @@ class NetworkMonitor(context: Context) {
             if (!_isOnline.value) {
                 _isOnline.value = true
                 _onlineEvents.tryEmit(Unit)
-                Logger.i("NetworkMonitor", "网络已恢复")
+                Logger.i("NetworkMonitor", "Network restored")
             }
         }
 
@@ -56,7 +56,7 @@ class NetworkMonitor(context: Context) {
             val online = checkOnline()
             if (_isOnline.value && !online) {
                 _isOnline.value = false
-                Logger.w("NetworkMonitor", "网络已断开")
+                Logger.w("NetworkMonitor", "Network disconnected")
             }
         }
 
@@ -66,10 +66,10 @@ class NetworkMonitor(context: Context) {
             if (online && !_isOnline.value) {
                 _isOnline.value = true
                 _onlineEvents.tryEmit(Unit)
-                Logger.i("NetworkMonitor", "网络能力恢复(VALIDATED)")
+                Logger.i("NetworkMonitor", "Network capability restored (VALIDATED)")
             } else if (!online && _isOnline.value) {
                 _isOnline.value = false
-                Logger.w("NetworkMonitor", "网络能力丢失(VALIDATED)")
+                Logger.w("NetworkMonitor", "Network capability lost (VALIDATED)")
             }
         }
     }
@@ -81,7 +81,7 @@ class NetworkMonitor(context: Context) {
                 .build()
             connectivityManager?.registerNetworkCallback(request, callback)
         }.onFailure {
-            Logger.w("NetworkMonitor", "registerNetworkCallback 失败", it)
+            Logger.w("NetworkMonitor", "registerNetworkCallback failed", it)
         }
     }
 

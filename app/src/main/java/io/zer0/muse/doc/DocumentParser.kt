@@ -147,14 +147,14 @@ class DocumentParser(
                 parseResult(uri, context)
             io.zer0.muse.rag.RagConfig.ParserType.CLOUD -> {
                 if (cloudEndpoint.isBlank()) {
-                    Result.Error("云端解析 endpoint 未配置，请在 RAG 设置中填写")
+                    Result.Error("Cloud parsing endpoint not configured; please fill it in in the RAG settings")
                 } else {
                     parseCloud(uri, context, cloudEndpoint, token = "", mineruMode = false)
                 }
             }
             io.zer0.muse.rag.RagConfig.ParserType.MINERU -> {
                 if (mineruEndpoint.isBlank()) {
-                    Result.Error("MinerU endpoint 未配置，请在 RAG 设置中填写")
+                    Result.Error("MinerU endpoint not configured; please fill it in in the RAG settings")
                 } else {
                     parseCloud(uri, context, mineruEndpoint, token = mineruToken, mineruMode = true)
                 }
@@ -165,7 +165,7 @@ class DocumentParser(
     /** 读取文件字节并交给 [CloudDocumentParser] 上传解析。 */
     private fun parseCloud(uri: Uri, context: Context, endpoint: String, token: String, mineruMode: Boolean): Result<String> {
         val bytes = readUploadBytes(uri, context)
-            ?: return Result.Error("无法读取待解析文件")
+            ?: return Result.Error("Cannot read the file to parse")
         val fileName = uri.lastPathSegment
             ?.substringAfterLast('/')
             ?.substringAfterLast('%')
@@ -185,7 +185,7 @@ class DocumentParser(
             while (n > 0) {
                 total += n
                 if (total > MAX_UPLOAD_BYTES) {
-                    throw IOException("文件超过 50MB，无法上传到云端解析")
+                    throw IOException("File exceeds 50MB and cannot be uploaded for cloud parsing")
                 }
                 baos.write(buf, 0, n)
                 n = input.read(buf)
@@ -225,7 +225,7 @@ class DocumentParser(
             val charset = detectCharset(bytes)
             val text = String(bytes, charset).trim()
             return if (truncated) {
-                "$text\n\n[… 文件过大,已截断。原文件超过 1MB,仅读取前 1MB 内容 …]"
+                "$text\n\n[… File too large, truncated. The original file exceeds 1MB; only the first 1MB was read …]"
             } else {
                 text
             }
@@ -336,12 +336,12 @@ class DocumentParser(
                 cleanedTexts.forEach { pageText -> sb.append(pageText) }
                 if (truncatedByLimit) {
                     sb.appendLine()
-                    sb.appendLine("[… PDF 内容过长,已截断 …]")
+                    sb.appendLine("[… PDF content too long, truncated …]")
                 }
                 // L-DP8: 页数提示与截断标记互不影响
                 if (total > maxPages) {
                     sb.appendLine()
-                    sb.appendLine("[… PDF 共 $total 页,仅提取前 $maxPages 页 …]")
+                    sb.appendLine("[… The PDF has $total pages in total; only the first $maxPages pages were extracted …]")
                 }
 
                 // Step 4: 前置元数据 + 目录(若有)
@@ -349,12 +349,12 @@ class DocumentParser(
                 val toc = extractPdfOutline(doc)
                 val prefix = buildString {
                     if (meta.isNotBlank()) {
-                        appendLine("[文档信息]")
+                        appendLine("[Document info]")
                         appendLine(meta)
                         appendLine()
                     }
                     if (toc.isNotBlank()) {
-                        appendLine("[目录]")
+                        appendLine("[Contents]")
                         appendLine(toc)
                         appendLine()
                     }
@@ -384,12 +384,12 @@ class DocumentParser(
             val sb = StringBuilder()
             info ?: return@runCatching ""
             listOf(
-                "标题" to info.title,
-                "作者" to info.author,
-                "主题" to info.subject,
-                "关键词" to info.keywords,
-                "创建者" to info.creator,
-                "生成器" to info.producer,
+                "Title" to info.title,
+                "Author" to info.author,
+                "Subject" to info.subject,
+                "Keywords" to info.keywords,
+                "Creator" to info.creator,
+                "Generator" to info.producer,
             ).forEach { (label, value) ->
                 if (!value.isNullOrBlank()) {
                     sb.appendLine("$label: $value")
@@ -399,7 +399,7 @@ class DocumentParser(
             runCatching {
                 val cal = info.creationDate
                 if (cal != null) {
-                    sb.appendLine("创建时间: ${cal.time}")
+                    sb.appendLine("Creation time: ${cal.time}")
                 }
             }
             sb.toString().trim()
@@ -445,7 +445,7 @@ class DocumentParser(
                 top = top.nextSibling
             }
             if (count >= maxItems) {
-                sb.appendLine("… (目录过长,已截断) …")
+                sb.appendLine("… (table of contents too long, truncated) …")
             }
             sb.toString().trim()
         }.getOrDefault("")
@@ -503,7 +503,7 @@ class DocumentParser(
             runCatching { PDFBoxResourceLoader.init(context) }
                 .onFailure { e ->
                     pdfBoxInited.set(false)
-                    Logger.w("DocumentParser", "PDFBox 初始化失败", e)
+                    Logger.w("DocumentParser", "PDFBox initialization failed", e)
                 }
         }
     }
@@ -609,7 +609,7 @@ class DocumentParser(
                         }
                         // M-DP4: 每段结束后检查累计长度,超 1MB 即截断并 break
                         if (sb.length * 2 > MAX_TEXT_BYTES) {
-                            sb.appendLine("[… DOCX 内容过长,已截断 …]")
+                            sb.appendLine("[… DOCX content too long, truncated …]")
                             break
                         }
                     }
@@ -678,7 +678,7 @@ class DocumentParser(
             }
             sb.appendLine()
             if (sb.length * 2 > MAX_TEXT_BYTES) {
-                sb.appendLine("[… PPTX 内容过长,已截断 …]")
+                sb.appendLine("[… PPTX content too long, truncated …]")
                 break
             }
         }
@@ -735,7 +735,7 @@ class DocumentParser(
             parseWorksheet(xml, sharedStrings, sb)
             sb.appendLine()
             if (sb.length * 2 > MAX_TEXT_BYTES) {
-                sb.appendLine("[… XLSX 内容过长,已截断 …]")
+                sb.appendLine("[… XLSX content too long, truncated …]")
                 break
             }
         }
@@ -918,7 +918,7 @@ class DocumentParser(
                 sb.appendLine()
             }
             if (sb.length * 2 > MAX_TEXT_BYTES) {
-                sb.appendLine("[… EPUB 内容过长,已截断 …]")
+                sb.appendLine("[… EPUB content too long, truncated …]")
                 break
             }
         }
@@ -1016,7 +1016,7 @@ class DocumentParser(
         } catch (e: Throwable) {
             // v1.73: XML 解析失败:回退 HtmlCompat 解码(完整 HTML 实体支持)。
             // L-DP9: 旧实现仅解码 nbsp/amp/lt/gt 四种实体,中文/特殊符号实体(&copy; &hellip; 等)丢失。
-            Logger.w("DocumentParser", "XML 解析失败,回退 HtmlCompat 剥离标签", e)
+            Logger.w("DocumentParser", "XML parsing failed, falling back to HtmlCompat tag stripping", e)
             return runCatching {
                 HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT).toString().trim()
             }.getOrElse {
@@ -1032,7 +1032,7 @@ class DocumentParser(
     /** L-DP6: 1MB 文本截断(粗略估算 chars*2 ≈ bytes)。 */
     private fun truncate(text: String): String {
         return if (text.length * 2 > MAX_TEXT_BYTES) {
-            text.take(MAX_TEXT_BYTES / 2) + "\n\n[… 内容超过 1MB,已截断 …]"
+            text.take(MAX_TEXT_BYTES / 2) + "\n\n[… Content exceeds 1MB, truncated …]"
         } else {
             text
         }
@@ -1096,7 +1096,7 @@ class DocumentParser(
                         while (n > 0) {
                             total += n
                             if (total > ZIP_MAX_BYTES) {
-                                throw IOException("ZIP entry '$entryName' 解压超限(${ZIP_MAX_BYTES} 字节),疑似 ZIP 炸弹")
+                                throw IOException("ZIP entry '$entryName' decompression exceeds the limit (${ZIP_MAX_BYTES} bytes); suspected ZIP bomb")
                             }
                             baos.write(buf, 0, n)
                             n = zis.read(buf)

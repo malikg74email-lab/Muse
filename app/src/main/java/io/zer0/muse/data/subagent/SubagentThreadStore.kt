@@ -124,7 +124,7 @@ class SubagentThreadStore(
             // 非法 threadId(含路径分隔符/..等):不落库、不写文件,改用随机 id
             val safe = SAFE_THREAD_ID.matches(threadId)
             if (!safe) {
-                Logger.w(TAG, "getOrCreate: 非法 threadId 拒绝: ${threadId.take(40)}")
+                Logger.w(TAG, "getOrCreate: illegal threadId refused: ${threadId.take(40)}")
             } else {
                 val existing = dao.getById(threadId)
                 if (existing != null) return threadId to false
@@ -212,7 +212,7 @@ class SubagentThreadStore(
         // 此处随清理一并把锁条目移除,避免这类永久 open 线程的 Mutex 驻留内存。
         orphans.forEach { runLocks.remove(it.threadId) }
         if (orphans.isNotEmpty()) {
-            Logger.i(TAG, "启动清理 ${orphans.size} 个孤儿子 agent 线程: ${orphans.joinToString { it.threadId.take(12) }}")
+            Logger.i(TAG, "Starting cleanup of ${orphans.size} orphaned subagent threads: ${orphans.joinToString { it.threadId.take(12) }}")
         }
         return orphans.size
     }

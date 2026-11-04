@@ -114,7 +114,7 @@ class MemoryLlmClientImpl(
                         val reasoningLen = completion.reasoningContent?.length ?: 0
                         Logger.w(
                             "MemoryLlmClient",
-                            "text 为空且 reasoning 非空但非结构化结果,拒绝写入 (model=${resolvedModel.id}, reasoning=$reasoningLen chars)",
+                            "text is empty and reasoning is non-empty but not a structured result; refusing to write (model=${resolvedModel.id}, reasoning=$reasoningLen chars)",
                         )
                         throw IllegalStateException(
                             context.getString(R.string.memory_llm_empty_response, resolvedModel.id),
@@ -130,7 +130,7 @@ class MemoryLlmClientImpl(
                 // 流式降级:部分中转站不支持非流式 /v1/chat/completions(stream=false),
                 // 返回 HTTP 400 invalid_request_error。此时回退到 streamChat 收集完整文本。
                 if (isHttp400(e) && attempt == 1) {
-                    Logger.i("MemoryLlmClient", "completeText HTTP 400,降级为流式调用 (model=${resolvedModel.id})")
+                    Logger.i("MemoryLlmClient", "completeText HTTP 400; degrading to a streaming call (model=${resolvedModel.id})")
                     return@callText withTimeout(timeoutMs) {
                         val contentSb = StringBuilder()
                         val reasoningSb = StringBuilder()
@@ -174,7 +174,7 @@ class MemoryLlmClientImpl(
                 val backoffMs = 500L * (1L shl (attempt - 1)) // 500ms, 1000ms
                 Logger.w(
                     "MemoryLlmClient",
-                    "callText 可重试失败,attempt=$attempt/$maxAttempts,${backoffMs}ms 后重试 (model=${resolvedModel.id})",
+                    "callText retryable failure, attempt=$attempt/$maxAttempts, retrying in ${backoffMs}ms (model=${resolvedModel.id})",
                     e,
                 )
                 delay(backoffMs)

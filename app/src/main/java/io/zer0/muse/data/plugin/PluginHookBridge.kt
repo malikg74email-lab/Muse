@@ -68,7 +68,7 @@ class PluginHookBridge(
 
         // 总开关关闭时一个都不挂：插件代码不该有机会跑，包括 Hook。
         if (!globallyEnabled) {
-            Logger.i(TAG, "插件总开关关闭，不挂任何 hook")
+            Logger.i(TAG, "Plugin master switch is off; not registering any hooks")
             return
         }
 
@@ -76,7 +76,7 @@ class PluginHookBridge(
             // 入口函数必须真实定义（loadVerifiedFunction 会重新读盘并过安全门）
             val verified =
                 resultOf { pluginManager.loadVerifiedFunction(plugin.id, HOOK_FUNCTION_NAME) }.getOrNull() ?: run {
-                    Logger.d(TAG, "插件 hook 跳过(未定义 ${HOOK_FUNCTION_NAME} 或入口校验失败): ${plugin.id}")
+                    Logger.d(TAG, "Plugin hook skipped (${HOOK_FUNCTION_NAME} not defined or entry validation failed): ${plugin.id}")
                     return@forEach
                 }
             if (HOOK_PROMPT_FINALIZE !in verified.manifest.hooks) return@forEach
@@ -90,7 +90,7 @@ class PluginHookBridge(
             )
             hookRegistry.register(hook)
             synchronized(registered) { registered.add(hook.id) }
-            Logger.i(TAG, "插件 hook 已注册: ${plugin.id} → ${hook.id}")
+            Logger.i(TAG, "Plugin hook registered: ${plugin.id} → ${hook.id}")
         }
     }
 

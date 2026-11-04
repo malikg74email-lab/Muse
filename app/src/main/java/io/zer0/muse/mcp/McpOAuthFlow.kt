@@ -142,7 +142,7 @@ object McpOAuthFlow {
         }
         // M-OAUTH1: 校验 tokenEndpoint 使用 HTTPS,防止 token 明文传输
         if (!config.tokenEndpoint.startsWith("https://")) {
-            Logger.w(TAG, "tokenEndpoint 不是 HTTPS,拒绝交换 token: ${config.tokenEndpoint}")
+            Logger.w(TAG, "tokenEndpoint is not HTTPS; token exchange refused: ${config.tokenEndpoint}")
             return@withContext null
         }
         val form = FormBody.Builder()
@@ -190,7 +190,7 @@ object McpOAuthFlow {
         }
         // M-OAUTH1: 校验 tokenEndpoint 使用 HTTPS,防止 token 明文传输
         if (!config.tokenEndpoint.startsWith("https://")) {
-            Logger.w(TAG, "tokenEndpoint 不是 HTTPS,拒绝 refresh token: ${config.tokenEndpoint}")
+            Logger.w(TAG, "tokenEndpoint is not HTTPS; token refresh refused: ${config.tokenEndpoint}")
             return@withContext null
         }
         val form = FormBody.Builder()
@@ -235,7 +235,7 @@ object McpOAuthFlow {
         if (expectedPrefix != null) {
             val prefix = expectedPrefix.substringBefore('?')
             if (!redirectUri.startsWith(prefix)) {
-                Logger.w(TAG, "OAuth 回调 URI 前缀不匹配: expected=$prefix, got=${redirectUri.substringBefore('?')}")
+                Logger.w(TAG, "OAuth callback URI prefix mismatch: expected=$prefix, got=${redirectUri.substringBefore('?')}")
                 return null
             }
         }

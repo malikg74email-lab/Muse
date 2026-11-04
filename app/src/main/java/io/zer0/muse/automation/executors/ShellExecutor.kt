@@ -77,10 +77,10 @@ open class ShellExecutor(
             if (!ok) {
                 Logger.w(
                     TAG,
-                    "Shizuku 流式截图失败 exit=${result?.exitCode} size=${if (file.exists()) file.length() else -1}",
+                    "Shizuku streaming screenshot failed exit=${result?.exitCode} size=${if (file.exists()) file.length() else -1}",
                 )
                 file.delete()
-                Result.failure(IllegalStateException(result?.stderr?.ifBlank { null } ?: "截图未产生有效文件"))
+                Result.failure(IllegalStateException(result?.stderr?.ifBlank { null } ?: "The screenshot produced no valid file"))
             } else {
                 val bytes = file.readBytes()
                 file.delete()
@@ -88,7 +88,7 @@ open class ShellExecutor(
             }
         } catch (e: Exception) {
             file.delete()
-            Logger.w(TAG, "Shizuku 流式截图异常: ${e.message}")
+            Logger.w(TAG, "Shizuku streaming screenshot exception: ${e.message}")
             Result.failure(e)
         }
     }
@@ -192,7 +192,7 @@ open class ShellExecutor(
     override suspend fun pressKey(keyCode: Int): Boolean = exec("input keyevent $keyCode").isSuccess
 
     override suspend fun launchApp(packageName: String): Boolean = if (!PACKAGE_NAME_REGEX.matches(packageName)) {
-        Logger.w(TAG, "launchApp 拒绝非法包名(可能含 shell 元字符): $packageName")
+        Logger.w(TAG, "launchApp refused an illegal package name (may contain shell metacharacters): $packageName")
         false
     } else {
         exec("monkey -p $packageName -c android.intent.category.LAUNCHER 1").isSuccess
@@ -231,7 +231,7 @@ open class ShellExecutor(
     suspend fun exec(command: String): Result<String> = withContext(Dispatchers.IO) {
         if (shizukuAuthorizer != null) {
             if (!shizukuAuthorizer.checkPermission()) {
-                return@withContext Result.failure(IllegalStateException("Shizuku 未授权"))
+                return@withContext Result.failure(IllegalStateException("Shizuku not authorised"))
             }
             val result = shizukuAuthorizer.execute(command)
             return@withContext if (result.isSuccess) {
@@ -241,7 +241,7 @@ open class ShellExecutor(
                     TAG,
                     "Shizuku exec failed (exit=${result.exitCode}, verb=${sanitizeShellCommandForLog(command)})",
                 )
-                Result.failure(IllegalStateException(result.stderr.ifBlank { "Shizuku 命令执行失败" }))
+                Result.failure(IllegalStateException(result.stderr.ifBlank { "Shizuku command execution failed" }))
             }
         }
         runCatching {
@@ -264,7 +264,7 @@ open class ShellExecutor(
     suspend fun execDetailed(command: String): ExecDetail = withContext(Dispatchers.IO) {
         if (shizukuAuthorizer != null) {
             if (!shizukuAuthorizer.checkPermission()) {
-                return@withContext ExecDetail(-1, "Shizuku 未授权")
+                return@withContext ExecDetail(-1, "Shizuku not authorised")
             }
             val result = shizukuAuthorizer.executeForTool(command)
             val merged = buildString {
@@ -285,7 +285,7 @@ open class ShellExecutor(
             ExecDetail(exit, output)
         }.getOrElse { e ->
             Logger.w(TAG, "execDetailed error: ${e.message}")
-            ExecDetail(-1, e.message ?: "执行失败")
+            ExecDetail(-1, e.message ?: "Execution failed")
         }
     }
 

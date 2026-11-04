@@ -152,7 +152,7 @@ class AppearanceSettingsStore(private val context: Context) {
     private fun <T> decodePrefsOrNull(value: String?, serializer: kotlinx.serialization.KSerializer<T>, label: String): T? {
         if (value.isNullOrBlank()) return null
         return runCatching { AppJson.decodeFromString(serializer, value) }
-            .onFailure { e -> android.util.Log.w("AppearanceStore", "$label 解析失败", e) }
+            .onFailure { e -> android.util.Log.w("AppearanceStore", "$label parse failed", e) }
             .getOrNull()
     }
 

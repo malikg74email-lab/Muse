@@ -296,12 +296,12 @@ object ProactiveTimingEngine {
 
     /** 把判定结论翻译成能贴进设置页的一句话。 */
     fun describe(decision: Decision): String = when (decision.verdict) {
-        Verdict.QUIET_HOUR -> "现在是免打扰时段（${decision.hourOfDay}点）"
-        Verdict.USER_ACTIVE -> "刚聊过，等你安静一会儿"
-        Verdict.IN_CONVERSATION -> "正在回复，不打断"
-        Verdict.COOLDOWN -> "你让我最近别打扰"
-        Verdict.TOO_SOON -> "刚说过话，过一会儿再说"
-        Verdict.NO_BUDGET -> "今天说得够多了，明天再说"
-        Verdict.OK -> "可以发"
+        Verdict.QUIET_HOUR -> "It is currently the do-not-disturb period (${decision.hourOfDay} o'clock)"
+        Verdict.USER_ACTIVE -> "We just talked; wait until you've been quiet for a while"
+        Verdict.IN_CONVERSATION -> "Currently replying; do not interrupt"
+        Verdict.COOLDOWN -> "You asked me not to disturb you for a while"
+        Verdict.TOO_SOON -> "We just spoke; try again a bit later"
+        Verdict.NO_BUDGET -> "Enough has been said today; more tomorrow"
+        Verdict.OK -> "OK to send"
     }
 }

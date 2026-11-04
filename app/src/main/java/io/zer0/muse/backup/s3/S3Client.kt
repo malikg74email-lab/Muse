@@ -150,7 +150,7 @@ class S3Client(
                 localFile.outputStream().use { out -> body.byteStream().use { it.copyTo(out) } }
                 true
             }.getOrElse {
-                Logger.w("S3Client", "download 写入本地文件失败: ${it.message}")
+                Logger.w("S3Client", "download failed to write the local file: ${it.message}")
                 false
             }
         }

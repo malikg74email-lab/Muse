@@ -332,7 +332,7 @@ class MuseCrashHandler private constructor(private val appContext: Context) : Th
             val now = SimpleDateFormat(CRASH_TIME_DISPLAY_FMT, Locale.US).format(Date())
             // 非崩溃场景(startKoin 失败等),trace 字段写入提示文案,
             // 让 SafeModeScreen 能区分展示
-            writeSafeModeSp(appContext, now, "Koin 启动失败(应用初始化阶段异常,非主线程崩溃)")
+            writeSafeModeSp(appContext, now, "Koin startup failed (exception during app initialization, not a main-thread crash)")
         }
 
         /**

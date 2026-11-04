@@ -75,7 +75,7 @@ class CardDataStore(context: Context) {
                 isDaemon = true
                 start()
             }
-        }.onFailure { e -> Logger.w(TAG, "卡片数据恢复线程启动失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Card data recovery thread failed to start: ${e.message}") }
     }
 
     private fun restoreInBackground() {
@@ -86,7 +86,7 @@ class CardDataStore(context: Context) {
                 else -> emptyMap()
             }
         }.onFailure { e: Throwable ->
-            Logger.w(TAG, "卡片数据恢复失败: ${e.message}")
+            Logger.w(TAG, "Card data recovery failed: ${e.message}")
         }.getOrElse { emptyMap() }
         if (restored.isEmpty()) {
             restoreFinished = true
@@ -143,11 +143,11 @@ class CardDataStore(context: Context) {
                     } else {
                         // 解析失败必须留痕：静默跳过等于"这张卡片的数据无声消失"，
                         // 出问题时连是哪一片坏的都查不到。
-                        Logger.w(TAG, "卡片分片解析失败,跳过 ${shard.name}")
+                        Logger.w(TAG, "Card shard parse failed; skipping ${shard.name}")
                         io.zer0.muse.data.AtomicFileStore.quarantine(shard, "card_shard_parse")
                     }
                 }
-                .onFailure { e -> Logger.w(TAG, "卡片分片读取失败,跳过 ${shard.name}: ${e.message}") }
+                .onFailure { e -> Logger.w(TAG, "Card shard read failed; skipping ${shard.name}: ${e.message}") }
         }
         val bounded = restored.entries.toList().takeLast(MAX_ITEMS)
         return bounded.associate { entry -> entry.key to entry.value }
@@ -159,7 +159,7 @@ class CardDataStore(context: Context) {
         val restored = runCatching {
             AppJson.decodeFromString(serializer, legacyFile.readText())
         }.onFailure { e ->
-            Logger.w(TAG, "卡片数据恢复失败: ${e.message}")
+            Logger.w(TAG, "Card data recovery failed: ${e.message}")
         }.getOrNull() ?: return emptyMap()
         val startedAt = System.currentTimeMillis()
         val migrated = restored.all { (cardId, json) -> persistShard(cardId, json) }
@@ -167,24 +167,24 @@ class CardDataStore(context: Context) {
         // 迁移耗时记进日志：设备实测旧格式 50 张卡片约 216ms（每张一次原子写 + fsync），
         // 重装/升级后"首启动变慢"能不能归因到这一项，看这一行就够。
         if (migrated && legacyFile.renameTo(File(filesDir, LEGACY_FILE_NAME + ".migrated"))) {
-            Logger.i(TAG, "旧单文件已迁移为分片存储(${restored.size} 条卡片数据, 耗时 ${cost}ms)")
+            Logger.i(TAG, "Old single file migrated to sharded storage (${restored.size} card data entries, took ${cost}ms)")
         } else if (migrated) {
-            Logger.w(TAG, "分片已写入但旧文件改名失败(${restored.size} 条, 耗时 ${cost}ms)")
+            Logger.w(TAG, "Shards were written but renaming the old file failed (${restored.size} entries, took ${cost}ms)")
         }
         return restored
     }
     private fun persistShard(cardId: String, jsonText: String): Boolean = runCatching {
         AtomicFileStore.writeText(shardFile(cardId), CardDataFiles.encode(cardId, jsonText))
         true
-    }.onFailure { e -> Logger.w(TAG, "卡片数据持久化失败: ${e.message}") }.getOrDefault(false)
+    }.onFailure { e -> Logger.w(TAG, "Card data persistence failed: ${e.message}") }.getOrDefault(false)
 
     private fun deleteShard(cardId: String) {
         runCatching {
             val target = shardFile(cardId)
             if (target.exists() && !target.delete()) {
-                Logger.w(TAG, "卡片分片删除失败: ${target.name}")
+                Logger.w(TAG, "Card shard deletion failed: ${target.name}")
             }
-        }.onFailure { e -> Logger.w(TAG, "卡片分片删除异常: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Card shard deletion error: ${e.message}") }
     }
 
     private fun shardFile(cardId: String): File = File(shardDir, CardDataFiles.shardName(cardId))

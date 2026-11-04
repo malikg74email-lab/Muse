@@ -99,7 +99,7 @@ object ChannelMediaCleaner {
         for (path in victims) {
             runCatching { if (File(path).delete()) deleted++ }
         }
-        if (deleted > 0) Logger.i(TAG, "channel_media 清理:删除 $deleted 个文件")
+        if (deleted > 0) Logger.i(TAG, "channel_media cleanup: deleted $deleted files")
         return deleted
     }
 }

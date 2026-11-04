@@ -26,7 +26,7 @@ object AtomicFileStore {
     /** 原子写入字节，临时文件和目标文件必须位于同一目录。 */
     fun writeBytes(target: File, bytes: ByteArray) {
         val parent = target.parentFile ?: error("atomic file target must have a parent")
-        check(parent.exists() || parent.mkdirs()) { "无法创建原子文件目录: ${parent.absolutePath}" }
+        check(parent.exists() || parent.mkdirs()) { "Could not create the atomic file directory: ${parent.absolutePath}" }
         val temp = File(parent, ".${target.name}.${System.nanoTime()}.tmp")
         try {
             FileOutputStream(temp).use { output ->
@@ -55,11 +55,11 @@ object AtomicFileStore {
             } else {
                 // 某些 Android/Robolectric 文件系统不支持 renameTo；同目录复制后删除正式文件。
                 file.copyTo(quarantined, overwrite = false)
-                check(file.delete()) { "无法删除待隔离文件: ${file.absolutePath}" }
+                check(file.delete()) { "Could not delete the file to be quarantined: ${file.absolutePath}" }
                 quarantined
             }
         } catch (error: Exception) {
-            Logger.w(TAG, "隔离损坏文件失败: ${file.name}", error)
+            Logger.w(TAG, "Failed to quarantine the corrupted file: ${file.name}", error)
             null
         }
     }
@@ -75,7 +75,7 @@ object AtomicFileStore {
         } catch (unsupported: AtomicMoveNotSupportedException) {
             // 某些 Android 文件系统不支持 ATOMIC_MOVE；仍使用同目录替换，
             // 绝不退回到直接 writeText，避免目标文件留下半写内容。
-            Logger.w(TAG, "文件系统不支持原子移动，使用同目录替换: ${target.name}", unsupported)
+            Logger.w(TAG, "File system does not support atomic moves; using same-directory replacement: ${target.name}", unsupported)
             Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
     }

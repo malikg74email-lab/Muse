@@ -70,7 +70,7 @@ class SessionTodoRepository(
         }.onFailure {
             // 解析失败不能当成「没有待办」静默吞掉：记日志，返回空清单但不删库，
             // 下次写入会覆盖。
-            Logger.w("SessionTodoRepo", "待办 JSON 解析失败，保留原记录: ${it.message}")
+            Logger.w("SessionTodoRepo", "Todo JSON parse failed; keeping the original record: ${it.message}")
         }.getOrDefault(TodoTool.TodoList())
     }
 }

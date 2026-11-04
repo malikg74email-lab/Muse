@@ -125,11 +125,11 @@ class ProactiveContextLoader(
         if (dropped > 0) {
             Logger.i(
                 TAG,
-                "素材总量超预算 | budget=${CONTEXT_CHAR_BUDGET}字 | 保留=${kept.size}条/${total}字 | " +
-                    "丢弃=${dropped}条(最旧)",
+                "Total material exceeds the budget | budget=${CONTEXT_CHAR_BUDGET} chars | kept=${kept.size} entries/${total} chars |  " +
+                    "dropped=${dropped} entries (oldest)",
             )
         } else {
-            Logger.d(TAG, "素材总量 | budget=${CONTEXT_CHAR_BUDGET}字 | 保留=${kept.size}条/${total}字")
+            Logger.d(TAG, "Total material | budget=${CONTEXT_CHAR_BUDGET} chars | kept=${kept.size} entries/${total} chars")
         }
         return kept
     }
@@ -275,8 +275,8 @@ class ProactiveContextLoader(
         val idleMinutes = ((now - pick.lastActivityAt) / MINUTE_MS).coerceAtLeast(0L)
         Logger.i(
             TAG,
-            "主动消息会话选择 | assistantId=${assistant.id} | sessionId=${pick.sessionId} | " +
-                "source=${pick.source.wireName} | 距最后活动=${idleMinutes}分钟",
+            "Proactive message session selection | assistantId=${assistant.id} | sessionId=${pick.sessionId} | " +
+                "source=${pick.source.wireName} | time since last activity=${idleMinutes} min",
         )
         return pick
     }
@@ -327,10 +327,10 @@ class ProactiveContextLoader(
                 .forEach { stores.thoughts.note(it) }
 
             if (fromFacts.isNotEmpty()) {
-                Logger.i(TAG, "从记忆推导出 ${fromFacts.size} 条新牵挂")
+                Logger.i(TAG, "Derived  ${fromFacts.size}  new concerns from memory")
             }
         }.onFailure { e ->
-            Logger.w(TAG, "牵挂推导失败（不影响巡检）: ${e.message}")
+            Logger.w(TAG, "Concern derivation failed (does not affect the patrol):  ${e.message}")
         }
     }
 }

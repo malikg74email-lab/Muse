@@ -94,6 +94,6 @@ internal fun requireNoDuplicateDockSlots(cards: List<CardEntity>) {
         .filterValues { it > 1 }
         .keys
     check(duplicates.isEmpty()) {
-        "备份中的卡片停靠槽位重复: ${duplicates.sorted()},拒绝恢复(槽位在同一时刻只能属于一张卡)"
+        "Duplicate card dock slots in the backup: ${duplicates.sorted()}; restore refused (a slot can belong to only one card at a time)"
     }
 }

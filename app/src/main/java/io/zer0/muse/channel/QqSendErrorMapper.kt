@@ -60,12 +60,12 @@ object QqSendErrorMapper {
         val code = extractCode(raw)
         return when (code) {
             CODE_PASSIVE_EXCEEDED ->
-                "回复得太晚了：QQ 只允许在收到消息后 5 分钟内回复" +
-                    if (isGroup) "，群聊且不支持主动消息" else ""
-            CODE_BOT_NOT_IN_GROUP -> "机器人不在这个群里，请先把机器人拉进群"
-            CODE_NO_ACTIVE_PERMISSION -> "该场景没有主动消息权限（群聊不支持主动推送）"
-            CODE_ACTIVE_FAILED -> "主动消息发送失败（频控或配额已用完）"
-            else -> raw?.take(200)?.takeIf { it.isNotBlank() } ?: "未知错误"
+                "Replied too late: QQ only allows replies within 5 minutes of receiving a message" +
+                    if (isGroup) ", and this is a group chat that does not support proactive messages" else ""
+            CODE_BOT_NOT_IN_GROUP -> "The bot is not in this group; please add the bot to the group first"
+            CODE_NO_ACTIVE_PERMISSION -> "This scenario has no proactive-message permission (group chats do not support proactive pushes)"
+            CODE_ACTIVE_FAILED -> "Proactive message sending failed (rate limit or quota exhausted)"
+            else -> raw?.take(200)?.takeIf { it.isNotBlank() } ?: "Unknown error"
         }
     }
 

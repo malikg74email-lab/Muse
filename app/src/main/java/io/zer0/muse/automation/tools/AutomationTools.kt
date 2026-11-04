@@ -37,10 +37,10 @@ class AutomationTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_read",
-                description = "读取当前屏幕内容。返回控件树摘要(文字/按钮/输入框及其坐标)," +
-                    "用于判断界面上有什么、该点哪里。在做任何点击操作前应先调用此工具。",
+                description = "Read the current screen content. Returns a control-tree summary (text/buttons/input fields and their coordinates)," +
+                    "used to judge what is on the interface and where to tap. Call this tool before any tap operation.",
                 parameters = mapOf(
-                    "query" to "可选,只返回包含该关键词的控件",
+                    "query" to "Optional, only return controls containing this keyword",
                 ),
                 required = emptySet(),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -60,7 +60,7 @@ class AutomationTools(
                 appendLine(info.toSummary(nodes.size.coerceAtMost(50)))
                 if (nodes.isNotEmpty()) {
                     appendLine("---")
-                    appendLine("可点击的关键控件:")
+                    appendLine("Clickable key controls:")
                     nodes.filter { n -> n.isClickable || n.isEditable }
                         .take(15)
                         .forEachIndexed { i, n ->
@@ -73,35 +73,35 @@ class AutomationTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_current_app",
-                description = "查询当前前台运行的应用包名和界面名。",
+                description = "Query the package name and interface name of the currently foreground app.",
                 parameters = emptyMap(),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { _ ->
             val info = manager.readScreen()
-            "包名: ${info.packageName ?: "未知"}\n界面: ${info.activityName ?: "未知"}\n分辨率: ${info.screenWidth}x${info.screenHeight}"
+            "Package:  ${info.packageName ?: "Unknown"}\nInterface:  ${info.activityName ?: "Unknown"}\nResolution:  ${info.screenWidth}x${info.screenHeight}"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_back",
-                description = "按下系统返回键,回到上一个界面。",
+                description = "Press the system Back key to return to the previous interface.",
                 parameters = emptyMap(),
                 riskLevel = ToolRiskLevel.NORMAL,
             ),
         ) { _ ->
-            if (manager.back()) "已返回" else "返回失败(可能需要无障碍或 Shell 权限)"
+            if (manager.back()) "Returned" else "Back failed (accessibility or Shell permission may be required)"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_home",
-                description = "按下 Home 键,回到桌面。",
+                description = "Press the Home key to return to the launcher.",
                 parameters = emptyMap(),
                 riskLevel = ToolRiskLevel.NORMAL,
             ),
         ) { _ ->
-            if (manager.home()) "已回到桌面" else "操作失败"
+            if (manager.home()) "Returned to launcher" else "Operation failed"
         }
 
         // ── 操作类 ──────────────────────────────────────────
@@ -109,36 +109,36 @@ class AutomationTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_tap",
-                description = "点击屏幕上的指定坐标(x,y)。坐标来自 screen_read 返回的控件中心位置。" +
-                    "不要凭空猜测坐标,必须先 screen_read 确认。",
+                description = "Tap the given coordinates (x,y) on the screen. Coordinates come from the control center positions returned by screen_read." +
+                    "Do not guess coordinates out of thin air; confirm with screen_read first.",
                 parameters = mapOf(
-                    "x" to "必填,点击位置 X 坐标(像素)",
-                    "y" to "必填,点击位置 Y 坐标(像素)",
+                    "x" to "Required, the X coordinate of the tap position (pixels)",
+                    "y" to "Required, the Y coordinate of the tap position (pixels)",
                 ),
                 required = setOf("x", "y"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
-            val x = args["x"]?.toIntOrNull() ?: return@register "错误:x 必须是整数"
-            val y = args["y"]?.toIntOrNull() ?: return@register "错误:y 必须是整数"
-            if (manager.tap(x, y)) "已点击 ($x,$y)" else "点击失败"
+            val x = args["x"]?.toIntOrNull() ?: return@register "Error: x must be an integer"
+            val y = args["y"]?.toIntOrNull() ?: return@register "Error: y must be an integer"
+            if (manager.tap(x, y)) "Tapped ($x,$y)" else "Tap failed"
         }
 
         registry.registerOutcome(
             ToolRegistry.ToolDef(
                 name = "screen_tap_text",
-                description = "查找屏幕上包含指定文字的控件并点击其中心。" +
-                    "比 screen_tap 更方便,不需要自己算坐标；可在长页面内有限次滚动查找，并可验证点击后的文字。",
+                description = "Find the control containing the given text on the screen and tap its center." +
+                    "More convenient than screen_tap — no need to compute coordinates yourself; can scroll a limited number of times within long pages to find it, and can verify the text after tapping.",
                 parameters = mapOf(
-                    "text" to "必填,要查找的按钮/文字内容(支持模糊匹配)",
-                    "max_swipes" to "可选,找不到时最多向上滚动次数(0-5,默认 0)",
-                    "verify_text" to "可选,点击后等待出现的文字；用于确认动作真正生效",
+                    "text" to "Required, the button/text content to find (fuzzy matching supported)",
+                    "max_swipes" to "Optional, maximum upward scrolls when not found (0-5, default 0)",
+                    "verify_text" to "Optional, text to wait for after tapping; used to confirm the action really took effect",
                 ),
                 required = setOf("text"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
-            val text = args["text"] ?: return@registerOutcome ToolOutcome.error("错误:缺少 text 参数")
+            val text = args["text"] ?: return@registerOutcome ToolOutcome.error("Error: missing text parameter")
             val maxSwipes = args["max_swipes"]?.toIntOrNull()?.coerceIn(0, 5) ?: 0
             val verifyText = args["verify_text"]?.trim()?.takeIf { it.isNotBlank() }
             val outcome = manager.tapByTextWithRetryDetailed(text, maxSwipes = maxSwipes, verifyText = verifyText)
@@ -150,74 +150,74 @@ class AutomationTools(
                 "verifyRequested" to !verifyText.isNullOrBlank(),
             )
             if (outcome.success) {
-                ToolOutcome.ok("已点击包含\"$text\"的控件", details)
+                ToolOutcome.ok("Tapped the control containing \"$text\"", details)
             } else {
-                ToolOutcome.error("未找到或点击后未验证包含\"$text\"的控件", details)
+                ToolOutcome.error("No control containing \"$text\" was found, or it was not verified after tapping", details)
             }
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_swipe",
-                description = "在屏幕上从一个点滑动到另一个点,可用于滚动/翻页。",
+                description = "Swipe on the screen from one point to another; can be used for scrolling/page turning.",
                 parameters = mapOf(
-                    "x1" to "必填,起点 X",
-                    "y1" to "必填,起点 Y",
-                    "x2" to "必填,终点 X",
-                    "y2" to "必填,终点 Y",
-                    "duration_ms" to "可选,滑动时长(毫秒),默认 400",
+                    "x1" to "Required, start X",
+                    "y1" to "Required, start Y",
+                    "x2" to "Required, end X",
+                    "y2" to "Required, end Y",
+                    "duration_ms" to "Optional, swipe duration (milliseconds), default 400",
                 ),
                 required = setOf("x1", "y1", "x2", "y2"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
-            val x1 = args["x1"]?.toIntOrNull() ?: return@register "错误:x1 必须是整数"
-            val y1 = args["y1"]?.toIntOrNull() ?: return@register "错误:y1 必须是整数"
-            val x2 = args["x2"]?.toIntOrNull() ?: return@register "错误:x2 必须是整数"
-            val y2 = args["y2"]?.toIntOrNull() ?: return@register "错误:y2 必须是整数"
+            val x1 = args["x1"]?.toIntOrNull() ?: return@register "Error: x1 must be an integer"
+            val y1 = args["y1"]?.toIntOrNull() ?: return@register "Error: y1 must be an integer"
+            val x2 = args["x2"]?.toIntOrNull() ?: return@register "Error: x2 must be an integer"
+            val y2 = args["y2"]?.toIntOrNull() ?: return@register "Error: y2 must be an integer"
             val dur = args["duration_ms"]?.toLongOrNull() ?: 400L
-            if (manager.swipe(x1, y1, x2, y2, dur)) "已滑动" else "滑动失败"
+            if (manager.swipe(x1, y1, x2, y2, dur)) "Swiped" else "Swipe failed"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_pinch",
-                description = "双指缩放手势(放大/缩小)。两指以 (center_x, center_y) 为中心对称开合。" +
-                    "需要无障碍通道;Shizuku/Root 的 input 命令不支持多指。",
+                description = "Two-finger pinch gesture (zoom in/out). The two fingers open/close symmetrically around (center_x, center_y)." +
+                    "Requires the accessibility channel; Shizuku/Root input commands do not support multi-touch.",
                 parameters = mapOf(
-                    "center_x" to "必填,缩放中心 X 坐标",
-                    "center_y" to "必填,缩放中心 Y 坐标",
-                    "scale" to "必填,缩放倍数(>1 放大,<1 缩小),如 2.0 / 0.5",
-                    "duration_ms" to "可选,手势时长(毫秒),默认 300",
+                    "center_x" to "Required, zoom center X coordinate",
+                    "center_y" to "Required, zoom center Y coordinate",
+                    "scale" to "Required, zoom scale (>1 zoom in, <1 zoom out), e.g. 2.0 / 0.5",
+                    "duration_ms" to "Optional, gesture duration (milliseconds), default 300",
                 ),
                 required = setOf("center_x", "center_y", "scale"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
-            val cx = args["center_x"]?.toIntOrNull() ?: return@register "错误:center_x 必须是整数"
-            val cy = args["center_y"]?.toIntOrNull() ?: return@register "错误:center_y 必须是整数"
-            val scale = args["scale"]?.toFloatOrNull() ?: return@register "错误:scale 必须是数字"
-            if (scale <= 0f) return@register "错误:scale 必须大于 0"
+            val cx = args["center_x"]?.toIntOrNull() ?: return@register "Error: center_x must be an integer"
+            val cy = args["center_y"]?.toIntOrNull() ?: return@register "Error: center_y must be an integer"
+            val scale = args["scale"]?.toFloatOrNull() ?: return@register "Error: scale must be a number"
+            if (scale <= 0f) return@register "Error: scale must be greater than 0"
             val dur = args["duration_ms"]?.toLongOrNull() ?: 300L
             // 以 300px 为基准指距,按 scale 换算起止指距(有界,防越界)
             val base = 300
             val end = (base * scale).toInt().coerceIn(60, 2000)
-            if (manager.pinch(cx, cy, base, end, dur)) "已缩放 (scale=$scale)" else "缩放失败(需要无障碍通道)"
+            if (manager.pinch(cx, cy, base, end, dur)) "Zoomed (scale=$scale)" else "Zoom failed (accessibility channel required)"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_swipe_path",
-                description = "多段滑动:单指依次经过多个路径点(至少 2 个),适合解锁图案/复杂拖拽。",
+                description = "Multi-segment swipe: a single finger passes through multiple path points in order (at least 2), suitable for pattern unlock / complex drags.",
                 parameters = mapOf(
-                    "points" to "必填,路径点列表,格式 \"x1,y1;x2,y2;x3,y3\"(至少 2 个点)",
-                    "duration_ms" to "可选,总时长(毫秒),默认 400",
+                    "points" to "Required, path point list, in the format \"x1,y1;x2,y2;x3,y3\"(at least 2 points)",
+                    "duration_ms" to "Optional, total duration (milliseconds), default 400",
                 ),
                 required = setOf("points"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
-            val raw = args["points"] ?: return@register "错误:缺少 points"
+            val raw = args["points"] ?: return@register "Error: missing points"
             val points = raw.split(";").mapNotNull { seg ->
                 val p = seg.split(",")
                 if (p.size == 2) {
@@ -228,57 +228,57 @@ class AutomationTools(
                     null
                 }
             }
-            if (points.size < 2) return@register "错误:至少需要 2 个合法点(格式 x,y;x,y)"
+            if (points.size < 2) return@register "Error: at least 2 valid points are required (format x,y;x,y)"
             val dur = args["duration_ms"]?.toLongOrNull() ?: 400L
-            if (manager.swipePath(points, dur)) "已执行 ${points.size} 点路径滑动" else "路径滑动失败"
+            if (manager.swipePath(points, dur)) "Executed a ${points.size}-point path swipe" else "Path swipe failed"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_input",
-                description = "往当前聚焦的输入框输入文字(支持中文)。输入前应先点击输入框使其聚焦。",
+                description = "Type text into the currently focused input field (Chinese input supported). Tap the input field first to focus it before typing.",
                 parameters = mapOf(
-                    "text" to "必填,要输入的文本",
+                    "text" to "Required, the text to type",
                 ),
                 required = setOf("text"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
-            val text = args["text"] ?: return@register "错误:缺少 text 参数"
-            if (manager.inputText(text)) "已输入: $text" else "输入失败"
+            val text = args["text"] ?: return@register "Error: missing text parameter"
+            if (manager.inputText(text)) "Typed: $text" else "Input failed"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_launch_app",
-                description = "启动指定包名的 App。可配合 screen_current_app 确认包名。",
+                description = "Launch the app with the given package name. Can be combined with screen_current_app to confirm the package name.",
                 parameters = mapOf(
-                    "package" to "必填,要启动的 App 包名,如 com.tencent.mm",
+                    "package" to "Required, the package name of the app to launch, e.g. com.tencent.mm",
                 ),
                 required = setOf("package"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
-            val pkg = args["package"] ?: return@register "错误:缺少 package 参数"
-            if (manager.launchApp(pkg)) "已启动 $pkg" else "启动失败(包名可能不正确)"
+            val pkg = args["package"] ?: return@register "Error: missing package parameter"
+            if (manager.launchApp(pkg)) "Launched $pkg" else "Launch failed (the package name may be incorrect)"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_open_notifications",
-                description = "打开系统通知栏,查看通知。",
+                description = "Open the system notification shade to view notifications.",
                 parameters = emptyMap(),
                 riskLevel = ToolRiskLevel.NORMAL,
             ),
         ) { _ ->
-            if (manager.openNotifications()) "已打开通知栏" else "操作失败"
+            if (manager.openNotifications()) "Notification shade opened" else "Operation failed"
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "screen_permission_status",
-                description = "查询 UI 自动化各层权限的开通状态(无障碍/Shell/Root)。" +
-                    "在尝试任何操作前应先调用此工具确认能力。",
+                description = "Query the enablement status of each UI automation permission layer (accessibility/Shell/Root)." +
+                    "Call this tool before attempting any operation to confirm capabilities.",
                 parameters = emptyMap(),
                 riskLevel = ToolRiskLevel.SAFE,
             ),
@@ -287,11 +287,11 @@ class AutomationTools(
             val state = manager.liveSnapshot()
             val level = manager.highestLevel()
             buildString {
-                appendLine("UI 自动化权限状态:")
-                appendLine("- 无障碍: ${if (state.accessibilityEnabled) "已开启" else "未开启"}")
-                appendLine("- Shell: ${if (state.shellEnabled) "已就绪" else state.shizukuMessage}")
-                appendLine("- Root: ${if (state.rootEnabled) "已获取" else "未获取"}")
-                appendLine("- 最高可用层级: $level")
+                appendLine("UI automation permission status:")
+                appendLine("- Accessibility: ${if (state.accessibilityEnabled) "Enabled" else "Not enabled"}")
+                appendLine("- Shell: ${if (state.shellEnabled) "Ready" else state.shizukuMessage}")
+                appendLine("- Root: ${if (state.rootEnabled) "Acquired" else "Not acquired"}")
+                appendLine("- Highest available level: $level")
             }
         }
 
@@ -359,13 +359,13 @@ class AutomationTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "device_shell",
-                description = "执行单条设备命令（命令行操控手机），需要 Shizuku 或 Root 授权。" +
-                    "支持：input(tap/swipe/text/keyevent/roll/draganddrop/press)、am(start/broadcast/force-stop/startservice/kill)、" +
+                description = "Execute a single device command (control the phone from the command line); requires Shizuku or Root authorization." +
+                    "Supports: input (tap/swipe/text/keyevent/roll/draganddrop/press), am (start/broadcast/force-stop/startservice/kill)," +
                     "pm(list/path/dump/enable/disable/grant/revoke/clear)、settings(get/put/delete/list)、svc(power/wifi/data/bluetooth)、" +
                     "wm(size/density)、dumpsys、uiautomator dump、screencap、screendump、content(query/insert/update/delete)、cmd、getprop、date。" +
-                    "不支持管道/重定向/多命令拼接——每次写一条完整命令。与 screen_* 工具互补：screen_* 是高层动作，本工具是命令行自由度。",
+                    "Pipes/redirection/multi-command chaining are not supported — write one complete command each time. Complementary to the screen_* tools: screen_* are high-level actions, this tool offers command-line freedom.",
                 parameters = mapOf(
-                    "command" to "必填。单条设备命令，如 input tap 540 1200 / input swipe 540 1500 540 500 300 / " +
+                    "command" to "Required. A single device command, e.g. input tap 540 1200 / input swipe 540 1500 540 500 300 / " +
                         "am start -n com.tencent.mm/.ui.LauncherUI / settings get secure location_mode / uiautomator dump",
                 ),
                 required = setOf("command"),
@@ -375,17 +375,17 @@ class AutomationTools(
             val command = args["command"]?.trim().orEmpty()
             when (val check = io.zer0.muse.automation.core.DeviceCommandPolicy.validate(command)) {
                 is io.zer0.muse.automation.core.DeviceCommandPolicy.Check.Invalid ->
-                    "命令被拒绝: ${check.reason}"
+                    "Command rejected: ${check.reason}"
                 io.zer0.muse.automation.core.DeviceCommandPolicy.Check.Valid -> {
                     val result = manager.execTiered(command)
-                        ?: return@register "设备命令通道不可用：需要 Shizuku 或 Root 授权（设置 → 权限配置向导），当前两档均未就绪"
+                        ?: return@register "Device command channel unavailable: Shizuku or Root authorization is required (Settings → Permission setup wizard); neither tier is ready right now"
                     val (tier, detail) = result
                     buildString {
                         append("[").append(tier).append("] exit=").append(detail.exitCode).append('\n')
                         if (detail.output.isNotBlank()) {
                             append(detail.output)
                         } else {
-                            append("(无输出)")
+                            append("(no output)")
                         }
                     }
                 }
@@ -397,26 +397,26 @@ class AutomationTools(
         registry.registerOutcome(
             ToolRegistry.ToolDef(
                 name = "automation_workflow",
-                description = "执行可恢复的受控手机工作流，按序运行前台语义动作与 virtual_* 虚拟屏动作；" +
-                    "支持 launch/tap_text/input_text/swipe/back/home/wait/read、虚拟屏操作，以及 node_script 执行应用沙盒内 Node 脚本。" +
-                    "node_script 可访问应用沙盒文件、网络和子进程；脚本结果使用 Keystore 加密保存于恢复日志。每步失败即停，执行前需审批。",
+                description = "Execute a recoverable controlled phone workflow, running foreground semantic actions and virtual_* virtual-screen actions in order;" +
+                    "Supports launch/tap_text/input_text/swipe/back/home/wait/read, virtual-screen operations, and node_script running Node scripts inside the app sandbox." +
+                    "node_script can access app sandbox files, the network and subprocesses; script results are encrypted with the Keystore and saved in the recovery log. Execution stops at the first failing step; approval is required before execution.",
                 parameters = mapOf(
-                    "steps" to "必填 JSON 数组，最多 20 步；支持 " +
+                    "steps" to "Required JSON array, at most 20 steps; supports " +
                         "virtual_ensure/virtual_launch/virtual_tap/virtual_tap_text/virtual_swipe/" +
                         "virtual_text/virtual_key/virtual_wait/virtual_read/virtual_close；" +
-                        "virtual_tap_text 支持 text/exact/maxSwipes/verifyText，在虚拟屏内有界滚动并验证点击；" +
-                        "node_script 步骤使用 code/timeoutMs (1-300 秒)，失败按未知副作用处理",
-                    "run_id" to "可选。恢复之前中断的工作流；首次运行留空会生成新的 runId",
-                    "retry_unknown" to "可选。某步骤崩溃时结果可能未知；仅在确认后设 true 才重试该动作",
+                        "virtual_tap_text supports text/exact/maxSwipes/verifyText, bounded scrolling inside the virtual screen with tap verification;" +
+                        "node_script steps use code/timeoutMs (1-300 seconds); failures are treated as unknown side effects",
+                    "run_id" to "Optional. Resume a previously interrupted workflow; leave empty on the first run and a new runId is generated",
+                    "retry_unknown" to "Optional. When a step crashes, its result may be unknown; set true only after confirming to retry that action",
                 ),
                 required = setOf("steps"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
             val json = args["steps"]?.trim()
-                ?: return@registerOutcome ToolOutcome.error("错误:缺少 steps 参数")
+                ?: return@registerOutcome ToolOutcome.error("Error: missing steps parameter")
             val steps = AutomationWorkflowParser.parse(json).getOrElse { error ->
-                return@registerOutcome ToolOutcome.error("错误:steps 无效:${error.message}")
+                return@registerOutcome ToolOutcome.error("Error: steps invalid: ${error.message}")
             }
             val runId = args["run_id"]?.trim().takeIf { !it.isNullOrBlank() } ?: "automation-${UUID.randomUUID()}"
             val retryUnknown = args["retry_unknown"]?.equals("true", ignoreCase = true) == true

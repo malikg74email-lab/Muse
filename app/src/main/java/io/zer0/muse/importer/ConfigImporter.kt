@@ -77,7 +77,7 @@ class ConfigImporter(
                         if (read <= 0) break
                         total += read
                         if (total > MAX_READ_BYTES) {
-                            error("文件过大,超过 ${MAX_READ_BYTES / 1024 / 1024 / 1024}GB 限制")
+                            error("File too large, exceeding the ${MAX_READ_BYTES / 1024 / 1024 / 1024}GB limit")
                         }
                         sb.append(buffer, 0, read)
                     }
@@ -86,7 +86,7 @@ class ConfigImporter(
             }
         }.getOrNull()
         if (text.isNullOrBlank()) {
-            Logger.w("ConfigImporter", "读取导入文件失败或内容为空")
+            Logger.w("ConfigImporter", "Reading the import file failed or the content is empty")
             return@withContext Result(0, 0, emptyList())
         }
         importFromJson(text)
@@ -99,7 +99,7 @@ class ConfigImporter(
      */
     suspend fun importFromJson(jsonText: String): Result = withContext(Dispatchers.IO) {
         val root = resultOf { AppJson.parseToJsonElement(jsonText) }.getOrNull() ?: run {
-            Logger.w("ConfigImporter", "JSON 解析失败")
+            Logger.w("ConfigImporter", "JSON parsing failed")
             return@withContext Result(0, 0, emptyList())
         }
         if (root !is JsonObject) return@withContext Result(0, 0, emptyList())

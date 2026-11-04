@@ -30,11 +30,11 @@ internal object MediaHttp {
             if (!resp.isSuccessful) error("$platform HTTP ${resp.code}: ${text.take(300)}")
             val obj = runCatching { AppJson.parseToJsonElement(text).jsonObject }.getOrNull() ?: return
             if (obj["ok"]?.jsonPrimitive?.contentOrNull == "false") {
-                error("$platform 拒绝: ${text.take(200)}")
+                error("$platform rejected: ${text.take(200)}")
             }
             val errcode = obj["errcode"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
             if (errcode != null && errcode != 0) {
-                error("$platform 失败: errcode=$errcode ${text.take(200)}")
+                error("$platform failed: errcode=$errcode ${text.take(200)}")
             }
         }
     }

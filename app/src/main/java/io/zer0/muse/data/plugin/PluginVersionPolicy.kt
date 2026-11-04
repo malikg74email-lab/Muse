@@ -57,11 +57,11 @@ object PluginVersionPolicy {
         localAuthorPublisherId: String? = null,
     ): PluginVersionDecision {
         val candidateVersion = PluginVersion.parse(candidate.version)
-            ?: return PluginVersionDecision.Reject("插件版本号不是语义化版本: ${candidate.version}")
+            ?: return PluginVersionDecision.Reject("Plugin version is not a semantic version: ${candidate.version}")
         val requiredApp = PluginVersion.parse(candidate.minAppVersion)
-            ?: return PluginVersionDecision.Reject("minAppVersion 不是语义化版本: ${candidate.minAppVersion}")
+            ?: return PluginVersionDecision.Reject("minAppVersion is not a semantic version: ${candidate.minAppVersion}")
         val currentApp = PluginVersion.parse(appVersion)
-            ?: return PluginVersionDecision.Reject("无法解析当前 App 版本: $appVersion")
+            ?: return PluginVersionDecision.Reject("Could not parse the current App version: $appVersion")
 
         if (requiredApp > currentApp) {
             // 本地构建不带 -PversionName 时版本号是哨兵值，比任何插件要求的版本都小。
@@ -70,10 +70,10 @@ object PluginVersionPolicy {
             if (appVersion == DEV_SENTINEL_VERSION) {
                 io.zer0.common.Logger.w(
                     "PluginVersionPolicy",
-                    "开发构建（$DEV_SENTINEL_VERSION）跳过 minAppVersion 门槛：插件要求 $requiredApp",
+                    "Development build ($DEV_SENTINEL_VERSION) skips the minAppVersion gate: the plugin requires $requiredApp",
                 )
             } else {
-                return PluginVersionDecision.Reject("插件要求 App 版本不低于 $requiredApp，当前为 $currentApp")
+                return PluginVersionDecision.Reject("The plugin requires App version at least $requiredApp; current is $currentApp")
             }
         }
         val existing = installed ?: return PluginVersionDecision.Allow
@@ -83,7 +83,7 @@ object PluginVersionPolicy {
                 existing.publisherId.isNotEmpty() &&
                 existing.publisherId == localAuthorPublisherId
             if (!authoredLocally) {
-                return PluginVersionDecision.Reject("已安装签名版本，不能用未签名包覆盖")
+                return PluginVersionDecision.Reject("A signed version is installed; it cannot be overwritten with an unsigned package")
             }
         }
         if (existing.signed && candidate.signed) {
@@ -95,7 +95,7 @@ object PluginVersionPolicy {
                     ignoreCase = true,
                 )
             if (!samePublisher) {
-                return PluginVersionDecision.Reject("插件发行者与已安装版本不一致，拒绝覆盖安装")
+                return PluginVersionDecision.Reject("The plugin publisher does not match the installed version; overwrite installation refused")
             }
         }
 
@@ -103,7 +103,7 @@ object PluginVersionPolicy {
             ?: return PluginVersionDecision.Allow // 旧记录版本号不规范时不阻止升级到规范版本
         if (candidateVersion < installedVersion && !allowDowngrade) {
             return PluginVersionDecision.Reject(
-                "新版本 $candidateVersion 低于已安装的 $installedVersion，已拒绝降级安装",
+                "The new version $candidateVersion is lower than the installed $installedVersion; downgrade installation refused",
             )
         }
         return PluginVersionDecision.Allow

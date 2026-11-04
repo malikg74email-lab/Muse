@@ -123,7 +123,7 @@ class MiniPhoneToolTurnRunner(
         val registry = toolRegistry ?: return TOOLS_UNAVAILABLE
         if (!MiniPhoneToolPolicy.isAllowed(call.name)) return TOOL_NOT_ALLOWED
         return resultOf { registry.executeFromJson(call.name, call.arguments) }
-            .onError { msg, t -> Logger.w(TAG, "小手机工具执行异常: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Mini phone tool execution error: ${t?.message ?: msg}") }
             .getOrNull()
             ?: TOOL_FAILED
     }
@@ -132,7 +132,7 @@ class MiniPhoneToolTurnRunner(
     private fun resolveTools(): List<ToolDefinition> {
         val registry = toolRegistry ?: return emptyList()
         return resultOf { MiniPhoneToolPolicy.filter(registry.listToolsAsToolDefinitions(null)) }
-            .onError { msg, t -> Logger.w(TAG, "装配小手机工具失败，本轮不提供工具: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to assemble mini phone tools; no tools provided this turn: ${t?.message ?: msg}") }
             .getOrNull()
             .orEmpty()
     }
@@ -155,8 +155,8 @@ class MiniPhoneToolTurnRunner(
 
         private const val TOOL_CHOICE = "auto"
 
-        private const val TOOLS_UNAVAILABLE = "[工具不可用] 当前没有可执行的工具"
-        private const val TOOL_NOT_ALLOWED = "[未授权] 小手机里不能调用该工具"
-        private const val TOOL_FAILED = "[失败] 工具执行出错"
+        private const val TOOLS_UNAVAILABLE = "[Tool unavailable] No executable tools are currently available"
+        private const val TOOL_NOT_ALLOWED = "[Unauthorized] That tool cannot be called in the mini phone"
+        private const val TOOL_FAILED = "[Failed] Tool execution error"
     }
 }

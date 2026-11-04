@@ -116,7 +116,7 @@ object ConversationExporter {
     fun exportToMarkdown(messages: List<UIMessage>, chatTitle: String, locale: Locale = Locale.getDefault()): String {
         val sb = StringBuilder()
         sb.append("# ").append(chatTitle).append("\n\n")
-        sb.append("> ").append(localized(locale, "导出时间", "Exported at")).append(": ")
+        sb.append("> ").append(localized(locale, "Exported at", "Exported at")).append(": ")
             .append(SimpleDateFormat(MuseDateFormats.DATE_TIME_FULL, locale).format(Date()))
             .append("  \n\n")
 
@@ -126,15 +126,15 @@ object ConversationExporter {
             // 用户分享对话时看到的"对话是空的"就是这些 content="" 的助手消息堆出来的。
             val content = exportBody(msg).ifBlank {
                 if (!msg.reasoning.isNullOrBlank()) {
-                    localized(locale, "(无正文,含思考过程)", "(No body, includes thinking)")
+                    localized(locale, "(No body, includes thinking)", "(No body, includes thinking)")
                 } else {
-                    localized(locale, "(空回复)", "(Empty reply)")
+                    localized(locale, "(Empty reply)", "(Empty reply)")
                 }
             }
             sb.append("**").append(role).append("**: ").append(content).append("\n\n")
             // 思考过程(若有)
             if (!msg.reasoning.isNullOrBlank()) {
-                sb.append("### ").append(localized(locale, "思考过程", "Thinking")).append("\n\n")
+                sb.append("### ").append(localized(locale, "Thinking", "Thinking")).append("\n\n")
                     .append(msg.reasoning).append("\n\n")
             }
         }
@@ -203,7 +203,7 @@ object ConversationExporter {
         // 顶部标题区
         sb.append("<header class=\"chat-header\">")
         sb.append("<h1>").append(escapeHtml(chatTitle)).append("</h1>")
-        sb.append("<p class=\"meta\">").append(localized(locale, "导出时间", "Exported at")).append(": ")
+        sb.append("<p class=\"meta\">").append(localized(locale, "Exported at", "Exported at")).append(": ")
             .append(
                 escapeHtml(
                     SimpleDateFormat(MuseDateFormats.DATE_TIME_FULL, locale).format(Date()),
@@ -236,7 +236,7 @@ object ConversationExporter {
                     sb.append("<a class=\"remote-link\" href=\"")
                         .append(escapeAttr(url))
                         .append("\" target=\"_blank\" rel=\"noopener noreferrer\">")
-                        .append(escapeHtml(localized(locale, "查看图片", "View image")))
+                        .append(escapeHtml(localized(locale, "View image", "View image")))
                         .append("</a>")
                 }
                 sb.append("</div>")
@@ -245,7 +245,7 @@ object ConversationExporter {
             val reasoningText = msg.reasoning
             if (!reasoningText.isNullOrBlank()) {
                 sb.append("<details class=\"reasoning\"><summary>")
-                    .append(escapeHtml(localized(locale, "思考过程", "Thinking")))
+                    .append(escapeHtml(localized(locale, "Thinking", "Thinking")))
                     .append("</summary><div class=\"content\">")
                     .append(renderContentHtml(reasoningText))
                     .append("</div></details>")
@@ -439,10 +439,10 @@ object ConversationExporter {
 
     /** C-24: 角色标签按 locale 输出(zh → 中文,其余 → 英文)。 */
     private fun roleLabel(role: MessageRole, locale: Locale): String = when (role) {
-        MessageRole.USER -> localized(locale, "用户", "User")
-        MessageRole.ASSISTANT -> localized(locale, "助手", "Assistant")
-        MessageRole.SYSTEM -> localized(locale, "系统", "System")
-        MessageRole.TOOL -> localized(locale, "工具", "Tool")
+        MessageRole.USER -> localized(locale, "User", "User")
+        MessageRole.ASSISTANT -> localized(locale, "Assistant", "Assistant")
+        MessageRole.SYSTEM -> localized(locale, "System", "System")
+        MessageRole.TOOL -> localized(locale, "Tool", "Tool")
     }
 
     /**

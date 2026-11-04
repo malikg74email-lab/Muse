@@ -15,8 +15,8 @@ class VirtualDisplayLeaseRegistry {
 
     @Synchronized
     fun acquire(runId: String, displayId: Int): Boolean {
-        require(runId.isNotBlank()) { "runId 不能为空" }
-        require(displayId >= 0) { "displayId 无效" }
+        require(runId.isNotBlank()) { "runId must not be empty" }
+        require(displayId >= 0) { "displayId is invalid" }
 
         val previous = displayByRun[runId]
         if (previous == displayId) return true

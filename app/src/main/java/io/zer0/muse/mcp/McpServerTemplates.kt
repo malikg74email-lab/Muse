@@ -28,8 +28,8 @@ object McpServerTemplates {
 
     val custom = McpServerTemplate(
         id = CUSTOM_ID,
-        displayName = "自定义 MCP Server",
-        summary = "手动填写 endpoint、传输方式和授权信息",
+        displayName = "Custom MCP Server",
+        summary = "Fill in the endpoint, transport type and authorisation info manually",
         transportType = McpTransportType.STREAMABLE_HTTP,
         urlPlaceholder = "https://server.example.com/mcp",
     )
@@ -38,34 +38,34 @@ object McpServerTemplates {
         // P1-A: 本地 MCP（内置 Node 运行时，stdio 传输；首次运行需联网下载依赖包）
         McpServerTemplate(
             id = "local_filesystem",
-            displayName = "本地文件系统",
-            summary = "本地 MCP：让 AI 读写手机上的文件夹（内置运行时）",
+            displayName = "Local file system",
+            summary = "Local MCP: lets the AI read and write folders on the phone (built-in runtime)",
             transportType = McpTransportType.STDIO,
             urlPlaceholder = "",
             commandPlaceholder = "npx -y @modelcontextprotocol/server-filesystem /sdcard/Documents",
         ),
         McpServerTemplate(
             id = "local_memory",
-            displayName = "记忆知识图",
-            summary = "本地 MCP：知识图谱式长期记忆（内置运行时）",
+            displayName = "Memory knowledge graph",
+            summary = "Local MCP: knowledge-graph style long-term memory (built-in runtime)",
             transportType = McpTransportType.STDIO,
             urlPlaceholder = "",
             commandPlaceholder = "npx -y @modelcontextprotocol/server-memory",
         ),
         McpServerTemplate(
             id = "local_sequential_thinking",
-            displayName = "顺序思考",
-            summary = "本地 MCP：分步推理辅助（内置运行时）",
+            displayName = "Sequential thinking",
+            summary = "Local MCP: step-by-step reasoning aid (built-in runtime)",
             transportType = McpTransportType.STDIO,
             urlPlaceholder = "",
             commandPlaceholder = "npx -y @modelcontextprotocol/server-sequential-thinking",
         ),
         McpServerTemplate(
             id = "feishu_remote",
-            displayName = "飞书知识库",
-            summary = "远程 MCP：搜索和读取飞书云文档",
+            displayName = "Feishu knowledge base",
+            summary = "Remote MCP: search and read Feishu cloud documents",
             transportType = McpTransportType.STREAMABLE_HTTP,
-            urlPlaceholder = "粘贴飞书远程 MCP 服务地址",
+            urlPlaceholder = "Paste the Feishu remote MCP service address",
             // 默认只读,需要写入记忆时由用户主动在高级字段追加 update/create 工具。
             defaultHeaders = mapOf(
                 "X-Lark-MCP-Allowed-Tools" to
@@ -74,38 +74,38 @@ object McpServerTemplates {
         ),
         McpServerTemplate(
             id = "feishu_cli_bridge",
-            displayName = "飞书 CLI 桥接",
-            summary = "本地 CLI 通过桌面桥接转成 HTTP/SSE",
+            displayName = "Feishu CLI bridge",
+            summary = "Local CLI turned into HTTP/SSE through a desktop bridge",
             transportType = McpTransportType.SSE,
-            urlPlaceholder = "http://电脑地址:端口/sse",
+            urlPlaceholder = "http://your-computer-address:port/sse",
         ),
         McpServerTemplate(
             id = "dingtalk_knowledge",
-            displayName = "钉钉知识库",
-            summary = "远程 MCP 或自建桥接：读取钉钉文档和知识库",
+            displayName = "DingTalk knowledge base",
+            summary = "Remote MCP or self-hosted bridge: read DingTalk documents and knowledge bases",
             transportType = McpTransportType.STREAMABLE_HTTP,
-            urlPlaceholder = "粘贴钉钉 MCP/桥接服务地址",
+            urlPlaceholder = "Paste the DingTalk MCP/bridge service address",
         ),
         McpServerTemplate(
             id = "wecom_knowledge",
-            displayName = "企业微信知识库",
-            summary = "自建桥接：连接企业微信文档、群机器人或应用接口",
+            displayName = "WeCom knowledge base",
+            summary = "Self-hosted bridge: connect WeCom documents, group bots or app APIs",
             transportType = McpTransportType.STREAMABLE_HTTP,
-            urlPlaceholder = "粘贴企业微信 MCP 桥接地址",
+            urlPlaceholder = "Paste the WeCom MCP bridge address",
         ),
         McpServerTemplate(
             id = "yuque_knowledge",
-            displayName = "语雀知识库",
-            summary = "自建桥接：用语雀开放接口封装搜索和读取工具",
+            displayName = "Yuque knowledge base",
+            summary = "Self-hosted bridge: wrap search and reading tools using the Yuque open API",
             transportType = McpTransportType.STREAMABLE_HTTP,
-            urlPlaceholder = "粘贴语雀 MCP 桥接地址",
+            urlPlaceholder = "Paste the Yuque MCP bridge address",
         ),
         McpServerTemplate(
             id = "tencent_docs",
-            displayName = "腾讯文档",
-            summary = "自建桥接：把腾讯文档检索接口暴露为 MCP",
+            displayName = "Tencent Docs",
+            summary = "Self-hosted bridge: expose the Tencent Docs search API as MCP",
             transportType = McpTransportType.STREAMABLE_HTTP,
-            urlPlaceholder = "粘贴腾讯文档 MCP 桥接地址",
+            urlPlaceholder = "Paste the Tencent Docs MCP bridge address",
         ),
     )
 

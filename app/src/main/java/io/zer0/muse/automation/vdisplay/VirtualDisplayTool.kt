@@ -27,19 +27,19 @@ class VirtualDisplayTool(
             ToolRegistry.ToolDef(
                 name = "virtual_screen",
                 description =
-                "虚拟屏(后台隐藏屏幕):在独立显示里运行应用,截图/操作不占用前台、不打扰用户。" +
-                    "action=ensure 创建或复用虚拟屏(返回 displayId);action=open 在虚拟屏里打开应用(需 package);" +
-                    "action=shot 截取虚拟屏画面(保存为 JPEG 文件,返回路径);action=close 销毁虚拟屏;" +
-                    "action=status 查询状态。在虚拟屏里点按/滑动/按键:用 device_shell 执行 " +
-                    "`input -d <displayId> tap/swipe/keyevent ...`。需要 Shizuku 或 Root 权限通道(设置→权限向导)。",
+                "Virtual screen (background hidden screen): run apps on a separate display; screenshots and actions do not occupy the foreground or disturb the user." +
+                    "action=ensure creates or reuses a virtual screen (returns displayId); action=open opens an app on the virtual screen (needs package);" +
+                    "action=shot captures the virtual screen image (saved as a JPEG file, returns the path); action=close destroys the virtual screen;" +
+                    "action=status queries the status. To tap/swipe/press keys on the virtual screen, use device_shell to run " +
+                    "`input -d <displayId> tap/swipe/keyevent ...`. Requires a Shizuku or Root permission channel (Settings → Permission wizard).",
                 parameters =
                 mapOf(
-                    "action" to "必填:ensure | open | read | shot | close | status",
-                    "package" to "open 时的应用包名(如 com.android.settings)",
-                    "width" to "可选:虚拟屏宽度(默认 720)",
-                    "height" to "可选:虚拟屏高度(默认 1280)",
-                    "dpi" to "可选:虚拟屏密度(默认 320)",
-                    "display" to "可选:指定 displayId(默认最近一次 ensure 的)",
+                    "action" to "Required: ensure | open | read | shot | close | status",
+                    "package" to "The app package name for open (e.g. com.android.settings)",
+                    "width" to "Optional: virtual screen width (default 720)",
+                    "height" to "Optional: virtual screen height (default 1280)",
+                    "dpi" to "Optional: virtual screen density (default 320)",
+                    "display" to "Optional: specify displayId (default: the most recent ensure)",
                 ),
                 required = setOf("action"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -52,30 +52,30 @@ class VirtualDisplayTool(
                 "shot" -> handleShot(args)
                 "close" -> handleClose(args)
                 "status" -> handleStatus()
-                null, "" -> "错误:缺少 action 参数(ensure/open/read/shot/close/status)"
-                else -> "错误:未知 action '$action'(ensure/open/read/shot/close/status)"
+                null, "" -> "Error: missing action parameter (ensure/open/read/shot/close/status)"
+                else -> "Error: unknown action '$action' (ensure/open/read/shot/close/status)"
             }
         }
 
         registry.register(
             ToolRegistry.ToolDef(
                 name = "virtual_screen_input",
-                description = "在后台虚拟屏内执行一次输入动作。先用 virtual_screen shot 确认画面，" +
-                    "再调用 tap/swipe/text/key/wait；动作只作用于指定 display，不切换用户前台。" +
-                    "需要 Shizuku 或 Root，属于高风险跨应用操作，每次执行前需审批。",
+                description = "Execute one input action inside the background virtual screen. First confirm the picture with virtual_screen shot," +
+                    "then call tap/swipe/text/key/wait; the action only affects the specified display and does not switch the user's foreground." +
+                    "Requires Shizuku or Root; this is a high-risk cross-app operation and needs approval before each execution.",
                 parameters = mapOf(
-                    "action" to "必填:tap | swipe | text | key | wait",
-                    "display" to "可选:displayId，默认最近一次 ensure 的虚拟屏",
-                    "x" to "tap 的 X 坐标",
-                    "y" to "tap 的 Y 坐标",
-                    "x1" to "swipe 起点 X",
-                    "y1" to "swipe 起点 Y",
-                    "x2" to "swipe 终点 X",
-                    "y2" to "swipe 终点 Y",
-                    "duration_ms" to "swipe 持续毫秒，默认 400",
-                    "text" to "text 输入内容，最多 500 字符",
-                    "key" to "key 按键名或数字，如 BACK/HOME/ENTER/KEYCODE_4",
-                    "ms" to "wait 等待毫秒，50-10000",
+                    "action" to "Required: tap | swipe | text | key | wait",
+                    "display" to "Optional: displayId, default the virtual screen from the most recent ensure",
+                    "x" to "X coordinate for tap",
+                    "y" to "Y coordinate for tap",
+                    "x1" to "Swipe start X",
+                    "y1" to "Swipe start Y",
+                    "x2" to "Swipe end X",
+                    "y2" to "Swipe end Y",
+                    "duration_ms" to "Swipe duration in milliseconds, default 400",
+                    "text" to "Text input content, at most 500 characters",
+                    "key" to "Key name or number, e.g. BACK/HOME/ENTER/KEYCODE_4",
+                    "ms" to "Wait milliseconds, 50-10000",
                 ),
                 required = setOf("action"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -88,32 +88,32 @@ class VirtualDisplayTool(
         val height = args["height"]?.toIntOrNull() ?: 1280
         val dpi = args["dpi"]?.toIntOrNull() ?: 320
         if (width !in 320..1920 || height !in 320..2560) {
-            return "错误:尺寸超范围(宽 320-1920,高 320-2560)"
+            return "Error: size out of range (width 320-1920, height 320-2560)"
         }
         return client.ensureDisplay(width, height, dpi).fold(
             onSuccess = {
-                "虚拟屏已就绪:displayId=${it.displayId}(${it.width}x${it.height})。" +
-                    "用 virtual_screen open 打开应用,用 device_shell `input -d ${it.displayId} ...` 做输入。"
+                "Virtual screen ready: displayId=${it.displayId} (${it.width}x${it.height})." +
+                    "Open an app with virtual_screen open; do input with device_shell `input -d ${it.displayId} ...`."
             },
-            onFailure = { "虚拟屏创建失败:${it.message}" },
+            onFailure = { "Virtual screen creation failed: ${it.message}" },
         )
     }
 
     private suspend fun handleOpen(args: Map<String, String>): String {
         val pkg = args["package"]?.trim().orEmpty()
-        if (pkg.isBlank()) return "错误:open 需要 package 参数"
+        if (pkg.isBlank()) return "Error: open requires the package parameter"
         val explicitDisplayId = args["display"]?.toIntOrNull()
         val displayId = explicitDisplayId ?: manager.lastDisplayId
         if (displayId < 0) {
             val ensured = handleEnsure(args)
-            if (!ensured.startsWith("虚拟屏已就绪")) return ensured
+            if (!ensured.startsWith("Virtual screen ready")) return ensured
         }
         val id = if (displayId >= 0) displayId else manager.lastDisplayId
         return if (client.openApp(pkg, id)) {
             val actualId = explicitDisplayId ?: manager.lastDisplayId
-            "已在虚拟屏 $actualId 打开 $pkg(等待 1-2 秒渲染后可用 shot 截图)"
+            "Opened $pkg on virtual screen $actualId (wait 1-2 seconds for rendering, then you can screenshot with shot)"
         } else {
-            "打开失败:无法解析 $pkg 的启动活动(应用未安装或被系统限制)"
+            "Open failed: unable to resolve $pkg's launch activity (app not installed or restricted by the system)"
         }
     }
 
@@ -121,24 +121,24 @@ class VirtualDisplayTool(
         val displayId = args["display"]?.toIntOrNull() ?: manager.lastDisplayId
         val bytes =
             client.screenshot(displayId)
-                ?: return "截图失败:虚拟屏未创建或服务端未就绪(先执行 action=ensure)"
+                ?: return "Screenshot failed: the virtual screen is not created or the server is not ready (run action=ensure first)"
         return runCatching {
             val dir = File(context.filesDir, "vd").apply { mkdirs() }
             val file = File(dir, "shot_${System.currentTimeMillis()}.jpg")
             file.writeBytes(bytes)
-            "截图已保存:${file.absolutePath}(${bytes.size / 1024}KB,displayId=$displayId)"
-        }.getOrElse { "截图保存失败:${it.message}" }
+            "Screenshot saved: ${file.absolutePath} (${bytes.size / 1024}KB, displayId=$displayId)"
+        }.getOrElse { "Screenshot save failed: ${it.message}" }
     }
 
     private suspend fun handleRead(args: Map<String, String>): String {
         val displayId = args["display"]?.toIntOrNull() ?: manager.lastDisplayId
         val info = automationManager.readScreenOnDisplay(displayId)
-            ?: return "读取失败:虚拟屏语义读屏需要 Shizuku 或 Root 通道"
+            ?: return "Read failed: virtual screen semantic reading requires a Shizuku or Root channel"
         return buildString {
             appendLine(info.toSummary(50))
             if (info.nodes.isNotEmpty()) {
                 appendLine("---")
-                appendLine("可交互控件:")
+                appendLine("Interactive controls:")
                 info.nodes.filter { it.isClickable || it.isEditable }.take(20).forEachIndexed { index, node ->
                     appendLine("[$index] ${node.toShortString()}")
                 }
@@ -148,35 +148,35 @@ class VirtualDisplayTool(
 
     private suspend fun handleClose(args: Map<String, String>): String {
         val displayId = args["display"]?.toIntOrNull() ?: manager.lastDisplayId
-        return if (client.destroy(displayId)) "虚拟屏 $displayId 已销毁" else "没有可销毁的虚拟屏"
+        return if (client.destroy(displayId)) "Virtual screen $displayId destroyed" else "No virtual screen to destroy"
     }
 
     private suspend fun handleStatus(): String {
         val proxy = manager.existingLiveProxy()
         val channel = manager.channelState()
         return buildString {
-            appendLine("权限通道:$channel")
-            appendLine("服务端:${if (proxy != null) "在线" else "未运行(首次调用自动启动)"}")
-            append("虚拟屏:${if (manager.lastDisplayId >= 0) "displayId=${manager.lastDisplayId}" else "未创建"}")
+            appendLine("Permission channel: $channel")
+            appendLine("Server: ${if (proxy != null) "online" else "not running (auto-starts on first call)"}")
+            append("Virtual screen: ${if (manager.lastDisplayId >= 0) "displayId=${manager.lastDisplayId}" else "not created"}")
         }
     }
 
     private suspend fun handleInput(args: Map<String, String>): String {
         val displayId = args["display"]?.toIntOrNull() ?: run {
             client.ensureCompatibilityDisplay().getOrElse {
-                return "错误:虚拟屏刷新失败:${it.message ?: "服务端未就绪"}"
+                return "Error: virtual screen refresh failed: ${it.message ?: "server not ready"}"
             }.displayId
         }
         if (displayId < 0) {
-            return "错误:虚拟屏未创建，请先执行 virtual_screen action=ensure"
+            return "Error: virtual screen not created; please run virtual_screen action=ensure first"
         }
         val action = args["action"]?.trim()?.lowercase().orEmpty()
         val command = VirtualDisplayInputCommand.build(displayId, action, args)
         return when {
-            command == null -> "错误:输入参数无效(action=$action)"
+            command == null -> "Error: invalid input parameters (action=$action)"
             command.waitMs != null -> {
                 delay(command.waitMs)
-                "虚拟屏 $displayId 已等待 ${command.waitMs}ms"
+                "Virtual screen $displayId waited ${command.waitMs}ms"
             }
             else -> executeInputCommand(displayId, command)
         }
@@ -184,13 +184,13 @@ class VirtualDisplayTool(
 
     private suspend fun executeInputCommand(displayId: Int, command: VirtualDisplayInputCommand): String {
         return when (val check = DeviceCommandPolicy.validate(command.shellCommand)) {
-            is DeviceCommandPolicy.Check.Invalid -> "错误:输入命令被策略拒绝:${check.reason}"
+            is DeviceCommandPolicy.Check.Invalid -> "Error: input command rejected by policy: ${check.reason}"
             DeviceCommandPolicy.Check.Valid -> {
                 val result = manager.exec(command.shellCommand)
                 if (result.exitCode == 0) {
-                    "虚拟屏 $displayId ${command.description}成功"
+                    "Virtual screen $displayId ${command.description} succeeded"
                 } else {
-                    "虚拟屏 $displayId ${command.description}失败(exit=${result.exitCode}):${result.output.take(500)}"
+                    "Virtual screen $displayId ${command.description} failed (exit=${result.exitCode}): ${result.output.take(500)}"
                 }
             }
         }
@@ -219,7 +219,7 @@ internal data class VirtualDisplayInputCommand(
         private fun buildTap(displayId: Int, args: Map<String, String>): VirtualDisplayInputCommand? {
             val x = args["x"]?.toIntOrNull()
             val y = args["y"]?.toIntOrNull()
-            return if (x != null && y != null) command(displayId, "tap $x $y", "点击($x,$y)") else null
+            return if (x != null && y != null) command(displayId, "tap $x $y", "Tap ($x,$y)") else null
         }
 
         private fun buildSwipe(displayId: Int, args: Map<String, String>): VirtualDisplayInputCommand? {
@@ -231,19 +231,19 @@ internal data class VirtualDisplayInputCommand(
             return if (listOf(x1, y1, x2, y2).any { it == null }) {
                 null
             } else {
-                command(displayId, "swipe ${x1!!} ${y1!!} ${x2!!} ${y2!!} $duration", "滑动")
+                command(displayId, "swipe ${x1!!} ${y1!!} ${x2!!} ${y2!!} $duration", "Swipe")
             }
         }
 
         private fun buildText(displayId: Int, args: Map<String, String>): VirtualDisplayInputCommand? {
             val text = args["text"]?.takeIf { it.isNotBlank() }?.takeIf { it.length <= 500 } ?: return null
             val unsafe = text.any { it in SHELL_META || it == '\n' || it == '\r' || it == '\\' || it == '"' || it == '\'' }
-            return if (unsafe) null else command(displayId, "text ${text.replace(" ", "%s")}", "输入文本")
+            return if (unsafe) null else command(displayId, "text ${text.replace(" ", "%s")}", "Input text")
         }
 
         private fun buildKey(displayId: Int, args: Map<String, String>): VirtualDisplayInputCommand? {
             val key = args["key"]?.trim()?.uppercase()?.takeIf { KEY_REGEX.matches(it) } ?: return null
-            return command(displayId, "keyevent $key", "按键($key)")
+            return command(displayId, "keyevent $key", "Key press ($key)")
         }
 
         private fun buildWait(args: Map<String, String>): VirtualDisplayInputCommand? {

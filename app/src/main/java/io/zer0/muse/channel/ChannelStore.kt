@@ -25,7 +25,7 @@ class ChannelStore(private val file: File) {
             val payload = AppJson.decodeFromString(Payload.serializer(), file.readText())
             payload.channels.map { decrypt(it) }
         }.onFailure { e ->
-            Logger.w(TAG, "渠道配置读取失败: ${e.message}")
+            Logger.w(TAG, "Channel configuration read failed: ${e.message}")
         }.getOrDefault(emptyList())
     }
 

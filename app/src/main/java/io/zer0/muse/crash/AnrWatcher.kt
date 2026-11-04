@@ -92,7 +92,7 @@ class AnrWatcher(
      */
     fun start() {
         if (!settings.anrDetectionCache) {
-            Logger.i(TAG, "ANR 检测已通过设置关闭,不启动")
+            Logger.i(TAG, "ANR detection is disabled in settings; not starting")
             return
         }
         if (running) return
@@ -102,7 +102,7 @@ class AnrWatcher(
             priority = Thread.MIN_PRIORITY // 低优先级,减少对正常调度的影响
             start()
         }
-        Logger.i(TAG, "ANR 检测已启动(check=${CHECK_INTERVAL_MS}ms, timeout=${ANR_TIMEOUT_MS}ms)")
+        Logger.i(TAG, "ANR detection started (check=${CHECK_INTERVAL_MS}ms, timeout=${ANR_TIMEOUT_MS}ms)")
     }
 
     /** 停止 ANR 检测(中断守护线程)。 */
@@ -117,7 +117,7 @@ class AnrWatcher(
             }
         }
         watcherThread = null
-        Logger.i(TAG, "ANR 检测已停止")
+        Logger.i(TAG, "ANR detection stopped")
     }
 
     /**
@@ -147,7 +147,7 @@ class AnrWatcher(
                 val postedAt = SystemClock.elapsedRealtime()
                 val posted = mainHandler.post(ping)
                 if (!posted) {
-                    Logger.w(TAG, "Ping 投递失败(主线程消息队列不可用),本轮跳过判定")
+                    Logger.w(TAG, "Ping delivery failed (main thread message queue unavailable); skipping judgement this round")
                 }
                 // 等待一个检测周期
                 Thread.sleep(CHECK_INTERVAL_MS)
@@ -160,7 +160,7 @@ class AnrWatcher(
                 break
             } catch (t: Throwable) {
                 // 任何异常都不能让检测线程退出(否则 ANR 检测静默失效)
-                Logger.w(TAG, "ANR 检测循环异常: ${t.message}", t)
+                Logger.w(TAG, "ANR detection loop exception: ${t.message}", t)
                 try {
                     Thread.sleep(CHECK_INTERVAL_MS)
                 } catch (_: InterruptedException) {
@@ -184,11 +184,11 @@ class AnrWatcher(
                 if (isAppInForeground()) {
                     onAnrDetected(decision.silenceMs)
                 } else {
-                    Logger.d(TAG, "主线程无响应 ${decision.silenceMs}ms(应用在后台,不记 ANR)")
+                    Logger.d(TAG, "Main thread unresponsive for ${decision.silenceMs}ms (app is in the background; not recorded as ANR)")
                 }
             }
             AnrDetector.Decision.Suspended -> {
-                Logger.d(TAG, "检测线程本轮被挂起(进程冻结/Doze),已重置 ANR 基线")
+                Logger.d(TAG, "The detection thread was suspended this round (process frozen/Doze); ANR baseline reset")
             }
             AnrDetector.Decision.Suppressed, AnrDetector.Decision.Healthy -> Unit
         }
@@ -204,10 +204,10 @@ class AnrWatcher(
      */
     private fun onAnrDetected(silenceMs: Long) {
         val anrTime = System.currentTimeMillis()
-        Logger.e(TAG, "检测到 ANR! 主线程无响应 ${silenceMs}ms")
+        Logger.e(TAG, "ANR detected! Main thread unresponsive for ${silenceMs}ms")
         // 写入 ANR 日志文件(脱敏后落盘,失败不抛出)
         resultOf { writeAnrLog(anrTime, silenceMs) }
-            .onError { msg, t -> Logger.e(TAG, "写入 ANR 日志失败: $msg", t) }
+            .onError { msg, t -> Logger.e(TAG, "Writing the ANR log failed: $msg", t) }
         // 记录到审计日志(若可用,fire-and-forget)
         resultOf {
             auditLogger?.log(
@@ -253,14 +253,14 @@ class AnrWatcher(
         PrintWriter(sw).use { pw ->
             pw.println("===== muse ANR log =====")
             pw.println("Time: ${Date(anrTime)}")
-            pw.println("Silence: ${silenceMs}ms (主线程无响应时长)")
+            pw.println("Silence: ${silenceMs}ms (main thread unresponsive duration)")
             // v2.3.2: 记录判定口径,便于事后判断报告可信度(旧报告的 5~133s "Silence" 多为
             // 进程冻结期间的误报,见 AnrDetector 注释)
             pw.println(
                 "Detector: ticket(v2.3.2) interval=${CHECK_INTERVAL_MS}ms " +
                     "timeout=${ANR_TIMEOUT_MS}ms suspendTolerance=${SUSPEND_TOLERANCE_MS}ms",
             )
-            pw.println("Note: 冻结/Doze 导致的挂起不计入 Silence;下方栈为判定时刻的采样")
+            pw.println("Note: suspensions caused by freezing/Doze do not count toward Silence; the stack below was sampled at decision time")
             pw.println()
             pw.println("----- Device Info -----")
             pw.println("Brand: ${Build.BRAND}")
@@ -298,7 +298,7 @@ class AnrWatcher(
             pw.println("----- Recent Perf Records -----")
             val perfRecords = Perf.snapshotRecent()
             if (perfRecords.isEmpty()) {
-                pw.println("(无 Perf 埋点记录)")
+                pw.println("(No Perf instrumentation records)")
             } else {
                 perfRecords.forEach { rec ->
                     pw.println("${rec.name}: ${rec.elapsedMs}ms @ ${Date(rec.timestamp)}")
@@ -315,7 +315,7 @@ class AnrWatcher(
             ?.drop(MAX_ANR_LOGS)
             ?.forEach { it.delete() }
 
-        Logger.e(TAG, "ANR 日志已写入: ${logFile.absolutePath}")
+        Logger.e(TAG, "ANR log written: ${logFile.absolutePath}")
     }
 
     companion object {

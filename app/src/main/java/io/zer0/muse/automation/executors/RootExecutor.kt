@@ -72,7 +72,7 @@ class RootExecutor(
      */
     suspend fun requestRootAccess(timeoutMs: Long = ROOT_REQUEST_TIMEOUT_MS): RootRequestResult = withContext(Dispatchers.IO) {
         if (!isRooted()) {
-            Logger.i(TAG, "root 授权请求跳过: 设备无 su 二进制")
+            Logger.i(TAG, "Root authorisation request skipped: no su binary on the device")
             return@withContext RootRequestResult.failed(RootRequestFailure.NO_SU_BINARY)
         }
         val process = try {
@@ -80,23 +80,23 @@ class RootExecutor(
                 .redirectErrorStream(true)
                 .start()
         } catch (e: Exception) {
-            Logger.w(TAG, "root 授权请求无法启动: ${e.message}")
+            Logger.w(TAG, "Root authorisation request could not start: ${e.message}")
             return@withContext RootRequestResult.failed(classifyRootProbeException(e))
         }
         try {
             if (!process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)) {
                 // root 管理器弹窗一直未被处理:杀掉等待中的 su,避免后续请求排队、设置页卡死。
                 runCatching { process.destroyForcibly() }
-                Logger.w(TAG, "root 授权请求超时(${timeoutMs}ms)")
+                Logger.w(TAG, "Root authorisation request timed out (${timeoutMs}ms)")
                 return@withContext rootProbeTimeout()
             }
             val output = process.inputStream.bufferedReader().use { it.readText() }
             val result = evaluateRootProbe(process.exitValue(), output)
-            Logger.i(TAG, "root 授权请求结束: granted=${result.granted} failure=${result.failure}")
+            Logger.i(TAG, "Root authorisation request ended: granted=${result.granted} failure=${result.failure}")
             result
         } catch (e: Exception) {
             runCatching { process.destroyForcibly() }
-            Logger.w(TAG, "root 授权请求异常: ${e.message}")
+            Logger.w(TAG, "Root authorisation request exception: ${e.message}")
             RootRequestResult.failed(classifyRootProbeException(e))
         }
     }
@@ -135,7 +135,7 @@ class RootExecutor(
     suspend fun installApk(apkPath: String): Boolean {
         val canonicalPath = resolveAllowedApkPath(apkPath)
         if (canonicalPath == null) {
-            Logger.w(TAG, "installApk 拒绝: 非法或不允许的 APK 路径")
+            Logger.w(TAG, "installApk refused: illegal or disallowed APK path")
             return false
         }
         val result = exec("pm install -r $canonicalPath")
@@ -145,7 +145,7 @@ class RootExecutor(
     /** 卸载 App(root 下 pm uninstall)。 */
     suspend fun uninstallApp(packageName: String): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "uninstallApp 拒绝: 非法包名 $packageName")
+            Logger.w(TAG, "uninstallApp $IP $packageName")
             return false
         }
         return exec("pm uninstall $packageName").isSuccess
@@ -154,12 +154,12 @@ class RootExecutor(
     /** 授予运行时权限(root 下 pm grant)。 */
     suspend fun grantPermission(packageName: String, permission: String): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "grantPermission 拒绝: 非法包名 $packageName")
+            Logger.w(TAG, "grantPermission $IP $packageName")
             return false
         }
         // permission 格式如 android.permission.SEND_SMS,只允许字母/数字/点/下划线
         if (!Regex("^[a-zA-Z][a-zA-Z0-9_.]*\$").matches(permission)) {
-            Logger.w(TAG, "grantPermission 拒绝: 非法权限名 $permission")
+            Logger.w(TAG, "grantPermission refused: illegal permission name $permission")
             return false
         }
         return exec("pm grant $packageName $permission").isSuccess
@@ -168,7 +168,7 @@ class RootExecutor(
     /** 强制停止 App。 */
     suspend fun forceStop(packageName: String): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "forceStop 拒绝: 非法包名 $packageName")
+            Logger.w(TAG, "forceStop $IP $packageName")
             return false
         }
         return exec("am force-stop $packageName").isSuccess
@@ -177,16 +177,16 @@ class RootExecutor(
     /** 读取其他 App 私有目录文件(需 root)。 */
     suspend fun readAppFile(appPackage: String, relativePath: String): String? {
         if (!validatePackageName(appPackage)) {
-            Logger.w(TAG, "readAppFile 拒绝: 非法包名 $appPackage")
+            Logger.w(TAG, "readAppFile refused: illegal package name $appPackage")
             return null
         }
         // relativePath 不允许绝对路径或路径穿越
         if (relativePath.startsWith("/") || relativePath.contains("..")) {
-            Logger.w(TAG, "readAppFile 拒绝: 非法相对路径 $relativePath")
+            Logger.w(TAG, "readAppFile refused: illegal relative path $relativePath")
             return null
         }
         if (!validatePath(relativePath)) {
-            Logger.w(TAG, "readAppFile 拒绝: 路径包含非法字符 $relativePath")
+            Logger.w(TAG, "readAppFile refused: path contains illegal characters $relativePath")
             return null
         }
         val path = "/data/data/$appPackage/$relativePath"
@@ -210,7 +210,7 @@ class RootExecutor(
     suspend fun svcToggle(service: String, enabled: Boolean): Boolean? {
         val svc = service.trim().lowercase()
         if (svc != "wifi" && svc != "data") {
-            Logger.w(TAG, "svcToggle 拒绝: 不支持的服务 $service")
+            Logger.w(TAG, "svcToggle refused: unsupported service $service")
             return null
         }
         val action = if (enabled) "enable" else "disable"
@@ -225,7 +225,7 @@ class RootExecutor(
         val safeNs = validateSettingsNamespace(nsPart)
         val safeName = validateSettingsName(keyPart)
         if (safeNs == null || safeName == null) {
-            Logger.w(TAG, "settingsGet 拒绝: 非法设置名 $name")
+            Logger.w(TAG, "settingsGet refused: illegal setting name $name")
             return null
         }
         val result = exec("settings get $safeNs$safeName")
@@ -241,7 +241,7 @@ class RootExecutor(
         val safeNs = validateSettingsNamespace(namespace)
         val safeName = validateSettingsName(name)
         if (safeNs == null || safeName == null) {
-            Logger.w(TAG, "settingsPut 拒绝: 非法参数 ns=$namespace name=$name")
+            Logger.w(TAG, "settingsPut refused: illegal arguments ns=$namespace name=$name")
             return false
         }
         // v2.0.1: 只保留可打印 ASCII,并用 escapeDoubleQuoted 转义,防 root shell 注入。
@@ -255,7 +255,7 @@ class RootExecutor(
      */
     suspend fun amStart(packageName: String, className: String? = null, extras: String? = null): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "amStart 拒绝: 非法包名 $packageName")
+            Logger.w(TAG, "amStart $IP $packageName")
             return false
         }
         // v2.0.1: 组件名与 extras 必须先白名单校验,再拼进 root shell 命令,防命令注入。

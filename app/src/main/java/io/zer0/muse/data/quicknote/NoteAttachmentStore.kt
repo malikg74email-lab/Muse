@@ -50,7 +50,7 @@ class NoteAttachmentStore(private val context: Context) {
         }
         Uri.fromFile(target).toString()
     }.onFailure { t ->
-        Logger.w(TAG, "笔记附件导入失败: ${t.message}")
+        Logger.w(TAG, "Note attachment import failed: ${t.message}")
     }.getOrNull()
 
     /**
@@ -63,12 +63,12 @@ class NoteAttachmentStore(private val context: Context) {
         val path = Uri.parse(uriString).path ?: return@runCatching false
         val file = File(path)
         if (file.parentFile?.absolutePath != dir.absolutePath) {
-            Logger.w(TAG, "拒绝删除笔记目录之外的附件: ${file.name}")
+            Logger.w(TAG, "Refusing to delete an attachment outside the notes directory: ${file.name}")
             return@runCatching false
         }
         file.delete()
     }.onFailure { t ->
-        Logger.w(TAG, "删除笔记附件失败: ${t.message}")
+        Logger.w(TAG, "Failed to delete the note attachment: ${t.message}")
     }.getOrDefault(false)
 
     /** 按清单回收文件（笔记被永久删除 / 回收站清空时调用）。 */

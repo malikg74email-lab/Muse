@@ -69,8 +69,8 @@ class LocalAuthorKeyStore internal constructor(
             signer.update(payload)
             Result.success(signer.sign())
         } catch (error: Exception) {
-            Logger.e(TAG, "本机作者密钥签名失败", error)
-            Result.failure(IllegalStateException("本机作者密钥签名失败: ${error.message}", error))
+            Logger.e(TAG, "Local author key signing failed", error)
+            Result.failure(IllegalStateException("Local author key signing failed: ${error.message}", error))
         }
     }
 
@@ -103,9 +103,9 @@ class LocalAuthorKeyStore internal constructor(
             try {
                 persist(generated)
             } catch (error: Exception) {
-                Logger.e(TAG, "本机作者密钥写入失败", error)
+                Logger.e(TAG, "Failed to write the local author key", error)
                 return Result.failure(
-                    IllegalStateException("无法保存本机作者密钥: ${error.message ?: "写入失败"}", error),
+                    IllegalStateException("Could not save the local author key: ${error.message ?: "Write failed"}", error),
                 )
             }
             generated
@@ -116,17 +116,17 @@ class LocalAuthorKeyStore internal constructor(
 
     private fun readMaterial(): Result<AuthorKeyMaterial> = try {
         val stored = AppJson.decodeFromString<StoredAuthorKey>(storageFile.readText())
-        require(stored.publisherId == PUBLISHER_ID) { "作者密钥发行者不匹配" }
-        val privateKeyBytes = decodeBase64(stored.privateKeyPkcs8, "私钥")
-        val publicKeyBytes = decodeBase64(stored.publicKeyX509, "公钥")
+        require(stored.publisherId == PUBLISHER_ID) { "Author key publisher mismatch" }
+        val privateKeyBytes = decodeBase64(stored.privateKeyPkcs8, "Private key")
+        val publicKeyBytes = decodeBase64(stored.publicKeyX509, "Public key")
         val privateKey = KeyFactory.getInstance(PluginSecurityGate.KEY_ALGORITHM)
             .generatePrivate(PKCS8EncodedKeySpec(privateKeyBytes))
-        require(privateKey is ECPrivateKey) { "本机作者私钥不是 EC 私钥" }
+        require(privateKey is ECPrivateKey) { "The local author private key is not an EC private key" }
         val publicKey = KeyFactory.getInstance(PluginSecurityGate.KEY_ALGORITHM)
             .generatePublic(X509EncodedKeySpec(publicKeyBytes))
-        require(publicKey is ECPublicKey) { "本机作者公钥不是 EC 公钥" }
-        require(privateKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "本机作者私钥不是 P-256" }
-        require(publicKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "本机作者公钥不是 P-256" }
+        require(publicKey is ECPublicKey) { "The local author public key is not an EC public key" }
+        require(privateKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "The local author private key is not P-256" }
+        require(publicKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "The local author public key is not P-256" }
         // 校验落盘的一对密钥确实互相匹配：文件损坏/被换过时 fail-closed，
         // 而不是拿一把无法通过信任根校验的密钥去签名。
         val probe = ByteArray(32) { index -> index.toByte() }
@@ -140,7 +140,7 @@ class LocalAuthorKeyStore internal constructor(
             update(probe)
             verify(signature)
         }
-        require(matches) { "本机作者公钥与私钥不匹配" }
+        require(matches) { "The local author public key does not match the private key" }
         Result.success(
             AuthorKeyMaterial(
                 privateKey = privateKey,
@@ -149,9 +149,9 @@ class LocalAuthorKeyStore internal constructor(
             ),
         )
     } catch (error: Exception) {
-        Logger.w(TAG, "本机作者密钥读取失败", error)
+        Logger.w(TAG, "Failed to read the local author key", error)
         Result.failure(
-            IllegalStateException("本机作者密钥不可用: ${error.message ?: "文件损坏"}", error),
+            IllegalStateException("Local author key unavailable: ${error.message ?: "File corrupted"}", error),
         )
     }
 
@@ -162,9 +162,9 @@ class LocalAuthorKeyStore internal constructor(
                 generateKeyPair()
             }
         } catch (error: Exception) {
-            Logger.e(TAG, "本机作者密钥生成失败", error)
+            Logger.e(TAG, "Failed to generate the local author key", error)
             return Result.failure(
-                IllegalStateException("无法生成本机作者密钥: ${error.message ?: "系统不支持 P-256"}", error),
+                IllegalStateException("Could not generate the local author key: ${error.message ?: "System does not support P-256"}", error),
             )
         }
         return materialOf(pair)
@@ -173,8 +173,8 @@ class LocalAuthorKeyStore internal constructor(
     private fun materialOf(pair: KeyPair): Result<AuthorKeyMaterial> = try {
         val privateKey = pair.private as ECPrivateKey
         val publicKey = pair.public as ECPublicKey
-        require(privateKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "私钥不是 P-256" }
-        require(publicKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "公钥不是 P-256" }
+        require(privateKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "The private key is not P-256" }
+        require(publicKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "The public key is not P-256" }
         Result.success(
             AuthorKeyMaterial(
                 privateKey = privateKey,
@@ -183,7 +183,7 @@ class LocalAuthorKeyStore internal constructor(
             ),
         )
     } catch (error: Exception) {
-        Result.failure(IllegalStateException("本机作者密钥格式不受支持: ${error.message}", error))
+        Result.failure(IllegalStateException("Unsupported local author key format: ${error.message}", error))
     }
 
     private fun persist(material: AuthorKeyMaterial) {
@@ -202,15 +202,15 @@ class LocalAuthorKeyStore internal constructor(
             storageFile.setWritable(true, true)
             storageFile.setExecutable(false, false)
         }.onFailure { error ->
-            Logger.w(TAG, "本机作者密钥文件权限收紧失败(不影响功能)", error)
+            Logger.w(TAG, "Failed to tighten local author key file permissions (does not affect functionality)", error)
         }
     }
 
     private fun decodeBase64(encoded: String, label: String): ByteArray {
-        require(encoded.isNotBlank()) { "$label 为空" }
-        require(encoded.length <= MAX_KEY_BASE64_CHARS) { "$label 过大" }
+        require(encoded.isNotBlank()) { "$label is empty" }
+        require(encoded.length <= MAX_KEY_BASE64_CHARS) { "$label is too large" }
         val bytes = Base64.getDecoder().decode(encoded)
-        require(Base64.getEncoder().encodeToString(bytes) == encoded) { "$label 不是标准 Base64" }
+        require(Base64.getEncoder().encodeToString(bytes) == encoded) { "$label is not standard Base64" }
         return bytes
     }
 

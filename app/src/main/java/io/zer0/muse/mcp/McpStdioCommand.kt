@@ -47,7 +47,7 @@ object McpStdioCommand {
     /** 解析命令行 → 可执行 argv。 */
     fun resolve(commandLine: String, context: Context): Result {
         val tokens = tokenize(commandLine)
-        if (tokens.isEmpty()) return Result.Error("命令为空")
+        if (tokens.isEmpty()) return Result.Error("Command is empty")
         val head = tokens[0]
         val rest = tokens.drop(1)
         val node = MuseRuntime.nodeBinary(context).absolutePath
@@ -69,11 +69,11 @@ object McpStdioCommand {
                 if (allowed && f.isFile) {
                     Result.Ok(tokens)
                 } else {
-                    Result.Error("仅允许应用运行时内的程序路径")
+                    Result.Error("Only program paths inside the app runtime are allowed")
                 }
             }
             else -> Result.Error(
-                "不支持的命令 '$head'（当前支持 node / npm / npx 或应用运行时内的绝对路径）",
+                "Unsupported command '$head' (currently supports node / npm / npx or an absolute path inside the app runtime)",
             )
         }
     }

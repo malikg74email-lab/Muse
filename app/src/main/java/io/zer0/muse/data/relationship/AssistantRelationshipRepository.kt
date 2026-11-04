@@ -17,7 +17,7 @@ class AssistantRelationshipRepository(
     fun observeAll(): Flow<List<AssistantRelationshipEntity>> = dao.observeAll()
 
     suspend fun getAll(): List<AssistantRelationshipEntity> = resultOf { dao.getAll() }
-        .onError { msg, t -> Logger.w(TAG, "读取关系列表失败: ${t?.message ?: msg}") }
+        .onError { msg, t -> Logger.w(TAG, "Failed to read the relationship list: ${t?.message ?: msg}") }
         .getOrNull() ?: emptyList()
 
     /**
@@ -36,7 +36,7 @@ class AssistantRelationshipRepository(
             updatedAt = now,
         )
         resultOf { dao.upsert(normalized) }
-            .onError { msg, t -> Logger.w(TAG, "保存关系失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to save the relationship: ${t?.message ?: msg}") }
     }
 
     /**
@@ -59,16 +59,16 @@ class AssistantRelationshipRepository(
                         updatedAt = now,
                     ),
                 )
-            }.onError { msg, t -> Logger.w(TAG, "初始化关系失败: ${t?.message ?: msg}") }
+            }.onError { msg, t -> Logger.w(TAG, "Failed to initialise the relationship: ${t?.message ?: msg}") }
             return
         }
         resultOf { dao.bumpAffinity(assistantId, affinityDelta, now) }
-            .onError { msg, t -> Logger.w(TAG, "更新亲密度失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to update intimacy: ${t?.message ?: msg}") }
     }
 
     suspend fun delete(assistantId: String) {
         resultOf { dao.delete(assistantId) }
-            .onError { msg, t -> Logger.w(TAG, "删除关系失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to delete the relationship: ${t?.message ?: msg}") }
     }
 
     /**

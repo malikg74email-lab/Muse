@@ -433,7 +433,7 @@ data class ProactiveMessageConfig(
      * **已废弃**：v1.95 的「仅 Agent 会话」开关。全仓从来没有读取方（只在设置页画了个开关），
      * 用户实测「打开/关闭都没区别」。保留字段只为旧配置反序列化兼容，逻辑请用 [agentSessionEnabled]。
      */
-    @Deprecated("无读取方，改用 agentSessionEnabled")
+    @Deprecated("No readers; use agentSessionEnabled instead")
     val agentOnly: Boolean = true,
 
     /**

@@ -95,7 +95,7 @@ class SessionRepository(
             return block()
         } catch (e: Exception) {
             if (!isClosedDatabaseError(e)) throw e
-            Logger.w(TAG, "$operation 遇到已关闭数据库连接,尝试重开后重试", e)
+            Logger.w(TAG, "$operation hit a closed database connection; reopening and retrying", e)
             withContext(Dispatchers.IO) { database.openHelper.writableDatabase }
             delay(50L)
             return block()
@@ -221,7 +221,7 @@ class SessionRepository(
     suspend fun saveInputDraft(sessionId: String, draft: String) {
         withContext(Dispatchers.IO) {
             runCatching { sessionDao.updateInputDraft(sessionId, draft) }
-                .onFailure { Logger.w(TAG, "保存输入草稿失败: ${it.message}") }
+                .onFailure { Logger.w(TAG, "Failed to save the input draft: ${it.message}") }
         }
     }
 
@@ -232,7 +232,7 @@ class SessionRepository(
      */
     suspend fun loadInputDraft(sessionId: String): String = withContext(Dispatchers.IO) {
         runCatching { sessionDao.getById(sessionId)?.inputDraft.orEmpty() }
-            .onFailure { Logger.w(TAG, "读取输入草稿失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Failed to read the input draft: ${it.message}") }
             .getOrDefault("")
     }
 
@@ -417,7 +417,7 @@ class SessionRepository(
     suspend fun setSessionIgnoreMemory(sessionId: String, ignore: Boolean) {
         withContext(Dispatchers.IO) {
             resultOf { sessionDao.setIgnoreMemory(sessionId, ignore) }
-                .onError { msg, t -> Logger.w(TAG, "setSessionIgnoreMemory 失败: $msg", t) }
+                .onError { msg, t -> Logger.w(TAG, "setSessionIgnoreMemory failed: $msg", t) }
         }
     }
 
@@ -488,7 +488,7 @@ class SessionRepository(
                         syncFtsDelete(msg.id)
                         syncFtsInsert(msg.id, msg.content)
                     }.onError { _, t ->
-                        Logger.w(TAG, "forkSession FTS 写入失败: ${t?.message ?: ""}", t)
+                        Logger.w(TAG, "forkSession FTS write failed: ${t?.message ?: ""}", t)
                     }
                 }
                 sessionDao.setMessageCount(newId, remapped.size)
@@ -573,7 +573,7 @@ class SessionRepository(
         val cleanup = sessionMemoryCleanup ?: return
         if (sessionIds.isEmpty()) return
         resultOf { cleanup.cleanSessions(sessionIds) }
-            .onError { msg, t -> Logger.w(TAG, "清理会话记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to clean session memory: $msg", t) }
     }
 
     /** 重命名会话。 */
@@ -759,7 +759,7 @@ class SessionRepository(
         resultOf {
             database.generationCheckpointDao()
                 .deleteBySessionAndCreatedAtFrom(entity.sessionId, entity.createdAt)
-        }.onError { _, t -> Logger.w(TAG, "清理残留 checkpoint 失败: ${t?.message ?: ""}") }
+        }.onError { _, t -> Logger.w(TAG, "Failed to clean leftover checkpoints: ${t?.message ?: ""}") }
         // v1.107 冗余: 递减 sessions.messageCount
         resultOf { sessionDao.incrementMessageCount(entity.sessionId, -1) }
             .onError { _, t -> Logger.w(TAG, "decrementMessageCount failed: ${t?.message ?: ""}") }
@@ -978,7 +978,7 @@ class SessionRepository(
             resultOf {
                 syncFtsDelete(entity.id)
                 syncFtsInsert(entity.id, entity.content)
-            }.onError { _, t -> Logger.w(TAG, "MessageCommit FTS 写入失败: ${t?.message ?: ""}", t) }
+            }.onError { _, t -> Logger.w(TAG, "MessageCommit FTS write failed: ${t?.message ?: ""}", t) }
 
             if (request.parts.isNotEmpty()) {
                 database.messagePartDao().deleteByMessage(entity.id)
@@ -1163,7 +1163,7 @@ class SessionRepository(
             finishedAt = now,
         )
         if (closed > 0) {
-            Logger.i(TAG, "悬挂 turn 收敛: $closed 条 → phase=${TurnPhase.FAILED.name}, 窗口 ${STALE_TURN_GRACE_MS}ms")
+            Logger.i(TAG, "Dangling turn convergence: $closed turns → phase=${TurnPhase.FAILED.name}, window ${STALE_TURN_GRACE_MS}ms")
         }
         closed
     }
@@ -1307,7 +1307,7 @@ class SessionRepository(
         withContext(Dispatchers.IO) {
             val pending = runCatching { database.generationCheckpointDao().getAllPending() }
                 .getOrElse { e ->
-                    Logger.w(TAG, "读取生成检查点失败", e)
+                    Logger.w(TAG, "Failed to read the generation checkpoint", e)
                     return@withContext
                 }
             for (cp in pending) {
@@ -1329,13 +1329,14 @@ class SessionRepository(
                         database.generationCheckpointDao().deleteByAssistantMessageId(cp.assistantMessageId)
                         continue
                     }
-                    val marker = "[已中断]"
+                    val marker = "[Interrupted]"
+                    val legacyMarker = "[已中断]"
                     val base = when {
                         existing != null && existing.content.length >= cp.content.length -> existing.content
                         else -> cp.content
                     }
                     val content = when {
-                        base.contains(marker) -> base
+                        base.contains(marker) || base.contains(legacyMarker) -> base
                         base.isBlank() -> marker
                         else -> base + "\n\n" + marker
                     }
@@ -1347,7 +1348,7 @@ class SessionRepository(
                         }
                         else -> {
                             val id = runCatching { Uuid.parse(cp.assistantMessageId) }.getOrElse {
-                                Logger.w(TAG, "generation checkpoint assistantMessageId 非 UUID: " + cp.assistantMessageId)
+                                Logger.w(TAG, "generation checkpoint assistantMessageId is not a UUID: " + cp.assistantMessageId)
                                 Uuid.random()
                             }
                             UIMessage(
@@ -1362,11 +1363,11 @@ class SessionRepository(
                         upsertMessage(cp.sessionId, ui)
                     }
                 } catch (e: Exception) {
-                    Logger.w(TAG, "恢复中断生成失败: " + cp.assistantMessageId, e)
+                    Logger.w(TAG, "Failed to restore interrupted generation: " + cp.assistantMessageId, e)
                 }
             }
             if (pending.isNotEmpty()) {
-                Logger.i(TAG, "中断生成恢复完成: " + pending.size + " 条检查点")
+                Logger.i(TAG, "Interrupted-generation restore complete: " + pending.size + " checkpoints")
             }
         }
     }
@@ -1403,7 +1404,7 @@ class SessionRepository(
                         if (existing.content.isNotBlank() && entity.content.isBlank()) {
                             Logger.w(
                                 TAG,
-                                "upsertMessage 阻止空内容覆盖已有回复(id=${entity.id}, 旧长度=${existing.content.length})",
+                                "upsertMessage blocked empty content from overwriting an existing reply (id=${entity.id}, old length=${existing.content.length})",
                             )
                             entity = entity.copy(content = existing.content)
                         }

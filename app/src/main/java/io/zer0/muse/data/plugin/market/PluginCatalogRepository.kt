@@ -89,7 +89,7 @@ internal class PluginCatalogRepository(
         }
         val fetched = client.fetch(url)
         val signed = fetched.signedCatalog
-            ?: return@withContext CatalogRefreshResult.Rejected(fetched.error ?: "目录拉取失败")
+            ?: return@withContext CatalogRefreshResult.Rejected(fetched.error ?: "Catalog fetch failed")
         // P2-25: 校验与提交必须原子(同一锁内) —
         //  原实现先锁内读 sequence → 锁外校验 → 再锁内写回,两个并发 refresh 时,
         //  后提交的一方可能把 sequence 从高值倒回低值(校验基于已过期的 lastAccepted)。
@@ -106,16 +106,16 @@ internal class PluginCatalogRepository(
             )
             if (!verification.valid) {
                 val reason = translateReason(verification.reason)
-                Logger.w(TAG, "目录校验被拒绝: ${verification.reason}")
+                Logger.w(TAG, "Catalog verification rejected: ${verification.reason}")
                 return@synchronized CatalogRefreshResult.Rejected(reason)
             }
             val updated = acceptedSequences.toMutableMap().apply { this[catalogId] = signed.payload.sequence }
             try {
                 persist(signed, updated)
             } catch (error: Exception) {
-                Logger.e(TAG, "目录缓存写入失败", error)
+                Logger.e(TAG, "Failed to write the catalog cache", error)
                 return@synchronized CatalogRefreshResult.Rejected(
-                    "目录缓存写入失败: ${error.message ?: "unknown"}",
+                    "Failed to write the catalog cache: ${error.message ?: "unknown"}",
                 )
             }
             verifiedCatalog = signed
@@ -144,7 +144,7 @@ internal class PluginCatalogRepository(
             runCatching {
                 catalogFile.delete()
                 sequenceFile.delete()
-            }.onFailure { error -> Logger.w(TAG, "市场缓存清理失败(忽略)", error) }
+            }.onFailure { error -> Logger.w(TAG, "Failed to clear the market cache (ignored)", error) }
             verifiedCatalog = null
             acceptedSequences.clear()
             cacheError = null
@@ -171,9 +171,9 @@ internal class PluginCatalogRepository(
         val signed = try {
             AppJson.decodeFromString(SignedPluginCatalog.serializer(), catalogFile.readText())
         } catch (error: Exception) {
-            Logger.w(TAG, "目录缓存解析失败，已隔离损坏文件", error)
+            Logger.w(TAG, "Catalog cache parse failed; the corrupted file was quarantined", error)
             AtomicFileStore.quarantine(catalogFile, "plugin_catalog_parse")
-            cacheError = "目录缓存已损坏，请刷新目录"
+            cacheError = "The catalog cache is corrupted; please refresh the catalog"
             return
         }
         val catalogId = signed.payload.catalogId
@@ -239,7 +239,7 @@ internal class PluginCatalogRepository(
         }
         val byCatalog = runCatching { AppJson.decodeFromString(SEQUENCE_SERIALIZER, text) }
             .getOrElse { error ->
-                Logger.w(TAG, "目录 sequence 记录解析失败，按未记录处理", error)
+                Logger.w(TAG, "Catalog sequence record parse failed; treating it as unrecorded", error)
                 emptyMap()
             }
             .filterValues { it >= 0 }
@@ -256,15 +256,15 @@ internal class PluginCatalogRepository(
     }
 
     private fun translateReason(reason: String?): String = when (reason) {
-        null -> "目录校验失败"
-        "catalog too large" -> "目录体积超过限制"
-        "unknown catalog key" -> "未知的目录签名密钥"
-        "unsupported catalog metadata" -> "不支持的目录格式"
-        "catalog expired" -> "目录已过期，请刷新"
-        "catalog sequence rollback" -> "目录版本回退，已拒绝"
-        "invalid catalog entry" -> "目录包含非法条目"
-        "catalog signature mismatch" -> "目录签名不匹配"
-        "catalog signature could not be verified" -> "目录签名无法验证"
+        null -> "Catalog verification failed"
+        "catalog too large" -> "Catalog size exceeds the limit"
+        "unknown catalog key" -> "Unknown catalog signing key"
+        "unsupported catalog metadata" -> "Unsupported catalog format"
+        "catalog expired" -> "Catalog has expired; please refresh"
+        "catalog sequence rollback" -> "Catalog version rollback; rejected"
+        "invalid catalog entry" -> "Catalog contains illegal entries"
+        "catalog signature mismatch" -> "Catalog signature mismatch"
+        "catalog signature could not be verified" -> "Catalog signature could not be verified"
         else -> reason
     }
 
@@ -275,7 +275,7 @@ internal class PluginCatalogRepository(
         internal const val SEQUENCE_FILE_NAME = "catalog_sequence"
 
         /** 未配置目录信任根时的固定拒绝原因，UI 据此提示“配置信任根”。 */
-        internal const val REASON_NO_TRUST_ROOT = "未配置目录信任根公钥"
+        internal const val REASON_NO_TRUST_ROOT = "Catalog trust-root public key not configured"
 
         private val SEQUENCE_SERIALIZER = MapSerializer(String.serializer(), Long.serializer())
     }

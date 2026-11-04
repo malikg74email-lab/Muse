@@ -12,6 +12,7 @@ import io.zer0.ai.core.UIMessage
 import io.zer0.common.AppJson
 import io.zer0.common.Logger
 import io.zer0.muse.R
+import io.zer0.muse.chat.InternalPromptMarkers
 import io.zer0.muse.data.SecureKeyStore
 import io.zer0.muse.data.SettingsRepository
 import io.zer0.muse.data.assistant.AssistantEntity
@@ -45,7 +46,7 @@ internal data class ChannelAgentCheckpoint(
 internal const val CHANNEL_AGENT_CHECKPOINT_UNREADABLE = "CHECKPOINT_UNREADABLE"
 
 /** 排队超窗预检的终态错误码：被动回复窗口已被队列等待耗尽。 */
-internal const val REPLY_WINDOW_EXPIRED_BY_QUEUE = "被动回复窗口已过期(排队超时)"
+internal const val REPLY_WINDOW_EXPIRED_BY_QUEUE = "The passive-reply window has expired (queue timeout)"
 
 /**
  * 排队超窗预检：被动回复窗口是否已被队列等待耗尽。
@@ -57,7 +58,7 @@ internal fun queuedReplyWindowExpired(inbound: ChannelInbox.Inbound, nowMillis: 
     nowMillis >= ChannelAutoReply.replyWindowDeadlineMillis(inbound.platform, inbound.timestamp)
 
 internal class ChannelAgentCheckpointUnreadableException(cause: Throwable) :
-    IllegalStateException("渠道 Agent 恢复断点不可读取", cause)
+    IllegalStateException("Channel Agent resume checkpoint is unreadable", cause)
 
 private sealed interface ChannelAgentRunResult {
     data class Ready(val text: String) : ChannelAgentRunResult
@@ -94,9 +95,9 @@ internal suspend fun encryptChannelAgentCheckpoint(checkpoint: ChannelAgentCheck
 internal suspend fun decryptChannelAgentCheckpoint(encrypted: String): ChannelAgentCheckpoint {
     return try {
         val plaintext = SecureKeyStore.decryptOrNull(encrypted)
-            ?: error("无法解密渠道 Agent 恢复断点")
+            ?: error("Cannot decrypt the Channel Agent resume checkpoint")
         if (!plaintext.startsWith(AGENT_CHECKPOINT_PREFIX)) {
-            error("渠道 Agent 恢复断点格式不匹配")
+            error("Channel Agent resume checkpoint format mismatch")
         }
         AppJson.decodeFromString(
             ChannelAgentCheckpoint.serializer(),
@@ -156,7 +157,7 @@ class ChannelAutoReply(
                     try {
                         ChannelInbox.journal.recoverInterruptedDispatches()
                     } catch (error: Exception) {
-                        Logger.e(TAG, "恢复中断的渠道事件失败: ${error.message}", error)
+                        Logger.e(TAG, "Restoring the interrupted channel event failed: ${error.message}", error)
                         kotlinx.coroutines.delay(DISPATCH_STATE_RETRY_DELAY_MS)
                         continue
                     }
@@ -183,7 +184,7 @@ class ChannelAutoReply(
     private suspend fun claimNextPendingOrDelay(): ChannelInbox.Inbound? = try {
         ChannelInbox.journal.claimNextPending()
     } catch (error: Exception) {
-        Logger.e(TAG, "领取渠道入站事件失败: ${error.message}", error)
+        Logger.e(TAG, "Claiming the channel inbound event failed: ${error.message}", error)
         kotlinx.coroutines.delay(DISPATCH_STATE_RETRY_DELAY_MS)
         null
     }
@@ -197,7 +198,7 @@ class ChannelAutoReply(
             runCatching { ChannelInbox.journal.releaseDispatch(inbound.dispatchId) }
             throw error
         } catch (error: Exception) {
-            Logger.w(TAG, "自动回复处理异常,稍后重试: ${error.message}", error)
+            Logger.w(TAG, "Auto-reply processing exception, retrying later: ${error.message}", error)
             HandleResult.Retry
         }
         return persistOutcome(inbound, outcome)
@@ -210,7 +211,7 @@ class ChannelAutoReply(
                 ChannelInbox.journal.completeDispatch(inbound.dispatchId, ignored = false)
                 appScope.launch {
                     runCatching { maybeCompress(outcome.config, outcome.from) }
-                        .onFailure { error -> Logger.w(TAG, "上下文压缩失败: ${error.message}") }
+                        .onFailure { error -> Logger.w(TAG, "Context compression failed: ${error.message}") }
                 }
             }
             HandleResult.Ignored -> ChannelInbox.journal.completeDispatch(inbound.dispatchId, ignored = true)
@@ -219,7 +220,7 @@ class ChannelAutoReply(
         }
         true
     } catch (error: Exception) {
-        Logger.e(TAG, "自动回复派发状态落盘失败: ${error.message}", error)
+        Logger.e(TAG, "Persisting the auto-reply dispatch state failed: ${error.message}", error)
         false
     }
 
@@ -240,8 +241,8 @@ class ChannelAutoReply(
             val deadline = replyDeadline(inbound)
             Logger.w(
                 TAG,
-                "入站消息排队超窗,跳过模型调用(platform=${inbound.platform}, from=${inbound.from}, " +
-                    "等待 ${now - inbound.timestamp}ms, deadline=$deadline, now=$now)",
+                "Inbound message queued beyond the window; skipping the model call (platform=${inbound.platform}, from=${inbound.from}, " +
+                    "waited ${now - inbound.timestamp}ms, deadline=$deadline, now=$now)",
             )
             return HandleResult.Blocked(REPLY_WINDOW_EXPIRED_BY_QUEUE)
         }
@@ -272,7 +273,7 @@ class ChannelAutoReply(
             is ChannelAgentRunResult.Blocked -> ReplyPreparation.Blocked(generated.errorCode)
             ChannelAgentRunResult.Retry -> ReplyPreparation.Retry
             is ChannelAgentRunResult.Ready -> if (generated.text.isBlank()) {
-                Logger.w(TAG, "模型返回空回复,本条入站消息标记为忽略")
+                Logger.w(TAG, "The model returned an empty reply; this inbound message is marked as ignored")
                 ReplyPreparation.Ignored
             } else if (ChannelInbox.journal.savePreparedReply(inbound.dispatchId, generated.text)) {
                 ReplyPreparation.Ready(generated.text)
@@ -316,7 +317,7 @@ class ChannelAutoReply(
     ): HandleResult {
         val segments = ChannelReplyFormatter.plan(reply)
         if (segments.isEmpty()) {
-            Logger.w(TAG, "回复整形后为空,本条标记为忽略")
+            Logger.w(TAG, "Reply is empty after shaping; this message is marked as ignored")
             return HandleResult.Ignored
         }
         val qqEventIdOverride = qqReplyEventIdOverride(
@@ -366,7 +367,7 @@ class ChannelAutoReply(
         lastError: String?,
     ): HandleResult {
         if (sent == 0) {
-            Logger.w(TAG, "自动回复发送失败(${inbound.platform}): $lastError")
+            Logger.w(TAG, "Auto-reply sending failed (${inbound.platform}): $lastError")
             return if (QqSendErrorMapper.isPermanent(lastError)) {
                 HandleResult.Blocked(lastError.orEmpty())
             } else {
@@ -384,8 +385,8 @@ class ChannelAutoReply(
                 dispatchId = inbound.dispatchId,
             ),
         )
-        val partial = if (sent < segments.size) "（${sent}/${segments.size} 段）" else ""
-        Logger.i(TAG, "自动回复已发送${partial}(${inbound.platform} ← ${inbound.from})")
+        val partial = if (sent < segments.size) " (${sent}/${segments.size} segments)" else ""
+        Logger.i(TAG, "Auto-reply sent${partial} (${inbound.platform} ← ${inbound.from})")
         return HandleResult.Sent(config, inbound.from)
     }
 
@@ -438,7 +439,7 @@ class ChannelAutoReply(
         } catch (error: kotlin.coroutines.cancellation.CancellationException) {
             throw error
         } catch (error: Exception) {
-            Logger.e(TAG, "回发上下文令牌解密失败(${inbound.platform}): ${error.message}", error)
+            Logger.e(TAG, "Decrypting the reply-back context token failed (${inbound.platform}): ${error.message}", error)
             return ContextTokenOverride.DecryptFailed("context_token_unreadable")
         }
         return ContextTokenOverride.Value(restored)
@@ -455,7 +456,7 @@ class ChannelAutoReply(
         val restoredCheckpoint = try {
             loadAgentCheckpoint(dispatchId)
         } catch (error: ChannelAgentCheckpointUnreadableException) {
-            Logger.e(TAG, "渠道 Agent 恢复断点不可读取,转人工复核: ${error.message}", error)
+            Logger.e(TAG, "Channel Agent resume checkpoint is unreadable, escalating to manual review: ${error.message}", error)
             return ChannelAgentRunResult.Blocked(CHANNEL_AGENT_CHECKPOINT_UNREADABLE)
         }
         return try {
@@ -522,7 +523,7 @@ class ChannelAutoReply(
                 }
             }
             if (finalText == null && plainFallback.isBlank() && round > 0) {
-                Logger.w(TAG, "被动回复窗口耗尽且无可用文本，本次不发送 | dispatchId=$dispatchId")
+                Logger.w(TAG, "Passive-reply window exhausted and no usable text; not sending this time | dispatchId=$dispatchId")
             }
             // 轮次用尽仍未收口时,回退最后一次纯文本输出。
             val text = io.zer0.muse.transformer.stripThinkTags(finalText ?: plainFallback)
@@ -532,10 +533,10 @@ class ChannelAutoReply(
         } catch (error: CancellationException) {
             throw error
         } catch (error: ChannelAgentCheckpointUnreadableException) {
-            Logger.e(TAG, "渠道 Agent 恢复断点不可读取,转人工复核: ${error.message}", error)
+            Logger.e(TAG, "Channel Agent resume checkpoint is unreadable, escalating to manual review: ${error.message}", error)
             ChannelAgentRunResult.Blocked(CHANNEL_AGENT_CHECKPOINT_UNREADABLE)
         } catch (error: Exception) {
-            Logger.w(TAG, "自动回复生成失败: ${error.message}")
+            Logger.w(TAG, "Auto-reply generation failed: ${error.message}")
             ChannelAgentRunResult.Retry
         }
     }
@@ -554,7 +555,7 @@ class ChannelAutoReply(
                 add(UIMessage(role = MessageRole.SYSTEM, content = renderedSystem))
             }
             conversation?.summary?.takeIf { it.isNotBlank() }?.let { summary ->
-                add(UIMessage(role = MessageRole.SYSTEM, content = "更早的对话摘要：$summary"))
+                add(UIMessage(role = MessageRole.SYSTEM, content = "Summary of the earlier conversation: $summary"))
             }
             contextTurns.forEach { turn ->
                 add(buildInitialAgentTurn(config, from, turn, imageContext))
@@ -585,16 +586,16 @@ class ChannelAutoReply(
                 imageContext.visionCapable && turn.at in imageContext.recentNativeAts ->
                     UIMessage(
                         role = role,
-                        content = turn.text.ifBlank { "[图片]" },
+                        content = turn.text.ifBlank { "[Image]" },
                         imageBase64List = listOf(turn.mediaBase64),
                     )
                 !imageContext.visionCapable && turn.at in imageContext.recentFallbackAts ->
                     UIMessage(role = role, content = resolveImageContent(config, from, turn))
                 turn.mediaDescription.isNotBlank() -> UIMessage(role = role, content = turn.mediaDescription)
-                else -> UIMessage(role = role, content = turn.text.ifBlank { "[图片]" })
+                else -> UIMessage(role = role, content = turn.text.ifBlank { "[Image]" })
             }
         } else {
-            UIMessage(role = role, content = turn.text.ifBlank { "[空]" })
+            UIMessage(role = role, content = turn.text.ifBlank { "[Empty]" })
         }
     }
 
@@ -667,8 +668,8 @@ class ChannelAutoReply(
             checkpoint.sideEffectOutcomeUnknown && risk == ToolRiskLevel.NORMAL ->
                 TOOL_BLOCKED_AFTER_UNCERTAIN_ACTION
             !mayExecuteChannelToolCall(toolCall.name, offeredToolNames, risk) -> {
-                Logger.w(TAG, "拒绝执行未授权或需审批的渠道工具: ${toolCall.name}")
-                "工具未授权或需要交互审批，渠道自动回复未执行"
+                Logger.w(TAG, "Refusing to execute an unauthorized or approval-requiring channel tool: ${toolCall.name}")
+                "The tool is unauthorized or requires interactive approval; the channel auto-reply did not execute it"
             }
             else -> {
                 if (risk == ToolRiskLevel.NORMAL) {
@@ -705,7 +706,7 @@ class ChannelAutoReply(
             ),
         )
         persistAgentCheckpoint(updated)
-        Logger.i(TAG, "渠道工具调用: ${toolCall.name}")
+        Logger.i(TAG, "Channel tool call: ${toolCall.name}")
         return updated
     }
 
@@ -726,7 +727,7 @@ class ChannelAutoReply(
             throw error
         } catch (error: Exception) {
             ChannelToolExecution(
-                content = "工具执行失败: ${error.message}",
+                content = "Tool execution failed: ${error.message}",
                 outcomeUnknown = channelToolResultUnknown(
                     risk = risk,
                     executionThrew = true,
@@ -742,7 +743,7 @@ class ChannelAutoReply(
         if (encrypted.isBlank()) return null
         return try {
             decryptChannelAgentCheckpoint(encrypted).also {
-                check(it.dispatchId == dispatchId) { "渠道 Agent 恢复断点派发 ID 不匹配" }
+                check(it.dispatchId == dispatchId) { "Channel Agent resume checkpoint dispatch ID mismatch" }
             }
         } catch (error: CancellationException) {
             throw error
@@ -754,7 +755,7 @@ class ChannelAutoReply(
     private suspend fun persistAgentCheckpoint(checkpoint: ChannelAgentCheckpoint) {
         val encrypted = encryptChannelAgentCheckpoint(checkpoint)
         check(ChannelInbox.journal.saveEncryptedAgentCheckpoint(checkpoint.dispatchId, encrypted)) {
-            "渠道 Agent 恢复断点未能持久化"
+            "Channel Agent resume checkpoint could not be persisted"
         }
     }
 
@@ -765,7 +766,7 @@ class ChannelAutoReply(
     private fun resolveToolDefinitions(assistant: AssistantEntity): List<ToolDefinition> {
         val configured = parseChannelToolAllowlist(assistant.toolIdsJson)
         if (configured == null) {
-            Logger.w(TAG, "助手工具白名单格式无效，渠道自动回复不暴露工具")
+            Logger.w(TAG, "Assistant tool allowlist format is invalid; the channel auto-reply exposes no tools")
             return emptyList()
         }
         return runCatching {
@@ -776,7 +777,7 @@ class ChannelAutoReply(
                 selectedByTool && notGroupChatTool && notHighRisk
             }
         }.onFailure { e ->
-            Logger.w(TAG, "工具集解析失败: ${e.message}")
+            Logger.w(TAG, "Tool set parsing failed: ${e.message}")
         }.getOrDefault(emptyList())
     }
 
@@ -788,7 +789,7 @@ class ChannelAutoReply(
         if (turn.mediaDescription.isNotBlank()) return turn.mediaDescription
         val prepared = runCatching {
             visionBridge.prepare(
-                text = turn.text.ifBlank { "[图片]" },
+                text = turn.text.ifBlank { "[Image]" },
                 images = listOf(turn.mediaBase64),
                 userRequest = turn.text,
             )
@@ -798,7 +799,7 @@ class ChannelAutoReply(
             ChannelConversationStore.updateTurnDescription(config.id, from, turn.at, text)
             return text
         }
-        return "[图片(视觉辅助暂不可用)]" + if (turn.text.isNotBlank()) "\n${turn.text}" else ""
+        return "[Image (vision assistance temporarily unavailable)]" + if (turn.text.isNotBlank()) "\n${turn.text}" else ""
     }
 
     /**
@@ -824,13 +825,13 @@ class ChannelAutoReply(
         }
         val prompt = buildString {
             if (conversation.summary.isNotBlank()) {
-                appendLine("已有摘要：${conversation.summary}")
+                appendLine("Existing summary: ${conversation.summary}")
             }
-            appendLine("新增对话：")
+            appendLine("New conversation:")
             toCompress.forEach { turn ->
-                appendLine("${if (turn.role == "assistant") "助手" else "用户"}：${turn.text}")
+                appendLine("${if (turn.role == "assistant") InternalPromptMarkers.ROLE_ASSISTANT else InternalPromptMarkers.ROLE_USER}: ${turn.text}")
             }
-            appendLine("请把上述内容合并成一段简洁的中文对话摘要，保留关键信息、称呼与待办。只输出摘要正文。")
+            appendLine("Please merge the above content into one concise Chinese conversation summary, preserving the key information, forms of address and to-dos. Output only the summary body.")
         }
         val summary = withTimeoutOrNull(COMPRESS_TIMEOUT_MS) {
             chatService.completeText(
@@ -853,9 +854,9 @@ class ChannelAutoReply(
                 summary = summary.take(SUMMARY_MAX_CHARS),
             )
         if (applied) {
-            Logger.i(TAG, "上下文已压缩(${config.id} ← $from): ${toCompress.size} 轮并入摘要")
+            Logger.i(TAG, "Context compressed (${config.id} ← $from): ${toCompress.size} turns merged into the summary")
         } else {
-            Logger.i(TAG, "压缩结果未写入(${config.id} ← $from): 对话已被更新,留待下次重试")
+            Logger.i(TAG, "Compression result not written (${config.id} ← $from): the conversation has been updated; leaving it for the next retry")
         }
     }
 
@@ -911,7 +912,7 @@ class ChannelAutoReply(
                 ),
             ).firstOrNull()?.content
         }.onFailure { e ->
-            Logger.w(TAG, "系统提示词模板渲染失败: ${e.message}")
+            Logger.w(TAG, "System prompt template rendering failed: ${e.message}")
         }.getOrNull()
         return rendered?.takeIf { it.isNotBlank() } ?: raw
     }

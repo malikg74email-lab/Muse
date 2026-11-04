@@ -65,7 +65,7 @@ class GroupChatRepository(
      * + [getOlderMessages](上滑加载更多)分页方案。本方法保留向后兼容,不在新代码中使用。
      */
     @Deprecated(
-        "全量观察长群聊有 OOM 风险,改用 getPagedMessages / getRecentMessagesPaged + getOlderMessages 分页加载。",
+        "Observing a long group chat in full carries an OOM risk; use getPagedMessages / getRecentMessagesPaged + getOlderMessages for paged loading instead.",
         ReplaceWith("getPagedMessages(chatId)"),
     )
     fun observeMessages(chatId: String): Flow<List<GroupChatMessageEntity>> =

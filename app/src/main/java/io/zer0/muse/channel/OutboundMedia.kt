@@ -74,16 +74,16 @@ fun ChannelPlatform.checkMediaSendable(media: OutboundMedia): String? {
     }
     return when {
         !caps.supports(media.kind) ->
-            "$name 不支持发送 ${media.kind.name.lowercase()}"
+            "$name does not support sending ${media.kind.name.lowercase()}"
         mode !in caps.inputModes ->
-            "$name 不支持以 ${mode.name.lowercase()} 方式发送"
+            "$name does not support sending via ${mode.name.lowercase()}"
         else -> {
             val limit = caps.limitFor(mode, media.kind)
             if (actual > 0L && limit > 0L && actual > limit) {
                 val mb = actual / (1024.0 * 1024.0)
                 val limitMb = limit / (1024.0 * 1024.0)
-                "$name 的 ${media.kind.name.lowercase()} 上限是 " +
-                    "${"%.1f".format(limitMb)}MB，当前 ${"%.1f".format(mb)}MB"
+                "$name's ${media.kind.name.lowercase()} limit is " +
+                    "${"%.1f".format(limitMb)}MB, currently ${"%.1f".format(mb)}MB"
             } else {
                 null
             }

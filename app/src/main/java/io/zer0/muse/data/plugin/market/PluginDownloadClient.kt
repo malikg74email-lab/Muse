@@ -36,19 +36,19 @@ internal class PluginDownloadClient(
         val expectedSha = entry.artifactSha256.lowercase()
         return try {
             if (!stagingDir.exists() && !stagingDir.mkdirs()) {
-                return DownloadResult(error = "无法创建插件缓存目录")
+                return DownloadResult(error = "Could not create the plugin cache directory")
             }
             val response = httpClient.getBytes(entry.artifactUrl, maxArtifactBytes)
             if (response.status !in 200..299) {
-                return DownloadResult(error = "插件下载失败: HTTP ${response.status}")
+                return DownloadResult(error = "Plugin download failed: HTTP ${response.status}")
             }
             val bytes = response.body
             if (bytes.size.toLong() > maxArtifactBytes) {
-                return DownloadResult(error = "插件包超过大小限制")
+                return DownloadResult(error = "Plugin package exceeds the size limit")
             }
             val actual = sha256Hex(bytes)
             if (!actual.equals(expectedSha, ignoreCase = true)) {
-                return DownloadResult(error = "插件包摘要与目录不一致")
+                return DownloadResult(error = "Plugin package digest does not match the catalog")
             }
             val target = File(stagingDir, stagedFileName(entry))
             target.writeBytes(bytes)
@@ -56,8 +56,8 @@ internal class PluginDownloadClient(
         } catch (cancellation: kotlinx.coroutines.CancellationException) {
             throw cancellation
         } catch (error: Exception) {
-            Logger.w("PluginDownloadClient", "插件下载失败: ${entry.id}", error)
-            DownloadResult(error = error.message ?: "插件下载失败")
+            Logger.w("PluginDownloadClient", "Plugin download failed: ${entry.id}", error)
+            DownloadResult(error = error.message ?: "Plugin download failed")
         }
     }
 

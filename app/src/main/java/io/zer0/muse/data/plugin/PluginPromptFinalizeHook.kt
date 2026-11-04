@@ -55,24 +55,24 @@ internal class PluginPromptFinalizeHook(
             runCatching { invokeHook(event) }
                 .getOrElse { e ->
                     if (e is CancellationException) throw e
-                    Logger.w(TAG, "插件 prompt_finalize 执行失败(保留原历史): ${e.message}")
+                    Logger.w(TAG, "Plugin prompt_finalize execution failed (keeping the original history):  ${e.message}")
                     return fallback(event)
                 }
         if (result is SkillEngineResult.Error) {
-            Logger.w(TAG, "插件 prompt_finalize 出错(保留原历史): ${result.message}")
+            Logger.w(TAG, "Plugin prompt_finalize errored (keeping the original history):  ${result.message}")
             return fallback(event)
         }
         val raw = (result as SkillEngineResult.Success).valueJson
         val parsed = parseHistory(raw)
             ?: run {
-                Logger.d(TAG, "插件 prompt_finalize 无有效返回(保留原历史)")
+                Logger.d(TAG, "Plugin prompt_finalize returned nothing valid (keeping the original history)")
                 return fallback(event)
             }
         if (parsed.isEmpty()) {
-            Logger.w(TAG, "插件 prompt_finalize 返回空历史(保留原历史,防空上下文)")
+            Logger.w(TAG, "Plugin prompt_finalize returned an empty history (keeping the original history to avoid an empty context)")
             return fallback(event)
         }
-        Logger.d(TAG, "插件 prompt_finalize 应用: ${event.preparedHistory.size} → ${parsed.size} 条")
+        Logger.d(TAG, "Plugin prompt_finalize applied:  ${event.preparedHistory.size} → ${parsed.size}  entries")
         return PromptFinalizeResult(parsed)
     }
 

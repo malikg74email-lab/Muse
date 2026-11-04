@@ -48,14 +48,14 @@ object AvatarStorage {
                         total += read
                         if (total > MAX_AVATAR_BYTES) {
                             runCatching { target.delete() }
-                            Logger.w(TAG, "头像超过 ${MAX_AVATAR_BYTES / 1024 / 1024}MB 上限,已拒绝")
+                            Logger.w(TAG, "Avatar exceeds the ${MAX_AVATAR_BYTES / 1024 / 1024}MB limit; rejected")
                             return@withContext null
                         }
                         output.write(buf, 0, read)
                     }
                 }
             } ?: run {
-                Logger.w(TAG, "openInputStream 返回 null: $sourceUri")
+                Logger.w(TAG, "openInputStream returned null: $sourceUri")
                 return@withContext null
             }
 

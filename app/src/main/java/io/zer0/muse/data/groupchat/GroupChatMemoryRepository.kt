@@ -56,7 +56,7 @@ class GroupChatMemoryRepository(
     ): GroupChatMemoryEntity = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val latest = resultOf { dao.getByAssistantAndChat(assistantId, groupChatId, 1) }
-            .onError { msg, t -> Logger.w(TAG, "群聊记忆去重查询失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Group chat memory dedup query failed: $msg", t) }
             .getOrNull()?.firstOrNull()
         if (latest != null && now - latest.createdAt < dedupWindowMs) {
             // B-18: 窗口内已有摘要,跳过重复写入(轮转各成员发言产生的摘要高度相似)
@@ -71,7 +71,7 @@ class GroupChatMemoryRepository(
             expiresAt = expiresAt,
         )
         resultOf { dao.insert(memory) }
-            .onError { msg, t -> Logger.w(TAG, "写入群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to write group chat memory: $msg", t) }
         memory
     }
 
@@ -84,7 +84,7 @@ class GroupChatMemoryRepository(
      */
     suspend fun getByAssistant(assistantId: String, limit: Int = 10): List<GroupChatMemoryEntity> = withContext(Dispatchers.IO) {
         resultOf { dao.getByAssistant(assistantId, limit) }
-            .onError { msg, t -> Logger.w(TAG, "读取群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read group chat memory: $msg", t) }
             .getOrNull() ?: emptyList()
     }
 
@@ -96,14 +96,14 @@ class GroupChatMemoryRepository(
     suspend fun getByAssistantAndChat(assistantId: String, groupChatId: String, limit: Int = 10): List<GroupChatMemoryEntity> =
         withContext(Dispatchers.IO) {
             resultOf { dao.getByAssistantAndChat(assistantId, groupChatId, limit) }
-                .onError { msg, t -> Logger.w(TAG, "读取群聊记忆失败: $msg", t) }
+                .onError { msg, t -> Logger.w(TAG, "Failed to read group chat memory: $msg", t) }
                 .getOrNull() ?: emptyList()
         }
 
     /** 取指定群聊的全部记忆(供群聊详情页展示)。 */
     suspend fun getByGroupChat(groupChatId: String): List<GroupChatMemoryEntity> = withContext(Dispatchers.IO) {
         resultOf { dao.getByGroupChat(groupChatId) }
-            .onError { msg, t -> Logger.w(TAG, "读取群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read group chat memory: $msg", t) }
             .getOrNull() ?: emptyList()
     }
 
@@ -114,31 +114,31 @@ class GroupChatMemoryRepository(
     suspend fun cleanupOlderThan(days: Int = 30) = withContext(Dispatchers.IO) {
         val before = System.currentTimeMillis() - days * 86_400_000L
         resultOf { dao.deleteOlderThan(before) }
-            .onError { msg, t -> Logger.w(TAG, "清理群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to clean group chat memory: $msg", t) }
     }
 
     /** 删除指定群聊的全部记忆(群聊删除时级联调用)。 */
     suspend fun deleteByGroupChat(groupChatId: String) = withContext(Dispatchers.IO) {
         resultOf { dao.deleteByGroupChat(groupChatId) }
-            .onError { msg, t -> Logger.w(TAG, "删除群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to delete group chat memory: $msg", t) }
     }
 
     /** v1.0.72: 查询全部群聊记忆(记忆中心展示)。 */
     suspend fun getAll(): List<GroupChatMemoryEntity> = withContext(Dispatchers.IO) {
         resultOf { dao.getAll() }
-            .onError { msg, t -> Logger.w(TAG, "读取全部群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read all group chat memories: $msg", t) }
             .getOrNull() ?: emptyList()
     }
 
     /** v1.0.72: 删除单条群聊记忆(记忆中心单条删除)。 */
     suspend fun deleteById(id: String) = withContext(Dispatchers.IO) {
         resultOf { dao.deleteById(id) }
-            .onError { msg, t -> Logger.w(TAG, "删除单条群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to delete a single group chat memory: $msg", t) }
     }
 
     /** v1.0.72: 清空全部群聊记忆(记忆中心一键清空)。 */
     suspend fun deleteAll() = withContext(Dispatchers.IO) {
         resultOf { dao.deleteAll() }
-            .onError { msg, t -> Logger.w(TAG, "清空全部群聊记忆失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to clear all group chat memories: $msg", t) }
     }
 }

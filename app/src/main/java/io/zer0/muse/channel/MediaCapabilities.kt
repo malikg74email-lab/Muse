@@ -35,19 +35,19 @@ data class MediaCapabilities(
 ) {
     /** 结构自检。声明不完整直接抛错，不留给运行时。 */
     fun validate(platform: String) {
-        require(inputModes.isNotEmpty()) { "$platform: mediaCapabilities.inputModes 不能为空" }
-        require(supportedKinds.isNotEmpty()) { "$platform: mediaCapabilities.supportedKinds 不能为空" }
+        require(inputModes.isNotEmpty()) { "$platform: mediaCapabilities.inputModes must not be empty" }
+        require(supportedKinds.isNotEmpty()) { "$platform: mediaCapabilities.supportedKinds must not be empty" }
         supportedKinds.forEach { kind ->
             require(deliveryByKind.containsKey(kind)) {
-                "$platform: mediaCapabilities.deliveryByKind 缺少 $kind"
+                "$platform: mediaCapabilities.deliveryByKind is missing $kind"
             }
         }
         inputModes.forEach { mode ->
             val perKind = maxBytes[mode]
-            requireNotNull(perKind) { "$platform: mediaCapabilities.maxBytes 缺少输入方式 $mode" }
+            requireNotNull(perKind) { "$platform: mediaCapabilities.maxBytes is missing input mode $mode" }
             supportedKinds.forEach { kind ->
                 require((perKind[kind] ?: 0L) > 0L) {
-                    "$platform: mediaCapabilities.maxBytes[$mode] 缺少 $kind 的上限"
+                    "$platform: mediaCapabilities.maxBytes[$mode] is missing the limit for $kind"
                 }
             }
         }

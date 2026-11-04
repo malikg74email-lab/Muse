@@ -91,22 +91,22 @@ class StickerLibraryRepository(private val appContext: Context) {
             val displayName = queryDisplayName(uri)
             Logger.i("StickerLibraryRepository", "importUri: uri=$uri, displayName=$displayName")
             if (displayName.isNullOrBlank()) {
-                Logger.w("StickerLibraryRepository", "importUri: 无法获取文件名,尝试按 ZIP 处理")
+                Logger.w("StickerLibraryRepository", "importUri: could not get the file name, trying to handle it as a ZIP")
                 return@withContext importZip(uri, onProgress)
             }
             val lowerName = displayName.lowercase()
             when {
                 lowerName.endsWith(".zip") -> {
-                    Logger.i("StickerLibraryRepository", "importUri: 识别为 ZIP 文件,调用 importZip")
+                    Logger.i("StickerLibraryRepository", "importUri: recognised as a ZIP file, calling importZip")
                     importZip(uri, onProgress)
                 }
                 isImageFile(displayName) -> {
-                    Logger.i("StickerLibraryRepository", "importUri: 识别为单张图片,调用 importImage")
+                    Logger.i("StickerLibraryRepository", "importUri: recognised as a single image, calling importImage")
                     importImage(uri, displayName, onProgress)
                 }
                 else -> {
-                    Logger.w("StickerLibraryRepository", "importUri: 不支持的文件类型: $displayName")
-                    Result.Error("不支持的文件类型: $displayName(仅支持 ZIP 压缩包或 png/jpg/jpeg/gif/webp/bmp 图片)")
+                    Logger.w("StickerLibraryRepository", "importUri: unsupported file type: $displayName")
+                    Result.Error("Unsupported file type: $displayName (only ZIP archives or png/jpg/jpeg/gif/webp/bmp images are supported)")
                 }
             }
         }
@@ -124,9 +124,9 @@ class StickerLibraryRepository(private val appContext: Context) {
         onProgress: ((phase: String, done: Int, total: Int?) -> Unit)? = null,
     ): Result<Int> = withContext(Dispatchers.IO) {
         resultOf {
-            Logger.i("StickerLibraryRepository", "importImage: 开始导入单张图片, uri=$uri, name=$displayName")
+            Logger.i("StickerLibraryRepository", "importImage: starting import of a single image, uri=$uri, name=$displayName")
             val now = System.currentTimeMillis()
-            val category = "默认"
+            val category = "Default"
             val targetDir = File(rootDir, category).apply { mkdirs() }
 
             // 文件名冲突时附加短 uuid 后缀
@@ -138,18 +138,18 @@ class StickerLibraryRepository(private val appContext: Context) {
                 val ext = if (dotIdx > 0) displayName.substring(dotIdx) else ""
                 finalName = "${base}_${UUID.randomUUID().toString().take(6)}$ext"
                 targetFile = File(targetDir, finalName)
-                Logger.i("StickerLibraryRepository", "importImage: 文件名冲突,重命名为 $finalName")
+                Logger.i("StickerLibraryRepository", "importImage: file name conflict, renamed to $finalName")
             }
 
             // 读取图片并写入目标文件
             appContext.contentResolver.openInputStream(uri).use { input ->
-                if (input == null) error("无法打开所选图片")
+                if (input == null) error("Could not open the selected image")
                 targetFile.outputStream().use { output ->
                     input.copyTo(output)
                 }
             }
             val fileSize = targetFile.length()
-            Logger.i("StickerLibraryRepository", "importImage: 图片已写入 ${targetFile.path} ($fileSize bytes)")
+            Logger.i("StickerLibraryRepository", "importImage: image written to ${targetFile.path} ($fileSize bytes)")
 
             // 写清单
             val item = StickerItem(
@@ -164,10 +164,10 @@ class StickerLibraryRepository(private val appContext: Context) {
                 current.add(item)
                 writeManifest(current)
             }
-            Logger.i("StickerLibraryRepository", "importImage: 导入成功, id=${item.id}")
+            Logger.i("StickerLibraryRepository", "importImage: import succeeded, id=${item.id}")
             1
         }.onError { msg, t ->
-            Logger.w("StickerLibraryRepository", "importImage 失败: $msg", t)
+            Logger.w("StickerLibraryRepository", "importImage failed: $msg", t)
         }
     }
 
@@ -189,7 +189,7 @@ class StickerLibraryRepository(private val appContext: Context) {
             }
         } catch (t: Throwable) {
             if (t is kotlin.coroutines.cancellation.CancellationException) throw t
-            Logger.w("StickerLibraryRepository", "queryDisplayName 失败: ${t.message}")
+            Logger.w("StickerLibraryRepository", "queryDisplayName failed: ${t.message}")
             null
         }
     }
@@ -208,7 +208,7 @@ class StickerLibraryRepository(private val appContext: Context) {
     suspend fun importZip(uri: Uri, onProgress: ((phase: String, done: Int, total: Int?) -> Unit)? = null): Result<Int> =
         withContext(Dispatchers.IO) {
             resultOf {
-                Logger.i("StickerLibraryRepository", "importZip: 开始导入, uri=$uri")
+                Logger.i("StickerLibraryRepository", "importZip: starting import, uri=$uri")
                 val imported = mutableListOf<StickerItem>()
                 val now = System.currentTimeMillis()
                 // v1.0.52: 改为 staging 流式落盘 — 每读一个条目立即写临时目录,
@@ -224,10 +224,10 @@ class StickerLibraryRepository(private val appContext: Context) {
                 try {
                     val input = appContext.contentResolver.openInputStream(uri)
                     if (input == null) {
-                        Logger.w("StickerLibraryRepository", "importZip: ContentResolver 返回 null InputStream")
-                        error("无法打开所选文件")
+                        Logger.w("StickerLibraryRepository", "importZip: ContentResolver returned a null InputStream")
+                        error("Could not open the selected file")
                     }
-                    Logger.i("StickerLibraryRepository", "importZip: InputStream 已打开,开始读取 ZIP 条目")
+                    Logger.i("StickerLibraryRepository", "importZip: InputStream opened, starting to read ZIP entries")
                     input.use { stream ->
                         // v1.112 (F4): 用 GBK charset 构造 ZipInputStream 修复中文文件名乱码。
                         // ZIP 规范:entry 的 EFS 标志位(bit 11)=1 时 ZipInputStream 忽略传入 charset 强制 UTF-8;
@@ -240,7 +240,7 @@ class StickerLibraryRepository(private val appContext: Context) {
                                 entryCount++
                                 // v1.0.54: 解压阶段进度回调(总数未知,先计数)
                                 if (entryCount % 10 == 0) {
-                                    onProgress?.invoke("正在解压", entryCount, null)
+                                    onProgress?.invoke("Extracting", entryCount, null)
                                 }
                                 if (!entry.isDirectory) {
                                     val rawName = entry.name
@@ -249,7 +249,7 @@ class StickerLibraryRepository(private val appContext: Context) {
                                         if (entryCount % 100 == 0) {
                                             Logger.d(
                                                 "StickerLibraryRepository",
-                                                "importZip: 已跳过 $entryCount 个噪声条目(示例: $rawName)",
+                                                "importZip: skipped $entryCount noise entries (example: $rawName)",
                                             )
                                         }
                                         zis.closeEntry()
@@ -262,18 +262,18 @@ class StickerLibraryRepository(private val appContext: Context) {
                                         if (entryCount % 100 == 0) {
                                             Logger.d(
                                                 "StickerLibraryRepository",
-                                                "importZip: 已发现 $entryCount 个条目,当前图片: $rawName",
+                                                "importZip: found $entryCount entries so far, current image: $rawName",
                                             )
                                         }
                                         // v1.117: 数量限制
                                         if (pendingEntries.size >= MAX_ENTRY_COUNT) {
-                                            error("压缩包内图片数量超过限制 $MAX_ENTRY_COUNT,已中止导入")
+                                            error("The number of images in the archive exceeds the limit of $MAX_ENTRY_COUNT; import aborted")
                                         }
                                         // v1.117: 带大小限制的读取,防 ZIP 炸弹单条目 OOM
                                         val bytes = readZipEntryWithLimit(zis, MAX_SINGLE_ENTRY_BYTES, rawName)
                                         totalBytes += bytes.size
                                         if (totalBytes > MAX_TOTAL_IMPORT_BYTES) {
-                                            error("压缩包累计体积超过限制 ${MAX_TOTAL_IMPORT_BYTES / 1024 / 1024}MB,已中止导入")
+                                            error("The archive's total size exceeds the limit of ${MAX_TOTAL_IMPORT_BYTES / 1024 / 1024}MB; import aborted")
                                         }
                                         // 立即写 staging 临时文件,bytes 可被 GC,内存峰值 = 单张图
                                         val stagingFile = File(stagingDir, "${pendingEntries.size}_$fileName")
@@ -283,7 +283,7 @@ class StickerLibraryRepository(private val appContext: Context) {
                                         if (entryCount % 100 == 0) {
                                             Logger.d(
                                                 "StickerLibraryRepository",
-                                                "importZip: 已跳过 $entryCount 个条目(当前非图片: $rawName)",
+                                                "importZip: skipped $entryCount entries (current non-image: $rawName)",
                                             )
                                         }
                                     }
@@ -291,20 +291,20 @@ class StickerLibraryRepository(private val appContext: Context) {
                                 zis.closeEntry()
                                 entry = zis.nextEntry
                             }
-                            Logger.i("StickerLibraryRepository", "importZip: ZIP 读取完成,共 $entryCount 个条目,其中 ${pendingEntries.size} 个图片")
+                            Logger.i("StickerLibraryRepository", "importZip: ZIP read complete, $entryCount entries in total, ${pendingEntries.size} of them images")
                         }
                     }
 
-                    if (pendingEntries.isEmpty()) error("压缩包内未找到图片文件(png/jpg/jpeg/gif/webp/bmp)")
+                    if (pendingEntries.isEmpty()) error("No image files found in the archive (png/jpg/jpeg/gif/webp/bmp)")
 
-                    Logger.i("StickerLibraryRepository", "importZip: 开始写入正式目录和清单")
+                    Logger.i("StickerLibraryRepository", "importZip: starting to write the final directory and manifest")
                     // staging → 正式目录 + 写清单(锁内完成,失败抛异常走 finally 清理)
                     manifestMutex.withLock {
                         val current = readManifest().toMutableList()
                         for ((idx, pe) in pendingEntries.withIndex()) {
                             // v1.0.54: 写入阶段进度(总数已知)
                             if (idx % 10 == 0) {
-                                onProgress?.invoke("正在写入", idx, pendingEntries.size)
+                                onProgress?.invoke("Writing", idx, pendingEntries.size)
                             }
                             // 文件名冲突时附加短 uuid 后缀,避免覆盖
                             val targetDir = File(rootDir, pe.category).apply { mkdirs() }
@@ -314,7 +314,7 @@ class StickerLibraryRepository(private val appContext: Context) {
                             val canonicalTarget = targetFile.canonicalPath
                             val canonicalRoot = rootDir.canonicalPath
                             if (!canonicalTarget.startsWith(canonicalRoot + File.separator)) {
-                                Logger.w("StickerLibraryRepository", "跳过路径穿越条目: ${pe.category}/${pe.fileName} -> $canonicalTarget")
+                                Logger.w("StickerLibraryRepository", "Skipping path-traversal entry: ${pe.category}/${pe.fileName} -> $canonicalTarget")
                                 continue
                             }
                             if (targetFile.exists()) {
@@ -341,15 +341,15 @@ class StickerLibraryRepository(private val appContext: Context) {
                         }
                         writeManifest(current)
                     }
-                    Logger.i("StickerLibraryRepository", "importZip: 导入完成,共 ${imported.size} 张图片")
+                    Logger.i("StickerLibraryRepository", "importZip: import complete, ${imported.size} images in total")
                 } finally {
                     // 无论成败,清理 staging 目录(成功时已空,失败时含半成品)
                     resultOf { stagingDir.deleteRecursively() }
-                        .onError { msg, t -> Logger.w("StickerLibraryRepository", "清理 staging 目录失败: $msg", t) }
+                        .onError { msg, t -> Logger.w("StickerLibraryRepository", "Failed to clean the staging directory: $msg", t) }
                 }
                 imported.size
             }.onError { msg, t ->
-                Logger.w("StickerLibraryRepository", "importZip 失败: $msg", t)
+                Logger.w("StickerLibraryRepository", "importZip failed: $msg", t)
             }
         }
 
@@ -365,7 +365,7 @@ class StickerLibraryRepository(private val appContext: Context) {
             resultOf {
                 val file = File(appContext.filesDir, target.relativePath)
                 if (file.exists()) file.delete()
-            }.onError { msg, t -> Logger.w("StickerLibraryRepository", "删除表情包文件失败: $msg", t) }
+            }.onError { msg, t -> Logger.w("StickerLibraryRepository", "Failed to delete sticker file: $msg", t) }
             current.remove(target)
             writeManifest(current)
             true
@@ -389,7 +389,7 @@ class StickerLibraryRepository(private val appContext: Context) {
                 resultOf {
                     val file = File(appContext.filesDir, item.relativePath)
                     if (file.exists()) file.delete()
-                }.onError { msg, t -> Logger.w("StickerLibraryRepository", "批量删除表情包文件失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("StickerLibraryRepository", "Failed to batch-delete sticker files: $msg", t) }
             }
             current.removeAll(toRemove)
             writeManifest(current)
@@ -412,7 +412,7 @@ class StickerLibraryRepository(private val appContext: Context) {
                 resultOf {
                     val file = File(appContext.filesDir, item.relativePath)
                     if (file.exists()) file.delete()
-                }.onError { msg, t -> Logger.w("StickerLibraryRepository", "删除分类表情包文件失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("StickerLibraryRepository", "Failed to delete category sticker files: $msg", t) }
             }
             // 删除空分类目录
             resultOf {
@@ -437,7 +437,7 @@ class StickerLibraryRepository(private val appContext: Context) {
             // 删除整个 stickers 目录(递归)
             resultOf {
                 if (rootDir.exists()) rootDir.deleteRecursively()
-            }.onError { msg, t -> Logger.w("StickerLibraryRepository", "清空表情包目录失败: $msg", t) }
+            }.onError { msg, t -> Logger.w("StickerLibraryRepository", "Failed to clear the sticker directory: $msg", t) }
             writeManifest(emptyList())
             current.size
         }
@@ -523,7 +523,7 @@ class StickerLibraryRepository(private val appContext: Context) {
         return resultOf {
             AppJson.decodeFromString(ListSerializer(StickerItem.serializer()), manifestFile.readText())
         }.onError { msg, t ->
-            Logger.w("StickerLibraryRepository", "清单解析失败,回退空列表: $msg", t)
+            Logger.w("StickerLibraryRepository", "Manifest parse failed, falling back to an empty list: $msg", t)
         }.getOrNull() ?: emptyList()
     }
 
@@ -558,22 +558,22 @@ class StickerLibraryRepository(private val appContext: Context) {
     private fun parseCategoryAndName(rawName: String): Pair<String, String?> {
         // v1.113: 快速拒绝含 .. 的路径(防 Zip Slip)
         if (rawName.contains("..")) {
-            return "默认" to null // 返回 null fileName 会被调用方跳过
+            return "Default" to null // 返回 null fileName 会被调用方跳过
         }
         // 统一路径分隔符(zip 规范用 "/",部分工具可能用 "\\")
         val normalized = rawName.replace('\\', '/')
         // 按 / 分段,过滤空段(如开头/结尾的斜杠)
         val parts = normalized.split('/').filter { it.isNotBlank() }
-        if (parts.isEmpty()) return "默认" to null
+        if (parts.isEmpty()) return "Default" to null
         val fileName = parts.last().trim()
         if (parts.size == 1) {
             // 根目录直接文件 → 默认分类
-            return "默认" to fileName.ifBlank { null }
+            return "Default" to fileName.ifBlank { null }
         }
         // 取最后一个目录名作为分类:跳过顶层包装目录(如 "表情包/"),
         // 分类名是语义化标签(开心/难过/生气…),模型据此判断发哪类表情包
         val category = parts[parts.size - 2].trim()
-        return (if (category.isBlank()) "默认" else category) to fileName.ifBlank { null }
+        return (if (category.isBlank()) "Default" else category) to fileName.ifBlank { null }
     }
 
     /** 判断文件名是否为支持的图片类型(扩展名不区分大小写)。 */

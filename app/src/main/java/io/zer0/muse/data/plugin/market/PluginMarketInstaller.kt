@@ -22,14 +22,14 @@ internal class PluginMarketInstaller(
 
     suspend fun confirmAndInstall(plan: PluginInstallPlan, trustPublisher: Boolean): Result<PluginManager.InstalledPlugin> {
         if (plan.isExpired(nowEpochMs())) {
-            return Result.failure(IllegalStateException("安装确认已过期，请重新下载"))
+            return Result.failure(IllegalStateException("Installation confirmation has expired; please download again"))
         }
         if (!plan.stagedFile.isFile) {
-            return Result.failure(IllegalStateException("插件包不存在，请重新下载"))
+            return Result.failure(IllegalStateException("Plugin package does not exist; please download again"))
         }
         val actual = sha256Hex(plan.stagedFile)
         if (!actual.equals(plan.artifactSha256, ignoreCase = true)) {
-            return Result.failure(IllegalStateException("插件包在确认后发生变化，请重新下载"))
+            return Result.failure(IllegalStateException("The plugin package changed after confirmation; please download again"))
         }
         return pluginManager.installConfirmedFromFile(
             file = plan.stagedFile,

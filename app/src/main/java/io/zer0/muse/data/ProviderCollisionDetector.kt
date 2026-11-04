@@ -41,7 +41,7 @@ object ProviderCollisionDetector {
                     collisions += ProviderCollision(
                         providerA = a,
                         providerB = b,
-                        reason = "相同 baseUrl 与 API Key",
+                        reason = "Same baseUrl and API Key",
                     )
                 }
             }

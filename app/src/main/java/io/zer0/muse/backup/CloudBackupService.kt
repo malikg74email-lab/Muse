@@ -266,7 +266,7 @@ class CloudBackupService(private val client: OkHttpClient) {
     suspend fun deleteBackup(config: CloudBackupConfig, fileName: String): Boolean = withContext(Dispatchers.IO) {
         if (!config.isConfigured) return@withContext false
         if (fileName == LATEST_FILE_NAME) {
-            Logger.w("CloudBackupService", "拒绝删除 latest 指针文件: $fileName")
+            Logger.w("CloudBackupService", "Refusing to delete the latest pointer file: $fileName")
             return@withContext false
         }
         val acc = createAsyncClient(config) ?: return@withContext false

@@ -49,7 +49,7 @@ class NotificationMemoryScheduler(
             lastProcessedAt = System.currentTimeMillis()
             while (isActive) {
                 runCatching { tickOnce() }
-                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it else Logger.w(TAG, "tick 失败: ${it.message}") }
+                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it else Logger.w(TAG, "tick failed: ${it.message}") }
                 delay(POLL_INTERVAL_MS)
             }
         }
@@ -93,14 +93,14 @@ class NotificationMemoryScheduler(
             spaceId = spaceId,
             model = null,
             // 由 MemoryLlmClient 路由到大工具档
-            locale = settings.getLanguageSync().let { if (it == "system" || it.isBlank()) "zh-CN" else it },
+            locale = settings.getLanguageSync().let { if (it == "system" || it.isBlank()) "en" else it },
         )
         // 无论是否落库，都推进游标，避免同一批通知反复送 LLM。
         lastProcessedAt = fresh.maxOf { it.timestamp }
         if (result.extracted > 0) {
             // 触发一次记忆编译，让新事实进入 memory.md（与 backfill 迁移后的做法一致）。
             resultOf { memoryTicker.tick() }
-                .onError { msg, t -> Logger.w(TAG, "通知落库后 tick() 失败: $msg", t) }
+                .onError { msg, t -> Logger.w(TAG, "tick() failed after the notification was stored: $msg", t) }
         }
         return result
     }

@@ -49,7 +49,7 @@ class McpStdioTransport(
         val argv = when (val r = McpStdioCommand.resolve(config.command, context)) {
             is McpStdioCommand.Result.Ok -> r.argv
             is McpStdioCommand.Result.Error -> {
-                Logger.w(TAG, "[${config.name}] 命令解析失败: ${r.message}")
+                Logger.w(TAG, "[${config.name}] command parsing failed: ${r.message}")
                 return@withContext false
             }
         }
@@ -65,10 +65,10 @@ class McpStdioTransport(
             mountStdout(p)
             mountStderr(p)
             mountExit(p)
-            Logger.i(TAG, "[${config.name}] stdio 进程已启动: ${argv.firstOrNull()}")
+            Logger.i(TAG, "[${config.name}] stdio process started: ${argv.firstOrNull()}")
             true
         }.getOrElse {
-            Logger.e(TAG, "[${config.name}] stdio 启动失败: ${it.message}", it)
+            Logger.e(TAG, "[${config.name}] stdio startup failed: ${it.message}", it)
             stop()
             false
         }
@@ -133,7 +133,7 @@ class McpStdioTransport(
             }
             true
         }.getOrElse {
-            Logger.w(TAG, "[${config.name}] stdin 写入失败: ${it.message}")
+            Logger.w(TAG, "[${config.name}] stdin write failed: ${it.message}")
             false
         }
     }

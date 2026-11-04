@@ -49,19 +49,19 @@ internal class PluginCatalogClient(
 
     fun fetch(catalogUrl: String): CatalogFetchResult {
         val url = catalogUrl.trim()
-        if (url.isEmpty()) return CatalogFetchResult(error = "插件目录未配置")
+        if (url.isEmpty()) return CatalogFetchResult(error = "Plugin catalog not configured")
         if (!url.startsWith(HTTPS_PREFIX)) {
-            return CatalogFetchResult(error = "目录地址必须使用 https://")
+            return CatalogFetchResult(error = "The catalog URL must use https://")
         }
         return try {
             // 多读 1 字节：传输层按上限截断，若返回超过上限说明真实响应超限，必须拒绝。
             val response = transport.getBytes(url, maxCatalogBytes + 1)
             if (response.status !in 200..299) {
-                return CatalogFetchResult(error = "目录请求失败: HTTP ${response.status}")
+                return CatalogFetchResult(error = "Catalog request failed: HTTP ${response.status}")
             }
             val bytes = response.body
             if (bytes.size > maxCatalogBytes) {
-                return CatalogFetchResult(error = "目录体积超过限制")
+                return CatalogFetchResult(error = "Catalog size exceeds the limit")
             }
             val signed = AppJson.decodeFromString(
                 SignedPluginCatalog.serializer(),
@@ -71,11 +71,11 @@ internal class PluginCatalogClient(
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (error: SerializationException) {
-            Logger.w(TAG, "目录 JSON 解析失败: ${error.message}")
-            CatalogFetchResult(error = "目录内容不是合法的签名目录 JSON")
+            Logger.w(TAG, "Catalog JSON parse failed: ${error.message}")
+            CatalogFetchResult(error = "Catalog content is not valid signed catalog JSON")
         } catch (error: Exception) {
-            Logger.w(TAG, "目录拉取失败: ${error.message}", error)
-            CatalogFetchResult(error = error.message ?: "目录拉取失败")
+            Logger.w(TAG, "Catalog fetch failed: ${error.message}", error)
+            CatalogFetchResult(error = error.message ?: "Catalog fetch failed")
         }
     }
 

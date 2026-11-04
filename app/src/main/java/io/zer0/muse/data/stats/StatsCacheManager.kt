@@ -95,7 +95,7 @@ class StatsCacheManager(
      * 在 [AppDispatchers.io] 上执行。单项计算失败不中断后续项,仅记录警告。
      */
     suspend fun refreshAll() = withContext(AppDispatchers.io) {
-        Logger.i(TAG, "refreshAll: 开始刷新统计缓存")
+        Logger.i(TAG, "refreshAll: starting to refresh the stats cache")
         val now = System.currentTimeMillis()
 
         safePut(KEY_COUNT_BY_ROLE, now) {
@@ -132,7 +132,7 @@ class StatsCacheManager(
             json.encodeToString(TotalCount(sessionDao.count()))
         }
 
-        Logger.i(TAG, "refreshAll: 刷新完成")
+        Logger.i(TAG, "refreshAll: refresh complete")
     }
 
     /**
@@ -160,7 +160,7 @@ class StatsCacheManager(
      * (延迟刷新由调用方/WorkManager 调度,避免高频写入时反复全表聚合)。
      */
     suspend fun invalidateAll() = withContext(AppDispatchers.io) {
-        Logger.i(TAG, "invalidateAll: 清空全部统计缓存")
+        Logger.i(TAG, "invalidateAll: clearing all stats caches")
         statsCacheDao.deleteAll()
     }
 
@@ -175,7 +175,7 @@ class StatsCacheManager(
         val value = try {
             block()
         } catch (e: Exception) {
-            Logger.w(TAG, "refreshAll: 计算 $key 失败,跳过: ${e.message}", e)
+            Logger.w(TAG, "refreshAll: computing $key failed, skipping: ${e.message}", e)
             return
         }
         statsCacheDao.upsert(StatsCacheEntity(key = key, value = value, updatedAt = now))

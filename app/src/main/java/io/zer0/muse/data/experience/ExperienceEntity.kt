@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
 /** 经验分类稳定存储值(不随界面语言变化)。 */
-const val DEFAULT_EXPERIENCE_CATEGORY = "通用"
+const val DEFAULT_EXPERIENCE_CATEGORY = "General"
 
 /**
  * v1.98: 经验库条目 — 存储"以后遇到类似任务应该怎么做"的经验性知识。

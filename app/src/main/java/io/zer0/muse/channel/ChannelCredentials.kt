@@ -95,7 +95,7 @@ internal object ChannelCredentialsSerializer : KSerializer<ChannelCredentials> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ChannelCredentials")
 
     override fun deserialize(decoder: Decoder): ChannelCredentials {
-        val input = decoder as? JsonDecoder ?: error("ChannelCredentials 只支持 JSON 解码")
+        val input = decoder as? JsonDecoder ?: error("ChannelCredentials only supports JSON decoding")
         val obj = input.decodeJsonElement() as? JsonObject ?: return ChannelCredentials.None
         return fromFlat(
             flat = Flat(
@@ -111,7 +111,7 @@ internal object ChannelCredentialsSerializer : KSerializer<ChannelCredentials> {
     }
 
     override fun serialize(encoder: Encoder, value: ChannelCredentials) {
-        val out = encoder as? JsonEncoder ?: error("ChannelCredentials 只支持 JSON 编码")
+        val out = encoder as? JsonEncoder ?: error("ChannelCredentials only supports JSON encoding")
         val flat = toFlat(value)
         val obj = buildJsonObject {
             put("appId", flat.appId)

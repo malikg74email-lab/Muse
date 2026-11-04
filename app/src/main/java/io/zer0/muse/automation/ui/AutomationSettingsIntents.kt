@@ -19,9 +19,9 @@ internal fun launchFirstResolvable(candidates: List<Intent>, canResolve: (Intent
             startActivity(candidate)
             return true
         } catch (error: ActivityNotFoundException) {
-            Logger.w("AutomationSettings", "系统设置入口不可用: ${candidate.action}", error)
+            Logger.w("AutomationSettings", "System settings entry unavailable: ${candidate.action}", error)
         } catch (error: SecurityException) {
-            Logger.w("AutomationSettings", "系统设置入口无权限: ${candidate.action}", error)
+            Logger.w("AutomationSettings", "No permission for system settings entry: ${candidate.action}", error)
         }
     }
     return false

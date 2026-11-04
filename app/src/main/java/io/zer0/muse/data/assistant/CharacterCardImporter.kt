@@ -43,9 +43,9 @@ object CharacterCardImporter {
      */
     suspend fun importFromPng(context: Context, uri: Uri): Result<AssistantEntity> = withContext(Dispatchers.IO) {
         runCatching {
-            val bytes = readUriWithLimit(context, uri) ?: error("无法读取文件")
+            val bytes = readUriWithLimit(context, uri) ?: error("Could not read the file")
             val base64Text = PngChunkUtil.readTextChunk(bytes, "chara")
-                ?: error("PNG 中未找到 chara 元数据 (非 SillyTavern 角色卡)")
+                ?: error("No chara metadata found in the PNG (not a SillyTavern character card)")
             val json = String(Base64.decode(base64Text, Base64.DEFAULT), Charsets.UTF_8)
             val card = parseCardJson(json)
             card.toAssistantEntity()
@@ -57,7 +57,7 @@ object CharacterCardImporter {
      */
     suspend fun importFromJson(context: Context, uri: Uri): Result<AssistantEntity> = withContext(Dispatchers.IO) {
         runCatching {
-            val bytes = readUriWithLimit(context, uri) ?: error("无法读取文件")
+            val bytes = readUriWithLimit(context, uri) ?: error("Could not read the file")
             val json = String(bytes, Charsets.UTF_8)
             val card = parseCardJson(json)
             card.toAssistantEntity()
@@ -98,7 +98,7 @@ object CharacterCardImporter {
                 while (input.read(buf).also { read = it } > 0) {
                     total += read
                     if (total > MAX_FILE_BYTES) {
-                        Logger.w(TAG, "文件超过 ${MAX_FILE_BYTES / 1024 / 1024}MB 上限, 拒绝导入")
+                        Logger.w(TAG, "File exceeds the ${MAX_FILE_BYTES / 1024 / 1024}MB limit; import refused")
                         return null
                     }
                     out.write(buf, 0, read)

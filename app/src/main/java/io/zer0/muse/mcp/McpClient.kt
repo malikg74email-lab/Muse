@@ -353,7 +353,7 @@ class McpClient(
         } catch (ce: kotlinx.coroutines.CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.e(TAG, "[${config.name}] MCP 连接流程异常,已转入重连/失败状态", e)
+            Logger.e(TAG, "[${config.name}] MCP connection flow exception; moved to reconnect/failed state", e)
             if (!closed && _state.value != McpConnectionState.FAILED) {
                 scheduleReconnect()
             }
@@ -371,16 +371,16 @@ class McpClient(
         } else {
             "url=${config.url}"
         }
-        Logger.d(TAG, "[${config.name}] 连接中 transport=${config.transportType} $endpointDesc")
+        Logger.d(TAG, "[${config.name}] connecting transport=${config.transportType} $endpointDesc")
 
         // Phase 10.4: OAuth 模式下先校验 token
         if (oauthEnabled && !ensureValidToken()) {
-            Logger.w(TAG, "[${config.name}] OAuth token 无效或未授权,转 NEEDS_AUTH")
+            Logger.w(TAG, "[${config.name}] OAuth token invalid or unauthorized, moving to NEEDS_AUTH")
             _state.value = McpConnectionState.NEEDS_AUTH
             return
         }
         if (config.feishuAuth.enabled && !ensureFeishuTenantToken()) {
-            Logger.w(TAG, "[${config.name}] 飞书 TAT 获取失败,进入重连/失败状态")
+            Logger.w(TAG, "[${config.name}] Feishu TAT fetch failed, entering reconnect/failed state")
             scheduleReconnect()
             return
         }
@@ -395,14 +395,14 @@ class McpClient(
             val wasReconnect = reconnectAttempts > 0
             reconnectAttempts = 0
             _state.value = McpConnectionState.CONNECTED
-            Logger.i(TAG, "[${config.name}] 已连接,server=${serverInfo?.name}:${serverInfo?.version}")
+            Logger.i(TAG, "[${config.name}] connected, server=${serverInfo?.name}:${serverInfo?.version}")
             // P2-24: 重连成功后通知 Registry 同步状态并刷新工具(首次连接走 connectServer 的 registerTools)
             if (wasReconnect) {
                 runCatching { onReconnected?.invoke() }
-                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onReconnected 回调异常: ${e.message}") }
+                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onReconnected callback exception: ${e.message}") }
             }
         } else {
-            Logger.w(TAG, "[${config.name}] 连接失败")
+            Logger.w(TAG, "[${config.name}] connection failed")
             scheduleReconnect()
         }
     }
@@ -428,17 +428,17 @@ class McpClient(
             oauthToken = null
             return false
         }
-        Logger.d(TAG, "[${config.name}] OAuth token 过期,尝试 refresh")
+        Logger.d(TAG, "[${config.name}] OAuth token expired, trying refresh")
         val newToken = McpOAuthFlow.refreshAccessToken(config.oauthConfig, token.refreshToken)
         if (newToken == null) {
-            Logger.w(TAG, "[${config.name}] OAuth refresh 失败,需重新授权")
+            Logger.w(TAG, "[${config.name}] OAuth refresh failed, re-authorization required")
             settings?.clearMcpToken(config.id)
             oauthToken = null
             return false
         }
         oauthToken = newToken
         settings?.saveMcpToken(config.id, newToken)
-        Logger.i(TAG, "[${config.name}] OAuth token refreshed,新有效期至 ${newToken.expiresAt}")
+        Logger.i(TAG, "[${config.name}] OAuth token refreshed, new expiry ${newToken.expiresAt}")
         return true
     }
 
@@ -451,7 +451,7 @@ class McpClient(
     private suspend fun ensureFeishuTenantToken(forceRefresh: Boolean = false): Boolean {
         if (!config.feishuAuth.enabled) return true
         if (!feishuAuthEnabled) {
-            Logger.w(TAG, "[${config.name}] 飞书自动刷新已启用,但 App ID/App Secret 或 SettingsRepository 缺失")
+            Logger.w(TAG, "[${config.name}] Feishu auto-refresh is enabled, but App ID/App Secret or SettingsRepository is missing")
             return false
         }
         return feishuRefreshMutex.withLock {
@@ -465,7 +465,7 @@ class McpClient(
                 ?: return@withLock false
             feishuTenantToken = token
             settings?.saveMcpToken(config.id, token)
-            Logger.i(TAG, "[${config.name}] 飞书 TAT 已刷新,有效期至 ${token.expiresAt}")
+            Logger.i(TAG, "[${config.name}] Feishu TAT refreshed, valid until ${token.expiresAt}")
             true
         }
     }
@@ -509,29 +509,29 @@ class McpClient(
      */
     suspend fun completeOAuthFlow(redirectUri: String): Boolean {
         val pkce = pendingPkce ?: run {
-            Logger.w(TAG, "[${config.name}] completeOAuthFlow 但无 pending PKCE pair")
+            Logger.w(TAG, "[${config.name}] completeOAuthFlow but no pending PKCE pair")
             return false
         }
         val parsed = McpOAuthFlow.parseRedirectCallback(redirectUri, config.oauthConfig.redirectUri)
         if (parsed == null) {
             // C-25: 回调 URI 含 code/state,整条入日志会泄漏授权码 — 只记 scheme://host/path
-            Logger.w(TAG, "[${config.name}] OAuth 回调解析失败: ${sanitizeRedirectUriForLog(redirectUri)}")
+            Logger.w(TAG, "[${config.name}] OAuth callback parsing failed: ${sanitizeRedirectUriForLog(redirectUri)}")
             return false
         }
         val (code, state) = parsed
         if (state != pkce.state) {
-            Logger.w(TAG, "[${config.name}] OAuth state 不匹配: expected=${pkce.state}, got=$state")
+            Logger.w(TAG, "[${config.name}] OAuth state mismatch: expected=${pkce.state}, got=$state")
             return false
         }
         val token = McpOAuthFlow.exchangeCodeForToken(config.oauthConfig, code, pkce.verifier)
         if (token == null) {
-            Logger.w(TAG, "[${config.name}] OAuth token 交换失败")
+            Logger.w(TAG, "[${config.name}] OAuth token exchange failed")
             return false
         }
         oauthToken = token
         settings?.saveMcpToken(config.id, token)
         pendingPkce = null
-        Logger.i(TAG, "[${config.name}] OAuth 授权成功,token 有效期至 ${token.expiresAt}")
+        Logger.i(TAG, "[${config.name}] OAuth authorization succeeded, token valid until ${token.expiresAt}")
         return true
     }
 
@@ -541,7 +541,7 @@ class McpClient(
         pendingPkce = null
         settings?.clearMcpToken(config.id)
         _state.value = McpConnectionState.NEEDS_AUTH
-        Logger.i(TAG, "[${config.name}] OAuth 授权已撤销")
+        Logger.i(TAG, "[${config.name}] OAuth authorization revoked")
     }
 
     /** Phase 10.4: 是否需要 OAuth 授权(NEEDS_AUTH 状态 + OAuth 启用)。 */
@@ -575,7 +575,7 @@ class McpClient(
         val listener = object : EventSourceListener() {
             override fun onOpen(eventSource: EventSource, response: Response) {
                 if (!response.isSuccessful) {
-                    Logger.w(TAG, "[${config.name}] SSE 连接 HTTP ${response.code}")
+                    Logger.w(TAG, "[${config.name}] SSE connection HTTP ${response.code}")
                     firstEventChannel.close()
                     eventSource.cancel()
                 }
@@ -595,7 +595,7 @@ class McpClient(
             }
 
             override fun onClosed(eventSource: EventSource) {
-                Logger.w(TAG, "[${config.name}] SSE 连接关闭")
+                Logger.w(TAG, "[${config.name}] SSE connection closed")
                 if (!closed) scheduleReconnect()
             }
 
@@ -607,11 +607,11 @@ class McpClient(
                     return
                 }
                 if (t is java.io.IOException && t.message == "Canceled") {
-                    Logger.d(TAG, "[${config.name}] SSE 被 Call.cancel() 取消,不重连")
+                    Logger.d(TAG, "[${config.name}] SSE cancelled by Call.cancel(), not reconnecting")
                     firstEventChannel.close()
                     return
                 }
-                Logger.w(TAG, "[${config.name}] SSE 连接失败: ${t?.message ?: response?.code}")
+                Logger.w(TAG, "[${config.name}] SSE connection failed: ${t?.message ?: response?.code}")
                 firstEventChannel.close()
                 if (!closed) scheduleReconnect()
             }
@@ -629,7 +629,7 @@ class McpClient(
         // M-MCP1: 校验 postEndpoint 与 config.url 同源,防止 Open Redirect
         val ep = postEndpoint ?: return false
         if (!isSameOrigin(ep, config.url)) {
-            Logger.w(TAG, "[${config.name}] SSE endpoint 与 server 不同源: $ep vs ${config.url},拒绝连接")
+            Logger.w(TAG, "[${config.name}] SSE endpoint is cross-origin with the server: $ep vs ${config.url}; connection refused")
             eventSource?.cancel()
             eventSource = null
             postEndpoint = null
@@ -660,7 +660,7 @@ class McpClient(
 
         val id = (idEl as? JsonPrimitive)?.content?.toLongOrNull()
         if (id == null) {
-            Logger.w(TAG, "[${config.name}] 收到无效 id 的消息: ${data.take(200)}")
+            Logger.w(TAG, "[${config.name}] received a message with an invalid id: ${data.take(200)}")
             return
         }
 
@@ -693,20 +693,20 @@ class McpClient(
      * 影响后续 notification 处理(如 SSE 流中多个事件)。
      */
     private fun handleNotification(method: String, params: JsonObject) {
-        Logger.i(TAG, "收到 notification: $method (params=${params.toString().take(200)})")
+        Logger.i(TAG, "Received notification: $method (params=${params.toString().take(200)})")
         when (method) {
             "notifications/tools/list_changed" -> {
                 // 触发 Registry 重新拉取工具;回调内会 launch 独立协程,不阻塞此处
                 runCatching { onToolsListChanged?.invoke() }
-                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onToolsListChanged 回调异常: ${e.message}") }
+                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onToolsListChanged callback exception: ${e.message}") }
             }
             "notifications/prompts/list_changed" -> {
                 runCatching { onPromptsListChanged?.invoke() }
-                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onPromptsListChanged 回调异常: ${e.message}") }
+                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onPromptsListChanged callback exception: ${e.message}") }
             }
             "notifications/resources/list_changed" -> {
                 runCatching { onResourcesListChanged?.invoke() }
-                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onResourcesListChanged 回调异常: ${e.message}") }
+                    .onFailure { e -> Logger.w(TAG, "[${config.name}] onResourcesListChanged callback exception: ${e.message}") }
             }
             "notifications/progress",
             -> {
@@ -716,7 +716,7 @@ class McpClient(
                 // client 主动发出的握手通知,server 不应回发;忽略
             }
             else -> {
-                Logger.d(TAG, "[${config.name}] 未处理的 notification: $method")
+                Logger.d(TAG, "[${config.name}] unhandled notification: $method")
             }
         }
     }
@@ -741,7 +741,7 @@ class McpClient(
                 client.newCall(request).execute().use { resp ->
                     // M-MCP2: 收到 401 时强制 refresh token 并重试一次
                     if (resp.code == 401 && retryOn401 && (oauthEnabled || feishuAuthEnabled)) {
-                        Logger.w(TAG, "[${config.name}] POST 收到 401,尝试刷新认证凭证后重试")
+                        Logger.w(TAG, "[${config.name}] POST received 401, refreshing auth credentials and retrying")
                         val refreshed = if (oauthEnabled) {
                             ensureValidToken(forceRefresh = true)
                         } else {
@@ -769,10 +769,10 @@ class McpClient(
             } catch (e: java.io.IOException) {
                 // v1.113: 协程取消导致的 IOException("Canceled") 不应触发重连逻辑
                 if (closed || e.message == "Canceled") {
-                    Logger.d(TAG, "[${config.name}] POST 请求被取消,不重连")
+                    Logger.d(TAG, "[${config.name}] POST request cancelled, not reconnecting")
                     return@withContext null
                 }
-                Logger.w(TAG, "[${config.name}] POST 请求 IO 异常: ${e.message}")
+                Logger.w(TAG, "[${config.name}] POST request IO exception: ${e.message}")
                 lastTransportFailure = "MCP network request failed"
                 null
             }
@@ -843,7 +843,7 @@ class McpClient(
                 client.newCall(request).execute().use { resp ->
                     // M-MCP2: 收到 401 时强制 refresh token 并重试一次
                     if (resp.code == 401 && retryOn401 && (oauthEnabled || feishuAuthEnabled)) {
-                        Logger.w(TAG, "[${config.name}] StreamableHTTP 收到 401,尝试刷新认证凭证后重试")
+                        Logger.w(TAG, "[${config.name}] StreamableHTTP received 401, refreshing auth credentials and retrying")
                         val refreshed = if (oauthEnabled) {
                             ensureValidToken(forceRefresh = true)
                         } else {
@@ -908,7 +908,7 @@ class McpClient(
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: java.io.IOException) {
-                Logger.w(TAG, "[${config.name}] StreamableHTTP 请求 IO 异常: ${e.message}")
+                Logger.w(TAG, "[${config.name}] StreamableHTTP request IO exception: ${e.message}")
                 lastTransportFailure = "MCP network request failed"
                 null
             }
@@ -977,7 +977,7 @@ class McpClient(
      */
     private suspend fun connectStdio(): Boolean {
         val ctx = appContext ?: run {
-            Logger.w(TAG, "[${config.name}] stdio 连接缺少应用上下文")
+            Logger.w(TAG, "[${config.name}] stdio connection is missing the application context")
             return false
         }
         stdioTransport?.stop()
@@ -1017,7 +1017,7 @@ class McpClient(
 
     /** P1-A: stdio 进程退出 — 非主动关闭时走重连。 */
     private fun handleStdioExit(code: Int) {
-        Logger.w(TAG, "[${config.name}] stdio 进程退出: code=$code")
+        Logger.w(TAG, "[${config.name}] stdio process exited: code=$code")
         stdioTransport = null
         if (!closed) scheduleReconnect()
     }
@@ -1188,7 +1188,7 @@ class McpClient(
             // v1.0.79 (D-2): 解析失败不再静默丢弃 — 保留原始 result JSON 作为错误详情回传,
             // 并记录日志。此前 getOrDefault(isError=true 空结果) 会把 server 的错误原因
             // 全部吞掉,模型拿不到失败原因无法自我纠正。
-            Logger.w(TAG, "[${config.id}] tools/call 结果解析失败: ${decodeError.message}")
+            Logger.w(TAG, "[${config.id}] tools/call result parsing failed: ${decodeError.message}")
             McpToolCallResult(
                 isError = true,
                 content = listOf(
@@ -1440,7 +1440,7 @@ class McpClient(
                     true
                 } else if (streamableSessionInvalidated) {
                     streamableSessionInvalidated = false
-                    Logger.i(TAG, "[${config.name}] MCP session 已失效,重新 initialize 后重试原请求")
+                    Logger.i(TAG, "[${config.name}] MCP session expired, re-initializing and retrying the original request")
                     sendInitialize(allowSessionRecovery = false)
                 } else {
                     false
@@ -1480,7 +1480,7 @@ class McpClient(
             return
         }
         if (reconnectAttempts >= config.maxReconnectAttempts) {
-            Logger.w(TAG, "[${config.name}] 超过最大重连次数 ${config.maxReconnectAttempts},转 FAILED")
+            Logger.w(TAG, "[${config.name}] exceeded the maximum reconnect attempts ${config.maxReconnectAttempts}, moving to FAILED")
             _state.value = McpConnectionState.FAILED
             return
         }
@@ -1491,7 +1491,7 @@ class McpClient(
             RECONNECT_MAX_DELAY_MS,
         )
         reconnectAttempts++
-        Logger.d(TAG, "[${config.name}] 第 $reconnectAttempts 次重连,${delayMs}ms 后重试")
+        Logger.d(TAG, "[${config.name}] reconnect attempt $reconnectAttempts, retrying in ${delayMs}ms")
 
         scope.launch {
             delay(delayMs)

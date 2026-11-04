@@ -22,13 +22,13 @@ internal object DingtalkMediaSender {
     suspend fun send(config: ChannelConfig, media: OutboundMedia, targetOverride: String?): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val target = targetOverride?.takeIf { it.isNotBlank() } ?: config.targetId
-            require(target.isNotBlank()) { "缺少发送目标" }
+            require(target.isNotBlank()) { "Missing send target" }
             val webhook = DingtalkSessionCache.get(target)
-                ?: error("钉钉会话已过期，需要对方重新发消息")
+                ?: error("The DingTalk conversation has expired; the other party needs to send a message again")
             val info = DingtalkClient
                 .fetchAccessToken(config.appId, config.appSecret, config.dingtalkApiBase)
                 .getOrThrow()
-            val payload = MediaPayload.from(media) ?: error("无法读取媒体内容")
+            val payload = MediaPayload.from(media) ?: error("Cannot read the media content")
             val mediaId = upload(config, info.accessToken, payload)
             val body = buildJsonObject {
                 put("msgtype", "image")
@@ -38,8 +38,8 @@ internal object DingtalkMediaSender {
                 .url(webhook)
                 .post(body.toRequestBody(MediaHttp.jsonMediaType))
                 .build()
-            MediaHttp.postAndCheck(req, "钉钉")
-        }.onFailure { e -> Logger.w(TAG, "钉钉媒体发送失败: ${e.message}") }
+            MediaHttp.postAndCheck(req, "DingTalk")
+        }.onFailure { e -> Logger.w(TAG, "DingTalk media send failed: ${e.message}") }
     }
 
     private fun upload(config: ChannelConfig, accessToken: String, payload: MediaPayload): String {
@@ -62,7 +62,7 @@ internal object DingtalkMediaSender {
             val obj = AppJson.parseToJsonElement(text).jsonObject
             return obj["mediaId"]?.jsonPrimitive?.contentOrNull
                 ?.takeIf { it.isNotBlank() }
-                ?: error("上传响应缺 mediaId")
+                ?: error("Upload response is missing mediaId")
         }
     }
 }

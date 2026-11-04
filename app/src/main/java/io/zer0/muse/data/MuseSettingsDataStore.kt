@@ -36,12 +36,12 @@ private fun backupCorruptFile(context: Context) {
         )
     val source = candidates.firstOrNull { it.exists() }
     if (source == null) {
-        Logger.w("MuseSettingsDataStore", "未找到损坏文件，跳过备份")
+        Logger.w("MuseSettingsDataStore", "No corrupted file found; skipping the backup")
         return
     }
     val backup = File(source.parentFile, "$SETTINGS_STORE_NAME.corrupt-${System.currentTimeMillis()}.preferences_pb")
     source.copyTo(backup, overwrite = true)
-    Logger.w("MuseSettingsDataStore", "损坏文件已备份: ${backup.absolutePath}")
+    Logger.w("MuseSettingsDataStore", "Corrupted file backed up: ${backup.absolutePath}")
 }
 
 /**
@@ -57,10 +57,10 @@ internal object SettingsStoreContextHolder {
 internal val Context.museSettingsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = SETTINGS_STORE_NAME,
     corruptionHandler = ReplaceFileCorruptionHandler { ex ->
-        Logger.w("MuseSettingsDataStore", "muse_settings 数据损坏，尝试备份并重建: ${ex.message}", ex)
+        Logger.w("MuseSettingsDataStore", "muse_settings data is corrupted; backing it up and rebuilding: ${ex.message}", ex)
         SettingsStoreContextHolder.applicationContext?.let { ctx ->
             runCatching { backupCorruptFile(ctx) }
-                .onFailure { Logger.w("MuseSettingsDataStore", "备份损坏文件失败: ${it.message}", it) }
+                .onFailure { Logger.w("MuseSettingsDataStore", "Failed to back up the corrupted file: ${it.message}", it) }
         }
         emptyPreferences()
     },

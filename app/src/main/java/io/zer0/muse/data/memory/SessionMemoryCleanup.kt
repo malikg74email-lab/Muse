@@ -64,7 +64,7 @@ class SessionMemoryCleanup(
                 checkpoints += step("context_checkpoints[$sessionId]") { deleteCheckpoint(sessionId) }
                 facts += deleteFactsOfSession(sessionId)
             }
-            Logger.i(TAG, "会话记忆清理完成: sessions=${ids.size} 摘要=$summaries 检查点=$checkpoints 事实=$facts")
+            Logger.i(TAG, "Session memory cleanup complete: sessions=${ids.size} summaries=$summaries checkpoints=$checkpoints facts=$facts")
         }
     }
 
@@ -88,8 +88,8 @@ class SessionMemoryCleanup(
             val facts = deleteFactsOfScope(scope)
             Logger.i(
                 TAG,
-                "助手记忆清理完成: assistant=$id scope=$scope 摘要=$summaries 段落=$sections " +
-                    "群聊记忆=$groupChat 矛盾=$contradictions 事实=$facts 文件=$files",
+                "Assistant memory cleanup complete: assistant=$id scope=$scope summaries=$summaries sections=$sections " +
+                    "group chat memories=$groupChat contradictions=$contradictions facts=$facts files=$files",
             )
         }
     }
@@ -159,7 +159,7 @@ class SessionMemoryCleanup(
     } catch (e: CancellationException) {
         throw e
     } catch (t: Throwable) {
-        Logger.w(TAG, "记忆清理失败[$label]: ${t.message}", t)
+        Logger.w(TAG, "Memory cleanup failed [$label]: ${t.message}", t)
         0
     }
 

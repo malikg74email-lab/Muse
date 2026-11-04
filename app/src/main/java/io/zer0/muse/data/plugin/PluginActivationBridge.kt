@@ -58,7 +58,7 @@ class PluginActivationBridge(
         // 总开关关闭时不叫醒任何插件。已激活记录同时清空：重新打开时要能再激活一次。
         if (!settings.arePluginsGloballyEnabled()) {
             synchronized(activatedKeys) { activatedKeys.clear() }
-            Logger.i(TAG, "插件总开关关闭，跳过激活")
+            Logger.i(TAG, "Plugin master switch is off; skipping activation")
             return
         }
         val plugins = pluginManager.list().filter { it.enabled && it.kind == KIND_TOOL }
@@ -83,9 +83,9 @@ class PluginActivationBridge(
         }.getOrNull()
 
         when (result) {
-            null -> Logger.w(TAG, "插件激活异常: ${plugin.id}")
-            is SkillEngineResult.Success -> Logger.i(TAG, "插件已激活: ${plugin.id}")
-            is SkillEngineResult.Error -> Logger.w(TAG, "插件激活失败: ${plugin.id} — ${result.message}")
+            null -> Logger.w(TAG, "Plugin activation error: ${plugin.id}")
+            is SkillEngineResult.Success -> Logger.i(TAG, "Plugin activated: ${plugin.id}")
+            is SkillEngineResult.Error -> Logger.w(TAG, "Plugin activation failed: ${plugin.id} — ${result.message}")
         }
     }
 
@@ -104,7 +104,7 @@ class PluginActivationBridge(
 
         // 声明在磁盘上的 manifest 里，不在注册表缓存里 —— 与所有执行路径保持一致。
         val verified = resultOf { pluginManager.loadVerifiedPlugin(plugin.id) }.getOrNull() ?: run {
-            Logger.d(TAG, "插件激活跳过(入口校验失败): ${plugin.id}")
+            Logger.d(TAG, "Plugin activation skipped (entry validation failed): ${plugin.id}")
             return null
         }
         if (ACTIVATION_STARTUP !in verified.manifest.activationEvents) return null

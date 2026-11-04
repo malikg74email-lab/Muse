@@ -60,7 +60,7 @@ class PluginTrustStore internal constructor(
     fun trust(publisherId: String, publicKey: String): Result<TrustedPublisher> = synchronized(lock) {
         val normalizedId = publisherId.trim()
         if (!PluginSecurityGate.isValidPublisherId(normalizedId)) {
-            return@synchronized Result.failure(IllegalArgumentException("发行者 ID 非法"))
+            return@synchronized Result.failure(IllegalArgumentException("Illegal publisher ID"))
         }
         val key = parsePublicKey(publicKey.trim()).getOrElse { error -> return@synchronized Result.failure(error) }
         val normalizedKey = java.util.Base64.getEncoder().encodeToString(key.encoded)
@@ -70,7 +70,7 @@ class PluginTrustStore internal constructor(
             return@synchronized if (existing.publicKey == normalizedKey) {
                 Result.success(existing)
             } else {
-                Result.failure(IllegalStateException("发行者 ID 已绑定另一把公钥"))
+                Result.failure(IllegalStateException("Publisher ID is already bound to another public key"))
             }
         }
         val trusted = TrustedPublisher(
@@ -106,13 +106,13 @@ class PluginTrustStore internal constructor(
     }
 
     private fun parsePublicKey(encoded: String): Result<PublicKey> = runCatching {
-        require(encoded.isNotBlank()) { "发行者公钥为空" }
+        require(encoded.isNotBlank()) { "Publisher public key is empty" }
         val bytes = Base64.getDecoder().decode(encoded)
-        require(bytes.size <= MAX_PUBLIC_KEY_BYTES) { "发行者公钥过大" }
+        require(bytes.size <= MAX_PUBLIC_KEY_BYTES) { "Publisher public key is too large" }
         KeyFactory.getInstance(PluginSecurityGate.KEY_ALGORITHM)
             .generatePublic(X509EncodedKeySpec(bytes))
             .also { key ->
-                require(key.algorithm == PluginSecurityGate.KEY_ALGORITHM) { "发行者公钥算法不支持" }
+                require(key.algorithm == PluginSecurityGate.KEY_ALGORITHM) { "Publisher public key algorithm is not supported" }
             }
     }
 
@@ -124,7 +124,7 @@ class PluginTrustStore internal constructor(
                 .distinctBy { it.publisherId }
         }.getOrElse { error ->
             AtomicFileStore.quarantine(storageFile, "plugin_trust_root_parse")
-            Logger.w("PluginTrustStore", "插件信任根解析失败，已隔离损坏文件", error)
+            Logger.w("PluginTrustStore", "Plugin trust store parse failed; the corrupted file was quarantined", error)
             emptyList()
         }
     }

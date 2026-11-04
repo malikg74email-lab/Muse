@@ -94,7 +94,7 @@ class MiniContextBuilder(
                 forSubagent = true,
             )
         }.onError { msg, t ->
-            Logger.w(TAG, "构建系统提示失败，退化为空系统提示: ${t?.message ?: msg}")
+            Logger.w(TAG, "Failed to build the system prompt; degrading to an empty system prompt: ${t?.message ?: msg}")
         }.getOrNull() ?: emptyList()
         if (!voiceMessageEnabled) return base
         // 系统提示构建失败时也照常带上约定：没有它模型不会输出标记，语音功能等于不存在
@@ -136,7 +136,7 @@ class MiniContextBuilder(
             },
         )
         return resultOf { pipeline.execute(messages, context) }
-            .onError { msg, t -> Logger.w(TAG, "Transformer 管道失败，退化为原始消息: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Transformer pipeline failed; degrading to the raw messages: ${t?.message ?: msg}") }
             .getOrNull() ?: messages
     }
 
@@ -150,7 +150,7 @@ class MiniContextBuilder(
         val ids = parseIdList(assistant?.lorebookIdsJson)
         if (ids.isEmpty()) return emptyList()
         return resultOf { lorebookRepository.getByIdsEnabled(ids) }
-            .onError { msg, t -> Logger.w(TAG, "读取世界书条目失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read lorebook entries: ${t?.message ?: msg}") }
             .getOrNull() ?: emptyList()
     }
 
@@ -165,12 +165,12 @@ class MiniContextBuilder(
         val ids = parseIdList(assistant?.modeInjectionIdsJson)
         if (ids.isNotEmpty()) {
             return resultOf { promptInjectionRepository.getByIdsEnabled(ids) }
-                .onError { msg, t -> Logger.w(TAG, "读取提示词注入失败: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w(TAG, "Failed to read prompt injections: ${t?.message ?: msg}") }
                 .getOrNull() ?: emptyList()
         }
         val mode = DEFAULT_PROMPT_MODE
         return resultOf { promptInjectionRepository.getEnabledByMode(mode) }
-            .onError { msg, t -> Logger.w(TAG, "读取全局提示词注入失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read global prompt injections: ${t?.message ?: msg}") }
             .getOrNull() ?: emptyList()
     }
 
@@ -199,10 +199,10 @@ class MiniContextBuilder(
  */
 internal fun voiceMessageInstruction(): String = buildString {
     appendLine("<voice_message>")
-    appendLine("想说出口的台词用 [语音] 开头、[/语音] 结尾包起来，一对方括号包一段。系统只把标记里的内容合成语音发出去，对方听到的是声音，看不到标记；标记外的文字照常当消息发。")
-    appendLine("- 一次最多 5 段。")
-    appendLine("- 旁白、动作描写、心理活动、英文原文不要放进去：这些不会被念出来，纯英文的一段会被直接跳过。")
-    appendLine("- 不必每轮都发语音。情绪重、话短、想让对方听见的时候才用。")
-    appendLine("- 标记不要嵌套，也不要跨段复用：一段台词一对标记，说完就收起。")
+    appendLine("Wrap lines you want spoken aloud with [Voice] at the start and [/Voice] at the end, one pair of markers per passage. The system only synthesises the content inside the markers and sends it out as voice; the other side hears the sound and does not see the markers; text outside the markers is sent as a normal message as usual.")
+    appendLine("- At most 5 passages per reply.")
+    appendLine("- Do not put narration, action descriptions, inner thoughts, or original English text inside: those are not read aloud, and a passage in pure English is skipped entirely.")
+    appendLine("- You do not need to send voice every turn. Use it when the emotion is strong, the line is short, and you want the other side to hear it.")
+    appendLine("- Do not nest markers or reuse them across passages: one pair of markers per line, closed as soon as the line is done.")
     appendLine("</voice_message>")
 }.trim()

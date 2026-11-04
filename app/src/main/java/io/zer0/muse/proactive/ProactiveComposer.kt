@@ -89,8 +89,8 @@ class ProactiveComposer(
         return callModel(input, model, providerConfig, temperature).fold(
             onSuccess = { ProactiveReplyParser.parse(it) },
             onFailure = { e ->
-                Logger.w(TAG, "主动消息生成调用失败: ${e.message}")
-                ProactiveReplyParser.Result.Failed(e.message ?: "调用失败")
+                Logger.w(TAG, "Proactive message generation call failed:  ${e.message}")
+                ProactiveReplyParser.Result.Failed(e.message ?: "Call failed")
             },
         )
     }
@@ -143,13 +143,13 @@ class ProactiveComposer(
 
     /** 组装器拿不到内容时的兜底人格。 */
     private fun fallbackPersona(assistant: AssistantEntity): String = buildString {
-        appendLine("你是「${assistant.name.ifBlank { "muse" }}」。")
+        appendLine("You are 「${assistant.name.ifBlank { "muse" }}」。")
         if (assistant.personaDefinition.isNotBlank()) {
-            appendLine("【人格定义】")
+            appendLine("[Persona definition]")
             appendLine(assistant.personaDefinition)
         }
         if (assistant.systemPrompt.isNotBlank()) {
-            appendLine("【人设与行为准则】")
+            appendLine("[Persona and behaviour rules]")
             appendLine(assistant.systemPrompt)
         }
     }
@@ -163,18 +163,18 @@ class ProactiveComposer(
      */
     private fun intensityGuidance(intensity: ProactiveIntensity): String = when (intensity) {
         ProactiveIntensity.QUIET -> buildString {
-            appendLine("【这次只说什么】")
-            appendLine("你现在被设成「安静」：只有具体的事才开口。")
-            appendLine("「你另外还惦记着的事」里有一条，就说那件事；一条都没有，就 skip。")
-            appendLine("不要寒暄，不要分享你自己的见闻，不要提你们之间的节点。")
+            appendLine("[What to say this time — only this]")
+            appendLine("You are currently set to 'Quiet': only speak up when there is something specific.")
+            appendLine("If there is an item in 'Other things you have been keeping in mind', talk about that item; if there are none, skip.")
+            appendLine("No small talk, do not share your own news, and do not bring up milestones between you two.")
             appendLine()
         }
 
         ProactiveIntensity.RESERVED -> buildString {
             append(findTopicGuidance())
-            appendLine("【这次只说什么】")
-            appendLine("你现在被设成「偶尔被想到」：可以接着聊过的话说，也可以关心他的状态。")
-            appendLine("不要主动分享你自己的事，不要报你们之间的节点。")
+            appendLine("[What to say this time — only this]")
+            appendLine("You are currently set to 'Occasionally remembered': you may pick up something you talked about, or check in on how he is doing.")
+            appendLine("Do not proactively share your own matters, and do not report milestones between you two.")
             appendLine()
         }
 
@@ -186,14 +186,14 @@ class ProactiveComposer(
 
     /** 从最近对话里找话头的指导。只有允许「接话」的档位才用它。 */
     private fun findTopicGuidance(): String = buildString {
-        appendLine("【怎么找话说】")
-        appendLine("下面的「最近聊的」是你们真实的对话，按时间顺序排。你要从这里找一句能接的话：")
+        appendLine("[How to find something to say]")
+        appendLine("The 'Recent conversation' below is your real conversation, in time order. Find a line in it that you can pick up on:")
         appendLine()
-        appendLine("1. 先看最后几句。他最后说的是什么？")
-        appendLine("2. 如果他提了一件事但没说结果（「我去吃饭了」「等下要开会」），就问那件事怎样了。")
-        appendLine("   比如他说去吃饭，那就是「吃完没」「吃的啥」——这是最自然的接法。")
-        appendLine("3. 如果最后是你说的、他没接，就看你那句话还有没有下文；没有就别硬续。")
-        appendLine("4. 如果最近这一段已经聊完了、聊干净了，那就不说。这很正常。")
+        appendLine("1. Look at the last few lines first. What was the last thing he said?")
+        appendLine("2. If he mentioned something but did not say how it turned out ('I'm going to eat', 'I have a meeting in a bit'), ask how that thing went.")
+        appendLine("   For example, if he said he was going to eat, then 'Have you finished eating?' or 'What did you have?' — that is the most natural way to pick it up.")
+        appendLine("3. If the last line was yours and he did not respond, see whether what you said has a natural follow-up; if not, do not force it.")
+        appendLine("4. If this recent stretch is already talked out and wrapped up, then say nothing. That is perfectly normal.")
         appendLine()
     }
 
@@ -203,61 +203,61 @@ class ProactiveComposer(
      * 上面那一大段是聊天时也在用的通用人格，这里只补「主动开口」这个场景特有的东西。
      */
     private fun proactiveInstruction(intensity: ProactiveIntensity): String = buildString {
-        appendLine("现在的情况：你们有一阵没说话了。你想接着上次的话往下说一句。")
-        appendLine("他不是在问你问题，也没在等你回复——但你有点话想说，或者只是想知道他那件事怎么样了。")
+        appendLine("The situation now: you two have not spoken for a while. You want to add one line that continues from last time.")
+        appendLine("He is not asking you a question and is not waiting for a reply — but you have something you want to say, or you just want to know how that thing of his turned out.")
         appendLine()
         append(intensityGuidance(intensity))
-        appendLine("【最要紧的一条】")
-        appendLine("**不要翻旧账。** 真人不会记着一件事，然后隔了两三天突然发消息提起。")
-        appendLine("你说的话要和「最近聊的」直接连着，中间不要跨越好几天的话题。")
-        appendLine("如果最近这几天根本没聊过什么，那就宁可不发。")
+        appendLine("[The single most important rule]")
+        appendLine("**Do not dig up old matters.** A real person does not hold on to something and then suddenly message about it two or three days later.")
+        appendLine("What you say must connect directly to 'Recent conversation', without jumping across topics from several days ago.")
+        appendLine("If you have barely talked at all these last few days, then rather send nothing.")
         appendLine()
-        appendLine("【不要】")
-        appendLine("- 空泛的问候（「今天过得怎么样」「在忙吗」）")
-        appendLine("- 重复你最近已经说过的话，换个说法也不行")
-        appendLine("- 复述你记得的信息来证明自己记性好")
-        appendLine("- 假装自己是来提供服务的（「有什么可以帮您」）")
-        appendLine("- 编造没有发生在你们之间的事")
+        appendLine("[Do not]")
+        appendLine("- Empty greetings ('How was your day', 'Busy?')")
+        appendLine("- Repeat something you said recently, not even rephrased")
+        appendLine("- Recite information you remember just to prove your memory is good")
+        appendLine("- Pretend you are here to provide a service ('Is there anything I can help you with')")
+        appendLine("- Make up things that never happened between you two")
         appendLine()
-        appendLine("【放弃是完全正常的】")
-        appendLine("一个真朋友也不是每天都有话要说。硬凑一句比不说话糟糕得多。")
-        appendLine("想不到能接什么，就 skip。")
+        appendLine("[Giving up is completely fine]")
+        appendLine("Even a real friend does not have something to say every day. Forcing out a line is far worse than saying nothing.")
+        appendLine("If you cannot think of anything to pick up on, skip.")
         appendLine()
-        appendLine("【输出格式】只返回 JSON，不要 markdown 代码块，不要任何解释：")
-        appendLine("""{"skip": true, "reason": "为什么没什么可接的"}""")
-        appendLine("或者：")
+        appendLine("[Output format] Return JSON only, no markdown code block, no explanation of any kind:")
+        appendLine("""{"skip": true, "reason": "why there is nothing to pick up on"}""")
+        appendLine("Or:")
         appendLine(
-            """{"skip": false, "content": "你要说的话", "tone": "关心|分享|随口一提", "thought_id": ""}""",
+            """{"skip": false, "content": "what you want to say", "tone": "caring|sharing|casual mention", "thought_id": ""}""",
         )
         appendLine()
-        appendLine("thought_id 怎么填：")
-        appendLine("只有当你这句话正是在说「你另外还惦记着的事」里的某一条时，才把那条的 id 原样抄进去。")
-        appendLine("其余情况留空字符串，不要自己编一个 id。")
+        appendLine("How to fill in thought_id:")
+        appendLine("Only when this line of yours is exactly about one item in 'Other things you have been keeping in mind' do you copy that item's id in verbatim.")
+        appendLine("In all other cases leave an empty string; do not invent an id yourself.")
         appendLine()
-        appendLine("content 要求：像发微信一样自然，一到三句话为主，不要分段，不要用列表。")
-        appendLine("不要出现「提醒」「温馨」「亲」这类客服腔。不要自称「助手」。")
+        appendLine("content requirements: as natural as sending a WeChat message, mostly one to three sentences, no paragraph breaks, no lists.")
+        appendLine("Do not use customer-service phrases like 'reminder', 'warmly', or overly familiar terms of address. Do not call yourself an 'assistant'.")
     }
 
     private fun buildContext(input: Input): String = buildString {
-        appendLine("## 最近聊的")
+        appendLine("## Recent conversation")
         if (input.recentMessages.isEmpty()) {
-            appendLine("（你们还没聊过什么。这种情况下通常不该主动开口。）")
+            appendLine("(You two have not talked about anything yet. In this situation you usually should not speak up first.)")
         } else {
             input.recentMessages.forEach { msg ->
-                val who = if (msg.role == MessageRole.USER) "他" else "你"
+                val who = if (msg.role == MessageRole.USER) "Him" else "You"
                 appendLine("[$who] ${msg.content.take(MESSAGE_CLIP)}")
             }
         }
         appendLine()
         if (input.recentProactiveMessages.isNotEmpty()) {
-            appendLine("## 你最近主动说过的话（不要再说一遍，换说法也不行）")
+            appendLine("## What you proactively said recently (do not say it again, not even rephrased)")
             input.recentProactiveMessages.take(MAX_RECENT_PROACTIVE).forEach { text ->
                 appendLine("- ${text.take(MESSAGE_CLIP)}")
             }
             appendLine()
         }
         if (input.candidates.isNotEmpty()) {
-            appendLine("## 你另外还惦记着的事（能自然接上就用，接不上就别硬提）")
+            appendLine("## Other things you have been keeping in mind (use one if it connects naturally; do not force it otherwise)")
             input.candidates.take(MAX_CANDIDATES).forEach { thought ->
                 // id 必须露给模型：这条消息说完之后要靠它回填 thought_id，
                 // 账本才能记下「这件事已经说过了」。不露 id 的话，回填永远是空的，
@@ -269,34 +269,34 @@ class ProactiveComposer(
         }
         appendLine(
             if (input.intensity.onlyWhenNeeded) {
-                "有具体的事就说那件事，没有就 skip。"
+                "If there is something specific, talk about that; if not, skip."
             } else {
-                "接着「最近聊的」往下说一句，或者 skip。"
+                "Add one line continuing from 'Recent conversation', or skip."
             },
         )
     }
 
     /** 牵挂性质的中文描述，用于让模型理解「这是什么类型的话」。 */
     private fun describeKind(thought: PendingThoughtEntity): String = when (thought.kindEnum()) {
-        ThoughtKind.REMINDER -> "要说的事（有具体时间点）"
-        ThoughtKind.FOLLOW_UP -> "没聊完的话题"
-        ThoughtKind.CARE -> "关于他的状态"
-        ThoughtKind.SHARE -> "你想分享的事"
-        ThoughtKind.MILESTONE -> "你们之间的节点"
+        ThoughtKind.REMINDER -> "Something to say (with a specific time)"
+        ThoughtKind.FOLLOW_UP -> "An unfinished topic"
+        ThoughtKind.CARE -> "About how he is doing"
+        ThoughtKind.SHARE -> "Something you want to share"
+        ThoughtKind.MILESTONE -> "A milestone between you two"
     }
 
     /** 事由的时间感。模型需要知道「刚发生」还是「好几周了」。 */
     private fun describeAge(thought: PendingThoughtEntity, now: Long): String {
         val hours = (now - thought.createdAt).coerceAtLeast(0L) / 3_600_000L
         val age = when {
-            hours < 1 -> "刚刚想起"
-            hours < 24 -> "${hours}小时前想起"
-            else -> "${hours / 24}天前想起"
+            hours < 1 -> "Came to mind just now"
+            hours < 24 -> "${hours} hours ago"
+            else -> "${hours / 24} days ago"
         }
         val urgency = when (thought.urgencyEnum()) {
-            ThoughtUrgency.IMMEDIATE -> "时效很紧"
-            ThoughtUrgency.WINDOW -> "这几天说都行"
-            ThoughtUrgency.EVERGREEN -> "什么时候说都行"
+            ThoughtUrgency.IMMEDIATE -> "Time-sensitive"
+            ThoughtUrgency.WINDOW -> "Fine to say any time in the next few days"
+            ThoughtUrgency.EVERGREEN -> "Fine to say at any time"
         }
         return "$age，$urgency"
     }

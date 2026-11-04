@@ -17,16 +17,16 @@ class VirtualDisplayBinderReceiver : BroadcastReceiver() {
         if (intent.action != VdContract.ACTION_BINDER) return
         val host = intent.getStringExtra(VdContract.EXTRA_HOST_PACKAGE)
         if (host != context.packageName) {
-            Logger.w(TAG, "忽略来源不匹配的虚拟屏 binder 广播: host=$host")
+            Logger.w(TAG, "Ignoring a virtual-screen binder broadcast with a mismatched source: host=$host")
             return
         }
         val binder = intent.extras?.getBinder(VdContract.EXTRA_BINDER) ?: return
         val handoffToken = intent.getStringExtra(VdContract.EXTRA_HANDOFF_TOKEN)
         if (!VirtualDisplayBinderRegistry.accept(binder, handoffToken)) {
-            Logger.w(TAG, "忽略 token 不匹配的虚拟屏 binder 广播")
+            Logger.w(TAG, "Ignoring a virtual-screen binder broadcast with a mismatched token")
             return
         }
-        Logger.i(TAG, "虚拟屏服务端 binder 已就位")
+        Logger.i(TAG, "Virtual screen server binder in place")
     }
 
     companion object {

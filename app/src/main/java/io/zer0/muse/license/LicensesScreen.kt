@@ -119,7 +119,7 @@ fun LicensesScreen(onBack: () -> Unit, repository: LicenseRepository = koinInjec
             ) {
                 MuseEmptyState(
                     icon = MuseIcons.info,
-                    title = "暂无许可数据",
+                    title = "No license data yet",
                 )
             }
             return@MusePageScaffold
@@ -153,7 +153,7 @@ fun LicensesScreen(onBack: () -> Unit, repository: LicenseRepository = koinInjec
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 context.startActivity(intent)
                             }.onError { msg, t ->
-                                MuseToast.show("未找到可打开链接的应用")
+                                MuseToast.show("No app found that can open the link")
                             }
                         },
                     )
@@ -207,9 +207,9 @@ private fun HeaderSummary(manifest: LicenseManifest) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Muse 闭源商业发布,所有第三方依赖均为宽松协议" +
+                text = "Shaheen 2 is a closed-source commercial release; all third-party dependencies use permissive licenses" +
                     "(Apache 2.0 / MIT / BSD / EPL-1.0)," +
-                    "无需开源我们的代码,仅需保留本声明。",
+                    "We are not required to open-source our code; only this notice must be retained.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
             )
@@ -259,7 +259,7 @@ private fun LicenseGroupSection(
             }
             Spacer(Modifier.weight(1f))
             Text(
-                text = "查看协议",
+                text = "View license",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -338,7 +338,7 @@ private fun DependencyRow(entry: LicenseEntry, onClickUrl: (String) -> Unit) {
         if (entry.hasUrl) {
             Icon(
                 imageVector = MuseIcons.externalLink,
-                contentDescription = "查看源码",
+                contentDescription = "View source",
                 tint = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(16.dp),
             )
@@ -357,15 +357,15 @@ private fun FooterNote() {
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
-            text = "如对协议有疑问,可查阅下方链接的完整声明。" +
-                "本页面数据每构建一次更新一次(generatedAt 标记时间)。",
+            text = "If you have questions about a license, see the full statement at the links below." +
+                "This page's data is updated once per build (marked by the generatedAt time).",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             listOf(
-                "项目主页" to "https://github.com/Zer0Qing/Muse",
-                "官网 museai.ltd" to "https://museai.ltd",
+                "Project homepage" to "https://github.com/Zer0Qing/Muse",
+                "Official site museai.ltd" to "https://museai.ltd",
             ).forEach { (label, url) ->
                 Text(
                     text = label,
@@ -376,7 +376,7 @@ private fun FooterNote() {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
-                        }.onError { _, _ -> MuseToast.show("未找到可打开链接的应用") }
+                        }.onError { _, _ -> MuseToast.show("No app found that can open the link") }
                     },
                 )
             }
@@ -405,7 +405,7 @@ private fun LicenseTextDialog(title: String, text: String?, isLoading: Boolean, 
                         size = 24.dp,
                     )
                     text.isNullOrBlank() -> Text(
-                        text = "未找到该协议文本",
+                        text = "License text not found",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )

@@ -85,7 +85,7 @@ class MessageImageStore(
                 file.writeBytes(Base64.getMimeDecoder().decode(raw))
                 FILE_PREFIX + file.absolutePath
             }.getOrElse { e ->
-                Logger.w(TAG, "图片落盘失败,降级为 base64: ${e.message}")
+                Logger.w(TAG, "Image failed to save to disk; degrading to base64: ${e.message}")
                 value
             }
         }
@@ -116,7 +116,7 @@ class MessageImageStore(
                 // 不加 data: 前缀(UI 层 Picasso/Coil 等会自动识别纯 base64)
                 Base64.getEncoder().encodeToString(bytes)
             }.getOrElse { e ->
-                Logger.w(TAG, "图片读取失败: ${e.message}")
+                Logger.w(TAG, "Image read failed: ${e.message}")
                 ""
             }
             if (encoded.isNotEmpty()) {
@@ -147,7 +147,7 @@ class MessageImageStore(
             storageDir.listFiles { f -> f.isFile && f.name.startsWith(prefix) }
                 ?.forEach { f -> runCatching { f.delete() } }
         }.onFailure { e ->
-            Logger.w(TAG, "删除消息图片失败: $messageId", e)
+            Logger.w(TAG, "Failed to delete message image: $messageId", e)
         }
     }
 
@@ -179,7 +179,7 @@ class MessageImageStore(
                     }
                 }
             }.onFailure { error ->
-                Logger.w(TAG, "恢复后清理孤立图片失败: ${error.message}")
+                Logger.w(TAG, "Failed to clean orphaned images after restore: ${error.message}")
             }
         }
     }

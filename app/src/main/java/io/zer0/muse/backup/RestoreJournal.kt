@@ -25,7 +25,7 @@ class RestoreJournal(context: Context) {
     } else {
         runCatching { AppJson.decodeFromString(Entry.serializer(), file.readText()) }
             .onFailure { error ->
-                Logger.w(TAG, "恢复账本解析失败: ${error.message}", error)
+                Logger.w(TAG, "Restore ledger parsing failed: ${error.message}", error)
                 AtomicFileStore.quarantine(file, "restore_journal_parse")
             }
             .getOrNull()
@@ -74,7 +74,7 @@ class RestoreJournal(context: Context) {
         )
         update(completed)
         if (!file.delete()) {
-            Logger.w(TAG, "恢复完成但账本删除失败: ${file.absolutePath}")
+            Logger.w(TAG, "Restore complete but deleting the ledger failed: ${file.absolutePath}")
         }
     }
 

@@ -89,10 +89,10 @@ class AutoBackupHelper(
     suspend fun backupNow(): Boolean = withContext(AppDispatchers.io) {
         // B-7: 备份恢复(文件级替换 DB)窗口内不再触发自动备份,避免对正在替换的库做 VACUUM。
         if (io.zer0.common.ProcessWriteGate.restoring) {
-            Logger.w(TAG, "backupNow: 备份恢复进行中,跳过本次自动备份")
+            Logger.w(TAG, "backupNow: a backup restore is in progress, skipping this auto-backup")
             return@withContext false
         }
-        Logger.i(TAG, "backupNow: 开始备份")
+        Logger.i(TAG, "backupNow: starting backup")
         val now = System.currentTimeMillis()
 
         val backupDir = ensureBackupDir()
@@ -111,7 +111,7 @@ class AutoBackupHelper(
         val snapshotFiles = mutableListOf<Pair<String, File>>()
         for (name in dbNames) {
             if (io.zer0.common.ProcessWriteGate.restoring ||
-                backupBlocksRestore("数据库快照")
+                backupBlocksRestore("database snapshot")
             ) {
                 return@withContext false
             }
@@ -122,7 +122,7 @@ class AutoBackupHelper(
             if (vacuumInto(dbFile, snap)) {
                 snapshotFiles.add(name to snap)
             } else {
-                Logger.w(TAG, "backupNow: $name 快照失败,跳过该库计入部分成功")
+                Logger.w(TAG, "backupNow: $name snapshot failed; skipping this database and counting a partial success")
             }
         }
 
@@ -132,7 +132,7 @@ class AutoBackupHelper(
 
         // 2. 打包
         if (io.zer0.common.ProcessWriteGate.restoring ||
-            backupBlocksRestore("备份压缩包")
+            backupBlocksRestore("backup archive")
         ) {
             return@withContext false
         }
@@ -145,14 +145,14 @@ class AutoBackupHelper(
 
         if (zipped) {
             if (io.zer0.common.ProcessWriteGate.restoring ||
-                backupBlocksRestore("备份结果")
+                backupBlocksRestore("backup result")
             ) {
                 return@withContext false
             }
             val messageCount = try {
                 messageDao.countMessages().toLong()
             } catch (e: Exception) {
-                Logger.w(TAG, "backupNow: 读取消息总数失败: ${e.message}", e)
+                Logger.w(TAG, "backupNow: failed to read the total message count: ${e.message}", e)
                 0L
             }
             logResult(
@@ -165,7 +165,7 @@ class AutoBackupHelper(
             )
             Logger.i(
                 TAG,
-                "backupNow: 备份成功 -> ${target.absolutePath} (${target.length()} bytes, dbs=${snapshotFiles.size})",
+                "backupNow: backup succeeded -> ${target.absolutePath} (${target.length()} bytes, dbs=${snapshotFiles.size})",
             )
         } else {
             logResult(
@@ -199,7 +199,7 @@ class AutoBackupHelper(
             )
             target
         }.getOrElse {
-            Logger.w(TAG, "backupNow: 设置快照导出失败,跳过: ${it.message}")
+            Logger.w(TAG, "backupNow: settings snapshot export failed, skipping: ${it.message}")
             null
         }
     }
@@ -221,7 +221,7 @@ class AutoBackupHelper(
             }
             true
         }.getOrElse {
-            Logger.e(TAG, "zipSnapshots: 打包失败: ${it.message}", it)
+            Logger.e(TAG, "zipSnapshots: packing failed: ${it.message}", it)
             target.delete()
             false
         }
@@ -229,7 +229,7 @@ class AutoBackupHelper(
 
     private fun backupBlocksRestore(operation: String): Boolean {
         if (!io.zer0.common.ProcessWriteGate.restoring) return false
-        Logger.w(TAG, "备份恢复进行中，跳过自动备份${operation}写入")
+        Logger.w(TAG, "Backup restore in progress; skipping the auto-backup ${operation} write")
         return true
     }
 
@@ -244,7 +244,7 @@ class AutoBackupHelper(
     suspend fun trimOldBackups(keepCount: Int = DEFAULT_KEEP_COUNT) = withContext(AppDispatchers.io) {
         val backupDir = ensureBackupDir()
         if (backupDir == null) {
-            Logger.w(TAG, "trimOldBackups: 备份目录不可用")
+            Logger.w(TAG, "trimOldBackups: backup directory unavailable")
             return@withContext
         }
 
@@ -265,20 +265,20 @@ class AutoBackupHelper(
                 if (f.delete()) {
                     deleted++
                 } else {
-                    Logger.w(TAG, "trimOldBackups: 删除失败 ${f.absolutePath}")
+                    Logger.w(TAG, "trimOldBackups: delete failed ${f.absolutePath}")
                 }
             } catch (e: Exception) {
-                Logger.w(TAG, "trimOldBackups: 删除异常 ${f.absolutePath}", e)
+                Logger.w(TAG, "trimOldBackups: delete error ${f.absolutePath}", e)
             }
         }
 
         try {
             autoBackupLogDao.trim(keepCount)
         } catch (e: Exception) {
-            Logger.w(TAG, "trimOldBackups: 清理日志表失败: ${e.message}", e)
+            Logger.w(TAG, "trimOldBackups: failed to clean the log table: ${e.message}", e)
         }
 
-        Logger.i(TAG, "trimOldBackups: 保留 $keepCount 份,删除 $deleted 个旧备份文件")
+        Logger.i(TAG, "trimOldBackups: keeping $keepCount copies, deleted $deleted old backup files")
     }
 
     /**
@@ -289,7 +289,7 @@ class AutoBackupHelper(
         val parent = dbFile.parentFile ?: return null
         val backupDir = File(parent, BACKUP_DIR_NAME)
         if (!backupDir.exists() && !backupDir.mkdirs()) {
-            Logger.w(TAG, "ensureBackupDir: 创建备份目录失败 ${backupDir.absolutePath}")
+            Logger.w(TAG, "ensureBackupDir: failed to create the backup directory ${backupDir.absolutePath}")
             return null
         }
         return backupDir
@@ -315,10 +315,10 @@ class AutoBackupHelper(
             // VACUUM INTO 路径中的单引号需转义
             val escaped = target.absolutePath.replace("'", "''")
             conn.execSQL("VACUUM INTO '$escaped'")
-            Logger.d(TAG, "vacuumInto: 一致性快照已生成 ${target.absolutePath} (${target.length()} bytes)")
+            Logger.d(TAG, "vacuumInto: consistency snapshot created ${target.absolutePath} (${target.length()} bytes)")
             return true
         } catch (e: Exception) {
-            Logger.e(TAG, "vacuumInto: 生成快照失败: ${e.message}", e)
+            Logger.e(TAG, "vacuumInto: failed to create snapshot: ${e.message}", e)
             // VACUUM INTO 失败(旧设备/权限)时回退:先强制 checkpoint 再复制主库
             return runCatching {
                 conn?.rawQuery("PRAGMA wal_checkpoint(FULL)", null)?.use { it.moveToFirst() }
@@ -327,14 +327,14 @@ class AutoBackupHelper(
                 dbFile.copyTo(target, overwrite = true)
                 true
             }.getOrElse {
-                Logger.e(TAG, "vacuumInto: 回退复制也失败: ${it.message}", it)
+                Logger.e(TAG, "vacuumInto: fallback copy also failed: ${it.message}", it)
                 false
             }
         } finally {
             try {
                 conn?.close()
             } catch (e: Exception) {
-                Logger.w(TAG, "vacuumInto: 关闭连接失败: ${e.message}", e)
+                Logger.w(TAG, "vacuumInto: failed to close the connection: ${e.message}", e)
             }
         }
     }
@@ -362,7 +362,7 @@ class AutoBackupHelper(
                 ),
             )
         } catch (e: Exception) {
-            Logger.e(TAG, "logResult: 写入备份日志失败", e)
+            Logger.e(TAG, "logResult: failed to write the backup log", e)
         }
     }
 }

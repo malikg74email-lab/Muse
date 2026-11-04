@@ -36,11 +36,15 @@ internal object MiniPhoneScript {
     /** 单轮回复最多合成几段语音。 */
     const val MAX_VOICE_SEGMENTS: Int = 5
 
-    private const val OPEN_TAG: String = "[语音]"
-    private const val CLOSE_TAG: String = "[/语音]"
+    private const val OPEN_TAG: String = "[Voice]"
+    private const val CLOSE_TAG: String = "[/Voice]"
 
-    /** 非贪婪匹配成对标记;`[\s\S]` 让段内换行也算内容。 */
-    private val BLOCK: Regex = Regex("""\[语音\]([\s\S]*?)\[/语音\]""")
+    /** 旧版中文标记:已落盘/旧模型输出仍可能出现,解析时一并接受。 */
+    private const val LEGACY_OPEN_TAG: String = "[语音]"
+    private const val LEGACY_CLOSE_TAG: String = "[/语音]"
+
+    /** 非贪婪匹配成对标记(新旧两种写法都认);`[\s\S]` 让段内换行也算内容。 */
+    private val BLOCK: Regex = Regex("""\[(?:Voice|语音)\]([\s\S]*?)\[/(?:Voice|语音)\]""")
 
     /**
      * 按标记切段。
@@ -71,9 +75,12 @@ internal object MiniPhoneScript {
         return parts
     }
 
-    /** 标记外的一段:顺手抹掉落单的标记,再按是否空白决定要不要留下。 */
+    /** 标记外的一段:顺手抹掉落单的标记(新旧写法都抹),再按是否空白决定要不要留下。 */
     private fun MutableList<MiniPhoneScriptPart>.appendPlain(chunk: String) {
-        val text = chunk.replace(OPEN_TAG, "").replace(CLOSE_TAG, "").trim()
+        val text = chunk
+            .replace(OPEN_TAG, "").replace(CLOSE_TAG, "")
+            .replace(LEGACY_OPEN_TAG, "").replace(LEGACY_CLOSE_TAG, "")
+            .trim()
         if (text.isNotEmpty()) add(MiniPhoneScriptPart.Plain(text))
     }
 }

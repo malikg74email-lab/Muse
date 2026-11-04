@@ -305,7 +305,7 @@ class MuseNotificationManager(private val context: Context) {
                 // B-15: Android 13+ 通知权限被拒时会抛 SecurityException。
                 // 不能像普通失败那样只记 W 静默降级——记 ERROR 日志,便于设置页据此提示用户授权 POST_NOTIFICATIONS。
                 if (t is SecurityException) {
-                    Logger.e(TAG, "notifyProactiveMessage denied (通知权限被拒, Android 13+ 需 POST_NOTIFICATIONS): $msg", t)
+                    Logger.e(TAG, "notifyProactiveMessage denied (notification permission denied, Android 13+ needs POST_NOTIFICATIONS): $msg", t)
                 } else {
                     Logger.w(TAG, "notifyProactiveMessage failed: $msg")
                 }
@@ -320,9 +320,9 @@ class MuseNotificationManager(private val context: Context) {
      * 所以主动消息链路用它把「没发通知」和「发了但系统会丢掉」分开记。
      */
     fun proactiveNotificationBlocker(): String? = when {
-        !nm.areNotificationsEnabled() -> "系统通知权限已关闭"
+        !nm.areNotificationsEnabled() -> "System notification permission is off"
         nm.getNotificationChannel(CHANNEL_PROACTIVE_MESSAGE)?.importance == NotificationManager.IMPORTANCE_NONE ->
-            "主动消息通知渠道已被关闭"
+            "The proactive-message notification channel is off"
         else -> null
     }
 
@@ -367,7 +367,7 @@ class MuseNotificationManager(private val context: Context) {
                     )
                 }
             }
-        }.onError { msg, _ -> Logger.w(TAG, "加载头像失败: $msg") }.getOrNull()
+        }.onError { msg, _ -> Logger.w(TAG, "Failed to load avatar: $msg") }.getOrNull()
     }
 
     /**

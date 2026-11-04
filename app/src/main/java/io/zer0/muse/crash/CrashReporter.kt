@@ -88,14 +88,14 @@ object CrashReporterFactory {
         if (crashLogs.isEmpty()) return SubmitOutcome.NothingToSend
         val uploaded = runCatching {
             ServerCrashReporter(REPORT_ENDPOINT, directClient(client)).send(crashLogs, metadata)
-        }.onFailure { Logger.w(TAG, "服务端上报异常: ${describeForLog(it)}") }.getOrDefault(false)
+        }.onFailure { Logger.w(TAG, "Server reporting exception: ${describeForLog(it)}") }.getOrDefault(false)
         return if (uploaded) {
             SubmitOutcome.Uploaded(crashLogs.size)
         } else {
             // 服务端不通 → 邮件兜底。收件人写死，用户只需要在邮件应用里点发送。
             val opened = runCatching {
                 EmailCrashReporter(context, REPORT_EMAIL).report(crashLogs.joinToString("\n\n---\n\n"), metadata)
-            }.onFailure { Logger.w(TAG, "邮件兜底失败: ${it.message}") }.isSuccess
+            }.onFailure { Logger.w(TAG, "Email fallback failed: ${it.message}") }.isSuccess
             if (opened) SubmitOutcome.MailFallback(crashLogs.size) else SubmitOutcome.Failed
         }
     }
@@ -150,20 +150,20 @@ class EmailCrashReporter(
 ) {
     fun report(crashLog: String, metadata: Map<String, String>) {
         if (recipient.isBlank()) {
-            Logger.w(TAG, "邮件收件人为空,跳过上报")
+            Logger.w(TAG, "Email recipient is empty, skipping reporting")
             return
         }
         val body = buildString {
-            appendLine("===== Muse 崩溃报告 =====")
+            appendLine("===== Shaheen 2 crash report =====")
             metadata.forEach { (k, v) -> appendLine("$k: $v") }
             appendLine()
-            appendLine("----- 崩溃堆栈 -----")
+            appendLine("----- Crash stack -----")
             appendLine(crashLog)
         }
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "message/rfc822"
             putExtra(Intent.EXTRA_EMAIL, arrayOf(recipient))
-            putExtra(Intent.EXTRA_SUBJECT, "Muse 崩溃报告 ${metadata["timestamp"] ?: ""}")
+            putExtra(Intent.EXTRA_SUBJECT, "Shaheen 2 crash report ${metadata["timestamp"] ?: ""}")
             putExtra(Intent.EXTRA_TEXT, body)
             // 从 Application Context 启动 Activity 必须加 NEW_TASK
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -171,9 +171,9 @@ class EmailCrashReporter(
         // createChooser 返回新 Intent，原始 intent 上的 NEW_TASK 不会自动传递，
         // 统一走 ShareIntentHelper 在非 Activity context 下补 flag。
         resultOf {
-            io.zer0.muse.util.ShareIntentHelper.startChooserSafely(context, intent, "选择邮件应用发送崩溃报告")
+            io.zer0.muse.util.ShareIntentHelper.startChooserSafely(context, intent, "Choose an email app to send the crash report")
         }.onError { msg, t ->
-            Logger.w(TAG, "调起邮件应用失败: ${t?.message ?: msg}")
+            Logger.w(TAG, "Launching the email app failed: ${t?.message ?: msg}")
         }
     }
 
@@ -216,7 +216,7 @@ class ServerCrashReporter(
      */
     suspend fun send(crashLogs: List<String>, metadata: Map<String, String>): Boolean {
         if (endpoint.isBlank() || !endpoint.startsWith("http")) {
-            Logger.w(TAG, "上报端点非法: $endpoint")
+            Logger.w(TAG, "Reporting endpoint invalid: $endpoint")
             return false
         }
         return runCatching {
@@ -226,14 +226,14 @@ class ServerCrashReporter(
                 .build()
             httpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
-                    Logger.i(TAG, "崩溃已上报到服务端 (${crashLogs.size} 条)")
+                    Logger.i(TAG, "Crash reported to the server (${crashLogs.size} entries)")
                     true
                 } else {
-                    Logger.w(TAG, "服务端拒绝崩溃上报: HTTP ${response.code}")
+                    Logger.w(TAG, "Server rejected the crash report: HTTP ${response.code}")
                     false
                 }
             }
-        }.onFailure { Logger.w(TAG, "服务端上报异常: ${CrashReporterFactory.describeForLog(it)}") }.getOrDefault(false)
+        }.onFailure { Logger.w(TAG, "Server reporting exception: ${CrashReporterFactory.describeForLog(it)}") }.getOrDefault(false)
     }
 
     /** 构建 JSON 请求体。批次内多条日志用数组，服务端按条归档。 */

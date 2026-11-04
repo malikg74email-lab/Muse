@@ -131,7 +131,7 @@ class ChatSettingsStore(private val context: Context) {
                 .apply()
             io.zer0.common.Logger.w(
                 "ChatSettingsStore",
-                "chat_preferences_json 损坏，已备份原始内容(${raw.length} 字符)到 $CORRUPT_BACKUP_PREFS/$CORRUPT_BACKUP_KEY",
+                "chat_preferences_json is corrupted; the original content (${raw.length} characters) was backed up to $CORRUPT_BACKUP_PREFS/$CORRUPT_BACKUP_KEY",
             )
         }
     }
@@ -140,7 +140,7 @@ class ChatSettingsStore(private val context: Context) {
      * @Deprecated v2.5.3 (P1-1): 整份 data class 回写会拿过时快照覆盖别处修改。
      * 改用 [updateChatPreferences] 做函数式更新。保留此方法仅为兼容存量调用与测试。
      */
-    @Deprecated("改用 updateChatPreferences(block) 做原子函数式更新，避免整份回写覆盖并发修改")
+    @Deprecated("Use updateChatPreferences(block) for atomic functional updates, to avoid whole-document write-backs overwriting concurrent changes")
     suspend fun saveChatPreferences(prefs: ChatPreferences) {
         store.edit { it[KEY_CHAT_PREFERENCES] = AppJson.encodeToString(ChatPreferences.serializer(), prefs) }
     }

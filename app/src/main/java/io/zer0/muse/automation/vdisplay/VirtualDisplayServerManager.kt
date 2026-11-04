@@ -46,7 +46,7 @@ class VirtualDisplayServerManager(
         return when {
             state.shellEnabled -> "ready(Shizuku)"
             state.rootEnabled -> "ready(Root)"
-            else -> "需要 Shizuku 或 Root 权限通道(设置→权限向导授权)"
+            else -> "Requires a Shizuku or Root permission channel (Settings → Permission wizard authorisation)"
         }
     }
 
@@ -64,11 +64,11 @@ class VirtualDisplayServerManager(
             }
             if (!state.shellEnabled && !state.rootEnabled) {
                 return@withLock Result.failure(
-                    IllegalStateException("虚拟屏需要 Shizuku 或 Root 权限通道(设置→权限向导授权)"),
+                    IllegalStateException("The virtual screen requires a Shizuku or Root permission channel (Settings → Permission wizard authorisation)"),
                 )
             }
             if (!deployJar()) {
-                return@withLock Result.failure(IllegalStateException("虚拟屏服务端部署失败(assets 缺失或写入被拒)"))
+                return@withLock Result.failure(IllegalStateException("Virtual screen server deployment failed (assets missing or write refused)"))
             }
 
             val token = UUID.randomUUID().toString()
@@ -78,7 +78,7 @@ class VirtualDisplayServerManager(
             exec("pkill -f ${VdContract.SERVER_KILL_PATTERN}")
             val launch = exec(launchCommand(token))
             if (launch.exitCode != 0) {
-                Logger.w(TAG, "服务端启动命令退出码 ${launch.exitCode}: ${launch.output.take(200)}")
+                Logger.w(TAG, "Server start command exit code ${launch.exitCode}: ${launch.output.take(200)}")
             }
 
             val proxy = awaitBinder()
@@ -87,12 +87,12 @@ class VirtualDisplayServerManager(
                     VirtualDisplayBinderRegistry.clearHandoffToken()
                     return@withLock Result.failure(
                         IllegalStateException(
-                            "虚拟屏服务端未在 ${AWAIT_TIMEOUT_MS / 1000}s 内就绪" +
-                                "(详见 /data/local/tmp/muse-vd-server.log)",
+                            "The virtual screen server was not ready within ${AWAIT_TIMEOUT_MS / 1000}s" +
+                                "(see /data/local/tmp/muse-vd-server.log)",
                         ),
                     )
                 }
-            Logger.i(TAG, "虚拟屏服务端已就绪")
+            Logger.i(TAG, "Virtual screen server ready")
             Result.success(proxy)
         }
     }
@@ -115,7 +115,7 @@ class VirtualDisplayServerManager(
                 null
             }
         } catch (e: Exception) {
-            Logger.w(TAG, "服务端探活失败: ${e.message}")
+            Logger.w(TAG, "Server liveness check failed: ${e.message}")
             VirtualDisplayBinderRegistry.update(null)
             clearCachedDisplayId()
             null
@@ -132,7 +132,7 @@ class VirtualDisplayServerManager(
 
     /** 以当前可用档位(Shizuku 优先、Root 兜底)执行一条命令(部署/启动共用)。 */
     suspend fun exec(command: String): ShellExecutor.ExecDetail = shell.execTiered(command)?.second
-        ?: ShellExecutor.ExecDetail(-1, "无可用的 shell 权限通道")
+        ?: ShellExecutor.ExecDetail(-1, "No usable shell permission channel")
 
     // ── 内部 ────────────────────────────────────────────────────────────────
 
@@ -141,7 +141,7 @@ class VirtualDisplayServerManager(
             runCatching {
                 context.assets.open(ASSET_JAR_PATH).use { it.readBytes() }
             }.getOrElse {
-                Logger.w(TAG, "内置 vd-server.jar 缺失: ${it.message}")
+                Logger.w(TAG, "Built-in vd-server.jar missing: ${it.message}")
                 return false
             }
 
@@ -159,7 +159,7 @@ class VirtualDisplayServerManager(
             val redirect = if (append) ">>" else ">"
             val result = exec("echo -n $chunk | base64 -d $redirect ${VdContract.SERVER_JAR_PATH}")
             if (result.exitCode != 0) {
-                Logger.w(TAG, "jar 分块写入失败: ${result.output.take(200)}")
+                Logger.w(TAG, "jar chunked write failed: ${result.output.take(200)}")
                 return false
             }
             append = true
@@ -168,7 +168,7 @@ class VirtualDisplayServerManager(
         val verify = exec("stat -c %s ${VdContract.SERVER_JAR_PATH}")
         val ok = verify.exitCode == 0 && verify.output.trim() == bytes.size.toString()
         if (!ok) {
-            Logger.w(TAG, "jar 写入校验失败: ${verify.output.trim()} != ${bytes.size}")
+            Logger.w(TAG, "jar write verification failed: ${verify.output.trim()} != ${bytes.size}")
         }
         return ok
     }

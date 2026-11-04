@@ -60,7 +60,7 @@ internal object QqClient {
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             TokenInfo(
                 accessToken = obj["access_token"]?.jsonPrimitive?.contentOrNull
-                    ?: error("QQ token 响应缺字段: ${resp.take(200)}"),
+                    ?: error("QQ token response is missing fields: ${resp.take(200)}"),
                 expiresInSeconds = obj["expires_in"]?.jsonPrimitive?.contentOrNull
                     ?.toLongOrNull() ?: 7200L,
             )
@@ -78,7 +78,7 @@ internal object QqClient {
             ).getOrThrow()
             val obj = AppJson.parseToJsonElement(resp).jsonObject
             obj["url"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                ?: error("QQ gateway 响应缺 url: ${resp.take(200)}")
+                ?: error("QQ gateway response is missing url: ${resp.take(200)}")
         }
     }
 

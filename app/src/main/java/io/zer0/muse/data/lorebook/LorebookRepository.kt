@@ -117,7 +117,7 @@ class LorebookRepository(
         fun parseKeywords(keywordsJson: String): List<String> = keywordsCache.computeIfAbsent(keywordsJson) {
             runCatching { json.decodeFromString(stringListSerializer, it) }
                 .getOrElse { e ->
-                    Logger.w("LorebookRepository", "keywordsJson 解析失败: ${e.message}, 返回 emptyList (raw=$keywordsJson)")
+                    Logger.w("LorebookRepository", "keywordsJson parse failed: ${e.message}, returning emptyList (raw=$keywordsJson)")
                     emptyList()
                 }
         }

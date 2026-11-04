@@ -304,7 +304,7 @@ abstract class MuseDb : RoomDatabase() {
                     ?: error("MuseDb not initialized")
                 rebuildKnowledgeChunkFtsTable(db)
                 knowledgeFtsBroken = false
-                io.zer0.common.Logger.i("MuseDb", "knowledge_chunks_fts 已重建")
+                io.zer0.common.Logger.i("MuseDb", "knowledge_chunks_fts rebuilt")
             }
         }
 
@@ -1528,7 +1528,7 @@ abstract class MuseDb : RoomDatabase() {
                 db.compileStatement(
                     """
                     INSERT OR IGNORE INTO assistants (id, name, sortIndex, createdAt, updatedAt)
-                    VALUES ('default', '默认助手', 0, 0, 0)
+                    VALUES ('default', 'Default Assistant', 0, 0, 0)
                     """.trimIndent(),
                 ).use { it.executeInsert() }
                 // sessions 加字段
@@ -1949,7 +1949,7 @@ abstract class MuseDb : RoomDatabase() {
                 } catch (e: Exception) {
                     // 旧表异常:放弃数据迁移,skills 表将重建为空(内置 skill 会在启动时重新写入)
                     // v1.71: 记录日志,便于排查用户 skill 丢失问题
-                    Logger.w("MuseDb", "skills 表迁移失败,用户自定义 skill 将丢失", e)
+                    Logger.w("MuseDb", "skills table migration failed; user-defined skills will be lost", e)
                 }
                 // 3. 替换旧表(DDL)
                 db.execSQL("DROP TABLE skills")
@@ -2112,7 +2112,7 @@ abstract class MuseDb : RoomDatabase() {
                     ).use { /* 执行 INSERT,关闭 Cursor */ }
                 } catch (e: Exception) {
                     // 旧表异常:放弃数据迁移,skills 表将重建为空(内置 skill 会在启动时重新写入)
-                    Logger.w("MuseDb", "skills 表迁移失败,用户自定义 skill 将丢失", e)
+                    Logger.w("MuseDb", "skills table migration failed; user-defined skills will be lost", e)
                 }
                 // 3. 替换旧表(DDL)
                 db.execSQL("DROP TABLE skills")
@@ -2152,7 +2152,7 @@ abstract class MuseDb : RoomDatabase() {
                         id TEXT NOT NULL PRIMARY KEY,
                         title TEXT NOT NULL,
                         content TEXT NOT NULL,
-                        category TEXT NOT NULL DEFAULT '通用',
+                        category TEXT NOT NULL DEFAULT 'General',
                         tagsJson TEXT NOT NULL DEFAULT '[]',
                         source TEXT NOT NULL DEFAULT 'manual',
                         sessionId TEXT,
@@ -2560,7 +2560,7 @@ abstract class MuseDb : RoomDatabase() {
                 db.compileStatement(
                     """
                     INSERT OR IGNORE INTO knowledge_bases (id, name, description, created_at, updated_at, doc_count)
-                    VALUES ('default', '默认知识库', '所有未指定知识库的文档默认归入此处', 0, 0, 0)
+                    VALUES ('default', 'Default Knowledge Base', 'All documents not assigned to a knowledge base are placed here by default', 0, 0, 0)
                     """.trimIndent(),
                 ).use { it.executeInsert() }
 
@@ -2580,7 +2580,7 @@ abstract class MuseDb : RoomDatabase() {
                     )
                 } catch (e: Exception) {
                     // FTS 同步失败不阻塞迁移,后续重索引会补齐
-                    io.zer0.common.Logger.w("MuseDb", "FTS 同步失败,稍后重索引补齐", e)
+                    io.zer0.common.Logger.w("MuseDb", "FTS sync failed; a later reindex will fill the gap", e)
                 }
 
                 // 9. 更新默认 KB 的 doc_count(冗余字段)
@@ -3481,11 +3481,11 @@ abstract class MuseDb : RoomDatabase() {
                                     try {
                                         createMessageFtsTable(db, fts5Available(db))
                                     } catch (e: Exception) {
-                                        io.zer0.common.Logger.e("MuseDb", "创建 messages_fts 失败: ${e.message}", e)
+                                        io.zer0.common.Logger.e("MuseDb", "Failed to create messages_fts: ${e.message}", e)
                                     }
                                 } catch (e: Exception) {
                                     knowledgeFtsBroken = true
-                                    io.zer0.common.Logger.e("MuseDb", "创建 knowledge_chunks_fts 失败: ${e.message}", e)
+                                    io.zer0.common.Logger.e("MuseDb", "Failed to create knowledge_chunks_fts: ${e.message}", e)
                                 }
                             }
                         }
@@ -3503,16 +3503,16 @@ abstract class MuseDb : RoomDatabase() {
                                         try {
                                             createKnowledgeChunkFtsTable(db)
                                             knowledgeFtsBroken = false
-                                            io.zer0.common.Logger.i("MuseDb", "knowledge_chunks_fts 自愈重建成功")
+                                            io.zer0.common.Logger.i("MuseDb", "knowledge_chunks_fts self-healing rebuild succeeded")
                                         } catch (e2: Exception) {
                                             knowledgeFtsBroken = true
-                                            io.zer0.common.Logger.e("MuseDb", "knowledge_chunks_fts 重建失败: ${e2.message}", e2)
+                                            io.zer0.common.Logger.e("MuseDb", "knowledge_chunks_fts rebuild failed: ${e2.message}", e2)
                                         }
                                     }
                                 }
                             } catch (e: Exception) {
                                 knowledgeFtsBroken = true
-                                io.zer0.common.Logger.e("MuseDb", "knowledge_chunks_fts 校验失败: ${e.message}", e)
+                                io.zer0.common.Logger.e("MuseDb", "knowledge_chunks_fts validation failed: ${e.message}", e)
                             }
                             // R-DB-05: 校验 messages_fts;缺失时按能力重建,FTS5 优先。
                             try {
@@ -3528,7 +3528,7 @@ abstract class MuseDb : RoomDatabase() {
                                     }
                                 }
                             } catch (e: Exception) {
-                                io.zer0.common.Logger.e("MuseDb", "messages_fts 校验失败: ${e.message}", e)
+                                io.zer0.common.Logger.e("MuseDb", "messages_fts validation failed: ${e.message}", e)
                             }
                             // v1.107: WAL 模式由 setJournalMode(WRITE_AHEAD_LOGGING) 启用,这里不重复设置
                             // v1.107: 被动 checkpoint,合并 WAL 日志到主数据库
@@ -3560,7 +3560,7 @@ abstract class MuseDb : RoomDatabase() {
                                     }
                                 }
                             } catch (e: Exception) {
-                                io.zer0.common.Logger.w("MuseDb", "降级归档失败(不影响重建): ${e.message}")
+                                io.zer0.common.Logger.w("MuseDb", "Downgrade archiving failed (does not affect the rebuild): ${e.message}")
                             }
                         }
                     })

@@ -120,7 +120,7 @@ object ProviderModelFetcher {
                 ?: return@withContext VerifyOutcome.NotReady(
                     // 面向用户的文案：此前直接抛英文 no model to test，
                     // 中文界面里出现一句开发者术语，用户无法据此行动。
-                    reason = "没有找到可测试的模型，请先点击「获取」拉取模型列表",
+                    reason = "No testable model found; please tap \"Fetch\" first to pull the model list",
                     kind = (listed as? Outcome.Failure)?.kind ?: FailureKind.OTHER,
                 )
 

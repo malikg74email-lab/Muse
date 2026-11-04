@@ -43,7 +43,7 @@ class TaskerTriggerReceiver : BroadcastReceiver() {
         if (intent.action != ACTION_TASKER_TRIGGER) return
         val prompt = intent.getStringExtra(EXTRA_PROMPT)?.trim().orEmpty()
         if (prompt.isEmpty()) {
-            Logger.w(TAG, "Tasker 触发缺少 prompt，忽略")
+            Logger.w(TAG, "Tasker trigger is missing the prompt, ignoring")
             return
         }
         val pendingResult = goAsync()
@@ -54,7 +54,7 @@ class TaskerTriggerReceiver : BroadcastReceiver() {
                 // 旧实现直接 appendMessage，恢复事务的 clearConversationStateForRestore
                 // 会把这轮写入覆盖掉 —— 表现为「Tasker 触发了但对话没留下」。
                 if (io.zer0.common.ProcessWriteGate.restoring) {
-                    Logger.w(TAG, "备份恢复进行中，跳过 Tasker 触发")
+                    Logger.w(TAG, "A backup restore is in progress, skipping the Tasker trigger")
                     return@launch
                 }
                 val settings = runCatching {
@@ -72,13 +72,13 @@ class TaskerTriggerReceiver : BroadcastReceiver() {
                     lastAcceptedAtMs = lastAcceptedAt,
                 )
                 if (decision != TaskerTriggerGuard.Decision.ACCEPTED) {
-                    Logger.w(TAG, "Tasker 触发被拒绝: $decision")
+                    Logger.w(TAG, "Tasker trigger rejected: $decision")
                     return@launch
                 }
                 lastAcceptedAt = System.currentTimeMillis()
                 runTrigger(context.applicationContext, prompt)
             } catch (e: Exception) {
-                Logger.e(TAG, "Tasker 触发执行失败: ${e.message}", e)
+                Logger.e(TAG, "Tasker trigger execution failed: ${e.message}", e)
             } finally {
                 pendingResult.finish()
             }
@@ -100,10 +100,10 @@ class TaskerTriggerReceiver : BroadcastReceiver() {
                 maxTokens = assistant?.maxTokens,
             )
         } ?: run {
-            Logger.w(TAG, "Tasker 触发 AI 超时")
+            Logger.w(TAG, "Tasker trigger AI timed out")
             return
         }
-        val reply = io.zer0.muse.transformer.stripThinkTags(completion.text).ifBlank { "(空回复)" }
+        val reply = io.zer0.muse.transformer.stripThinkTags(completion.text).ifBlank { "(empty reply)" }
 
         // 落库到专用会话（首次创建，后续复用同名会话），与定时任务同源
         val sessionId = resultOf {
@@ -121,7 +121,7 @@ class TaskerTriggerReceiver : BroadcastReceiver() {
             resultOf {
                 sessionRepo.appendMessage(sessionId, UIMessage(role = MessageRole.USER, content = prompt))
                 sessionRepo.appendMessage(sessionId, UIMessage(role = MessageRole.ASSISTANT, content = reply))
-            }.onError { msg, _ -> Logger.w(TAG, "Tasker 会话落库失败: $msg") }
+            }.onError { msg, _ -> Logger.w(TAG, "Persisting the Tasker session failed: $msg") }
         }
 
         // 通知回传结果
@@ -136,11 +136,11 @@ class TaskerTriggerReceiver : BroadcastReceiver() {
             val policy = settings?.notificationPolicyFlow?.first() ?: "when_unfocused"
             MuseNotificationManager(app).notifyChatCompletedWithPolicy(
                 policy = policy,
-                sessionTitle = "Tasker 触发",
+                sessionTitle = "Tasker trigger",
                 preview = reply,
                 target = if (sessionId != null) MuseNotificationTarget.Session(sessionId) else MuseNotificationTarget.Home,
             )
-        }.onError { msg, _ -> Logger.w(TAG, "Tasker 通知失败: $msg") }
+        }.onError { msg, _ -> Logger.w(TAG, "Tasker notification failed: $msg") }
     }
 
     companion object {
@@ -153,7 +153,7 @@ class TaskerTriggerReceiver : BroadcastReceiver() {
         const val EXTRA_PROMPT = "prompt"
 
         /** Tasker 触发的专用会话标题（同名复用）。 */
-        const val TASKER_SESSION_TITLE = "Tasker 触发"
+        const val TASKER_SESSION_TITLE = "Tasker trigger"
 
         private const val LLM_TIMEOUT_MS = 120_000L
 

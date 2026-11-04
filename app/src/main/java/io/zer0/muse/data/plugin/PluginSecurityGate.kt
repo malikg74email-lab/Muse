@@ -201,21 +201,21 @@ object PluginSecurityGate {
         val envelope = pluginPackage.manifest.signature
             ?: return SignatureVerification(
                 status = SignatureStatus.UNSIGNED,
-                reason = "外部插件缺少发行者签名",
+                reason = "External plugin is missing a publisher signature",
             )
         val publisherId = envelope.publisherId
         if (publisherId != publisherId.trim() || !isValidPublisherId(publisherId)) {
             return SignatureVerification(
                 status = SignatureStatus.INVALID,
                 publisherId = publisherId.trim(),
-                reason = "发行者 ID 非法",
+                reason = "Illegal publisher ID",
             )
         }
         if (envelope.algorithm != SIGNATURE_ALGORITHM) {
             return SignatureVerification(
                 status = SignatureStatus.UNSUPPORTED,
                 publisherId = publisherId,
-                reason = "不支持的发行者签名算法",
+                reason = "Unsupported publisher signature algorithm",
             )
         }
 
@@ -223,7 +223,7 @@ object PluginSecurityGate {
             return SignatureVerification(
                 status = SignatureStatus.UNSUPPORTED,
                 publisherId = publisherId,
-                reason = "发行者公钥格式非法: ${error.message}",
+                reason = "Illegal publisher public key format: ${error.message}",
             )
         }
         val canonicalPublicKey = Base64.getEncoder().encodeToString(publicKeyBytes)
@@ -232,7 +232,7 @@ object PluginSecurityGate {
                 status = SignatureStatus.INVALID,
                 publisherId = publisherId,
                 fingerprint = publicKeyFingerprint(publicKeyBytes),
-                reason = "发行者公钥编码不是标准 Base64",
+                reason = "Publisher public key encoding is not standard Base64",
             )
         }
         val signatureBytes = decodeBase64(envelope.signature, MAX_SIGNATURE_BYTES).getOrElse { error ->
@@ -240,7 +240,7 @@ object PluginSecurityGate {
                 status = SignatureStatus.INVALID,
                 publisherId = publisherId,
                 fingerprint = publicKeyFingerprint(publicKeyBytes),
-                reason = "发行者签名格式非法: ${error.message}",
+                reason = "Illegal publisher signature format: ${error.message}",
             )
         }
         val canonicalSignature = Base64.getEncoder().encodeToString(signatureBytes)
@@ -249,7 +249,7 @@ object PluginSecurityGate {
                 status = SignatureStatus.INVALID,
                 publisherId = publisherId,
                 fingerprint = publicKeyFingerprint(publicKeyBytes),
-                reason = "发行者签名编码不是标准 Base64",
+                reason = "Publisher signature encoding is not standard Base64",
             )
         }
 
@@ -258,7 +258,7 @@ object PluginSecurityGate {
                 status = SignatureStatus.UNSUPPORTED,
                 publisherId = publisherId,
                 fingerprint = publicKeyFingerprint(publicKeyBytes),
-                reason = "发行者公钥不受支持: ${error.message}",
+                reason = "Publisher public key not supported: ${error.message}",
             )
         }
         val fingerprint = publicKeyFingerprint(publicKeyBytes)
@@ -272,7 +272,7 @@ object PluginSecurityGate {
                 status = SignatureStatus.UNSUPPORTED,
                 publisherId = publisherId,
                 fingerprint = fingerprint,
-                reason = "无法验证发行者签名: ${it.message}",
+                reason = "Could not verify the publisher signature: ${it.message}",
             )
         }
         if (!valid) {
@@ -280,7 +280,7 @@ object PluginSecurityGate {
                 status = SignatureStatus.INVALID,
                 publisherId = publisherId,
                 fingerprint = fingerprint,
-                reason = "发行者签名与插件内容不匹配",
+                reason = "Publisher signature does not match the plugin content",
             )
         }
 
@@ -292,7 +292,7 @@ object PluginSecurityGate {
             status = if (trusted) SignatureStatus.VALID_TRUSTED else SignatureStatus.VALID_UNTRUSTED,
             publisherId = publisherId,
             fingerprint = fingerprint,
-            reason = if (trusted) null else "发行者未受本机信任根信任",
+            reason = if (trusted) null else "Publisher is not trusted by this device's trust root",
         )
     }
 
@@ -304,16 +304,16 @@ object PluginSecurityGate {
      */
     fun rejectionReason(manifest: PluginManifest): String? {
         if (manifest.id.isBlank() || !PLUGIN_ID_REGEX.matches(manifest.id)) {
-            return "插件 id 非法"
+            return "Illegal plugin id"
         }
         val isUiSkin = manifest.kind == UI_SKIN_KIND
         if (isUiSkin) {
             // 声明式皮肤包:允许没有 tools,但必须声明 ui.skin 能力,且不得携带可执行工具/JS。
             if (manifest.tools.isNotEmpty()) {
-                return "ui-skin 插件不得声明可执行工具"
+                return "ui-skin plugins must not declare executable tools"
             }
             if (UI_SKIN_CAPABILITY !in manifest.capabilities) {
-                return "ui-skin 插件必须声明 $UI_SKIN_CAPABILITY 能力"
+                return "ui-skin plugins must declare the $UI_SKIN_CAPABILITY capability"
             }
         } else {
             // v2.7: 入口扩展名按 manifest.runtime 判定 ——
@@ -321,27 +321,27 @@ object PluginSecurityGate {
             // 仍强制安全相对路径（防路径逃逸）。
             val expectedExt = if (manifest.runtime.equals("python", ignoreCase = true)) ".py" else ".js"
             if (!isSafeRelativePath(manifest.entry) || !manifest.entry.lowercase().endsWith(expectedExt)) {
-                return "插件入口文件路径非法"
+                return "Illegal plugin entry file path"
             }
             if (manifest.tools.isEmpty()) {
-                return "插件未声明任何工具"
+                return "Plugin declares no tools"
             }
         }
         if (manifest.trust != EXTERNAL_TRUST) {
-            return "外部插件必须使用 $EXTERNAL_TRUST 信任级别"
+            return "External plugins must use the $EXTERNAL_TRUST trust level"
         }
         // v2.x（沙盒放开）：能力不再按固定名单拒绝，仅校验名称格式合法。
         // 声明用于安装预览展示，不再作为硬性拒绝条件。
         val invalidCapability = (manifest.capabilities + manifest.permissions)
             .firstOrNull { !CAPABILITY_NAME_REGEX.matches(it) }
         if (invalidCapability != null) {
-            return "插件声明的能力名格式非法: $invalidCapability"
+            return "Illegal format for a plugin's declared capability name: $invalidCapability"
         }
         val invalidTool = manifest.tools.firstOrNull { tool ->
             !TOOL_NAME_REGEX.matches(tool.name) || !FUNCTION_NAME_REGEX.matches(tool.functionName)
         }
         return invalidTool?.let {
-            "插件工具名称或函数名非法: ${it.name}/${it.functionName}"
+            "Illegal plugin tool name or function name: ${it.name}/${it.functionName}"
         }
     }
 
@@ -507,23 +507,23 @@ object PluginSecurityGate {
     fun isValidCapabilityName(name: String): Boolean = CAPABILITY_NAME_REGEX.matches(name)
 
     private fun publicKeyBytes(encoded: String): Result<ByteArray> = decodeBase64(encoded, MAX_PUBLIC_KEY_BYTES).map { bytes ->
-        require(bytes.isNotEmpty()) { "公钥为空" }
+        require(bytes.isNotEmpty()) { "Public key is empty" }
         bytes
     }
 
     private fun publicKey(encoded: ByteArray): Result<PublicKey> = runCatching {
         val key = KeyFactory.getInstance(KEY_ALGORITHM)
             .generatePublic(X509EncodedKeySpec(encoded))
-        val ecKey = key as? ECPublicKey ?: error("公钥不是 EC 公钥")
-        require(ecKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "仅支持 P-256 公钥" }
+        val ecKey = key as? ECPublicKey ?: error("Public key is not an EC public key")
+        require(ecKey.params.curve.field.fieldSize == P256_FIELD_SIZE) { "Only P-256 public keys are supported" }
         key
     }
 
     private fun decodeBase64(encoded: String, maxBytes: Int): Result<ByteArray> = runCatching {
-        require(encoded.isNotBlank()) { "Base64 值为空" }
-        require(encoded.length <= maxBytes * 2) { "Base64 值过大" }
+        require(encoded.isNotBlank()) { "Base64 value is empty" }
+        require(encoded.length <= maxBytes * 2) { "Base64 value is too large" }
         Base64.getDecoder().decode(encoded).also { bytes ->
-            require(bytes.size <= maxBytes) { "Base64 解码结果过大" }
+            require(bytes.size <= maxBytes) { "Base64 decoding result is too large" }
         }
     }
 

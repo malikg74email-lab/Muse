@@ -234,7 +234,7 @@ class SettingsRepository(
     private fun <T> decodePrefsOrNull(raw: String?, serializer: KSerializer<T>, keyName: String): T? {
         if (raw == null) return null
         return runCatching { AppJson.decodeFromString(serializer, raw) }.getOrElse {
-            Logger.w("SettingsRepository", "$keyName 解析失败,回退默认值", it)
+            Logger.w("SettingsRepository", "$keyName parse failed, falling back to the default value", it)
             null
         }
     }
@@ -281,7 +281,7 @@ class SettingsRepository(
             }
         }.catch {
             // M-SR3: 上游异常(DataStore IO / 解密失败)不应让 Flow 永久失效,回退空列表并记日志
-            Logger.w("SettingsRepository", "providersFlow 异常,回退空列表", it)
+            Logger.w("SettingsRepository", "providersFlow error, falling back to an empty list", it)
             emit(emptyList())
         }
     val activeProviderIdFlow: Flow<String?> = store.data.mapDistinct { prefs -> prefs[KEY_ACTIVE_PROVIDER_ID] }
@@ -289,7 +289,7 @@ class SettingsRepository(
         store.data.mapDistinct { activeProviderFromPrefs(it) }
             .catch {
                 // M-SR3: 上游异常回退 null,避免 UI 持续崩溃
-                Logger.w("SettingsRepository", "providerConfigFlow 异常,回退 null", it)
+                Logger.w("SettingsRepository", "providerConfigFlow error, falling back to null", it)
                 emit(null)
             }
     val selectedModelIdFlow: Flow<String?> = store.data.mapDistinct { prefs -> prefs[KEY_SELECTED_MODEL] }
@@ -326,7 +326,7 @@ class SettingsRepository(
      * 仅剩 `ProviderReferenceCleanup` 与删 Provider 清理路径在搬值 ——
      * 保留只为兼容旧备份里的 key 与清理逻辑，不要在新代码里使用。
      */
-    @Deprecated("子代理模型已改走 UtilityTier.LARGE，本 Flow 无读取者")
+    @Deprecated("Subagent models now go through UtilityTier.LARGE; this Flow has no readers")
     val subagentModelIdFlow: Flow<String?> = store.data.mapDistinct { prefs -> prefs[KEY_SUBAGENT_MODEL_ID] }
 
     /**
@@ -473,7 +473,7 @@ class SettingsRepository(
             }
         }.catch {
             // M-SR3: 解密/解析异常回退默认值,避免 Flow 永久失效
-            Logger.w("SettingsRepository", "webSearchConfigFlow 异常,回退默认值", it)
+            Logger.w("SettingsRepository", "webSearchConfigFlow error, falling back to the default value", it)
             emit(WebSearchConfig())
         }
 
@@ -484,7 +484,7 @@ class SettingsRepository(
                 ?.decrypted()
                 ?: CloudBackupConfig()
         }.catch {
-            Logger.w("SettingsRepository", "cloudBackupConfigFlow 异常,回退默认值", it)
+            Logger.w("SettingsRepository", "cloudBackupConfigFlow error, falling back to the default value", it)
             emit(CloudBackupConfig())
         }
 
@@ -505,7 +505,7 @@ class SettingsRepository(
             } ?: AsrConfig()
         }
             .catch {
-                Logger.w("SettingsRepository", "asrConfigFlow 异常,回退默认值", it)
+                Logger.w("SettingsRepository", "asrConfigFlow error, falling back to the default value", it)
                 emit(AsrConfig())
             }
 
@@ -525,7 +525,7 @@ class SettingsRepository(
                 ?.map { it.decrypted() }
                 ?: emptyList()
         }.catch {
-            Logger.w("SettingsRepository", "mcpServersFlow 异常,回退空列表", it)
+            Logger.w("SettingsRepository", "mcpServersFlow error, falling back to an empty list", it)
             emit(emptyList())
         }
 
@@ -621,7 +621,7 @@ class SettingsRepository(
         store.data.mapDistinct { prefs ->
             decodePrefsOrNull(prefs[KEY_PROXY_CONFIG], ProxyConfig.serializer(), "ProxyConfig")?.let { c -> c.decrypted() } ?: ProxyConfig()
         }.catch {
-            Logger.w("SettingsRepository", "proxyConfigFlow 异常,回退默认值(无代理)", it)
+            Logger.w("SettingsRepository", "proxyConfigFlow error, falling back to the default value (no proxy)", it)
             emit(ProxyConfig())
         }
 
@@ -1274,7 +1274,7 @@ class SettingsRepository(
         store.data.mapDistinct { prefs ->
             prefs[KEY_CHAT_GRADIENT]?.let { raw ->
                 runCatching { AppJson.decodeFromString(ChatGradient.serializer(), raw) }
-                    .onFailure { android.util.Log.w("SettingsRepository", "ChatGradient 解析失败", it) }
+                    .onFailure { android.util.Log.w("SettingsRepository", "ChatGradient parse failed", it) }
                     .getOrNull()
             }
         }
@@ -1521,13 +1521,13 @@ class SettingsRepository(
                             ?: return@launch
                     // 使用原子 addProviderIfAbsent 防止与引导流程并发写入导致重复供应商
                     if (addProviderIfAbsent(freePreset)) {
-                        Logger.i("SettingsRepository", "已自动注入 SiliconFlow 免费供应商(不自动激活)")
+                        Logger.i("SettingsRepository", "Automatically injected the SiliconFlow free provider (not activated automatically)")
                     }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Logger.w("SettingsRepository", "注入 SiliconFlow 免费供应商失败: ${e.message}", e)
+                Logger.w("SettingsRepository", "Failed to inject the SiliconFlow free provider: ${e.message}", e)
             }
         }
         // v2.3: 恢复连接测试缓存
@@ -1789,7 +1789,7 @@ class SettingsRepository(
         val persistentUri = AvatarStorage.persist(appContext, currentUri) ?: return
         if (persistentUri != currentUri) {
             saveUserProfile(profile.copy(avatarUri = persistentUri))
-            Logger.i("SettingsRepository", "用户头像已迁移到应用私有目录")
+            Logger.i("SettingsRepository", "User avatar migrated to the app-private directory")
         }
     }
 
@@ -1800,7 +1800,7 @@ class SettingsRepository(
     /** v2.5.3 (P1-1): 推荐入口 —— 原子函数式更新聊天偏好。 */
     suspend fun updateChatPreferences(block: (ChatPreferences) -> ChatPreferences) = chatSettings.updateChatPreferences(block)
 
-    @Deprecated("改用 updateChatPreferences(block) 做原子函数式更新，避免整份回写覆盖并发修改")
+    @Deprecated("Use updateChatPreferences(block) for atomic functional updates, to avoid whole-document write-backs overwriting concurrent changes")
     @Suppress("DEPRECATION")
     suspend fun saveChatPreferences(prefs: ChatPreferences) = chatSettings.saveChatPreferences(prefs)
 
@@ -2101,7 +2101,7 @@ class SettingsRepository(
         writeModelReferences(prefs, cleaned)
         Logger.i(
             "SettingsRepository",
-            "Provider ${config.id} 删除模型 ${removedModelIds.joinToString(",")},已清理指向它们的引用",
+            "Provider ${config.id} deleted models ${removedModelIds.joinToString(",")}; references pointing to them were cleaned up",
         )
     }
 
@@ -2593,12 +2593,12 @@ class SettingsRepository(
                 healed++
                 Logger.i(
                     "SettingsRepository",
-                    "Codex 账号头自愈: provider=${provider.id} account=${accountId.take(8)}…",
+                    "Codex account header self-healed: provider=${provider.id} account=${accountId.take(8)}…",
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Logger.w("SettingsRepository", "Codex 账号头自愈写入失败: ${e.message}", e)
+                Logger.w("SettingsRepository", "Failed to write Codex account header self-healing: ${e.message}", e)
             }
         }
         return healed
@@ -2645,8 +2645,8 @@ class SettingsRepository(
             if (activeId != SiliconFlowFreeModels.PROVIDER_ID) return@runCatching
             val replacement = providers.firstOrNull { it.id != SiliconFlowFreeModels.PROVIDER_ID } ?: return@runCatching
             setActiveProvider(replacement.id)
-            Logger.i("SettingsRepository", "激活位已从免费供应商让回用户配置的 ${replacement.id}")
-        }.onFailure { Logger.w("SettingsRepository", "释放免费供应商激活位失败: ${it.message}") }
+            Logger.i("SettingsRepository", "The active slot was returned from the free provider to the user-configured ${replacement.id}")
+        }.onFailure { Logger.w("SettingsRepository", "Failed to release the free provider's active slot: ${it.message}") }
     }
 
     private suspend fun migrateLegacyUtilityBindingsIfNeeded() {
@@ -2745,7 +2745,7 @@ class SettingsRepository(
             // v1.0.7: 幂等迁移 — 给旧数据(v1.0.6 及之前,无 specId 字段)推断 specId
             .map { migrateSpecId(it) }
     }.onError { msg, t ->
-        Logger.w("SettingsRepository", "Providers JSON 解析失败,回退 null: $msg", t)
+        Logger.w("SettingsRepository", "Providers JSON parse failed, falling back to null: $msg", t)
     }.getOrNull()
 
     // ── 备份: 设置快照导出/导入 ─────────────────────────────────────
@@ -3158,11 +3158,11 @@ class SettingsRepository(
 
     /** 任务类型枚举。 */
     enum class TaskType(val displayName: String, val description: String) {
-        CHAT("闲聊", "日常对话与快速问答"),
-        REASONING("推理", "复杂逻辑推理与数学"),
-        CODE("编程", "代码生成与调试"),
-        CREATIVE("创作", "写作与创意生成"),
-        ANALYSIS("分析", "数据分析与报告"),
+        CHAT("Casual chat", "Everyday conversation and quick Q&A"),
+        REASONING("Reasoning", "Complex logical reasoning and math"),
+        CODE("Coding", "Code generation and debugging"),
+        CREATIVE("Creative", "Writing and creative generation"),
+        ANALYSIS("Analysis", "Data analysis and reports"),
     }
 
     /** 任务路由配置——每种任务类型绑定默认模型,以及总开关。 */

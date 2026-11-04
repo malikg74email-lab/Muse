@@ -82,15 +82,15 @@ data class ScreenInfo(
 
     /** 生成给 AI 阅读的紧凑文本摘要。 */
     fun toSummary(maxNodes: Int = 40): String = buildString {
-        appendLine("当前应用: ${packageName ?: "未知"}")
-        if (!activityName.isNullOrBlank()) appendLine("界面: $activityName")
-        appendLine("分辨率: ${screenWidth}x$screenHeight")
-        appendLine("控件数: ${nodes.size}")
+        appendLine("Current app: ${packageName ?: "Unknown"}")
+        if (!activityName.isNullOrBlank()) appendLine("Interface: $activityName")
+        appendLine("Resolution: ${screenWidth}x$screenHeight")
+        appendLine("Control count: ${nodes.size}")
         appendLine("---")
         nodes.take(maxNodes).forEachIndexed { i, n ->
             appendLine("[$i] ${n.toShortString()}")
         }
-        if (nodes.size > maxNodes) appendLine("... 还有 ${nodes.size - maxNodes} 个节点")
+        if (nodes.size > maxNodes) appendLine("... ${nodes.size - maxNodes} more nodes")
     }
 }
 
@@ -123,13 +123,13 @@ data class UiNode(
             ?: contentDescription?.take(30)
             ?: viewIdResourceName?.substringAfterLast('/')
             ?: className?.substringAfterLast('.')
-            ?: "未命名"
+            ?: "Unnamed"
         val tags = buildList {
-            if (isClickable) add("可点")
-            if (isEditable) add("可输入")
-            if (isScrollable) add("可滚动")
-            if (isChecked == true) add("已勾选")
-            if (!isEnabled) add("禁用")
+            if (isClickable) add("Clickable")
+            if (isEditable) add("Editable")
+            if (isScrollable) add("Scrollable")
+            if (isChecked == true) add("Checked")
+            if (!isEnabled) add("Disabled")
         }
         val tagStr = if (tags.isEmpty()) "" else " [${tags.joinToString(",")}]"
         val bounds = "($centerX,$centerY)"

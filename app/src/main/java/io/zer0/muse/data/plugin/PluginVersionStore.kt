@@ -53,16 +53,16 @@ class PluginVersionStore(
     ): Result<Unit> = runCatching {
         requireValidId(pluginId)
         requireValidVersion(version)
-        require(sourceDirectory.isDirectory) { "源插件目录不存在" }
-        require(record.version == version) { "元数据版本与保留版本不一致" }
-        require(record.contentSha256.length == 64) { "内容摘要格式非法" }
+        require(sourceDirectory.isDirectory) { "Source plugin directory does not exist" }
+        require(record.version == version) { "Metadata version does not match the retained version" }
+        require(record.contentSha256.length == 64) { "Illegal content digest format" }
 
         root.mkdirs()
         val target = versionDirectory(pluginId, version)
         val staging = File(pluginIdDirectory(pluginId), ".staging_${version}_${System.nanoTime()}")
         staging.deleteRecursively()
         val filesTarget = File(staging, FILES_DIR)
-        require(filesTarget.mkdirs()) { "无法创建版本副本目录" }
+        require(filesTarget.mkdirs()) { "Could not create the version copy directory" }
         copyPackageFiles(sourceDirectory, filesTarget)
         AtomicFileStore.writeText(
             File(staging, META_FILE),
@@ -76,7 +76,7 @@ class PluginVersionStore(
             staging.deleteRecursively()
         }
         prune(pluginId)
-        Logger.i(TAG, "已保留插件历史版本: $pluginId@$version")
+        Logger.i(TAG, "Retained plugin historical version: $pluginId@$version")
     }
 
     /** 已保留版本，按版本号从新到旧。 */
@@ -98,19 +98,19 @@ class PluginVersionStore(
             requireValidId(pluginId)
             requireValidVersion(version)
             versionDirectory(pluginId, version).deleteRecursively()
-        }.onFailure { Logger.w(TAG, "删除历史版本失败: $pluginId@$version", it) }
+        }.onFailure { Logger.w(TAG, "Failed to delete the historical version: $pluginId@$version", it) }
     }
 
     fun deleteAll(pluginId: String) {
         runCatching { pluginIdDirectory(pluginId).deleteRecursively() }
-            .onFailure { Logger.w(TAG, "删除插件历史版本失败: $pluginId", it) }
+            .onFailure { Logger.w(TAG, "Failed to delete plugin historical versions: $pluginId", it) }
     }
 
     /** 只保留最新的 [maxRetained] 个版本，超出部分按旧到新删除。 */
     fun prune(pluginId: String) {
         val retained = list(pluginId)
         retained.drop(maxRetained).forEach { stale ->
-            Logger.i(TAG, "清理过期历史版本: ${stale.pluginId}@${stale.version}")
+            Logger.i(TAG, "Cleaning up expired historical version: ${stale.pluginId}@${stale.version}")
             stale.directory.deleteRecursively()
         }
     }
@@ -124,7 +124,7 @@ class PluginVersionStore(
         if (!files.isDirectory) return@runCatching null
         RetainedPluginVersion(pluginId, record, files)
     }.getOrElse { error ->
-        Logger.w(TAG, "历史版本记录损坏，跳过: ${directory.name}", error)
+        Logger.w(TAG, "Historical version record is corrupted; skipping: ${directory.name}", error)
         null
     }
 
@@ -145,11 +145,11 @@ class PluginVersionStore(
     private fun versionDirectory(pluginId: String, version: String): File = File(pluginIdDirectory(pluginId), version)
 
     private fun requireValidId(pluginId: String) {
-        require(ID_REGEX.matches(pluginId)) { "插件 id 非法: $pluginId" }
+        require(ID_REGEX.matches(pluginId)) { "Illegal plugin id: $pluginId" }
     }
 
     private fun requireValidVersion(version: String) {
-        require(PluginVersion.parse(version) != null) { "版本号非法: $version" }
+        require(PluginVersion.parse(version) != null) { "Illegal version number: $version" }
     }
 
     companion object {

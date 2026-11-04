@@ -134,7 +134,7 @@ internal object BackupBinaryFiles {
                 return@forEach
             }
             val bytes = runCatching { file.readBytes() }
-                .onFailure { Logger.w(TAG, "读取文件失败,已跳过: $relative", it) }
+                .onFailure { Logger.w(TAG, "Reading file failed, skipped: $relative", it) }
                 .getOrNull()
             val used = dirBytes[prefix] ?: 0L
             if (bytes == null || exceedsLimit(bytes.size.toLong(), used)) {
@@ -146,7 +146,7 @@ internal object BackupBinaryFiles {
             dirBytes[prefix] = used + bytes.size
         }
         val stats = SkipStats(skippedFiles, skippedBytes)
-        logSkipped("导出", stats)
+        logSkipped("Export", stats)
         return Snapshot(entries, stats)
     }
 
@@ -175,14 +175,14 @@ internal object BackupBinaryFiles {
             if (prefix == null || target == null) {
                 skippedFiles++
                 skippedBytes += base64SizeHint(encoded)
-                Logger.w(TAG, "拒绝恢复白名单外的路径: $path")
+                Logger.w(TAG, "Refusing to restore a path outside the allowlist: $path")
                 return@forEach
             }
             val bytes = runCatching { Base64.getDecoder().decode(encoded) }.getOrNull()
             if (bytes == null) {
                 skippedFiles++
                 skippedBytes += base64SizeHint(encoded)
-                Logger.w(TAG, "Base64 内容非法,已跳过: $path")
+                Logger.w(TAG, "Base64 content invalid, skipped: $path")
                 return@forEach
             }
             val used = dirBytes[prefix] ?: 0L
@@ -197,7 +197,7 @@ internal object BackupBinaryFiles {
             writtenFiles++
         }
         val stats = SkipStats(skippedFiles, skippedBytes)
-        logSkipped("恢复", stats)
+        logSkipped("Restore", stats)
         return RestoreResult(writtenFiles = writtenFiles, skippedFiles = stats.skippedFiles, skippedBytes = stats.skippedBytes)
     }
 
@@ -220,7 +220,7 @@ internal object BackupBinaryFiles {
             if (prefix == null || !isAllowedPath(path)) {
                 skippedFiles++
                 skippedBytes += base64SizeHint(encoded)
-                Logger.w(TAG, "备份中的路径不在白名单内,已跳过: $path")
+                Logger.w(TAG, "Path in the backup is not in the allowlist, skipped: $path")
                 return
             }
             val estimated = base64SizeHint(encoded)
@@ -270,8 +270,8 @@ private fun logSkipped(action: String, stats: BackupBinaryFiles.SkipStats) {
     if (stats.skippedFiles == 0) return
     Logger.w(
         BINARY_TAG,
-        "$action 跳过 ${stats.skippedFiles} 个目录文件(共 ${stats.skippedBytes} 字节):" +
-            "超出单文件 ${BackupBinaryFiles.MAX_FILE_BYTES / 1024 / 1024}MB / " +
-            "目录合计 ${BackupBinaryFiles.MAX_DIR_BYTES / 1024 / 1024}MB 上限、路径不合法或读取失败,备份内容不完整",
+        "$action skipped ${stats.skippedFiles} directory files (${stats.skippedBytes} bytes in total):" +
+            "exceeding the per-file ${BackupBinaryFiles.MAX_FILE_BYTES / 1024 / 1024}MB / " +
+            "directory total ${BackupBinaryFiles.MAX_DIR_BYTES / 1024 / 1024}MB limits, invalid paths or read failures; backup content is incomplete",
     )
 }

@@ -49,7 +49,7 @@ class ConnectorStore(context: Context) {
         runCatching {
             AppJson.decodeFromString(Payload.serializer(), file.readText()).connectors.map { decrypt(it) }
         }.onFailure { e ->
-            Logger.w(TAG, "连接器配置读取失败: ${e.message}")
+            Logger.w(TAG, "Reading the connector configuration failed: ${e.message}")
         }.getOrDefault(emptyList())
     }
 
@@ -62,7 +62,7 @@ class ConnectorStore(context: Context) {
         runCatching {
             AppJson.decodeFromString(Payload.serializer(), file.readText()).connectors.map { decrypt(it) }
         }.onFailure { e ->
-            Logger.w(TAG, "连接器配置读取失败: ${e.message}")
+            Logger.w(TAG, "Reading the connector configuration failed: ${e.message}")
         }.getOrNull()
     }
 

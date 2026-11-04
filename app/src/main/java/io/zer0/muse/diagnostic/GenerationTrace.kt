@@ -77,7 +77,7 @@ object GenerationTrace {
             val dir = context.getExternalFilesDir("diagnostics") ?: File(context.filesDir, "diagnostics")
             dir.mkdirs()
             traceFile = File(dir, TRACE_FILE_NAME)
-        }.onFailure { Logger.w("GenerationTrace", "init 失败: ${it.message}") }
+        }.onFailure { Logger.w("GenerationTrace", "init failed: ${it.message}") }
     }
 
     /**
@@ -108,7 +108,7 @@ object GenerationTrace {
                 while (ring.size > RING_CAPACITY) ring.removeFirst()
             }
             appendToFile(rec)
-        }.onFailure { Logger.w("GenerationTrace", "record 失败(已吞): ${it.message}") }
+        }.onFailure { Logger.w("GenerationTrace", "record failed (swallowed): ${it.message}") }
     }
 
     /** 一轮生成的终态汇总（record 的入参聚合，避免 LongParameterList）。 */

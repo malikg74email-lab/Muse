@@ -21,7 +21,7 @@ internal object MediaSender {
             ChannelPlatform.DINGTALK -> DingtalkMediaSender.send(config, media, targetOverride)
             ChannelPlatform.WECLAW -> Result.failure(
                 UnsupportedOperationException(
-                    "微信渠道暂不支持发送${media.kind.name.lowercase()}，目前只能收发文字",
+                    "The WeChat channel does not yet support sending ${media.kind.name.lowercase()}; currently only text can be sent and received",
                 ),
             )
         }

@@ -22,8 +22,8 @@ internal object FeishuMediaSender {
         runCatching {
             val token = FeishuChannelSender().fetchToken(config).first
             val target = targetOverride?.takeIf { it.isNotBlank() } ?: config.targetId
-            require(target.isNotBlank()) { "缺少发送目标" }
-            val payload = MediaPayload.from(media) ?: error("无法读取媒体内容")
+            require(target.isNotBlank()) { "Missing send target" }
+            val payload = MediaPayload.from(media) ?: error("Cannot read the media content")
             val base = baseOf(config)
             val isImage = media.kind == MediaKind.IMAGE
             val key = upload(base, token, payload, media.kind)
@@ -42,8 +42,8 @@ internal object FeishuMediaSender {
                 .header("Authorization", "Bearer $token")
                 .post(body.toRequestBody(MediaHttp.jsonMediaType))
                 .build()
-            MediaHttp.postAndCheck(req, "飞书")
-        }.onFailure { e -> Logger.w(TAG, "飞书媒体发送失败: ${e.message}") }
+            MediaHttp.postAndCheck(req, "Feishu")
+        }.onFailure { e -> Logger.w(TAG, "Feishu media send failed: ${e.message}") }
     }
 
     private fun baseOf(config: ChannelConfig): String =
@@ -86,12 +86,12 @@ internal object FeishuMediaSender {
             if (!resp.isSuccessful) error("HTTP ${resp.code}: ${text.take(300)}")
             val obj = AppJson.parseToJsonElement(text).jsonObject
             val code = obj["code"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: -1
-            if (code != 0) error("飞书上传失败 code=$code")
-            val data = obj["data"]?.jsonObject ?: error("上传响应缺 data")
+            if (code != 0) error("Feishu upload failed code=$code")
+            val data = obj["data"]?.jsonObject ?: error("Upload response is missing data")
             val key = if (isImage) "image_key" else "file_key"
             return data[key]?.jsonPrimitive?.contentOrNull
                 ?.takeIf { it.isNotBlank() }
-                ?: error("上传响应缺 $key")
+                ?: error("Upload response is missing $key")
         }
     }
 }

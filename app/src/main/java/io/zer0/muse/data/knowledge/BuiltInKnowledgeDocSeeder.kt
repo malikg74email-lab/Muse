@@ -41,7 +41,7 @@ class BuiltInKnowledgeDocSeeder(
                 ?.filter { it.endsWith(".md", ignoreCase = true) }
                 .orEmpty()
         if (names.isEmpty()) {
-            Logger.w(TAG, "内置功能文档目录为空，跳过 seed")
+            Logger.w(TAG, "Built-in feature document directory is empty; skipping the seed")
             return@withLock
         }
         val existing = resultOf { dao.getInternalDocs() }.getOrNull().orEmpty().associateBy { it.id }
@@ -84,7 +84,7 @@ class BuiltInKnowledgeDocSeeder(
             }
             seedResult.onError { msg, error ->
                 failed = true
-                Logger.w(TAG, "seed 内置功能文档失败: $name: $msg", error)
+                Logger.w(TAG, "Failed to seed the built-in feature document: $name: $msg", error)
             }
         }
         if (!failed) seeded = true
@@ -121,13 +121,13 @@ class BuiltInKnowledgeDocSeeder(
                             embeddingUnusable = true
                             Logger.w(
                                 TAG,
-                                "内部文档索引中止：embedding 当前不可用($msg)。" +
-                                    "请检查 RAG 设置里的 embedding 来源——若选了「云端」，" +
-                                    "需要指定一个真正提供 embeddings 接口的供应商；" +
-                                    "当前回落到的对话模型供应商通常没有这个端点。",
+                                "Internal document indexing aborted: embedding is currently unavailable ($msg)." +
+                                    "Please check the embedding source in the RAG settings — if \"cloud\" is selected," +
+                                    "you need to specify a provider that actually offers an embeddings API;" +
+                                    "the chat-model provider currently fallen back to usually does not have that endpoint.",
                             )
                         } else {
-                            Logger.w(TAG, "内部文档索引失败: ${doc.id}: $msg", error)
+                            Logger.w(TAG, "Internal document indexing failed: ${doc.id}: $msg", error)
                         }
                     }
                     .getOrNull()
@@ -142,7 +142,7 @@ class BuiltInKnowledgeDocSeeder(
                 )
             } else if (chunks != null) {
                 failed = true
-                Logger.w(TAG, "内部文档分块为空: ${doc.id}")
+                Logger.w(TAG, "Internal document has no chunks: ${doc.id}")
             }
         }
         if (!failed) indexed = true

@@ -32,10 +32,10 @@ internal suspend fun protectWeClawCursor(cursor: String): String =
 internal suspend fun restoreWeClawCursor(storedCursor: String): String {
     if (storedCursor.isBlank()) return ""
     val plaintext = SecureKeyStore.decryptOrNull(storedCursor)
-        ?: error("无法解密 WeClaw 同步游标")
+        ?: error("Cannot decrypt the WeClaw sync cursor")
     return when {
         plaintext.startsWith(WECLAW_CURSOR_PREFIX) -> plaintext.removePrefix(WECLAW_CURSOR_PREFIX)
-        storedCursor.startsWith("enc_v1:") -> error("WeClaw 同步游标密文格式不匹配")
+        storedCursor.startsWith("enc_v1:") -> error("WeClaw sync cursor ciphertext format mismatch")
         else -> plaintext
     }
 }
@@ -163,7 +163,7 @@ class WeClawReceiver(
     } catch (error: CancellationException) {
         throw error
     } catch (error: Exception) {
-        Logger.w(TAG, "WeClaw 更新未能可靠入队,保留轮询游标: ${error.message}")
+        Logger.w(TAG, "WeClaw update could not be reliably enqueued; keeping the polling cursor: ${error.message}")
         delay(RETRY_DELAY_MS)
         previousCursor
     }
@@ -199,15 +199,15 @@ class WeClawReceiver(
                 if (base64 != null) {
                     ChannelInbox.record(
                         source = source,
-                        text = "[图片]",
+                        text = "[Image]",
                         rawPayload = "",
                         media = ChannelInbox.Media(kind = "image", base64 = base64),
                     )
                 } else {
-                    Logger.w(TAG, "图片下载或解码失败(from=$from)")
+                    Logger.w(TAG, "Image download or decoding failed (from=$from)")
                     ChannelInbox.record(
                         source,
-                        "[图片(未能获取)]",
+                        "[Image (Could not fetch)]",
                         "",
                     )
                 }
@@ -216,13 +216,13 @@ class WeClawReceiver(
                 // iLink 语音自带服务端 ASR 转写;无转写时给占位。
                 ChannelInbox.record(
                     source,
-                    msg.text.ifBlank { "[语音]" },
+                    msg.text.ifBlank { "[Voice]" },
                     "",
                 )
             }
             // v2.x (B4): 视频/文件 — 下载 + 落盘 + 记录(含文件名与路径)
-            "video" -> handleBinaryMedia(media, source, kind = "video", label = "[视频]")
-            else -> handleBinaryMedia(media, source, kind = "file", label = "[文件]")
+            "video" -> handleBinaryMedia(media, source, kind = "video", label = "[Video]")
+            else -> handleBinaryMedia(media, source, kind = "file", label = "[File]")
         }
     }
 
@@ -251,10 +251,10 @@ class WeClawReceiver(
             WeClawClient.downloadMediaToFile(media, target, MAX_MEDIA_SAVE_BYTES)
         }
         if (result == null) {
-            Logger.w(TAG, "媒体下载超时(kind=$kind, from=$from)")
+            Logger.w(TAG, "Media download timed out (kind=$kind, from=$from)")
             ChannelInbox.record(
                 source,
-                "$label(未能获取)",
+                "$label (Could not fetch)",
                 "",
                 media = ChannelInbox.Media(kind = kind),
             )
@@ -264,18 +264,18 @@ class WeClawReceiver(
         if (written == null) {
             val error = result.exceptionOrNull()
             if (error is MediaTooLargeException) {
-                Logger.w(TAG, "媒体超出大小上限(kind=$kind, from=$from)")
+                Logger.w(TAG, "Media exceeds the size limit (kind=$kind, from=$from)")
                 ChannelInbox.record(
                     source,
-                    "$label(超出大小上限 ${MAX_MEDIA_SAVE_BYTES / 1024 / 1024}MB,未落盘)",
+                    "$label (Exceeds the size limit ${MAX_MEDIA_SAVE_BYTES / 1024 / 1024}MB, not saved)",
                     "",
                     ChannelInbox.Media(kind = kind),
                 )
             } else {
-                Logger.w(TAG, "媒体下载失败(kind=$kind, from=$from, err=${error?.message})")
+                Logger.w(TAG, "Media download failed (kind=$kind, from=$from, err=${error?.message})")
                 ChannelInbox.record(
                     source,
-                    "$label(未能获取)",
+                    "$label (Could not fetch)",
                     "",
                     media = ChannelInbox.Media(kind = kind),
                 )
@@ -368,11 +368,11 @@ private fun sanitizeWeClawFileName(raw: String): String = raw.substringAfterLast
  * @return 本条日志文本;null 表示状态未变、不该记
  */
 internal fun channelAvailabilityLog(hasChannel: Boolean, previousHasChannel: Boolean?): String? = when {
-    previousHasChannel == null && hasChannel -> "接收循环启动,当前有可用渠道"
-    previousHasChannel == null -> "无启用中的 ClawBot 渠道,30 秒后重试"
+    previousHasChannel == null && hasChannel -> "Receive loop started; available channels exist"
+    previousHasChannel == null -> "No enabled ClawBot channel; retrying in 30 seconds"
     previousHasChannel == hasChannel -> null
-    hasChannel -> "渠道恢复,继续接收"
-    else -> "无启用中的 ClawBot 渠道,30 秒后重试"
+    hasChannel -> "Channel recovered; resuming receiving"
+    else -> "No enabled ClawBot channel; retrying in 30 seconds"
 }
 
 internal fun weClawBatchEventId(requestBuffer: String, responseBuffer: String, index: Int, message: WeClawClient.InboundMsg): String {

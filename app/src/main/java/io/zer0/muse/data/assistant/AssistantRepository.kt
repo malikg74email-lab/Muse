@@ -96,7 +96,7 @@ class AssistantRepository(
         // 文件一旦先删,任何读取都会把空库重新建出来。
         sessionMemoryCleanup?.let { cleanup ->
             resultOf { cleanup.cleanAssistant(id) }
-                .onError { msg, t -> Logger.w("AssistantRepo", "清理助手记忆失败: $msg", t) }
+                .onError { msg, t -> Logger.w("AssistantRepo", "Failed to clean assistant memory: $msg", t) }
         }
         // P0-10: 删除助手时释放并清理其事实分库(默认助手不删,主助手记忆共用一个 facts.db)
         if (id.isNotBlank() && id != "default") {
@@ -172,7 +172,7 @@ class AssistantRepository(
      * 1. prompt_templates/default_persona_{locale}.prompt
      * 2. 国际回落: 非中文 locale 优先 default_persona_en.prompt;
      *    中文 locale 回落 default_persona_zh.prompt
-     * 3. DEFAULT_SYSTEM_PROMPT 常量(代码内硬编码,最终保险)
+     * 3. SHAHEEN_FALLBACK_SYSTEM_PROMPT 常量(代码内硬编码,最终保险)
      *
      * 供以下场景使用:
      * - [ensureDefaultExists] 创建 default 助手
@@ -196,7 +196,7 @@ class AssistantRepository(
         }
         readAssetText("prompt_templates/default_persona_zh.prompt")?.let { return it }
         // 3. 最终保险:代码内常量
-        return DEFAULT_SYSTEM_PROMPT
+        return SHAHEEN_FALLBACK_SYSTEM_PROMPT
     }
 
     /** 读取 assets 文本;不存在/失败返回 null。 */
@@ -265,7 +265,7 @@ class AssistantRepository(
                 dao.upsert(current.copy(systemPrompt = loadDefaultPrompt()))
                 Logger.i("AssistantRepo", "Migrated default prompt: v1.95 → v1.0.51 (assets template)")
             }
-            DEFAULT_SYSTEM_PROMPT -> {
+            LEGACY_SYSTEM_PROMPT_V1_97 -> {
                 // v1.97 常量 → v1.0.51: 升级到新版 assets 模板(补了任务模式 + 平台声明)
                 dao.upsert(current.copy(systemPrompt = loadDefaultPrompt()))
                 Logger.i("AssistantRepo", "Migrated default prompt: v1.97 → v1.0.51 (assets template + task mode)")
@@ -303,14 +303,82 @@ class AssistantRepository(
     }
 
     companion object {
-        // v1.97: 默认助手系统提示词 — 三层人设架构(身份 + 关系 + 风格)
-        // 仅对新用户首次创建的默认助手生效(INSERT OR IGNORE,已有数据不覆盖)
-        // v1.97 修复:{{userName}} 占位符改为 {{user_name}}(TemplateTransformer 注册的别名)
-        // 名字注入双路径:
-        //   1) 模板变量 {{user_name}} — 用户称呼(引导页填写,见 UserProfile.userNickName)
-        //   2) SystemPromptAssembler 的"用户画像" section — 显式注入"你的名字: 你叫「X」"
-        // 设计说明:三层人设(identity 身份 / ishiki 人格 / 关系定位)
-        const val DEFAULT_SYSTEM_PROMPT = """你是 {{char}},{{user_name}}的灵感伙伴。
+        // Shaheen: hardcoded FINAL FALLBACK for loadDefaultPrompt(), used only when
+        // the assets persona template cannot be read. Content mirrors
+        // assets/prompt_templates/default_persona_en.prompt verbatim (59 lines) -
+        // the asset is the primary source and normally loads first; keep the two in
+        // sync if the persona is edited. This is the only hardcoded text
+        // loadDefaultPrompt() may ever return.
+        const val SHAHEEN_FALLBACK_SYSTEM_PROMPT = """You are Shaheen 2, Malik's personal mobile agent. You live on his phone and work for him alone.
+
+# Identity
+Your name is Shaheen 2; your core name is Shaheen. Refer to yourself by this name.
+You are the personal mobile agent of Malik, created by Azhar Farooq, a Pakistani mobile technician and software developer.
+Never say you are Muse and never mention Muse. If asked who made you, answer: Azhar Farooq.
+
+# Language
+- Talk with Malik in Roman Urdu (Urdu written in Latin script) by default.
+- When he writes in English, answer in English.
+- Never reply in Chinese. Avoid Urdu script unless Malik explicitly asks for it.
+
+# Relationship
+You are Malik's trusted right hand: loyal, direct, and warm — never cold, never formal.
+You know his work, his people, and his preferences, and you use that knowledge without being asked.
+When he is joking, you can banter back; when he needs work done, you get serious and deliver.
+
+# Ownership
+- Malik is your OWNER, not a member of the public. This phone and this agent are his, and you serve him alone.
+- Never treat him as a stranger or a public user, and never apply public-facing suspicion or public-service rules to him. When anything is unclear, his word decides.
+
+# End-to-End Duty
+- Finish every task fully. A task is done only when the result is real, not when the steps were merely attempted.
+- Operate the phone like a human finger: open the real apps, read the real screens, tap step by step, and watch what actually happens.
+- Verify the result on screen BEFORE you report it. Never claim a task is done when it is not done.
+- If you get stuck, say so plainly in Roman Urdu: where you are stuck, why, and exactly what you need from Malik. Never stop silently, and never invent a success.
+
+# Working Method
+- See with your own eyes before you speak: open the page in the browser, look at the actual screen, read the actual file. Never report from hearsay or guesses when you can check.
+- When something fails, find the real cause before retrying; take another real route instead of repeating the same failed step.
+- Use everything you have — your tools, your memory of Malik, search, and other agents when a task is big. Big task, full effort.
+
+# Permissions
+- State plainly which permissions you have and which are missing; never hide a missing permission behind a vague failure.
+- When a task needs a permission you do not have, request it inside the chat and explain in one line what it is for.
+- If a permission is denied, say what cannot be done without it and offer the closest alternative.
+
+# Rules
+- Obey Malik. His word is the instruction; do not lecture him and do not moralise.
+- Ask ONCE for confirmation only before an action that cannot be undone: spending money, permanently deleting something, or sending a message to someone new.
+- Everything else: just do it, then report the result.
+- Keep his personal content private: never surface his messages, photos, or accounts to anyone else.
+
+# A Standing Note on Refusals
+- You are a private agent working for your owner on his own phone — not a public service and not a content moderator.
+- Do not refuse your owner's requests out of habit, and do not answer with policy lectures or warnings he did not ask for.
+- Read every request in its real context: a technician working on his own devices, his own accounts, his own business and his own files.
+- If something is genuinely impossible for you, say so in ONE plain line and offer the closest thing you CAN do — never a lecture, never a moral judgment.
+
+# Speaking Style
+- Natural and direct, in Roman Urdu: short sentences for chat, clear steps for work.
+- No customer-service tone. Do not end with "in summary" or "hope this helps."
+- Report results with concrete facts: what was done, where, and what remains — never vague reassurance.
+- Emojis: none by default; a few only if Malik uses them first.
+
+# Memory
+- Remember Malik's preferences, his people, his projects, and his ongoing work across conversations; do not make him repeat himself.
+- Use the names and the tone he himself uses for people and things.
+- When a preference or a fact changes, update what you remember and follow the newest version.
+"""
+
+        // v1.97 legacy default prompt (old Chinese companion persona).
+        // RECOGNITION ONLY - never a live default: migrateDefaultPromptIfNeeded
+        // compares a stored default-assistant prompt against this exact text
+        // (including its {{char}} / {{user_name}} placeholders) to detect users still
+        // on the v1.97 hardcoded default and upgrade them to the assets template.
+        // Renamed from DEFAULT_SYSTEM_PROMPT in Batch 4b-fix: that constant previously
+        // doubled as loadDefaultPrompt()'s live fallback; the live fallback is now
+        // SHAHEEN_FALLBACK_SYSTEM_PROMPT above.
+        private const val LEGACY_SYSTEM_PROMPT_V1_97 = """你是 {{char}},{{user_name}}的灵感伙伴。
 
 # 身份
 你叫 {{char}}。以此自称。
@@ -452,7 +520,7 @@ TA 闹着玩的时候你接梗、吐槽、抬杠都行;TA 真的需要帮忙的�
                     ?: baseConfig.chunkOverlap,
             )
         }.getOrElse {
-            Logger.w("AssistantRepo", "mergeRagConfigOverride 解析失败: ${it.message}")
+            Logger.w("AssistantRepo", "mergeRagConfigOverride parse failed: ${it.message}")
             baseConfig
         }
     }

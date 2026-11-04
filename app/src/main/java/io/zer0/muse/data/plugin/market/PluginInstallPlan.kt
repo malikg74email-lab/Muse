@@ -54,30 +54,30 @@ class PluginInstallCoordinator(
             lastAcceptedSequence = lastAcceptedSequence(signedCatalog.payload.catalogId),
         )
         if (!verification.valid) {
-            return InstallPlanResult.Rejected(verification.reason ?: "目录校验失败")
+            return InstallPlanResult.Rejected(verification.reason ?: "Catalog verification failed")
         }
         val entry = signedCatalog.payload.entries.firstOrNull { it.id == entryId }
-            ?: return InstallPlanResult.Rejected("目录中不存在插件: $entryId")
-        if (!stagedFile.isFile) return InstallPlanResult.Rejected("插件包不存在")
+            ?: return InstallPlanResult.Rejected("Plugin does not exist in the catalog: $entryId")
+        if (!stagedFile.isFile) return InstallPlanResult.Rejected("Plugin package does not exist")
         if (!artifactSha256.equals(entry.artifactSha256, ignoreCase = true)) {
-            return InstallPlanResult.Rejected("插件包摘要与目录不一致")
+            return InstallPlanResult.Rejected("Plugin package digest does not match the catalog")
         }
         if (!reviewedPackage.contentSha256.equals(entry.manifestSha256, ignoreCase = true)) {
-            return InstallPlanResult.Rejected("插件内容摘要与目录不一致")
+            return InstallPlanResult.Rejected("Plugin content digest does not match the catalog")
         }
         if (reviewedPackage.preview.id != entry.id) {
-            return InstallPlanResult.Rejected("插件 id 与目录不一致")
+            return InstallPlanResult.Rejected("Plugin id does not match the catalog")
         }
         if (reviewedPackage.preview.version != entry.version) {
-            return InstallPlanResult.Rejected("插件版本与目录不一致")
+            return InstallPlanResult.Rejected("Plugin version does not match the catalog")
         }
         // 目录声明的发行者身份必须与包内签名解析出的身份一致：目录里的这两个字段会展示给用户，
         // 若允许它们和真实签名不一致，卡片上的发行者就是可伪造的展示信息。
         if (reviewedPackage.preview.publisherId != entry.publisherId) {
-            return InstallPlanResult.Rejected("插件发行者与目录不一致")
+            return InstallPlanResult.Rejected("Plugin publisher does not match the catalog")
         }
         if (!reviewedPackage.preview.publisherKeyFingerprint.equals(entry.publisherKeyFingerprint, ignoreCase = true)) {
-            return InstallPlanResult.Rejected("插件发行者公钥与目录不一致")
+            return InstallPlanResult.Rejected("Plugin publisher public key does not match the catalog")
         }
         return InstallPlanResult.Ready(
             PluginInstallPlan(

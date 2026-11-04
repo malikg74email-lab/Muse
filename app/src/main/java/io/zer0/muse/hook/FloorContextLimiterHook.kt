@@ -63,7 +63,7 @@ class FloorContextLimiterHook(
         val trimmed = systemMsgs + nonSystemMsgs.drop(keepFromIndex)
         val removedCount = history.size - trimmed.size
         if (removedCount > 0) {
-            Logger.i(TAG, "楼层限制: 保留最近 $floorLimit 层 USER 消息,截断 $removedCount 条旧消息")
+            Logger.i(TAG, "Floor limit: keeping the most recent $floorLimit USER message floors, truncated $removedCount old messages")
         }
         return PromptFinalizeResult(trimmed)
     }

@@ -34,10 +34,10 @@ import io.zer0.muse.data.session.MuseDb
 internal suspend fun verifyCardEntitiesRestored(db: MuseDb, expected: Int) {
     if (expected <= 0) return
     val actual = runCatching { db.cardEntityDao().count() }
-        .onFailure { Logger.w("BackupService", "卡片入库对账取数失败: ${it.message}", it) }
+        .onFailure { Logger.w("BackupService", "Card storage reconciliation fetch failed: ${it.message}", it) }
         .getOrNull() ?: return
     check(actual >= expected) {
-        "备份入库数不一致: cardEntities 声明 $expected, 实际入库 $actual"
+        "Backup stored-count check failed: cardEntities declared $expected, actually stored $actual"
     }
 }
 

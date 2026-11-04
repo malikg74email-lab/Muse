@@ -92,7 +92,7 @@ class AccessibilityExecutor(
             try {
                 collectNodes(root, nodes, depth = 0)
             } catch (e: Exception) {
-                Logger.w(TAG, "readScreen collectNodes 中断(返回部分结果): ${e.message}")
+                Logger.w(TAG, "readScreen collectNodes interrupted (returning partial results): ${e.message}")
             }
             return ScreenInfo(
                 packageName = pkg,
@@ -239,7 +239,7 @@ class AccessibilityExecutor(
         try {
             node.recycle()
         } catch (e: Exception) {
-            Logger.d(tag, "node.recycle 失败(可能已被系统回收): ${e.message}")
+            Logger.d(tag, "node.recycle failed (may already have been recycled by the system): ${e.message}")
         }
     }
 

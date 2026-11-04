@@ -53,7 +53,7 @@ class UsageRecorder(private val dao: UsageRecordDao) {
                 ),
             )
         }.onFailure {
-            Logger.w("UsageRecorder", "写入用量记录失败(source=$source): ${it.message}")
+            Logger.w("UsageRecorder", "Failed to write the usage record (source=$source): ${it.message}")
         }
     }
 
@@ -66,6 +66,6 @@ class UsageRecorder(private val dao: UsageRecordDao) {
         if (retentionDays <= 0) return
         val cutoff = System.currentTimeMillis() - retentionDays * 24L * 60 * 60 * 1000
         runCatching { dao.deleteBefore(cutoff) }
-            .onFailure { Logger.w("UsageRecorder", "清理用量记录失败: ${it.message}") }
+            .onFailure { Logger.w("UsageRecorder", "Failed to clean usage records: ${it.message}") }
     }
 }

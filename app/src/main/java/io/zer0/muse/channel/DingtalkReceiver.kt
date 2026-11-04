@@ -79,7 +79,7 @@ class DingtalkReceiver(
                 // 旧写法 delay(5s)+continue 让五个接收器每分钟合计唤醒 60 次，阻止深度休眠。
                 // 配置变更由 ChannelManager.upsert/remove/refresh 写入 channels；
                 // 设置页保存后还会调 restart() 重进本循环，两条路径都能唤醒。
-                Logger.i(TAG, "无启用中的钉钉渠道,接收循环挂起等待配置")
+                Logger.i(TAG, "No enabled DingTalk channel; the receive loop is suspended waiting for configuration")
                 channelManager.channels.first { list ->
                     list.any {
                         it.enabled && it.platform == ChannelPlatform.DINGTALK &&
@@ -90,7 +90,7 @@ class DingtalkReceiver(
             }
             runCatching {
                 connectOnce(config)
-            }.onFailure { e -> Logger.w(TAG, "钉钉 Stream 连接异常: ${e.message}") }
+            }.onFailure { e -> Logger.w(TAG, "DingTalk Stream connection exception: ${e.message}") }
             if (!currentCoroutineContext().isActive) return
             delay(RECONNECT_DELAY_MS)
         }
@@ -104,7 +104,7 @@ class DingtalkReceiver(
             config.appSecret,
             config.dingtalkApiBase,
         ).getOrElse { e ->
-            Logger.w(TAG, "钉钉 Stream 注册失败: ${e.message}")
+            Logger.w(TAG, "DingTalk Stream registration failed: ${e.message}")
             return
         }
         val disconnected = CompletableDeferred<Unit>()
@@ -115,22 +115,22 @@ class DingtalkReceiver(
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     appScope.launch {
                         runCatching { handleFrame(webSocket, text, config.id) }
-                            .onFailure { e -> Logger.w(TAG, "钉钉帧处理失败: ${e.message}") }
+                            .onFailure { e -> Logger.w(TAG, "DingTalk frame processing failed: ${e.message}") }
                     }
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    Logger.i(TAG, "钉钉 WebSocket 关闭: code=$code $reason")
+                    Logger.i(TAG, "DingTalk WebSocket closed: code=$code $reason")
                     disconnected.complete(Unit)
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Logger.w(TAG, "钉钉 WebSocket 断开: ${t.message}")
+                    Logger.w(TAG, "DingTalk WebSocket disconnected: ${t.message}")
                     disconnected.complete(Unit)
                 }
             },
         )
-        Logger.i(TAG, "钉钉 Stream 已连接")
+        Logger.i(TAG, "DingTalk Stream connected")
         try {
             disconnected.await()
         } finally {
@@ -154,7 +154,7 @@ class DingtalkReceiver(
                 webSocket.send(DingtalkClient.ackFrame(messageId, "{\"opaque\":\"$opaque\"}"))
             }
             type == "SYSTEM" && topic == "disconnect" -> {
-                Logger.i(TAG, "钉钉服务端请求断开: ${data.take(200)}")
+                Logger.i(TAG, "DingTalk server requested disconnect: ${data.take(200)}")
                 webSocket.cancel()
             }
             type == "CALLBACK" && topic == "/v1.0/im/bot/messages/get" -> {
@@ -225,14 +225,14 @@ class DingtalkReceiver(
                 if (base64 != null) {
                     ChannelInbox.record(
                         source = source,
-                        text = text.ifBlank { "[图片]" },
+                        text = text.ifBlank { "[Image]" },
                         rawPayload = sanitizeDingtalkPayloadForStorage(payload),
                         media = ChannelInbox.Media(kind = "image", base64 = base64),
                     )
                 } else {
-                    Logger.w(TAG, "钉钉图片获取失败(from=$from)")
+                    Logger.w(TAG, "DingTalk image fetch failed (from=$from)")
 
-                    ChannelInbox.record(source, text.ifBlank { "[图片(未能获取)]" }, sanitizeDingtalkPayloadForStorage(payload))
+                    ChannelInbox.record(source, text.ifBlank { "[Image (Could not fetch)]" }, sanitizeDingtalkPayloadForStorage(payload))
                 }
             }
         }

@@ -55,7 +55,7 @@ class IntegrityChecker(
                 if (sb.isEmpty()) "empty" else sb.toString()
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "checkAndLog: 执行 integrity_check 失败", e)
+            Logger.e(TAG, "checkAndLog: failed to run integrity_check", e)
             "query_failed: ${e.message}"
         }
 
@@ -72,19 +72,19 @@ class IntegrityChecker(
                 ),
             )
         } catch (e: Exception) {
-            Logger.e(TAG, "checkAndLog: 写入完整性日志失败", e)
+            Logger.e(TAG, "checkAndLog: failed to write the integrity log", e)
         }
 
         try {
             integrityLogDao.trim(KEEP_LOG_COUNT)
         } catch (e: Exception) {
-            Logger.w(TAG, "checkAndLog: 清理旧完整性日志失败: ${e.message}", e)
+            Logger.w(TAG, "checkAndLog: failed to clean old integrity logs: ${e.message}", e)
         }
 
         if (isOk) {
             Logger.i(TAG, "checkAndLog: integrity_check ok, dbSize=$dbSize")
         } else {
-            Logger.w(TAG, "checkAndLog: integrity_check 异常: $details")
+            Logger.w(TAG, "checkAndLog: integrity_check error: $details")
         }
         isOk
     }
@@ -107,14 +107,14 @@ class IntegrityChecker(
         val path: String? = try {
             db.path
         } catch (e: Exception) {
-            Logger.w(TAG, "readDbSizeBytes: 获取数据库路径失败: ${e.message}", e)
+            Logger.w(TAG, "readDbSizeBytes: failed to get the database path: ${e.message}", e)
             null
         }
         if (path.isNullOrEmpty()) return 0L
         return try {
             File(path).length()
         } catch (e: Exception) {
-            Logger.w(TAG, "readDbSizeBytes: 读取文件大小失败: ${e.message}", e)
+            Logger.w(TAG, "readDbSizeBytes: failed to read the file size: ${e.message}", e)
             0L
         }
     }

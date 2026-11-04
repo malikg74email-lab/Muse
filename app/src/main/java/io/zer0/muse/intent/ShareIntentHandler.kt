@@ -161,7 +161,7 @@ class ShareIntentHandler(private val context: Context) {
                 if (id != null && SESSION_ID_REGEX.matches(id)) {
                     ShareResult.OpenSession(id)
                 } else {
-                    if (id != null) Logger.w(TAG, "Deep link sessionId 格式非法,已忽略: $id")
+                    if (id != null) Logger.w(TAG, "Deep link sessionId format invalid, ignored: $id")
                     ShareResult.None
                 }
             }
@@ -239,7 +239,7 @@ class ShareIntentHandler(private val context: Context) {
                             sb.toString()
                         }
                     }
-                }.onError { msg, _ -> Logger.w(TAG, "读取分享流失败: $msg") }.getOrNull()
+                }.onError { msg, _ -> Logger.w(TAG, "Reading the share stream failed: $msg") }.getOrNull()
             }
             if (!streamText.isNullOrBlank()) {
                 return ShareResult.PrefillText(streamText)

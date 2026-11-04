@@ -61,7 +61,7 @@ class ContextBudget(private val limits: Map<ContextSection, Int> = DEFAULT_LIMIT
         return when {
             limit == null || originalChars <= limit -> Clamped(text, false, originalChars)
             else -> {
-                val notice = "\n\n[内容已按上下文预算截断: 分区=$section 原始 $originalChars 字符 上限 $limit 字符]"
+                val notice = "\n\n[Content truncated per the context budget: section=$section original $originalChars characters limit $limit characters]"
                 // 注记计入预算:头部预留 = 上限 - 注记长度(下限 0)
                 val headLength = (limit - notice.length).coerceAtLeast(0)
                 Clamped(text.take(headLength) + notice, true, originalChars)

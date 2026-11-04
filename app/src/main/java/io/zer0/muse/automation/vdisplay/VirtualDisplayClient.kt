@@ -49,7 +49,7 @@ class VirtualDisplayClient(
                 }
             if (id < 0) {
                 return@withContext Result.failure(
-                    IllegalStateException("虚拟屏创建失败(详见 /data/local/tmp/muse-vd-server.log)"),
+                    IllegalStateException("Virtual screen creation failed (see /data/local/tmp/muse-vd-server.log)"),
                 )
             }
             compatibilityWidth = width
@@ -77,7 +77,7 @@ class VirtualDisplayClient(
             }
             if (id < 0) {
                 return@withContext Result.failure(
-                    IllegalStateException("独立虚拟屏创建失败(服务端容量已满或详见 /data/local/tmp/muse-vd-server.log)"),
+                    IllegalStateException("Standalone virtual screen creation failed (server capacity full, or see /data/local/tmp/muse-vd-server.log)"),
                 )
             }
             try {

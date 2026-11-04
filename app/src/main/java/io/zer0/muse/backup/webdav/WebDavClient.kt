@@ -189,7 +189,7 @@ class WebDavClient(
                 localFile.outputStream().use { out -> body.byteStream().use { it.copyTo(out) } }
                 true
             }.getOrElse {
-                Logger.w("WebDavClient", "download 写入本地文件失败: ${it.message}")
+                Logger.w("WebDavClient", "download failed to write the local file: ${it.message}")
                 false
             }
         }

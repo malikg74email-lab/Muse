@@ -109,7 +109,7 @@ class ProactiveCycleRunner(
 
     /** 已有一轮在跑时本轮的去向。记一条日志，说明为什么这一路什么都没做。 */
     private fun skipped(trigger: String): Outcome {
-        val detail = "上一轮巡检还在进行（$trigger），本次跳过"
+        val detail = "The previous patrol round is still running ($trigger), skipping this one"
         Logger.i(TAG, detail)
         return Outcome(
             verdict = null,
@@ -133,7 +133,7 @@ class ProactiveCycleRunner(
             val detail = ProactiveTimingEngine.describe(decision)
             Logger.i(
                 TAG,
-                "巡检不发送（$trigger）: $detail | verdict=${decision.verdict} | " +
+                "Patrol not sending ($trigger）: $detail | verdict=${decision.verdict} | " +
                     "interval=${decision.effectiveIntervalMinutes}min | ${skipContext(ready)}",
             )
             return Outcome(decision.verdict, false, hasOpenThoughts(ready), detail)
@@ -142,8 +142,8 @@ class ProactiveCycleRunner(
         // 被概率放弃的这一轮就不该再花一次模型调用。
         // 手动测试（force）不走这里：那是排查工具，不是日常节奏。
         if (!force && !ProactiveSendProbability.allows(ready.config.sendProbability, rollPercent())) {
-            val detail = "按发送概率跳过（${ready.config.sendProbability}%）"
-            Logger.i(TAG, "巡检不发送（$trigger）: $detail | verdict=${decision.verdict}")
+            val detail = "Skipped by send probability (${ready.config.sendProbability}%）"
+            Logger.i(TAG, "Patrol not sending ($trigger）: $detail | verdict=${decision.verdict}")
             return Outcome(decision.verdict, false, hasOpenThoughts(ready), detail)
         }
         return publishResult(trigger, decision, ready)
@@ -162,15 +162,15 @@ class ProactiveCycleRunner(
         val lastOutcome = runCatching { stores.outcomes.getRecent(ready.assistant.id, 1).firstOrNull() }
             .getOrNull()
         val minutes = lastOutcome?.let { (now - it.sentAt).coerceAtLeast(0L) / 60_000L }
-            ?.toString() ?: "无"
+            ?.toString() ?: "none"
         val readState = runCatching { runtime.sessions.getSessionById(ready.sessionId) }
             .getOrNull()
             ?.let { session ->
                 val unread = (session.messageCount - session.lastReadCount).coerceAtLeast(0)
                 "unread=$unread,lastRead=${session.lastReadCount}/${session.messageCount}"
-            } ?: "读取失败"
-        val outcomeState = lastOutcome?.state ?: "无"
-        return "距上条主动消息=${minutes}分钟 | 用户已读状态=$readState | 上一条主动消息=$outcomeState"
+            } ?: "read failed"
+        val outcomeState = lastOutcome?.state ?: "none"
+        return "time since last proactive message=${minutes} min | user read status=$readState | last proactive message=$outcomeState"
     }
 
     /** 账本里还有没有没说的。只影响下次复查的间隔，不再是能不能说的前提。 */
@@ -183,31 +183,31 @@ class ProactiveCycleRunner(
         ready: Prepared,
     ): Outcome = when (val produced = produce(ready)) {
         is ProactiveReplyParser.Result.Failed -> {
-            Logger.w(TAG, "生成失败: ${produced.reason}")
-            Outcome(decision.verdict, false, hasOpenThoughts(ready), "生成失败：${produced.reason}")
+            Logger.w(TAG, "Generation failed:  ${produced.reason}")
+            Outcome(decision.verdict, false, hasOpenThoughts(ready), "Generation failed: ${produced.reason}")
         }
         is ProactiveReplyParser.Result.Skip -> {
             // 这是模型自己的判断，它看到的是对话，看不到自己上一条有没有被读。
             // 把外部事实一起记上，才能分清「没东西可说」和「说了没人应」。
-            Logger.i(TAG, "判定跳过 | reason=${produced.reason} | ${skipContext(ready)}")
+            Logger.i(TAG, "Judged a skip | reason=${produced.reason} | ${skipContext(ready)}")
             Outcome(
                 decision.verdict,
                 false,
                 hasOpenThoughts(ready),
-                "它觉得这会儿没什么可接的（${produced.reason}）",
+                "It felt there was nothing to pick up on right now (${produced.reason}）",
             )
         }
         is ProactiveReplyParser.Result.Message -> {
             Logger.i(
                 TAG,
-                "主动消息候选生成 | assistantId=${ready.assistant.id} | len=${produced.content.length} | trigger=$trigger",
+                "Proactive message candidate generated | assistantId=${ready.assistant.id} | len=${produced.content.length} | trigger=$trigger",
             )
             val ok = publish(trigger, ready, produced)
             Outcome(
                 decision.verdict,
                 ok,
                 hasOpenThoughts(ready),
-                if (ok) "已发送" else "落库失败，下次再试",
+                if (ok) "Sent" else "Persistence failed; will retry next time",
             )
         }
     }
@@ -237,11 +237,11 @@ class ProactiveCycleRunner(
      * 而下面的组装逻辑是「往下走但可能拿不到材料」，两类失败混在一起读不清。
      */
     private suspend fun gateBlock(force: Boolean): Preparation? = when {
-        ProcessWriteGate.restoring -> blocked("备份恢复中，跳过")
+        ProcessWriteGate.restoring -> blocked("Backup restore in progress, skipping")
         !readScheduleWorkEnabledOrFalse { runtime.settings.scheduleWorkEnabledFlow.first() } ->
-            blocked("后台调度总控已关闭")
+            blocked("Background scheduling master switch is off")
         !force && !runtime.settings.proactiveMessageConfigFlow.first().enabled ->
-            blocked("主动消息未开启")
+            blocked("Proactive messages are not enabled")
         else -> null
     }
 
@@ -251,7 +251,7 @@ class ProactiveCycleRunner(
         val now = System.currentTimeMillis()
 
         // 助手是后面所有步骤的前提，拿不到就没必要继续凑材料
-        val assistant = loader.loadAssistant(config.agentId) ?: return blocked("没有可用助手")
+        val assistant = loader.loadAssistant(config.agentId) ?: return blocked("No assistant available")
 
         // 例行清理 + 推导新牵挂，全是本地操作，不花钱。
         // 主动消息关着的时候也做：账本照常积累，用户打开时才有东西可说。
@@ -260,7 +260,7 @@ class ProactiveCycleRunner(
         // 巡检本来就是这条链路上唯一会定期跑的本地活儿，多一个 Worker 就多一处
         // 「什么时候跑、跑在哪个进程」要维护。
         val expired = stores.outcomes.expireOverdue(now)
-        if (expired > 0) Logger.i(TAG, "主动消息过期收尾 | 条数=$expired")
+        if (expired > 0) Logger.i(TAG, "Proactive message expiry cleanup | count=$expired")
         loader.deriveThoughts(assistant.id, now)
 
         val relation = stores.relations.getOrCreate(assistant.id, now)
@@ -291,7 +291,7 @@ class ProactiveCycleRunner(
             ).also { d ->
                 Logger.d(
                     TAG,
-                    "判定[$trigger]: ${d.verdict} interval=${d.effectiveIntervalMinutes}min " +
+                    "Verdict[$trigger]: ${d.verdict} interval=${d.effectiveIntervalMinutes}min " +
                         "budget=${d.remainingBudget}",
                 )
             }
@@ -299,7 +299,7 @@ class ProactiveCycleRunner(
 
         return when {
             // 账本为空不再阻断：素材是最近对话，没有牵挂照样能接话。
-            sessionId == null || context == null || decision == null -> blocked("没有可用会话")
+            sessionId == null || context == null || decision == null -> blocked("No session available")
             else -> Preparation.Ready(
                 Prepared(
                     config = config,
@@ -337,13 +337,13 @@ class ProactiveCycleRunner(
         )
         val candidates = ProactiveCandidateFilter.select(ledger, intensity, banned)
         if (banned.isNotEmpty()) {
-            Logger.i(TAG, "候选过滤 | 已不感兴趣的类型=${banned.joinToString { it.name }} | 剩=${candidates.size}")
+            Logger.i(TAG, "Candidate filtering | no-longer-interested types=${banned.joinToString { it.name }} | remaining=${candidates.size}")
         }
 
         // 安静档：没有具体事由就不开口。连模型都不调，
         // 既省一次调用，也避免它在「只允许说事」的约束下硬凑出一句寒暄。
         if (intensity.onlyWhenNeeded && candidates.isEmpty()) {
-            return ProactiveReplyParser.Result.Skip("安静档：账本里没有具体的事")
+            return ProactiveReplyParser.Result.Skip("Quiet tier: the ledger has nothing specific")
         }
 
         val route = ProactiveModelPicker.pick(runtime.settings, ready.assistant)
@@ -367,7 +367,7 @@ class ProactiveCycleRunner(
                     temperature = ready.config.temperature,
                 )
             }
-        } ?: ProactiveReplyParser.Result.Failed("生成超时")
+        } ?: ProactiveReplyParser.Result.Failed("Generation timed out")
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -396,10 +396,10 @@ class ProactiveCycleRunner(
                     createdAt = now,
                 ),
             )
-        }.onFailure { e -> Logger.e(TAG, "落库失败，本次放弃: ${e.message}", e) }.getOrNull()
+        }.onFailure { e -> Logger.e(TAG, "Persistence failed; giving up this time:  ${e.message}", e) }.getOrNull()
 
         if (written == null) {
-            Logger.i(TAG, "主动消息落库 | sessionId=${ready.sessionId} | messageId=null(写入失败) | trigger=$trigger")
+            Logger.i(TAG, "Proactive message persisted | sessionId=${ready.sessionId} | messageId=null (write failed) | trigger=$trigger")
             return false
         }
 
@@ -409,7 +409,7 @@ class ProactiveCycleRunner(
         val currentSessionId = runCatching { runtime.settings.getViewedSessionId() }.getOrNull()
         Logger.i(
             TAG,
-            "主动消息落库 | sessionId=${ready.sessionId} | messageId=$written | " +
+            "Proactive message persisted | sessionId=${ready.sessionId} | messageId=$written | " +
                 "targetSessionId=${ready.sessionId} | currentSessionId=${currentSessionId ?: "无"}",
         )
 
@@ -430,7 +430,7 @@ class ProactiveCycleRunner(
         )
 
         notifyProactive(trigger, ready, message, currentSessionId, outcomeId)
-        Logger.i(TAG, "已发送: thought=${actual?.id ?: "无(接话)"} tone=${message.tone}")
+        Logger.i(TAG, "Sent: thought=${actual?.id ?:  "无(接话)"} tone=${message.tone}")
         return true
     }
 
@@ -461,11 +461,11 @@ class ProactiveCycleRunner(
         val reason = when {
             failure != null -> failure.message ?: failure::class.java.simpleName
             blocker != null -> blocker
-            else -> "无"
+            else -> "none"
         }
         Logger.i(
             TAG,
-            "主动消息通知 | posted=$posted | reason=$reason | targetSessionId=${ready.sessionId} | " +
+            "Proactive message notification | posted=$posted | reason=$reason | targetSessionId=${ready.sessionId} | " +
                 "currentSessionId=${currentSessionId ?: "无"} | trigger=$trigger",
         )
     }

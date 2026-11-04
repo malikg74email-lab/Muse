@@ -76,7 +76,7 @@ class ConversationTreeSnapshotStore(private val context: Context) {
                 AppJson.encodeToString(TreeSnapshot.serializer(), snapshot),
             )
         }.onFailure { e ->
-            Logger.w("TreeSnapshotStore", "保存对话树选择快照失败: ${e.message}", e)
+            Logger.w("TreeSnapshotStore", "Failed to save the conversation tree selection snapshot: ${e.message}", e)
         }
     }
 
@@ -87,7 +87,7 @@ class ConversationTreeSnapshotStore(private val context: Context) {
             val snapshot = AppJson.decodeFromString(TreeSnapshot.serializer(), file.readText())
             snapshot.toTree()
         }.onFailure { e ->
-            Logger.w("TreeSnapshotStore", "读取对话树选择快照失败: ${e.message}", e)
+            Logger.w("TreeSnapshotStore", "Failed to read the conversation tree selection snapshot: ${e.message}", e)
             AtomicFileStore.quarantine(file, "snapshot_parse")
         }.getOrNull()
     }

@@ -62,32 +62,32 @@ class MemoryBackfillMigration(
         }
         // 守卫 3: 记忆开关关闭则不跑(尊重用户设置),但仍标记为已迁移避免下次再检查
         if (!settings.isMemoryEnabled()) {
-            Logger.i(TAG, "记忆开关关闭,跳过 backfill 迁移")
+            Logger.i(TAG, "Memory switch is off; skipping the backfill migration")
             settings.saveMemoryBackfillMigrationDone(true)
             return@withContext false
         }
 
-        Logger.i(TAG, "开始存量记忆迁移:扫描无摘要的历史 session")
+        Logger.i(TAG, "Starting migration of existing memories: scanning historical sessions without summaries")
         val model = resultOf { settings.getSelectedModel() }.getOrNull()
         // locale/timeZone 用默认值,与 ChatViewModel.notifyTurn 调用保持一致
         val locale = "zh-CN"
         val timeZone = io.zer0.memory.time.TimeContext.DEFAULT_TIMEZONE
 
         val allSessions = resultOf { sessionRepository.getAllActiveSessionsForBackfill() }
-            .onError { msg, t -> Logger.w(TAG, "获取 session 列表失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to get the session list: $msg", t) }
             .getOrNull() ?: emptyList()
         val summarizedIds = resultOf { memoryTicker.getAllSummarizedSessionIds() }
-            .onError { msg, t -> Logger.w(TAG, "获取已有摘要列表失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "Failed to get the existing summary list: $msg", t) }
             .getOrNull() ?: emptySet()
         val toBackfill = allSessions.filter { it.id !in summarizedIds }
 
         if (toBackfill.isEmpty()) {
-            Logger.i(TAG, "无需迁移:所有 ${allSessions.size} 个 session 均已有摘要")
+            Logger.i(TAG, "No migration needed: all ${allSessions.size} sessions already have summaries")
             settings.saveMemoryBackfillMigrationDone(true)
             return@withContext false
         }
 
-        Logger.i(TAG, "需补跑 ${toBackfill.size}/${allSessions.size} 个 session 的摘要")
+        Logger.i(TAG, "${toBackfill.size}/${allSessions.size} sessions need their summaries backfilled")
         var succeeded = 0
         var failed = 0
         for ((i, session) in toBackfill.withIndex()) {
@@ -104,7 +104,7 @@ class MemoryBackfillMigration(
             )
 
             val messages = resultOf { sessionRepository.getAllMessagesForBackfill(session.id) }
-                .onError { msg, t -> Logger.w(TAG, "读取 session ${session.id.take(8)}… 消息失败: $msg", t) }
+                .onError { msg, t -> Logger.w(TAG, "Failed to read messages of session ${session.id.take(8)}…: $msg", t) }
                 .getOrNull() ?: emptyList()
             if (messages.isEmpty()) {
                 // 空会话无摘要属正常,不计入 failed
@@ -114,7 +114,7 @@ class MemoryBackfillMigration(
             val changed = resultOf {
                 memoryTicker.backfillSession(session.id, messages, model, locale, timeZone, session.assistantId)
             }.onError { msg, t ->
-                Logger.w(TAG, "backfill session ${session.id.take(8)}… 失败: $msg", t)
+                Logger.w(TAG, "backfill session ${session.id.take(8)}… failed: $msg", t)
             }.getOrNull() ?: false
 
             if (changed) succeeded++ else failed++
@@ -131,11 +131,11 @@ class MemoryBackfillMigration(
                 done = true,
             ),
         )
-        Logger.i(TAG, "摘要补跑完成: 成功 $succeeded, 失败 $failed, 共 ${toBackfill.size}")
+        Logger.i(TAG, "Summary backfill complete: $succeeded succeeded, $failed failed, ${toBackfill.size} in total")
 
         // 跑完整 daily pipeline,让新摘要进入 memory.md(compileToday/Daily/Facts/longterm)
         resultOf { memoryTicker.tick(model, locale, timeZone) }
-            .onError { msg, t -> Logger.w(TAG, "迁移后 tick() 失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "tick() after migration failed: $msg", t) }
 
         // 持久化迁移完成标志
         settings.saveMemoryBackfillMigrationDone(true)

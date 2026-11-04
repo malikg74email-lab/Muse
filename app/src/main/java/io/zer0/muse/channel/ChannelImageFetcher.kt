@@ -80,17 +80,17 @@ internal object ChannelImageFetcher {
                             error("HTTP ${resp.code}")
                         }
                         val len = resp.body.contentLength()
-                        if (len > maxBytes) error("图片过大: $len > $maxBytes")
+                        if (len > maxBytes) error("Image too large: $len > $maxBytes")
                         resp.body.bytes()
                     }
                 }
                 if (bytes == null) {
-                    Logger.w(TAG, "飞书图片下载超时")
+                    Logger.w(TAG, "Feishu image download timed out")
                     return@runCatching null
                 }
                 ChannelMediaUtils.toCompactImageBase64(bytes)
             }.onFailure { e ->
-                Logger.w(TAG, "飞书图片获取失败: ${e.message}")
+                Logger.w(TAG, "Feishu image fetch failed: ${e.message}")
             }.getOrNull()
         }
 
@@ -112,17 +112,17 @@ internal object ChannelImageFetcher {
                         error("HTTP ${resp.code}")
                     }
                     val len = resp.body.contentLength()
-                    if (len > maxBytes) error("图片过大: $len > $maxBytes")
+                    if (len > maxBytes) error("Image too large: $len > $maxBytes")
                     resp.body.bytes()
                 }
             }
             if (bytes == null) {
-                Logger.w("QQ", "图片下载超时")
+                Logger.w("QQ", "Image download timed out")
                 return@runCatching null
             }
             ChannelMediaUtils.toCompactImageBase64(bytes)
         }.onFailure { e ->
-            Logger.w("QQ", "图片获取失败: ${e.message}")
+            Logger.w("QQ", "Image fetch failed: ${e.message}")
         }.getOrNull()
     }
 
@@ -183,7 +183,7 @@ internal object ChannelImageFetcher {
                 }
             }
             if (url.isNullOrBlank()) {
-                Logger.w(TAG, "钉钉未返回下载地址")
+                Logger.w(TAG, "DingTalk did not return a download address")
                 return@runCatching null
             }
             val imgReq = Request.Builder().url(url).get().build()
@@ -191,17 +191,17 @@ internal object ChannelImageFetcher {
                 HTTP.newCall(imgReq).execute().use { resp ->
                     if (!resp.isSuccessful) error("HTTP ${resp.code}")
                     val len = resp.body.contentLength()
-                    if (len > maxBytes) error("图片过大: $len > $maxBytes")
+                    if (len > maxBytes) error("Image too large: $len > $maxBytes")
                     resp.body.bytes()
                 }
             }
             if (bytes == null) {
-                Logger.w(TAG, "钉钉图片下载超时")
+                Logger.w(TAG, "DingTalk image download timed out")
                 return@runCatching null
             }
             ChannelMediaUtils.toCompactImageBase64(bytes)
         }.onFailure { e ->
-            Logger.w(TAG, "钉钉图片获取失败: ${e.message}")
+            Logger.w(TAG, "DingTalk image fetch failed: ${e.message}")
         }.getOrNull()
     }
 
@@ -241,12 +241,12 @@ internal object ChannelImageFetcher {
                 HTTP.newCall(request).execute().use { resp ->
                     if (!resp.isSuccessful) error("HTTP ${resp.code}")
                     val len = resp.body.contentLength()
-                    if (len > maxBytes) error("媒体过大: $len > $maxBytes")
+                    if (len > maxBytes) error("Media too large: $len > $maxBytes")
                     resp.body.bytes()
                 }
             }
         }.onFailure { e ->
-            Logger.w(TAG, "媒体下载失败: ${e.message}")
+            Logger.w(TAG, "Media download failed: ${e.message}")
         }.getOrNull()
     }
 }

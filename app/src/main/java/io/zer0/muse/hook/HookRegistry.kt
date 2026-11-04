@@ -56,7 +56,7 @@ class HookRegistry {
         allHooks[hook.id] = hook
         val types = hookTypesOf(hook)
         if (types.isEmpty()) {
-            Logger.w(TAG, "register: ${hook::class.simpleName}#${hook.id} 的接口未登记，走全量兜底")
+            Logger.w(TAG, "register: the interface of ${hook::class.simpleName}#${hook.id} is not registered; using the full fallback")
             return
         }
         types.forEach { type -> buckets.getOrPut(type) { ConcurrentHashMap() }[hook.id] = hook }

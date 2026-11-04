@@ -81,7 +81,7 @@ class SubagentSessionStore(
                 if (parsed != null) {
                     all.add(parsed)
                 } else {
-                    Logger.w(TAG, "跳过损坏的 JSONL 行: ${line.take(80)}")
+                    Logger.w(TAG, "Skipping corrupted JSONL line: ${line.take(80)}")
                 }
             }
         }

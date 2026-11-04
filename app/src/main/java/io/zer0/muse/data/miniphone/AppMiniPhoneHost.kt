@@ -73,7 +73,7 @@ class MomentChainTextGenerator(
     override suspend fun generate(assistant: AssistantEntity?, material: String, maxTokens: Int): String? {
         val service = chatService ?: return null
         val messages = resultOf { contextBuilder.buildMessages(assistant = assistant, userContent = material) }
-            .onError { msg, t -> Logger.w(TAG, "组装角色上下文失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to assemble character context: ${t?.message ?: msg}") }
             .getOrNull()
             ?: return null
         val binding = resolveBinding(assistant)
@@ -88,7 +88,7 @@ class MomentChainTextGenerator(
                 maxTokens = maxTokens,
             ).text
         }.onError { msg, t ->
-            Logger.w(TAG, "旁路文本生成失败: ${t?.message ?: msg}")
+            Logger.w(TAG, "Bypass text generation failed: ${t?.message ?: msg}")
         }.getOrNull()
     }
 
@@ -102,18 +102,18 @@ class MomentChainTextGenerator(
         val modelId = assistant?.modelId?.takeIf { it.isNotBlank() } ?: return null
         val providerId = assistant.providerId?.takeIf { it.isNotBlank() }
         val providers = resultOf { settings.providersFlow.first() }
-            .onError { msg, t -> Logger.w(TAG, "读取供应商列表失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read the provider list: ${t?.message ?: msg}") }
             .getOrNull()
             .orEmpty()
         val model = findModel(providers, providerId, modelId)
         if (model == null) {
-            Logger.w(TAG, "角色绑定的模型不可用(provider=${providerId ?: "-"}, model=$modelId)，回退默认模型")
+            Logger.w(TAG, "The model bound to the character is unavailable (provider=${providerId ?: "-"}, model=$modelId); falling back to the default model")
             return null
         }
         val provider = providers.firstOrNull { it.id == model.providerId }
             ?: providerId?.let { id -> providers.firstOrNull { it.id == id } }
         if (provider == null) {
-            Logger.w(TAG, "角色绑定的模型没有可用供应商(provider=${providerId ?: "-"})，回退默认模型")
+            Logger.w(TAG, "The model bound to the character has no available provider (provider=${providerId ?: "-"}); falling back to the default model")
             return null
         }
         return ModelBinding(model = model, providerConfig = provider)
@@ -163,7 +163,7 @@ internal class MiniPhoneTextComposer(
     /** 读取角色；读不到（不存在 / 异常）都返回 null。 */
     suspend fun findAssistant(characterId: String): AssistantEntity? =
         resultOf { assistantRepository.getById(characterId) }
-            .onError { msg, t -> Logger.w(TAG, "读取角色失败: id=$characterId, ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read character: id=$characterId, ${t?.message ?: msg}") }
             .getOrNull()
 
     /** 动态素材：动态口吻，单条正文，不配图。 */
@@ -190,7 +190,7 @@ internal class MiniPhoneTextComposer(
                 voiceMessageEnabled = true,
             )
         }
-            .onError { msg, t -> Logger.w(TAG, "组装角色上下文失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to assemble character context: ${t?.message ?: msg}") }
             .getOrNull()
             ?: return emptyList()
         return built.takeWhile { it.role == MessageRole.SYSTEM } + turns.map { it.toUIMessage() }
@@ -231,7 +231,7 @@ internal class MiniPhoneTextComposer(
         return resultOf {
             withTimeoutOrNull(GENERATION_TIMEOUT_MS) { textGenerator.generate(assistant, material, budget) }
         }.onError { msg, t ->
-            Logger.w(TAG, "角色文本生成失败: ${t?.message ?: msg}")
+            Logger.w(TAG, "Character text generation failed: ${t?.message ?: msg}")
         }.getOrNull()
     }
 
@@ -243,32 +243,32 @@ internal class MiniPhoneTextComposer(
     /** 动态素材：动态口吻，单条正文，不配图。 */
     private fun momentMaterial(hint: String?): String = buildString {
         appendLine("<moment_task>")
-        appendLine("请以你自己的身份发一条朋友圈动态。")
+        appendLine("Post a Moments update as yourself.")
         appendHint(hint)
         appendLine("</moment_task>")
         appendLine()
         appendLine("<style>")
-        appendLine("- 口语自然，30-80 字，像真人在分享自己的生活。")
-        appendLine("- 这不是回复任何人，是你自己发的动态。")
-        appendLine("- 不要输出 MOOD、情绪值、好感度、状态栏、系统标签、括号动作、旁白、时间戳、引号、#话题。")
-        appendLine("- 不要客服腔、不要 AI 自我介绍。")
-        appendLine("- 只输出正文本身，不要前缀、解释或配图说明。")
+        appendLine("- Natural, colloquial, 30-80 characters, like a real person sharing their own life.")
+        appendLine("- This is not a reply to anyone; it is an update you post yourself.")
+        appendLine("- Do not output MOOD, emotion values, favourability, status bars, system tags, bracketed actions, narration, timestamps, quotes, or #hashtags.")
+        appendLine("- No customer-service tone, no AI self-introduction.")
+        appendLine("- Output only the post text itself, no prefix, explanation, or image caption.")
         appendLine("</style>")
     }
 
     /** 主动私信素材:同一个角色人格、同一个生成链路,只把任务换成「直接开口说一句话」。 */
     private fun proactiveChatMaterial(hint: String?): String = buildString {
         appendLine("<chat_task>")
-        appendLine("请主动给用户发一条私信。")
+        appendLine("Proactively send the user a private message.")
         appendHint(hint)
         appendLine("</chat_task>")
         appendLine()
         appendLine("<style>")
-        appendLine("- 以角色第一人称，直接对用户开口，一到两句话。")
-        appendLine("- 这不是回复任何人，是你主动开口说的话。")
-        appendLine("- 不要输出 MOOD、情绪值、好感度、状态栏、系统标签、括号动作、旁白、时间戳、引号、#话题。")
-        appendLine("- 不要 markdown、不要客服腔。")
-        appendLine("- 只输出正文本身。")
+        appendLine("- In the character's first person, speak directly to the user, one or two sentences.")
+        appendLine("- This is not a reply to anyone; it is you speaking up on your own initiative.")
+        appendLine("- Do not output MOOD, emotion values, favourability, status bars, system tags, bracketed actions, narration, timestamps, quotes, or #hashtags.")
+        appendLine("- No markdown, no customer-service tone.")
+        appendLine("- Output only the message text itself.")
         appendLine("</style>")
     }
 
@@ -297,8 +297,8 @@ internal class MiniPhoneTextComposer(
         /** `[mood]…[/mood]` 与 `<mood>…</mood>` 包裹的段。 */
         private val MOOD_BLOCK = Regex("""[\[<]\s*mood\s*[\]>][\s\S]*?[\[<]\s*/\s*mood\s*[\]>]""", RegexOption.IGNORE_CASE)
 
-        /** 行尾/句末的「（心情：…）」括号尾巴。 */
-        private val MOOD_TAIL = Regex("""[（(]\s*心情\s*[:：][^）)\n]*[）)]""")
+        /** 行尾/句末的「（心情：…）」括号尾巴(英文「(Mood: …)」写法一并剥离)。 */
+        private val MOOD_TAIL = Regex("""[（(]\s*(?:心情|mood)\s*[:：][^）)\n]*[）)]""", RegexOption.IGNORE_CASE)
     }
 }
 
@@ -339,7 +339,7 @@ class AppMiniPhoneHost(
         assistantRepository.observeAll
             .map { assistants -> assistants.map { it.toMpCharacter() } }
             .catch { t ->
-                Logger.w(TAG, "读取角色列表失败，按空通讯录处理: ${t.message}")
+                Logger.w(TAG, "Failed to read the character list; treating it as an empty address book: ${t.message}")
                 emit(emptyList())
             }
 
@@ -347,7 +347,7 @@ class AppMiniPhoneHost(
         settingsRepository.userProfileFlow
             .map { it.toMpProfile() }
             .catch { t ->
-                Logger.w(TAG, "读取用户资料失败，按空资料处理: ${t.message}")
+                Logger.w(TAG, "Failed to read the user profile; treating it as an empty profile: ${t.message}")
                 emit(MpProfile(nickname = ""))
             }
 
@@ -389,7 +389,7 @@ class AppMiniPhoneHost(
         return try {
             // 取消原样抛出（resultOf 内部重抛 CancellationException），其余异常归一成 null
             resultOf { synthesizeToArchive(text, emotion, tempFile) }
-                .onError { msg, t -> Logger.w(TAG, "语音合成流程异常: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w(TAG, "Speech synthesis flow error: ${t?.message ?: msg}") }
                 .getOrNull()
         } finally {
             // 成功/失败/取消三条路径都删临时文件（存档已是独立副本）
@@ -420,7 +420,7 @@ class AppMiniPhoneHost(
     /** 合成 → 落盘 → 探测时长。任一步失败返回 null。 */
     private suspend fun synthesizeToArchive(text: String, emotion: String?, tempFile: File): Pair<String, Long>? {
         val outcome = resultOf { voiceSynthesizer.synthesizeTo(text, tempFile, emotion) }
-            .onError { msg, t -> Logger.w(TAG, "语音合成失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Speech synthesis failed: ${t?.message ?: msg}") }
             .getOrNull()
         // 回落系统音色也算合成出来了（音频可用），只有彻底失败才放弃
         if (outcome == null || outcome is TtsSynthResult.Failure) return null
