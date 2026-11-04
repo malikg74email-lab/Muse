@@ -155,15 +155,15 @@ object Logger {
      */
     private fun sanitizePii(msg: String): String {
         return msg
-            .replace(PHONE_REGEX, "[手机号]")
-            .replace(EMAIL_REGEX, "[邮箱]")
-            .replace(ID_CARD_REGEX, "[身份证]")
-            .replace(BANK_CARD_REGEX, "[银行卡]")
+            .replace(PHONE_REGEX, "[Phone]")
+            .replace(EMAIL_REGEX, "[Email]")
+            .replace(ID_CARD_REGEX, "[ID card]")
+            .replace(BANK_CARD_REGEX, "[Bank card]")
             .replace(IPV4_REGEX, "[IP]")
             // v1.114: 三组凭据正则分别替换,保留 key 名便于排查
-            .replace(HEADER_CRED_REGEX, "$1: [已脱敏]")
-            .replace(KV_CRED_REGEX, "$1=[已脱敏]")
-            .replace(URL_QUERY_CRED_REGEX, "$1$2=[已脱敏]")
+            .replace(HEADER_CRED_REGEX, "$1: [Redacted]")
+            .replace(KV_CRED_REGEX, "$1=[Redacted]")
+            .replace(URL_QUERY_CRED_REGEX, "$1$2=[Redacted]")
     }
 
     fun d(tag: String = DEFAULT_TAG, msg: String) {

@@ -140,7 +140,7 @@ object KnownModels {
                 abilities = TOOL_ONLY,
                 pricingPromptPer1M = 2.50,
                 pricingCompletionPer1M = 10.00,
-                description = "OpenAI GPT-4o 多模态旗舰",
+                description = "OpenAI GPT-4o multimodal flagship",
             ),
         )
         put(
@@ -153,7 +153,7 @@ object KnownModels {
                 abilities = TOOL_ONLY,
                 pricingPromptPer1M = 0.15,
                 pricingCompletionPer1M = 0.60,
-                description = "OpenAI GPT-4o mini 轻量版",
+                description = "OpenAI GPT-4o mini lightweight edition",
             ),
         )
         put(
@@ -179,7 +179,7 @@ object KnownModels {
                 abilities = TOOL_ONLY,
                 pricingPromptPer1M = 30.00,
                 pricingCompletionPer1M = 60.00,
-                description = "OpenAI GPT-4 原始版(8K)",
+                description = "OpenAI GPT-4 original (8K)",
             ),
         )
         put(
@@ -205,7 +205,7 @@ object KnownModels {
                 abilities = setOf(TOOL, REASONING),
                 pricingPromptPer1M = 15.00,
                 pricingCompletionPer1M = 60.00,
-                description = "OpenAI o1 推理模型",
+                description = "OpenAI o1 reasoning model",
             ),
         )
         put(
@@ -218,7 +218,7 @@ object KnownModels {
                 abilities = REASONING_ONLY,
                 pricingPromptPer1M = 3.00,
                 pricingCompletionPer1M = 12.00,
-                description = "OpenAI o1-mini 推理模型",
+                description = "OpenAI o1-mini reasoning model",
             ),
         )
         put(
@@ -231,7 +231,7 @@ object KnownModels {
                 abilities = setOf(TOOL, REASONING),
                 pricingPromptPer1M = 150.00,
                 pricingCompletionPer1M = 600.00,
-                description = "OpenAI o1-pro 高性能推理",
+                description = "OpenAI o1-pro high-performance reasoning",
             ),
         )
         put(
@@ -244,7 +244,7 @@ object KnownModels {
                 abilities = setOf(TOOL, REASONING),
                 pricingPromptPer1M = 10.00,
                 pricingCompletionPer1M = 40.00,
-                description = "OpenAI o3 推理模型",
+                description = "OpenAI o3 reasoning model",
             ),
         )
         put(
@@ -257,7 +257,7 @@ object KnownModels {
                 abilities = setOf(TOOL, REASONING),
                 pricingPromptPer1M = 1.10,
                 pricingCompletionPer1M = 4.40,
-                description = "OpenAI o3-mini 推理模型",
+                description = "OpenAI o3-mini reasoning model",
             ),
         )
         put(
@@ -270,7 +270,7 @@ object KnownModels {
                 abilities = setOf(TOOL, REASONING),
                 pricingPromptPer1M = 1.10,
                 pricingCompletionPer1M = 4.40,
-                description = "OpenAI o4-mini 推理模型",
+                description = "OpenAI o4-mini reasoning model",
             ),
         )
         put(
@@ -283,7 +283,7 @@ object KnownModels {
                 abilities = setOf(TOOL, REASONING),
                 pricingPromptPer1M = 5.00,
                 pricingCompletionPer1M = 15.00,
-                description = "OpenAI GPT-5 旗舰",
+                description = "OpenAI GPT-5 flagship",
             ),
         )
         put(
@@ -321,7 +321,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "OpenAI GPT-5 Codex 代码模型",
+                description = "OpenAI GPT-5 Codex code model",
             ),
         )
 
@@ -401,7 +401,7 @@ object KnownModels {
                 abilities = setOf(TOOL, REASONING),
                 pricingPromptPer1M = 3.00,
                 pricingCompletionPer1M = 15.00,
-                description = "Anthropic Claude 3.7 Sonnet(扩展思考)",
+                description = "Anthropic Claude 3.7 Sonnet (extended thinking)",
             ),
         )
         put(
@@ -482,7 +482,7 @@ object KnownModels {
                 abilities = TOOL_ONLY,
                 pricingPromptPer1M = 1.25,
                 pricingCompletionPer1M = 5.00,
-                description = "Google Gemini 1.5 Pro(2M 上下文)",
+                description = "Google Gemini 1.5 Pro (2M context)",
             ),
         )
         put(
@@ -549,7 +549,7 @@ object KnownModels {
                 abilities = TOOL_ONLY,
                 pricingPromptPer1M = 0.27,
                 pricingCompletionPer1M = 1.10,
-                description = "DeepSeek V3 通用对话",
+                description = "DeepSeek V3 general chat",
             ),
         )
         put(
@@ -562,7 +562,7 @@ object KnownModels {
                 abilities = REASONING_ONLY,
                 pricingPromptPer1M = 0.55,
                 pricingCompletionPer1M = 2.19,
-                description = "DeepSeek R1 推理模型",
+                description = "DeepSeek R1 reasoning model",
             ),
         )
         put(
@@ -573,7 +573,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "DeepSeek Coder 代码模型",
+                description = "DeepSeek Coder code model",
             ),
         )
 
@@ -586,7 +586,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "Moonshot v1 8K 上下文",
+                description = "Moonshot v1 8K context",
             ),
         )
         put(
@@ -597,7 +597,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "Moonshot v1 32K 上下文",
+                description = "Moonshot v1 32K context",
             ),
         )
         put(
@@ -608,7 +608,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "Moonshot v1 128K 上下文",
+                description = "Moonshot v1 128K context",
             ),
         )
         put(
@@ -633,7 +633,7 @@ object KnownModels {
                 inputModalities = VISION_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "Moonshot Kimi K2.6(多模态)",
+                description = "Moonshot Kimi K2.6 (multimodal)",
             ),
         )
         put(
@@ -657,7 +657,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "通义千问 Max 旗舰",
+                description = "Tongyi Qianwen Max flagship",
             ),
         )
         put(
@@ -668,7 +668,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "通义千问 Plus",
+                description = "Tongyi Qianwen Plus",
             ),
         )
         put(
@@ -679,7 +679,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "通义千问 Turbo",
+                description = "Tongyi Qianwen Turbo",
             ),
         )
         put(
@@ -690,7 +690,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "通义千问 3 235B",
+                description = "Tongyi Qianwen 3 235B",
             ),
         )
         put(
@@ -701,7 +701,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "通义千问 2.5 72B",
+                description = "Tongyi Qianwen 2.5 72B",
             ),
         )
         put(
@@ -712,7 +712,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "通义千问 2.5 Coder 代码模型",
+                description = "Tongyi Qianwen 2.5 Coder code model",
             ),
         )
 
@@ -725,7 +725,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "字节豆包 Pro",
+                description = "ByteDance Doubao Pro",
             ),
         )
         put(
@@ -736,7 +736,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "字节豆包 Lite",
+                description = "ByteDance Doubao Lite",
             ),
         )
         put(
@@ -747,7 +747,7 @@ object KnownModels {
                 inputModalities = VISION_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "字节豆包 1.6",
+                description = "ByteDance Doubao 1.6",
             ),
         )
         put(
@@ -758,7 +758,7 @@ object KnownModels {
                 inputModalities = VISION_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "字节豆包 1.5 Pro",
+                description = "ByteDance Doubao 1.5 Pro",
             ),
         )
 
@@ -771,7 +771,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "智谱 GLM-4-Plus",
+                description = "Zhipu GLM-4-Plus",
             ),
         )
         put(
@@ -782,7 +782,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "智谱 GLM-4-Air(轻量)",
+                description = "Zhipu GLM-4-Air (lightweight)",
             ),
         )
         put(
@@ -793,7 +793,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "智谱 GLM-4-Flash(免费)",
+                description = "Zhipu GLM-4-Flash (free)",
             ),
         )
         put(
@@ -804,7 +804,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "智谱 GLM-4.5",
+                description = "Zhipu GLM-4.5",
             ),
         )
 
@@ -858,7 +858,7 @@ object KnownModels {
                 abilities = TOOL_ONLY,
                 pricingPromptPer1M = 0.30,
                 pricingCompletionPer1M = 0.90,
-                description = "Mistral Codestral 代码模型",
+                description = "Mistral Codestral code model",
             ),
         )
         put(
@@ -871,7 +871,7 @@ object KnownModels {
                 abilities = TOOL_ONLY,
                 pricingPromptPer1M = 0.15,
                 pricingCompletionPer1M = 0.15,
-                description = "Mistral Pixtral 多模态",
+                description = "Mistral Pixtral multimodal",
             ),
         )
 
@@ -955,7 +955,7 @@ object KnownModels {
                 inputModalities = VISION_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "xAI Grok 4.3(1M 上下文)",
+                description = "xAI Grok 4.3 (1M context)",
             ),
         )
 
@@ -990,7 +990,7 @@ object KnownModels {
                 inputModalities = VISION_IN,
                 outputModalities = TEXT_OUT,
                 abilities = TOOL_ONLY,
-                description = "MiniMax M3 视觉模型",
+                description = "MiniMax M3 vision model",
             ),
         )
 
@@ -1004,7 +1004,7 @@ object KnownModels {
                 inputModalities = VISION_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL),
-                description = "Agnes 2.0 Flash 多模态对话",
+                description = "Agnes 2.0 Flash multimodal chat",
             ),
         )
         put(
@@ -1015,7 +1015,7 @@ object KnownModels {
                 inputModalities = VISION_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL),
-                description = "Agnes 2.0 Pro 多模态对话",
+                description = "Agnes 2.0 Pro multimodal chat",
             ),
         )
         // 生图模型:context=0(不适用),仅输出 image 模态
@@ -1027,7 +1027,7 @@ object KnownModels {
                 inputModalities = emptySet(),
                 outputModalities = setOf(Modality.IMAGE),
                 abilities = emptySet(),
-                description = "Agnes Image 2.1 Flash 文生图模型",
+                description = "Agnes Image 2.1 Flash text-to-image model",
             ),
         )
         // 视频模型:context=0(不适用),仅输出 video 模态
@@ -1039,7 +1039,7 @@ object KnownModels {
                 inputModalities = emptySet(),
                 outputModalities = setOf(Modality.VIDEO),
                 abilities = emptySet(),
-                description = "Agnes Video 2.0 文生视频模型",
+                description = "Agnes Video 2.0 text-to-video model",
             ),
         )
 
@@ -1053,7 +1053,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "DeepSeek V4 旗舰(1M 上下文)",
+                description = "DeepSeek V4 flagship (1M context)",
             ),
         )
         put(
@@ -1075,7 +1075,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL),
-                description = "DeepSeek V4 Flash 轻量版",
+                description = "DeepSeek V4 Flash lightweight edition",
             ),
         )
         // 通义 Qwen3-Max 旗舰
@@ -1087,7 +1087,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL, REASONING),
-                description = "通义千问 3 Max 旗舰",
+                description = "Tongyi Qianwen 3 Max flagship",
             ),
         )
         put(
@@ -1098,7 +1098,7 @@ object KnownModels {
                 inputModalities = TEXT_IN,
                 outputModalities = TEXT_OUT,
                 abilities = setOf(TOOL),
-                description = "通义千问 3 Coder Plus 代码模型",
+                description = "Tongyi Qianwen 3 Coder Plus code model",
             ),
         )
     }

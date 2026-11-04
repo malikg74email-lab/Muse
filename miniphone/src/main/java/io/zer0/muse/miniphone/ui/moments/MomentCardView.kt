@@ -184,7 +184,7 @@ private fun MomentActionRow(moment: MomentUi, onToggleLike: () -> Unit, onDelete
         ) {
             Icon(
                 imageVector = MiniPhoneIcons.Heart,
-                contentDescription = "点赞",
+                contentDescription = "Like",
                 tint = if (moment.likedByMe) colors.unreadDot else colors.textSecondary,
                 modifier = Modifier.size(ActionIconSize),
             )
@@ -447,7 +447,7 @@ internal fun replyText(reply: MomentReplyUi): String {
     return if (to == null) {
         "${reply.senderName}：${reply.content}"
     } else {
-        "${reply.senderName} 回复 $to：${reply.content}"
+        "${reply.senderName} replied to $to: ${reply.content}"
     }
 }
 
@@ -469,7 +469,7 @@ private fun MomentCommentInput(momentId: String, replyTargetName: String?, onSen
         ) {
             if (draft.isEmpty()) {
                 Text(
-                    text = replyTargetName?.let { "回复 $it" } ?: COMMENT_PLACEHOLDER,
+                    text = replyTargetName?.let { "Reply to $it" } ?: COMMENT_PLACEHOLDER,
                     style = typography.timestamp.copy(color = colors.textSecondary),
                 )
             }
@@ -497,7 +497,7 @@ private fun MomentCommentInput(momentId: String, replyTargetName: String?, onSen
         ) {
             Icon(
                 imageVector = MiniPhoneIcons.Send,
-                contentDescription = "发送评论",
+                contentDescription = "Send comment",
                 tint = if (draft.isNotBlank()) colors.accent else colors.textSecondary,
                 modifier = Modifier.size(CommentSendIcon),
             )
@@ -529,11 +529,11 @@ private val CommentDialogWidth = 280.dp
 private val CancelCorner = 8.dp
 private val DialogActionHeight = 36.dp
 
-private const val DELETE_COMMENT_LABEL: String = "删除"
-private const val COMMENT_DELETE_TITLE: String = "删除这条评论?"
-private const val COMMENT_DELETE_HINT: String = "这条评论和它下面的回复会一起删除。"
-private const val COMMENT_DELETE_CANCEL_LABEL: String = "取消"
+private const val DELETE_COMMENT_LABEL: String = "Delete"
+private const val COMMENT_DELETE_TITLE: String = "Delete this comment?"
+private const val COMMENT_DELETE_HINT: String = "This comment and the replies under it will be deleted together."
+private const val COMMENT_DELETE_CANCEL_LABEL: String = "Cancel"
 
-private const val DELETE_LABEL: String = "删除"
-private const val ONLY_SELF_LABEL: String = "仅自己可见"
-private const val COMMENT_PLACEHOLDER: String = "说点什么"
+private const val DELETE_LABEL: String = "Delete"
+private const val ONLY_SELF_LABEL: String = "Only visible to me"
+private const val COMMENT_PLACEHOLDER: String = "Say something"

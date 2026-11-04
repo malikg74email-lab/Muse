@@ -40,10 +40,10 @@ import io.zer0.muse.miniphone.ui.theme.MiniPhoneTheme
 internal enum class ThreadMenuAction(
     val label: String,
 ) {
-    PIN("置顶"),
-    UNPIN("取消置顶"),
-    MARK_READ("标记已读"),
-    DELETE("删除会话"),
+    PIN("Pin"),
+    UNPIN("Unpin"),
+    MARK_READ("Mark as read"),
+    DELETE("Delete conversation"),
 }
 
 /**
@@ -163,14 +163,14 @@ internal fun ThreadDeleteConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> U
                 horizontalArrangement = Arrangement.End,
             ) {
                 DialogAction(
-                    label = "取消",
+                    label = "Cancel",
                     color = colors.textSecondary,
                     tag = MiniPhoneTags.THREAD_DELETE_CANCEL,
                     onClick = onDismiss,
                 )
                 Spacer(Modifier.width(8.dp))
                 DialogAction(
-                    label = "删除",
+                    label = "Delete",
                     color = colors.unreadDot,
                     tag = MiniPhoneTags.THREAD_DELETE_CONFIRM,
                     onClick = onConfirm,
@@ -205,5 +205,5 @@ private val DialogWidth = 280.dp
 
 private val DialogActionHeight = 36.dp
 
-private const val DELETE_TITLE: String = "删除这个会话?"
-private const val DELETE_HINT: String = "会话和里面的全部消息都会从这台手机上删掉,无法恢复。"
+private const val DELETE_TITLE: String = "Delete this conversation?"
+private const val DELETE_HINT: String = "The conversation and all its messages will be deleted from this phone and cannot be recovered."

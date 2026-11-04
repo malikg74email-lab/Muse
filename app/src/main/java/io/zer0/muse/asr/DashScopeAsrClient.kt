@@ -117,11 +117,11 @@ class DashScopeAsrController(
         if (isDisposed.get()) return
         // 仅在 Listening 态拒绝重复 start;Connecting/Stopping 过渡态允许新 start 接续
         if (_state.value.status == ASRStatus.Listening) {
-            Logger.w(TAG, "已在录音,忽略重复 start")
+            Logger.w(TAG, "Already recording; ignoring duplicate start")
             return
         }
         if (config.apiKey.isBlank()) {
-            Logger.w(TAG, "DashScope ASR 未配置 apiKey")
+            Logger.w(TAG, "DashScope ASR apiKey not configured")
             _state.update {
                 it.copy(status = ASRStatus.Error, errorMessage = appContext.getString(R.string.asr_error_no_apikey))
             } // CONS-05: 硬编码中文迁移到字符串资源
@@ -196,7 +196,7 @@ class DashScopeAsrController(
             // H-ASR1: 直接发送 run-task,再等 task-started
             val runTask = buildRunTaskMessage(taskId, config.sampleRate)
             if (!ws.send(runTask)) {
-                Logger.w(TAG, "发送 run-task 失败")
+                Logger.w(TAG, "Sending run-task failed")
                 cleanupConnection()
                 if (isInitial) {
                     _state.update {
@@ -209,7 +209,7 @@ class DashScopeAsrController(
             // 等 task-started(run-task 后服务端确认)
             val started = streamSession.waitForEvent("task-started", TIMEOUT_EVENT_MS)
             if (started == null) {
-                Logger.w(TAG, "run-task 后未收到 task-started")
+                Logger.w(TAG, "No task-started received after run-task")
                 cleanupConnection()
                 if (isInitial) {
                     _state.update {
@@ -223,7 +223,7 @@ class DashScopeAsrController(
                 // P2-13: 握手期间用户可能已 stop/dispose — 状态不再处于 Connecting 时放弃启动录音,
                 // 否则会把用户的停止意图覆盖成 Listening 并继续录音
                 if (_state.value.status != ASRStatus.Connecting) {
-                    Logger.d(TAG, "握手完成但状态已变化(${_state.value.status}),放弃启动录音")
+                    Logger.d(TAG, "Handshake complete but the state has changed (${_state.value.status}); abandoning recording start")
                     cleanupConnection()
                     return false
                 }
@@ -231,7 +231,7 @@ class DashScopeAsrController(
                 _state.update { it.copy(status = ASRStatus.Listening) }
             } else {
                 if (_state.value.status != ASRStatus.Connecting) {
-                    Logger.d(TAG, "重连完成但状态已变化(${_state.value.status}),放弃恢复")
+                    Logger.d(TAG, "Reconnect complete but the state has changed (${_state.value.status}); abandoning recovery")
                     return false
                 }
                 // 重连成功:重置退避计数,状态切回 Listening,补发缓冲音频
@@ -241,7 +241,7 @@ class DashScopeAsrController(
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "establishConnection 异常: ${e.message}")
+            Logger.w(TAG, "establishConnection exception: ${e.message}")
             cleanupConnection()
             if (isInitial) {
                 _state.update {
@@ -270,7 +270,7 @@ class DashScopeAsrController(
         try {
             record.startRecording()
         } catch (e: IllegalStateException) {
-            Logger.w(TAG, "AudioRecord 启动失败: ${e.message}", e)
+            Logger.w(TAG, "AudioRecord start failed: ${e.message}", e)
             record.release()
             audioRecord = null
             _state.update {
@@ -294,7 +294,7 @@ class DashScopeAsrController(
                         // 2. 本地 VAD(若启用):静音超阈值主动触发 stop
                         //    DashScope 服务端已自带 VAD(sentence_end 自动断句),本地 VAD 仅用于自动停止录音
                         if (vadDetector?.processFrame(chunk, read, amp) == true) {
-                            Logger.d(TAG, "本地 VAD 触发,主动停止")
+                            Logger.d(TAG, "Local VAD triggered; stopping proactively")
                             scope.launch { stop() }
                             break
                         }
@@ -309,7 +309,7 @@ class DashScopeAsrController(
                     } else if (read == 0) {
                         delay(10L)
                     } else if (read < 0) {
-                        Logger.w(TAG, "AudioRecord.read 错误: $read")
+                        Logger.w(TAG, "AudioRecord.read error: $read")
                         if (shouldReportAsrCaptureFailure(_state.value.status, coroutineContext[Job]?.isActive == true)) {
                             failAsr(appContext.getString(R.string.asr_error_recording_read_failed, read))
                         }
@@ -320,7 +320,7 @@ class DashScopeAsrController(
                 throw cancelled
             } catch (error: Exception) {
                 if (shouldReportAsrCaptureFailure(_state.value.status, coroutineContext[Job]?.isActive == true)) {
-                    Logger.w(TAG, "录音循环异常: ${error.message}", error)
+                    Logger.w(TAG, "Recording loop exception: ${error.message}", error)
                     failAsr(error.message ?: appContext.getString(R.string.asr_error_recording_start_failed))
                 }
             }
@@ -334,11 +334,11 @@ class DashScopeAsrController(
             // 用 okio.Buffer 构造 ByteString(二进制 PCM 直传,DashScope 协议支持)
             val byteString = okio.Buffer().apply { write(chunk, 0, read) }.readByteString()
             if (!ws.send(byteString)) {
-                Logger.w(TAG, "发送音频块失败,触发重连")
-                scope.launch { onWebSocketDisconnected("发送音频块失败") }
+                Logger.w(TAG, "Sending audio chunk failed, triggering reconnect")
+                scope.launch { onWebSocketDisconnected("Sending audio chunk failed") }
             }
         } else {
-            Logger.d(TAG, "背压超限,丢帧 queueSize=${ws?.queueSize()}")
+            Logger.d(TAG, "Backpressure limit exceeded, dropping frames queueSize=${ws?.queueSize()}")
         }
     }
 
@@ -350,7 +350,7 @@ class DashScopeAsrController(
                 audioBuffer.addLast(frame)
                 audioBufferBytes += frame.size
             } else {
-                Logger.w(TAG, "重连期间音频缓冲已满($audioBufferBytes 字节),丢帧")
+                Logger.w(TAG, "Audio buffer full during reconnect ($audioBufferBytes bytes), dropping frames")
             }
         }
     }
@@ -385,7 +385,7 @@ class DashScopeAsrController(
                 // 服务端自行收尾(长时间静音/会话超时)不代表用户说完了:这里只回退状态,
                 // 由上层重新开录音,不提交任何文本给模型。
                 val userStopped = _state.value.status == ASRStatus.Stopping
-                Logger.d(TAG, "收到 task-finished,识别结束 | userStopped=$userStopped")
+                Logger.d(TAG, "Received task-finished, recognition ended | userStopped=$userStopped")
                 val full = buildTranscript()
                 _state.update { it.copy(status = ASRStatus.Idle, transcript = full, amplitudes = emptyList()) }
                 onTranscriptChange?.invoke(full)
@@ -398,7 +398,7 @@ class DashScopeAsrController(
                 val errMsg = (event["header"] as? JsonObject)?.let {
                     (it["error_message"] as? JsonPrimitive)?.content
                 } ?: event.toString()
-                Logger.w(TAG, "DashScope ASR 任务失败: $errMsg")
+                Logger.w(TAG, "DashScope ASR task failed: $errMsg")
                 failAsr(errMsg)
             }
             "task-started" -> {
@@ -438,13 +438,13 @@ class DashScopeAsrController(
             )
         ) {
             AsrDisconnectAction.IGNORE -> {
-                Logger.d(TAG, "忽略 WebSocket 断开(状态=${_state.value.status}): $reason")
+                Logger.d(TAG, "Ignoring WebSocket disconnect (state=${_state.value.status}): $reason")
             }
             AsrDisconnectAction.GIVE_UP -> {
                 giveUpReconnect(reason)
             }
             AsrDisconnectAction.RECONNECT -> {
-                Logger.w(TAG, "WebSocket 断开,触发重连: $reason (attempt=$reconnectAttempt)")
+                Logger.w(TAG, "WebSocket disconnected, triggering reconnect: $reason (attempt=$reconnectAttempt)")
                 scheduleReconnect(reason)
             }
         }
@@ -463,13 +463,13 @@ class DashScopeAsrController(
         }
         // 已有重连任务在调度/执行(如 onFailure + onClosing 双回调、连续发送失败)时忽略重复调度
         if (reconnectJob?.isActive == true) {
-            Logger.d(TAG, "重连已在进行中,忽略重复调度: $reason")
+            Logger.d(TAG, "Reconnect already in progress, ignoring duplicate scheduling: $reason")
             return
         }
         val attemptIndex = reconnectAttempt
         val attemptNumber = attemptIndex + 1
         val delayMs = DashScopeReconnectPolicy.delayForAttempt(attemptIndex)
-        Logger.w(TAG, "调度第 $attemptNumber/$MAX_RECONNECT_ATTEMPTS 次重连,${delayMs}ms 后执行($reason)")
+        Logger.w(TAG, "Scheduling reconnect attempt $attemptNumber/$MAX_RECONNECT_ATTEMPTS, executing in ${delayMs}ms ($reason)")
         _state.update {
             it.copy(
                 status = ASRStatus.Reconnecting,
@@ -491,14 +491,14 @@ class DashScopeAsrController(
     private suspend fun attemptReconnect() {
         if (isDisposed.get()) return
         if (_state.value.status != ASRStatus.Reconnecting) {
-            Logger.d(TAG, "退避期间状态变化(${_state.value.status}),取消重连")
+            Logger.d(TAG, "State changed during backoff (${_state.value.status}); cancelling reconnect")
             return
         }
         // 临时切 Connecting 表示正在建立连接(退避已完成);该状态下断开由 establishConnection 自行处理
         _state.update { it.copy(status = ASRStatus.Connecting) }
         if (!establishConnection(isInitial = false)) {
-            Logger.w(TAG, "重连失败(attempt=$reconnectAttempt),继续退避")
-            scheduleReconnect("重连尝试失败")
+            Logger.w(TAG, "Reconnect failed (attempt=$reconnectAttempt), continuing backoff")
+            scheduleReconnect("Reconnect attempt failed")
         }
     }
 
@@ -506,12 +506,12 @@ class DashScopeAsrController(
     private fun onReconnected() {
         // 竞态保护:重连握手期间用户可能已 stop/dispose,状态不再是 Connecting 时放弃恢复
         if (_state.value.status != ASRStatus.Connecting) {
-            Logger.d(TAG, "重连成功但状态已变化(${_state.value.status}),放弃恢复")
+            Logger.d(TAG, "Reconnect succeeded but the state has changed (${_state.value.status}); abandoning recovery")
             cleanupConnection()
             clearAudioBuffer()
             return
         }
-        Logger.i(TAG, "WebSocket 重连成功,补发缓冲音频(${audioBuffer.size} 帧,$audioBufferBytes 字节)")
+        Logger.i(TAG, "WebSocket reconnect succeeded, re-sending buffered audio (${audioBuffer.size} frames, $audioBufferBytes bytes)")
         reconnectAttempt = 0
         _state.update { it.copy(status = ASRStatus.Listening, errorMessage = null) }
         flushAudioBuffer()
@@ -523,7 +523,7 @@ class DashScopeAsrController(
      * 已识别的文本保留在 state.transcript 中,用户可复制后再重试。
      */
     private fun giveUpReconnect(reason: String) {
-        Logger.w(TAG, "重连 $MAX_RECONNECT_ATTEMPTS 次仍未恢复,降级为 Error: $reason")
+        Logger.w(TAG, "Reconnect still not restored after $MAX_RECONNECT_ATTEMPTS attempts, degrading to Error: $reason")
         _state.update {
             it.copy(
                 status = ASRStatus.Error,
@@ -542,7 +542,7 @@ class DashScopeAsrController(
      */
     private fun flushAudioBuffer() {
         val ws = webSocket ?: run {
-            Logger.w(TAG, "flushAudioBuffer: webSocket 为空,丢弃缓冲")
+            Logger.w(TAG, "flushAudioBuffer: webSocket is null, discarding the buffer")
             clearAudioBuffer()
             return
         }
@@ -555,7 +555,7 @@ class DashScopeAsrController(
                 audioBufferBytes -= chunk.size
                 val byteString = okio.Buffer().apply { write(chunk) }.readByteString()
                 if (!ws.send(byteString)) {
-                    Logger.w(TAG, "补发音频帧失败,剩余 ${audioBuffer.size} 帧丢弃")
+                    Logger.w(TAG, "Re-sending audio frames failed; discarding the remaining ${audioBuffer.size} frames")
                     break
                 }
             }
@@ -625,7 +625,7 @@ class DashScopeAsrController(
         scope.launch {
             delay(STOP_TIMEOUT_MS)
             if (_state.value.status == ASRStatus.Stopping) {
-                Logger.w(TAG, "stop() 等待 task-finished 超时,强制切 Idle")
+                Logger.w(TAG, "stop() timed out waiting for task-finished, forcing Idle")
                 val full = buildTranscript()
                 _state.update { it.copy(status = ASRStatus.Idle, transcript = full) }
                 cleanupConnection()
@@ -802,7 +802,7 @@ internal class DashScopeSession(
     var onDisconnected: ((String) -> Unit)? = null
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
-        Logger.d(TAG, "WebSocket 连接已建立")
+        Logger.d(TAG, "WebSocket connection established")
     }
 
     override fun onMessage(webSocket: WebSocket, text: String) {
@@ -817,7 +817,7 @@ internal class DashScopeSession(
             // 持续派发给 Controller 处理(result-generated / task-finished / task-failed)
             onEvent(merged)
         }.onError { message, throwable ->
-            Logger.w(TAG, "解析服务端消息失败: ${throwable?.message ?: message}")
+            Logger.w(TAG, "Parsing the server message failed: ${throwable?.message ?: message}")
         }
     }
 
@@ -827,8 +827,8 @@ internal class DashScopeSession(
 
     override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
         // Phase 3: 服务端主动关闭(本地 close() 不触发 onClosing) → 通知 Controller 决策重连
-        Logger.w(TAG, "服务端关闭连接: code=$code reason=$reason")
-        onDisconnected?.invoke("服务端关闭连接: code=$code reason=$reason")
+        Logger.w(TAG, "Server closed the connection: code=$code reason=$reason")
+        onDisconnected?.invoke("Server closed the connection: code=$code reason=$reason")
         webSocket.close(code, reason)
     }
 
@@ -838,9 +838,9 @@ internal class DashScopeSession(
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-        Logger.w(TAG, "WebSocket 失败: ${t.message}")
+        Logger.w(TAG, "WebSocket failure: ${t.message}")
         // Phase 3: 断线重连 — 由 Controller 按状态与退避次数决定重连/降级(F-34 TODO 落地)
-        onDisconnected?.invoke(t.message ?: "WebSocket 连接失败")
+        onDisconnected?.invoke(t.message ?: "WebSocket connection failed")
         closeChannel()
     }
 
@@ -858,10 +858,10 @@ internal class DashScopeSession(
                 val errMsg = (event["header"] as? JsonObject)?.let {
                     (it["error_message"] as? JsonPrimitive)?.content
                 } ?: event.toString()
-                Logger.w(TAG, "等待 $type 时收到 task-failed: $errMsg")
+                Logger.w(TAG, "Received task-failed while waiting for $type: $errMsg")
                 return null
             }
-            Logger.d(TAG, "等待 $type 时丢弃非目标事件: $eventType")
+            Logger.d(TAG, "Discarding a non-target event while waiting for $type: $eventType")
         }
         return null
     }
@@ -897,8 +897,8 @@ internal object DashScopeReconnectPolicy {
      * CONS-05: 生产路径(giveUpReconnect)已迁移到字符串资源 asr_reconnect_exhausted;
      * 此常量仅保留给 DashScopeAsrReconnectTest 的文案断言使用,不再进入用户可见路径。
      */
-    const val EXHAUSTED_MESSAGE = "语音连接中断,自动重连 3 次仍未恢复。已识别的内容已保留," +
-        "请检查网络后重新开始录音。"
+    const val EXHAUSTED_MESSAGE = "The voice connection was interrupted and could not be restored after 3 automatic reconnects. The content recognized so far has been kept," +
+        "please check the network and start recording again."
 
     /** 第 attempt 次(0-based)重连前等待的退避时长:500ms → 1s → 2s(上限 8s)。 */
     fun delayForAttempt(attempt: Int): Long {

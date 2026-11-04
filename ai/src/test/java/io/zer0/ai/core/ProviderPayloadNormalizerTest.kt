@@ -22,9 +22,9 @@ class ProviderPayloadNormalizerTest {
             Model(id = "m", providerId = "test"),
         )
         val cleanedUser = result.first { it.role == MessageRole.USER }
-        assertNull("user 消息不应带 reasoning", cleanedUser.reasoning)
-        assertNull("user 消息不应带 signature", cleanedUser.thinkingSignature)
-        assertNull("user 消息不应带 encrypted_content", cleanedUser.thinkingEncryptedContent)
+        assertNull("user messages should not carry reasoning", cleanedUser.reasoning)
+        assertNull("user messages should not carry signature", cleanedUser.thinkingSignature)
+        assertNull("user messages should not carry encrypted_content", cleanedUser.thinkingEncryptedContent)
         // assistant 的推理保留（回放依赖它）
         assertEquals("keep me", result.first { it.role == MessageRole.ASSISTANT }.reasoning)
     }

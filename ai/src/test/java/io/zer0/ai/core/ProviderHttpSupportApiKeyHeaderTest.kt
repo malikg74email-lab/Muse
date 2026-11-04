@@ -61,11 +61,11 @@ class ProviderHttpSupportApiKeyHeaderTest {
         // 第一个字符是中文“百”(U+767E),复现用户粘贴标题的典型形态
         val probe = Probe(config("百sk-abc"))
         val error = runCatching { probe.apiKeyForTest() }.exceptionOrNull()
-        assertTrue("应抛 ProviderException", error is ProviderException)
+        assertTrue("Should throw ProviderException", error is ProviderException)
         val message = (error as ProviderException).message.orEmpty()
-        assertTrue("应指出非法字符位置", message.contains("第 1 位"))
-        assertTrue("应给出可读原因", message.contains("ASCII"))
-        assertTrue("应携带 InvalidRequest 分类", error.providerError is ProviderError.InvalidRequest)
+        assertTrue("Should point out the illegal character position", message.contains("position 1"))
+        assertTrue("Should give a readable reason", message.contains("ASCII"))
+        assertTrue("Should carry the InvalidRequest classification", error.providerError is ProviderError.InvalidRequest)
     }
 
     @Test
@@ -74,7 +74,7 @@ class ProviderHttpSupportApiKeyHeaderTest {
         val error = runCatching { probe.apiKeyForTest() }.exceptionOrNull()
         assertTrue(error is ProviderException)
         val message = (error as ProviderException).message.orEmpty()
-        assertTrue("应指出第 4 位", message.contains("第 4 位"))
+        assertTrue("Should point out position 4", message.contains("position 4"))
     }
 
     @Test
@@ -93,14 +93,14 @@ class ProviderHttpSupportApiKeyHeaderTest {
         // 这里用全坏列表锁定“选中即校验”的语义。
         val probe = Probe(config("百bad,中bad"))
         val error = runCatching { probe.apiKeyForTest() }.exceptionOrNull()
-        assertTrue("选中的 key 含非 ASCII 时应拦截", error is ProviderException)
+        assertTrue("Should intercept when the selected key contains non-ASCII", error is ProviderException)
     }
 
     @Test
     fun `multi key with all-good entries passes`() {
         val probe = Probe(config("sk-good1,sk-good2"))
         val key = probe.apiKeyForTest()
-        assertTrue("应返回其中一个合法 key", key == "sk-good1" || key == "sk-good2")
+        assertTrue("Should return one of the valid keys", key == "sk-good1" || key == "sk-good2")
     }
 
     @Test

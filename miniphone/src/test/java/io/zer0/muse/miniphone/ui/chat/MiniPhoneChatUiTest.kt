@@ -120,7 +120,7 @@ class MiniPhoneChatUiTest {
         )
 
         compose.onNodeWithTag(MiniPhoneChatTags.ACTIVITY).assertExists()
-        compose.onNodeWithText("对方正在翻找…").assertExists()
+        compose.onNodeWithText("They're looking for something…").assertExists()
         compose.onNodeWithTag(MiniPhoneChatTags.TYPING).assertDoesNotExist()
     }
 
@@ -312,7 +312,7 @@ class MiniPhoneChatUiTest {
             ),
         )
 
-        compose.onNodeWithTag(MiniPhoneChatTags.status("m1")).assertTextEquals("发送中")
+        compose.onNodeWithTag(MiniPhoneChatTags.status("m1")).assertTextEquals("Sending")
         // 正文不能被进行态遮住
         compose.onNodeWithText("在吗").assertIsDisplayed()
     }
@@ -338,7 +338,7 @@ class MiniPhoneChatUiTest {
         compose.waitForIdle()
 
         compose.onNodeWithTag(MiniPhoneChatTags.NEW_MESSAGES_PILL).assertIsDisplayed()
-        compose.onNodeWithTag(MiniPhoneChatTags.NEW_MESSAGES_PILL).assertTextEquals("1 条新消息")
+        compose.onNodeWithTag(MiniPhoneChatTags.NEW_MESSAGES_PILL).assertTextEquals("1 new messages")
 
         // 点一下回到最新:提示自己收起来
         compose.onNodeWithTag(MiniPhoneChatTags.NEW_MESSAGES_PILL).performClick()
@@ -423,7 +423,7 @@ class MiniPhoneChatUiTest {
         const val TIME_GAP_MS: Long = 10 * MINUTE_MS
         const val FAKE_CHAT_TAG: String = "mp-fake-chat"
         const val FAKE_CHAT_BACK_TAG: String = "mp-fake-chat-back"
-        const val COLLAPSE_ACTION: String = "收起"
+        const val COLLAPSE_ACTION: String = "Collapse"
 
         /** 居中容差:允许 10% 屏宽的偏差。 */
         const val NOTICE_CENTER_TOLERANCE: Float = 0.1f

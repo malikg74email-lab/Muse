@@ -216,7 +216,7 @@ abstract class FactDb : RoomDatabase() {
                     db.execSQL(
                         """
                         INSERT OR IGNORE INTO memory_spaces (id, name, icon, description, created_at, sort_index)
-                        VALUES ('default', '默认', 'bookmark', '', '$defaultCreatedAt', 0)
+                        VALUES ('default', 'Default', 'bookmark', '', '$defaultCreatedAt', 0)
                         """.trimIndent(),
                     )
                 }
@@ -489,7 +489,7 @@ abstract class FactDb : RoomDatabase() {
                 }
             val renamed = runCatching { file.renameTo(bak) }.getOrDefault(false)
             check(renamed) {
-                "无法安全归档记忆库，已保留原文件: ${file.absolutePath}"
+                "Cannot safely archive the memory database; the original file has been kept: ${file.absolutePath}"
             }
             val parent = file.parentFile
             listOf("wal", "shm").forEach { suffix ->
@@ -557,13 +557,13 @@ abstract class FactDb : RoomDatabase() {
             }
             val restored = runCatching { source.renameTo(main) }.getOrDefault(false)
             if (!restored) {
-                Logger.w("FactDb", "从归档恢复失败(rename 被拒),保留备份: ${source.absolutePath}")
+                Logger.w("FactDb", "Restore from archive failed (rename rejected); backup kept: ${source.absolutePath}")
                 MemoryLegacyReset.markRecoveryAttempted(context, name)
                 return null
             }
             MemoryLegacyReset.markRecoveryAttempted(context, name)
             MemoryLegacyReset.noteRecovered(context, bestCount)
-            Logger.i("FactDb", "已从归档恢复事实记忆: $bestCount 条(来源 ${source.name})")
+            Logger.i("FactDb", "Restored fact memory from archive: $bestCount entries (source ${source.name})")
             return bestCount
         }
 
@@ -587,7 +587,7 @@ abstract class FactDb : RoomDatabase() {
 
         /** 为归档选择不覆盖已有备份的目标路径。 */
         private fun nextBackupFile(file: File, preferredName: String): File {
-            val parent = file.parentFile ?: error("数据库文件缺少父目录: ${file.absolutePath}")
+            val parent = file.parentFile ?: error("Database file has no parent directory: ${file.absolutePath}")
             val preferred = File(parent, preferredName)
             if (!preferred.exists()) return preferred
             var index = 1
@@ -627,7 +627,7 @@ abstract class FactDb : RoomDatabase() {
                                 """
                                 INSERT OR IGNORE INTO memory_spaces
                                     (id, name, icon, description, created_at, sort_index)
-                                VALUES ('default', '默认', 'bookmark', '', '$defaultCreatedAt', 0)
+                                VALUES ('default', 'Default', 'bookmark', '', '$defaultCreatedAt', 0)
                                 """.trimIndent(),
                             )
                         }

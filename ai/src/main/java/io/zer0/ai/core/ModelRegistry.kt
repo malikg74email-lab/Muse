@@ -254,7 +254,7 @@ object ModelRegistry {
                 when (item) {
                     is ModelDefinition -> members.add(item)
                     is ModelGroup -> members.addAll(item.members)
-                    else -> error("add(Matchable) 仅接受 ModelDefinition/ModelGroup,收到: $item")
+                    else -> error("add(Matchable) only accepts ModelDefinition/ModelGroup, received: $item")
                 }
             }
         }

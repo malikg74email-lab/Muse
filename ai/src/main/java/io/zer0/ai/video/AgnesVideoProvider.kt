@@ -116,10 +116,10 @@ class AgnesVideoProvider(
     override suspend fun submit(request: VideoGenRequest): VideoSubmitResult = withContext(Dispatchers.IO) {
         resultOf {
             if (request.apiKey.isBlank()) {
-                error("Agnes API key 为空")
+                error("Agnes API key is empty")
             }
             if (request.prompt.isBlank()) {
-                error("Prompt 为空")
+                error("Prompt is empty")
             }
 
             val model = request.model.ifBlank { DEFAULT_MODEL }
@@ -150,7 +150,7 @@ class AgnesVideoProvider(
                 if (!resp.isSuccessful) {
                     val apiMsg = parseApiErrorMessage(respBody)
                     error(
-                        "Agnes submit 失败: HTTP ${resp.code}" +
+                        "Agnes submit failed: HTTP ${resp.code}" +
                             (apiMsg?.let { ": $it" }
                                 ?: ProviderError.safeErrorDetail(respBody)?.let { ": $it" }.orEmpty()),
                     )
@@ -161,14 +161,14 @@ class AgnesVideoProvider(
                     ?: root["task_id"]?.jsonPrimitive?.content
                     ?: root["id"]?.jsonPrimitive?.content
                     ?: error(
-                        "Agnes submit 响应缺少 video_id/task_id: " +
+                        "Agnes submit response is missing video_id/task_id: " +
                             (ProviderError.safeErrorDetail(respBody) ?: "<empty>"),
                     )
 
                 // 同步返回检查:部分场景下完成态可能直接返回视频 URL
                 val syncVideoUrl = extractVideoUrl(root)
                 if (syncVideoUrl != null) {
-                    Logger.i(TAG, "submit 同步返回视频: taskId=$taskId")
+                    Logger.i(TAG, "submit returned a video synchronously: taskId=$taskId")
                     return@use VideoSubmitResult(
                         taskId = taskId,
                         videoUrl = syncVideoUrl,
@@ -184,7 +184,7 @@ class AgnesVideoProvider(
                     // 用户配置自建代理/中转时提交成功但轮询打到默认域名,任务永远查不到)
                     baseUrl = agnesRootBase(request.baseUrl),
                 )
-                Logger.i(TAG, "submit 成功: taskId=$taskId")
+                Logger.i(TAG, "submit succeeded: taskId=$taskId")
                 VideoSubmitResult(taskId = taskId, isAsync = true, modelName = model)
             }
         }.getOrThrow()
@@ -204,7 +204,7 @@ class AgnesVideoProvider(
             if (apiKey.isBlank()) {
                 return@resultOf VideoPollResult(
                     status = PollStatus.FAILED,
-                    errorMessage = "Agnes poll 缺少 apiKey(taskId=$taskId, 任务上下文已丢失)",
+                    errorMessage = "Agnes poll is missing apiKey (taskId=$taskId, task context lost)",
                 )
             }
 
@@ -239,7 +239,7 @@ class AgnesVideoProvider(
                         val videoUrl = extractVideoUrl(root)
                             ?: return@use VideoPollResult(
                                 status = PollStatus.PENDING,
-                                errorMessage = "Agnes 状态为成功但未找到视频 URL: $respBody",
+                                errorMessage = "Agnes status is success but no video URL was found: $respBody",
                             )
                         // 成功后清理上下文
                         taskContext.remove(taskId)
@@ -248,7 +248,7 @@ class AgnesVideoProvider(
                     PollStatus.FAILED -> {
                         val errMsg = root["error"]?.jsonObject?.get("message")?.jsonPrimitive?.content
                             ?: root["message"]?.jsonPrimitive?.content
-                            ?: "Agnes 视频生成失败(status=$statusStr)"
+                            ?: "Agnes video generation failed (status=$statusStr)"
                         taskContext.remove(taskId)
                         VideoPollResult(status = status, errorMessage = errMsg)
                     }
@@ -260,7 +260,7 @@ class AgnesVideoProvider(
             is io.zer0.common.Result.Success -> r.data
             is io.zer0.common.Result.Error -> VideoPollResult(
                 status = PollStatus.PENDING,
-                errorMessage = "Agnes poll 异常: ${r.throwable?.message ?: r.throwable?.toString() ?: r.message}",
+                errorMessage = "Agnes poll exception: ${r.throwable?.message ?: r.throwable?.toString() ?: r.message}",
             )
         }
     }
@@ -375,7 +375,7 @@ class AgnesVideoProvider(
     private fun readBody(resp: Response): String {
         val bytes = resp.body?.bytes() ?: return ""
         if (bytes.size > MAX_RESPONSE_BYTES) {
-            error("Agnes 响应过大: ${bytes.size} bytes")
+            error("Agnes response too large: ${bytes.size} bytes")
         }
         return String(bytes, Charsets.UTF_8)
     }

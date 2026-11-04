@@ -112,7 +112,7 @@ class OpenAiWhisperAsrController(
     override fun start(onTranscriptChange: ((String) -> Unit)?) {
         if (isDisposed.get() || _state.value.isRecording) return
         if (config.apiKey.isBlank()) {
-            Logger.w(TAG, "OpenAI Whisper ASR 未配置 apiKey")
+            Logger.w(TAG, "OpenAI Whisper ASR apiKey not configured")
             _state.update { it.copy(status = ASRStatus.Error, errorMessage = appContext.getString(R.string.asr_error_no_apikey)) }
             return
         }
@@ -149,7 +149,7 @@ class OpenAiWhisperAsrController(
         recordJob = scope.launch(Dispatchers.IO) {
             val capture = AsrAudioCapture.create(config.sampleRate, TAG)
             if (capture == null) {
-                setError("麦克风初始化失败,请检查权限或录音设备")
+                setError("Microphone initialization failed; please check the permission or recording device")
                 return@launch
             }
             val recorder = capture.recorder
@@ -185,9 +185,9 @@ class OpenAiWhisperAsrController(
                     } else if (read == 0) {
                         delay(10L)
                     } else if (read < 0) {
-                        Logger.w(TAG, "AudioRecord.read 错误: $read")
+                        Logger.w(TAG, "AudioRecord.read error: $read")
                         if (shouldReportAsrCaptureFailure(_state.value.status, coroutineContext[Job]?.isActive == true)) {
-                            setError("AudioRecord 读取错误: $read")
+                            setError("AudioRecord read error: $read")
                         }
                         break
                     }
@@ -195,9 +195,9 @@ class OpenAiWhisperAsrController(
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Logger.w(TAG, "录音失败: ${e.message}")
+                Logger.w(TAG, "Recording failed: ${e.message}")
                 if (shouldReportAsrCaptureFailure(_state.value.status, coroutineContext[Job]?.isActive == true)) {
-                    setError(e.message ?: "录音失败")
+                    setError(e.message ?: "Recording failed")
                 }
             } finally {
                 releaseRecorder()
@@ -216,8 +216,8 @@ class OpenAiWhisperAsrController(
                 resultOf { flushSegment() }
                     .onError { message, throwable ->
                         val error = throwable?.message ?: message
-                        Logger.w(TAG, "分段 flush 失败: $error")
-                        setError("语音识别分段失败: $error")
+                        Logger.w(TAG, "Segment flush failed: $error")
+                        setError("Speech recognition segment failed: $error")
                     }
             }
         }
@@ -238,7 +238,7 @@ class OpenAiWhisperAsrController(
 
         // 最短段过滤:PCM < 3200 bytes(100ms @ 16kHz 16bit mono)跳过,避免 400 错误
         if (pcmCopy.size < MIN_SEGMENT_BYTES) {
-            Logger.d(TAG, "跳过 flush:PCM 过短(${pcmCopy.size} bytes)")
+            Logger.d(TAG, "Skipping flush: PCM too short (${pcmCopy.size} bytes)")
             return
         }
 
@@ -254,9 +254,9 @@ class OpenAiWhisperAsrController(
             consecutiveFlushFailures++
             if (consecutiveFlushFailures < MAX_CONSECUTIVE_FLUSH_FAILURES) {
                 prependToBuffer(pcmCopy)
-                Logger.w(TAG, "识别失败,回写 ${pcmCopy.size} 字节待下次重试(连续失败 $consecutiveFlushFailures)")
+                Logger.w(TAG, "Recognition failed, writing back ${pcmCopy.size} bytes for the next retry (consecutive failures $consecutiveFlushFailures)")
             } else {
-                Logger.w(TAG, "连续识别失败 $consecutiveFlushFailures 次,丢弃该段 ${pcmCopy.size} 字节")
+                Logger.w(TAG, "Recognition failed $consecutiveFlushFailures times in a row, discarding this segment of ${pcmCopy.size} bytes")
                 consecutiveFlushFailures = 0
             }
         }
@@ -309,7 +309,7 @@ class OpenAiWhisperAsrController(
             try {
                 val result = client.newCall(request).execute().use { resp: Response ->
                     if (!resp.isSuccessful) {
-                        lastError = "识别服务 HTTP ${resp.code}: ${resp.message}"
+                        lastError = "Recognition service HTTP ${resp.code}: ${resp.message}"
                         Logger.w(TAG, "Whisper ASR HTTP ${resp.code}: ${resp.message}")
                         if (!isRetryableAsrHttpStatus(resp.code)) {
                             retryableResponse = false
@@ -325,14 +325,14 @@ class OpenAiWhisperAsrController(
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: java.io.IOException) {
-                lastError = e.message ?: "网络连接失败"
-                Logger.w(TAG, "Whisper ASR 请求失败(attempt=${attempt + 1}): ${e.message}")
+                lastError = e.message ?: "Network connection failed"
+                Logger.w(TAG, "Whisper ASR request failed (attempt=${attempt + 1}): ${e.message}")
             }
             if (attempt + 1 < AsrConstants.RECONNECT_MAX_ATTEMPTS) {
                 delay(AsrConstants.HTTP_RETRY_BACKOFF_MS * (attempt + 1))
             }
         }
-        lastError?.let { setError("语音识别失败: $it") }
+        lastError?.let { setError("Speech recognition failed: $it") }
         null
     }
 
@@ -376,8 +376,8 @@ class OpenAiWhisperAsrController(
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Logger.w(TAG, "最终 flush 失败: ${e.message}")
-                setError(e.message ?: "Whisper ASR 最终 flush 失败")
+                Logger.w(TAG, "Final flush failed: ${e.message}")
+                setError(e.message ?: "Whisper ASR final flush failed")
             } finally {
                 _state.update { it.afterAsrStop() }
             }

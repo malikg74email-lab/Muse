@@ -176,7 +176,7 @@ class MemoryAutoSaveScheduler(
             processedFingerprints[fpKey] == fp
         }
         if (alreadyProcessed) {
-            Logger.d("MemoryAutoSaveScheduler", "autoSave 幂等跳过(session=${sessionId.take(8)}…, 内容未变化)")
+            Logger.d("MemoryAutoSaveScheduler", "autoSave idempotent skip (session=${sessionId.take(8)}…, content unchanged)")
             return
         }
         this.scope.launch {
@@ -189,27 +189,27 @@ class MemoryAutoSaveScheduler(
                         // 空响应 / JSON 解析失败），不记指纹（下次仍会处理），也不抛异常。
                         Logger.w(
                             "MemoryAutoSaveScheduler",
-                            "autoSave 未解析出分析(可预期失败，不记指纹): session=${sessionId.take(8)}…",
+                            "autoSave produced no parsed analysis (expected failure, fingerprint not recorded): session=${sessionId.take(8)}…",
                         )
                     } else {
                         // v12 (T2-3): 只有解析并落库成功才记录指纹；LLM 空响应/JSON 解析失败必须补跑。
                         synchronized(processedFingerprints) { processedFingerprints[fpKey] = fp }
                         Logger.i(
                             "MemoryAutoSaveScheduler",
-                            "autoSave 完成(session=${sessionId.take(8)}…): " +
+                            "autoSave complete (session=${sessionId.take(8)}…): " +
                                 "extracted=${result.extracted}, updated=${result.updated}, " +
                                 "merged=${result.merged}, links=${result.links}",
                         )
                     }
                 }.onError { msg, t ->
-                    Logger.w("MemoryAutoSaveScheduler", "autoSave 失败(session=${sessionId.take(8)}…): $msg", t)
+                    Logger.w("MemoryAutoSaveScheduler", "autoSave failed (session=${sessionId.take(8)}…): $msg", t)
                     // v2.6.9: 配额/余额/鉴权类终态失败不排 30s 补跑。
                     // 上游已在节流(日志里 agnes 的 "not asked again before 02:49" 就是上游文案),
                     // 我们 30s 后再打一次只会继续吃 402。其余错误(网络抖动/限流/解析)保持原行为。
                     if (FailureClassifier.isTerminalQuotaOrAuth(t)) {
                         Logger.w(
                             "MemoryAutoSaveScheduler",
-                            "autoSave 失败为配额/鉴权终态错误,不排补跑(重试只会继续吃 402/401): " +
+                            "autoSave failure is a terminal quota/auth error; no catch-up rerun scheduled (retrying would only consume more 402/401): " +
                                 "session=${sessionId.take(8)}…, kind=${FailureClassifier.classify(t)}",
                         )
                         return@onError
@@ -229,19 +229,19 @@ class MemoryAutoSaveScheduler(
                                 if (retryResult == null) {
                                     Logger.w(
                                         "MemoryAutoSaveScheduler",
-                                        "autoSave 补跑未解析出分析(可预期失败): session=${sessionId.take(8)}…",
+                                        "autoSave catch-up rerun produced no parsed analysis (expected failure): session=${sessionId.take(8)}…",
                                     )
                                 } else {
                                     synchronized(processedFingerprints) { processedFingerprints[fpKey] = fp }
                                     Logger.i(
                                         "MemoryAutoSaveScheduler",
-                                        "autoSave 补跑成功(session=${sessionId.take(8)}…): " +
+                                        "autoSave catch-up rerun succeeded (session=${sessionId.take(8)}…): " +
                                             "extracted=${retryResult.extracted}, updated=${retryResult.updated}, " +
                                             "merged=${retryResult.merged}, links=${retryResult.links}",
                                     )
                                 }
                             }.onError { retryMsg, retryT ->
-                                Logger.w("MemoryAutoSaveScheduler", "autoSave 补跑仍失败(session=${sessionId.take(8)}…): $retryMsg", retryT)
+                                Logger.w("MemoryAutoSaveScheduler", "autoSave catch-up rerun still failed (session=${sessionId.take(8)}…): $retryMsg", retryT)
                             }
                         }
                     }
@@ -306,7 +306,7 @@ class MemoryAutoSaveScheduler(
                         model = model,
                     )
                 }
-            }.onFailure { Logger.w("MemoryAutoSaveScheduler", "会话结束补边失败(不影响记忆): ${it.message}") }
+            }.onFailure { Logger.w("MemoryAutoSaveScheduler", "Session-end edge building failed (does not affect memory): ${it.message}") }
         }
         result
     }
@@ -344,7 +344,7 @@ class MemoryAutoSaveScheduler(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w("MemoryAutoSaveScheduler", "extractEntities LLM 调用失败: ${e.message}", e)
+            Logger.w("MemoryAutoSaveScheduler", "extractEntities LLM call failed: ${e.message}", e)
             return@withContext null
         }
 
@@ -382,7 +382,7 @@ class MemoryAutoSaveScheduler(
         // 3. 提取 JSON 对象
         if (!s.startsWith("{")) {
             val candidate = findJsonObjectCandidate(s) ?: run {
-                Logger.w("MemoryAutoSaveScheduler", "未找到 JSON 对象 (rawLen=${raw.length})")
+                Logger.w("MemoryAutoSaveScheduler", "No JSON object found (rawLen=${raw.length})")
                 return null
             }
             s = candidate
@@ -392,7 +392,7 @@ class MemoryAutoSaveScheduler(
         return runCatching {
             json.decodeFromString(ParsedAnalysis.serializer(), s)
         }.getOrElse {
-            Logger.w("MemoryAutoSaveScheduler", "JSON 解析失败 (rawLen=${raw.length}): ${it.message}")
+            Logger.w("MemoryAutoSaveScheduler", "JSON parse failed (rawLen=${raw.length}): ${it.message}")
             null
         }
     }
@@ -586,7 +586,7 @@ class MemoryAutoSaveScheduler(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w("MemoryAutoSaveScheduler", "autoCategorize LLM 调用失败: ${e.message}", e)
+            Logger.w("MemoryAutoSaveScheduler", "autoCategorize LLM call failed: ${e.message}", e)
             return@withContext 0
         }
 
@@ -605,9 +605,9 @@ class MemoryAutoSaveScheduler(
     /** 构建对话历史文本(供 LLM 输入)。 */
     private fun buildHistoryText(history: List<UIMessage>, locale: String): String {
         val isZh = locale.startsWith("zh")
-        val userLabel = if (isZh) "用户" else "User"
-        val assistantLabel = if (isZh) "助手" else "Assistant"
-        val titleLabel = if (isZh) "## 对话历史" else "## Conversation History"
+        val userLabel = if (isZh) "User" else "User"
+        val assistantLabel = if (isZh) "Assistant" else "Assistant"
+        val titleLabel = if (isZh) "## Conversation History" else "## Conversation History"
 
         val recent = history.takeLast(MAX_HISTORY_MESSAGES)
         val sb = StringBuilder(titleLabel).append("\n\n")
@@ -615,8 +615,8 @@ class MemoryAutoSaveScheduler(
             val role = when (msg.role) {
                 io.zer0.ai.core.MessageRole.USER -> userLabel
                 io.zer0.ai.core.MessageRole.ASSISTANT -> assistantLabel
-                io.zer0.ai.core.MessageRole.TOOL -> if (isZh) "工具" else "Tool"
-                io.zer0.ai.core.MessageRole.SYSTEM -> if (isZh) "系统" else "System"
+                io.zer0.ai.core.MessageRole.TOOL -> if (isZh) "Tool" else "Tool"
+                io.zer0.ai.core.MessageRole.SYSTEM -> if (isZh) "System" else "System"
             }
             val content = msg.content.take(MAX_MESSAGE_CHARS)
             sb.append("**$role**: ").append(content).append("\n\n")
@@ -702,7 +702,7 @@ class MemoryAutoSaveScheduler(
         return runCatching {
             json.decodeFromString(ListSerializer(CategorizeItem.serializer()), s)
         }.getOrElse {
-            Logger.w("MemoryAutoSaveScheduler", "categorize JSON 解析失败: ${it.message}")
+            Logger.w("MemoryAutoSaveScheduler", "categorize JSON parse failed: ${it.message}")
             null
         }
     }

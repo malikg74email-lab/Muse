@@ -61,12 +61,12 @@ class SecureCredentialStore(context: Context) {
                 val ids = readIndex().toMutableSet()
                 ids.add(providerId)
                 writeIndex(ids)
-                Logger.i(TAG, "OAuth token 已存储: provider=${maskId(providerId)}, len=${json.length}")
+                Logger.i(TAG, "OAuth token stored: provider=${maskId(providerId)}, len=${json.length}")
             } catch (e: CancellationException) {
                 throw e
             } catch (t: Throwable) {
                 // 加密失败绝不静默回退明文;但也不能让 OAuth 流程崩溃,记录错误日志
-                Logger.w(TAG, "storeOAuthToken 失败: ${truncateForLog(t.message)}")
+                Logger.w(TAG, "storeOAuthToken failed: ${truncateForLog(t.message)}")
             }
         }
     }
@@ -90,13 +90,13 @@ class SecureCredentialStore(context: Context) {
                     val ids = readIndex().toMutableSet()
                     ids.remove(providerId)
                     writeIndex(ids)
-                    Logger.w(TAG, "legacy OAuth token 迁移失败，已删除: ${truncateForLog(it.message)}")
+                    Logger.w(TAG, "Legacy OAuth token migration failed and was deleted: ${truncateForLog(it.message)}")
                 }.getOrNull()
             } ?: return@withContext null
             runCatching {
                 AppJson.decodeFromString(TokenBundle.serializer(), json)
             }.onFailure {
-                Logger.w(TAG, "getOAuthToken 反序列化失败: ${truncateForLog(it.message)}")
+                Logger.w(TAG, "getOAuthToken deserialization failed: ${truncateForLog(it.message)}")
             }.getOrNull()
         }
     }
@@ -109,7 +109,7 @@ class SecureCredentialStore(context: Context) {
             val ids = readIndex().toMutableSet()
             ids.remove(providerId)
             writeIndex(ids)
-            Logger.i(TAG, "OAuth token 已删除: provider=${maskId(providerId)}")
+            Logger.i(TAG, "OAuth token deleted: provider=${maskId(providerId)}")
         }
     }
 
@@ -166,7 +166,7 @@ class SecureCredentialStore(context: Context) {
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
             String(cipher.doFinal(cipherBytes), Charsets.UTF_8)
         }.onFailure {
-            Logger.w(TAG, "decrypt 失败: ${truncateForLog(it.message)}")
+            Logger.w(TAG, "decrypt failed: ${truncateForLog(it.message)}")
         }.getOrNull()
     }
 

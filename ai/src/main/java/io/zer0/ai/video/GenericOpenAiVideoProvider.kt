@@ -80,10 +80,10 @@ class GenericOpenAiVideoProvider(
     override suspend fun submit(request: VideoGenRequest): VideoSubmitResult = withContext(Dispatchers.IO) {
         resultOf {
             if (request.apiKey.isBlank()) {
-                error("视频生成 API Key 为空")
+                error("Video generation API Key is empty")
             }
             if (request.prompt.isBlank()) {
-                error("Prompt 为空")
+                error("Prompt is empty")
             }
 
             val baseUrl = (request.baseUrl ?: DEFAULT_BASE_URL).trimEnd('/')
@@ -109,7 +109,7 @@ class GenericOpenAiVideoProvider(
                 if (!resp.isSuccessful) {
                     val apiMsg = parseApiErrorMessage(respBody)
                     error(
-                        "视频生成请求失败: HTTP ${resp.code}" +
+                        "Video generation request failed: HTTP ${resp.code}" +
                             (apiMsg?.let { ": $it" }
                                 ?: ProviderError.safeErrorDetail(respBody)?.let { ": $it" }.orEmpty()),
                     )
@@ -120,7 +120,7 @@ class GenericOpenAiVideoProvider(
                 // 优先尝试同步结果:响应体中直接包含 video URL
                 val syncVideoUrl = extractVideoUrl(root)
                 if (syncVideoUrl != null) {
-                    Logger.i(TAG, "submit 同步返回视频: url=$syncVideoUrl")
+                    Logger.i(TAG, "submit returned a video synchronously: url=$syncVideoUrl")
                     return@use VideoSubmitResult(
                         // 同步任务用 URL 派生 taskId,便于日志关联;不会进入 poll
                         taskId = "$SYNC_PREFIX${System.nanoTime()}",
@@ -134,7 +134,7 @@ class GenericOpenAiVideoProvider(
                 val taskId = root["task_id"]?.jsonPrimitive?.content
                     ?: root["id"]?.jsonPrimitive?.content
                     ?: root["task"]?.jsonPrimitive?.content
-                    ?: error("视频生成响应中未找到视频 URL 或 task_id: $respBody")
+                    ?: error("No video URL or task_id found in the video generation response: $respBody")
 
                 taskContext[taskId] = TaskContext(
                     apiKey = request.apiKey,
@@ -142,7 +142,7 @@ class GenericOpenAiVideoProvider(
                     path = path,
                     modelName = request.model,
                 )
-                Logger.i(TAG, "submit 异步任务: taskId=$taskId")
+                Logger.i(TAG, "submit asynchronous task: taskId=$taskId")
                 VideoSubmitResult(taskId = taskId, isAsync = true, modelName = request.model)
             }
         }.getOrThrow()
@@ -159,7 +159,7 @@ class GenericOpenAiVideoProvider(
             if (ctx == null) {
                 return@resultOf VideoPollResult(
                     status = PollStatus.FAILED,
-                    errorMessage = "GenericOpenAi poll 缺少任务上下文(taskId=$taskId, 可能是同步任务被误调 poll)",
+                    errorMessage = "GenericOpenAi poll is missing task context (taskId=$taskId, possibly a synchronous task wrongly polled)",
                 )
             }
 
@@ -192,7 +192,7 @@ class GenericOpenAiVideoProvider(
                         if (videoUrl == null) {
                             VideoPollResult(
                                 status = PollStatus.PENDING,
-                                errorMessage = "GenericOpenAi 状态为成功但未找到视频 URL: $respBody",
+                                errorMessage = "GenericOpenAi status is success but no video URL was found: $respBody",
                             )
                         } else {
                             VideoPollResult(status = status, videoUrl = videoUrl)
@@ -201,7 +201,7 @@ class GenericOpenAiVideoProvider(
                     PollStatus.FAILED -> {
                         val errMsg = root["error"]?.jsonObject?.get("message")?.jsonPrimitive?.content
                             ?: root["message"]?.jsonPrimitive?.content
-                            ?: "GenericOpenAi 视频生成失败(status=$statusStr)"
+                            ?: "GenericOpenAi video generation failed (status=$statusStr)"
                         taskContext.remove(taskId)
                         VideoPollResult(status = status, errorMessage = errMsg)
                     }
@@ -213,7 +213,7 @@ class GenericOpenAiVideoProvider(
             is io.zer0.common.Result.Success -> r.data
             is io.zer0.common.Result.Error -> VideoPollResult(
                 status = PollStatus.PENDING,
-                errorMessage = "GenericOpenAi poll 异常: ${r.throwable?.message ?: r.throwable?.toString() ?: r.message}",
+                errorMessage = "GenericOpenAi poll exception: ${r.throwable?.message ?: r.throwable?.toString() ?: r.message}",
             )
         }
     }
@@ -298,7 +298,7 @@ class GenericOpenAiVideoProvider(
     private fun readBody(resp: Response): String {
         val bytes = resp.body?.bytes() ?: return ""
         if (bytes.size > MAX_RESPONSE_BYTES) {
-            error("视频生成响应过大: ${bytes.size} bytes")
+            error("Video generation response too large: ${bytes.size} bytes")
         }
         return String(bytes, Charsets.UTF_8)
     }

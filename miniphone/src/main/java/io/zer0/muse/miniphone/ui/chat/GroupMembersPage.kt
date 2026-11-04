@@ -72,7 +72,7 @@ internal class GroupAdminActions(
 internal enum class GroupMemberAction(
     val label: String,
 ) {
-    REMOVE("移出群聊"),
+    REMOVE("Remove from group chat"),
 }
 
 /**
@@ -243,7 +243,7 @@ private fun GroupMembersHeader(count: Int, onBack: () -> Unit) {
             ) {
                 Icon(
                     imageVector = MiniPhoneIcons.Back,
-                    contentDescription = "返回",
+                    contentDescription = "Back",
                     tint = colors.textPrimary,
                     modifier = Modifier.size(GroupMembersIconSize),
                 )
@@ -458,7 +458,7 @@ private fun GroupTitleEditDialog(initialTitle: String, onDismiss: () -> Unit, on
 private fun MemberRemoveDialog(name: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     ConfirmDialog(
         tag = MiniPhoneChatTags.MEMBER_REMOVE_DIALOG,
-        title = "把${name}移出群聊?",
+        title = "Remove ${name} from the group chat?",
         hint = REMOVE_HINT,
         confirmTag = MiniPhoneChatTags.MEMBER_REMOVE_CONFIRM,
         cancelTag = MiniPhoneChatTags.MEMBER_REMOVE_CANCEL,
@@ -583,7 +583,7 @@ private fun GroupAddMembersPage(
     ) {
         GroupPickHeader(
             title = ADD_MEMBER_TITLE,
-            hint = ADD_MEMBER_HINT_PREFIX + selectedIds.size + " 人",
+            hint = ADD_MEMBER_HINT_PREFIX + selectedIds.size + " people",
             canFinish = selectedIds.isNotEmpty(),
             tagPrefix = GROUP_ADD_TAG_PREFIX,
             onBack = onBack,
@@ -610,23 +610,23 @@ private val WindowCorner = 8.dp
 private val DialogActionCorner = 8.dp
 private val DialogActionHeight = 36.dp
 
-private const val GROUP_MEMBERS_TITLE: String = "群成员"
-private const val GROUP_TITLE_LABEL: String = "群名"
-private const val GROUP_TITLE_EDIT_HINT: String = "点击修改"
-private const val GROUP_TITLE_EDIT_TITLE: String = "修改群名"
-private const val ADD_MEMBER_LABEL: String = "+ 添加成员"
-private const val ADD_MEMBER_TITLE: String = "添加成员"
-private const val ADD_MEMBER_HINT_PREFIX: String = "已选 "
-private const val ADD_MEMBER_EMPTY_TITLE: String = "没有可以加入的角色"
-private const val ADD_MEMBER_EMPTY_HINT: String = "通讯录里的人都已经在群里了"
-private const val DISBAND_LABEL: String = "删除并退出"
-private const val DISBAND_TITLE: String = "删除并退出?"
-private const val DISBAND_HINT: String = "整个群和里面的全部消息都会从这台手机上删掉,无法恢复。"
-private const val REMOVE_HINT: String = "移出后他之前说过的话留在群里。"
-private const val UNTITLED_GROUP_NAME: String = "群聊"
-private const val SAVE_LABEL: String = "保存"
-private const val CANCEL_LABEL: String = "取消"
-private const val DELETE_LABEL: String = "删除"
+private const val GROUP_MEMBERS_TITLE: String = "Group members"
+private const val GROUP_TITLE_LABEL: String = "Group name"
+private const val GROUP_TITLE_EDIT_HINT: String = "Tap to edit"
+private const val GROUP_TITLE_EDIT_TITLE: String = "Edit group name"
+private const val ADD_MEMBER_LABEL: String = "+ Add member"
+private const val ADD_MEMBER_TITLE: String = "Add members"
+private const val ADD_MEMBER_HINT_PREFIX: String = "Selected "
+private const val ADD_MEMBER_EMPTY_TITLE: String = "No characters available to add"
+private const val ADD_MEMBER_EMPTY_HINT: String = "Everyone in your contacts is already in the group"
+private const val DISBAND_LABEL: String = "Delete and leave"
+private const val DISBAND_TITLE: String = "Delete and leave?"
+private const val DISBAND_HINT: String = "The whole group and all its messages will be deleted from this phone and cannot be recovered."
+private const val REMOVE_HINT: String = "What they said before will stay in the group after they are removed."
+private const val UNTITLED_GROUP_NAME: String = "Group chat"
+private const val SAVE_LABEL: String = "Save"
+private const val CANCEL_LABEL: String = "Cancel"
+private const val DELETE_LABEL: String = "Delete"
 
 /** 添加成员页的标签前缀:与建群页分开,测试点的是哪一页一眼能看出。 */
 private const val GROUP_ADD_TAG_PREFIX: String = "mp-group-add-member"

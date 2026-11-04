@@ -219,7 +219,7 @@ class AnthropicProvider(
                             retryCount++
                             Logger.i(
                                 "AnthropicProvider",
-                                "streamChat onOpen 429 限流,已切换到下一个 key,立即重试 " +
+                                "streamChat onOpen 429 rate limited, switched to the next key, retrying immediately " +
                                     "($retryCount/$maxRetries)",
                             )
                             connectionGeneration.incrementAndGet()
@@ -268,7 +268,7 @@ class AnthropicProvider(
                             effectiveMessages = stripThinkingFromMessages(effectiveMessages)
                             Logger.w(
                                 "AnthropicProvider",
-                                "streamChat 400 思考块绑定错误，已剔除历史 thinking 块后重试一次",
+                                "streamChat 400 thinking-block binding error, removed historical thinking blocks and retrying once",
                             )
                             eventSource.cancel()
                             call.cancel()
@@ -450,7 +450,7 @@ class AnthropicProvider(
                         retryCount++
                         Logger.i(
                             "AnthropicProvider",
-                            "streamChat onFailure 429 限流,已切换到下一个 key,立即重试 " +
+                            "streamChat onFailure 429 rate limited, switched to the next key, retrying immediately " +
                                 "($retryCount/$maxRetries)",
                         )
                         connectionGeneration.incrementAndGet()
@@ -570,7 +570,7 @@ class AnthropicProvider(
                     val code = resp.code
                     // v1.0.1: 429 切换 key 重试;401/403 标记 key 失败
                     if (code == 429 && keySwitchDepth < MAX_KEY_SWITCHES && switchToNextKey()) {
-                        Logger.i("AnthropicProvider", "completeText 429 限流,已切换到下一个 key,重试 ($keySwitchDepth/$MAX_KEY_SWITCHES)")
+                        Logger.i("AnthropicProvider", "completeText 429 rate limited, switched to the next key, retry ($keySwitchDepth/$MAX_KEY_SWITCHES)")
                         return@withContext completeTextImpl(request, keySwitchDepth + 1)
                     }
                     if (code == 401 || code == 403) {
@@ -612,7 +612,7 @@ class AnthropicProvider(
                     }
                     .takeIf { it.isNotEmpty() }
                 if (text.isBlank() && toolCalls.isNullOrEmpty() && thinkingText.isBlank()) {
-                    Logger.w("AnthropicProvider", "completeText 返回空文本(thinking 被吃掉)")
+                    Logger.w("AnthropicProvider", "completeText returned empty text (thinking was consumed)")
                     throw ErrorCode.INVALID_RESPONSE.toProviderException("empty_text")
                 }
                 Logger.d("AnthropicProvider", "completeText OK: ${text.length} chars, toolCalls=${toolCalls?.size ?: 0}")
@@ -633,7 +633,7 @@ class AnthropicProvider(
             } else if (t is RuntimeException && (t.message?.startsWith("Anthropic") == true || t.message?.contains("HTTP") == true)) {
                 // 已记录的 HTTP 错误,不重复 log
             } else {
-                Logger.e("AnthropicProvider", "completeText 异常", t)
+                Logger.e("AnthropicProvider", "completeText exception", t)
             }
             throw t
         } finally {
@@ -793,7 +793,7 @@ class AnthropicProvider(
                         if (msg.imageBase64List.isNotEmpty() && !model.supportsVisionInput()) {
                             Logger.w(
                                 "AnthropicProvider",
-                                "splitSystem: 模型 ${model.id} 不支持视觉,丢弃 ${msg.imageBase64List.size} 张图片(防御性过滤)",
+                                "splitSystem: model ${model.id} does not support vision, discarding ${msg.imageBase64List.size} images (defensive filtering)",
                             )
                         }
                         JsonPrimitive(msg.content)

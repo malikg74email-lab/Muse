@@ -86,8 +86,8 @@ class MpMomentAutoRunnerTest {
         assertEquals(COMPOSED_TEXT, saved?.content)
         assertEquals(NOW, store.lastGeneratedAtMillis)
         // 时段提示跟着素材一起交给宿主:14 点那句仍在
-        assertTrue(host.lastHint.orEmpty().contains("下午的碎片时间"))
-        assertTrue("素材应包含最近发生了什么: ${host.lastHint}", host.lastHint.orEmpty().contains("还没有和用户聊过"))
+        assertTrue(host.lastHint.orEmpty().contains("A spare moment in the afternoon"))
+        assertTrue("素材应包含最近发生了什么: ${host.lastHint}", host.lastHint.orEmpty().contains("You haven't chatted with the user yet."))
     }
 
     @Test

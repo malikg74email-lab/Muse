@@ -170,10 +170,10 @@ class DeepMemoryProcessor(
                     processSingleSession(summary, summaryManager, model, locale, config)
                 }.onSuccess { added ->
                     if (added > 0) {
-                        Logger.i("DeepMemoryProcessor", "processSession(${sessionId.take(8)}…): $added 条新事实")
+                        Logger.i("DeepMemoryProcessor", "processSession(${sessionId.take(8)}…): $added new facts")
                     }
                 }.onError { msg, t ->
-                    Logger.w("DeepMemoryProcessor", "processSession(${sessionId.take(8)}…) 失败: $msg", t)
+                    Logger.w("DeepMemoryProcessor", "processSession(${sessionId.take(8)}…) failed: $msg", t)
                 }.getOrNull() ?: 0
             }
         }
@@ -238,7 +238,7 @@ class DeepMemoryProcessor(
                 val facts = parseFactExtractionResult(rawResult, summary, locale)
                 // v1.0.51: 解析失败(null)→ 不 markProcessed,抛异常走重试,避免永久跳过丢事实
                 if (facts == null) {
-                    throw RuntimeException("fact extraction 解析失败(rawLen=${rawResult.length})")
+                    throw RuntimeException("fact extraction parse failed (rawLen=${rawResult.length})")
                 }
                 // v2.x: 示例泄漏防护 — 照抄提示词示例且摘要未提及的事实直接丢弃(示例被当记忆入库的用户反馈)
                 val guardInputText = "$effectiveSnapshot\n$effectiveSummary"
@@ -267,7 +267,7 @@ class DeepMemoryProcessor(
                 }
                 if (filteredFacts.isEmpty()) {
                     // 抽取结果全部命中墓碑:视为无可写事实,标记已处理避免每轮重抽
-                    val tombstoneSkipMsg = "fact extraction 全部命中墓碑(session=${summary.sessionId.take(8)}…),跳过写入"
+                    val tombstoneSkipMsg = "fact extraction: all results hit tombstones (session=${summary.sessionId.take(8)}…), skipping writes"
                     Logger.d("DeepMemoryProcessor", tombstoneSkipMsg)
                     failureCounts.remove(summary.sessionId)
                     summaryManager.markProcessed(summary.sessionId)
@@ -279,7 +279,7 @@ class DeepMemoryProcessor(
                 if (atomicity.splitCount > 0) {
                     Logger.i(
                         "DeepMemoryProcessor",
-                        "原子性校验: 拆分 ${atomicity.splitCount} 条多断言事实(+${atomicity.addedCount} 条, " +
+                        "Atomicity check: split ${atomicity.splitCount} multi-assertion facts (+${atomicity.addedCount} entries, " +
                             "session=${summary.sessionId.take(8)}…)",
                     )
                 }
@@ -319,9 +319,9 @@ class DeepMemoryProcessor(
         failureCounts[summary.sessionId] = (failureCounts[summary.sessionId] ?: 0) + 1
         Logger.w(
             "DeepMemoryProcessor",
-            "fact extraction 重试耗尽(${MAX_RETRIES}次),session=${summary.sessionId.take(8)}…," +
-                "连续 daily 失败 ${failureCounts[summary.sessionId]}/$MAX_DAILY_FAILURES," +
-                "下次 daily pipeline 将重试: ${lastError?.message}",
+            "fact extraction retries exhausted (${MAX_RETRIES} attempts), session=${summary.sessionId.take(8)}…," +
+                "consecutive daily failures ${failureCounts[summary.sessionId]}/$MAX_DAILY_FAILURES," +
+                "the next daily pipeline will retry: ${lastError?.message}",
             lastError,
         )
         throw lastError ?: RuntimeException("fact extraction failed after $MAX_RETRIES retries")
@@ -335,14 +335,14 @@ class DeepMemoryProcessor(
         effectiveSnapshot: String,
         effectiveSummary: String,
     ): String {
-        val timeContextLabel = if (isZh) "## 时间上下文" else "## Time Context"
+        val timeContextLabel = if (isZh) "## Time Context" else "## Time Context"
         return if (hasPrevious) {
-            val prevLabel = if (isZh) "## 上次快照" else "## Previous Snapshot"
-            val curLabel = if (isZh) "## 当前摘要" else "## Current Summary"
+            val prevLabel = if (isZh) "## Previous Snapshot" else "## Previous Snapshot"
+            val curLabel = if (isZh) "## Current Summary" else "## Current Summary"
             listOf(timeContextLabel, timeContextText, prevLabel, effectiveSnapshot, curLabel, effectiveSummary)
                 .joinToString("\n\n")
         } else {
-            val curLabel = if (isZh) "## 摘要内容" else "## Summary Content"
+            val curLabel = if (isZh) "## Summary Content" else "## Summary Content"
             "$timeContextLabel\n\n$timeContextText\n\n$curLabel\n\n$effectiveSummary"
         }
     }
@@ -353,7 +353,7 @@ class DeepMemoryProcessor(
         summaryManager: SessionSummaryManager,
     ): Boolean {
         if ((failureCounts[summary.sessionId] ?: 0) < MAX_DAILY_FAILURES) return false
-        val skipMsg = "session=${summary.sessionId.take(8)}… 连续 daily 失败 ${MAX_DAILY_FAILURES} 次,标记为已处理跳过"
+        val skipMsg = "session=${summary.sessionId.take(8)}… consecutive daily failures ${MAX_DAILY_FAILURES} times, marking as processed and skipping"
         Logger.w("DeepMemoryProcessor", skipMsg)
         summaryManager.markProcessed(summary.sessionId)
         failureCounts.remove(summary.sessionId)
@@ -362,9 +362,9 @@ class DeepMemoryProcessor(
 
     /** 构建 time context 文本(供 LLM 参考)。 */
     private fun renderTimeContext(summary: SessionSummaryManager.SummaryData, isZh: Boolean): String {
-        val range = summary.sourceTimeRange ?: return if (isZh) "（无时间信息）" else "(no time info)"
-        val localDatesLabel = if (isZh) "本地日期" else "Local dates"
-        val timezoneLabel = if (isZh) "时区" else "Timezone"
+        val range = summary.sourceTimeRange ?: return if (isZh) "(no time info)" else "(no time info)"
+        val localDatesLabel = if (isZh) "Local dates" else "Local dates"
+        val timezoneLabel = if (isZh) "Timezone" else "Timezone"
         return "$timezoneLabel: ${range.timezone}\n$localDatesLabel: ${range.localDates.joinToString(", ")}"
     }
 
@@ -400,7 +400,7 @@ class DeepMemoryProcessor(
             // v1.0.51: 找不到 JSON 数组候选 → 解析失败,返回 null 触发重试
             val candidate = extractJsonArray(s)
             if (candidate == null) {
-                Logger.w("DeepMemoryProcessor", "fact extraction 未找到 JSON 数组 (rawLen=${raw.length}, session=${summary.sessionId.take(8)}…)")
+                Logger.w("DeepMemoryProcessor", "fact extraction: no JSON array found (rawLen=${raw.length}, session=${summary.sessionId.take(8)}…)")
                 return null
             }
             s = candidate
@@ -413,7 +413,7 @@ class DeepMemoryProcessor(
             // v1.0.51: JSON 解析失败 → 返回 null,调用方不 markProcessed,下次 daily 重试
             Logger.w(
                 "DeepMemoryProcessor",
-                "fact extraction JSON 解析失败 (rawLen=${raw.length}, session=${summary.sessionId.take(8)}…): ${it.message}",
+                "fact extraction JSON parse failed (rawLen=${raw.length}, session=${summary.sessionId.take(8)}…): ${it.message}",
             )
             return null
         }

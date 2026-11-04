@@ -17,33 +17,33 @@ class KimiK26VisionTest {
     @Test
     fun `kimi-k2_6 resolves vision input modality`() {
         val modalities = ModelRegistry.resolveInputModalities("kimi-k2.6")
-        assertTrue("kimi-k2.6 应支持 image 输入,实际=$modalities", "image" in modalities)
+        assertTrue("kimi-k2.6 should support image input, actual=$modalities", "image" in modalities)
     }
 
     @Test
     fun `kimi-k2_6 keeps tool and reasoning abilities`() {
         val abilities = ModelRegistry.resolveAbilities("kimi-k2.6")
-        assertTrue("应含 TOOL", abilities.contains(ModelAbility.TOOL))
-        assertTrue("应含 REASONING", abilities.contains(ModelAbility.REASONING))
+        assertTrue("Should contain TOOL", abilities.contains(ModelAbility.TOOL))
+        assertTrue("Should contain REASONING", abilities.contains(ModelAbility.REASONING))
     }
 
     @Test
     fun `kimi-k2 stays text-only`() {
         // kimi-k2(非 2.6)不含视觉 — 精确规则不应误伤
         val modalities = ModelRegistry.resolveInputModalities("kimi-k2")
-        assertTrue("kimi-k2 应为纯文本,实际=$modalities", "image" !in modalities)
+        assertTrue("kimi-k2 should be text-only, actual=$modalities", "image" !in modalities)
     }
 
     @Test
     fun `kimi-k2_5 stays text-only`() {
         val modalities = ModelRegistry.resolveInputModalities("kimi-k2.5")
-        assertTrue("kimi-k2.5 应为纯文本,实际=$modalities", "image" !in modalities)
+        assertTrue("kimi-k2.5 should be text-only, actual=$modalities", "image" !in modalities)
     }
 
     @Test
     fun `prefixed kimi-k2_6 still resolves vision`() {
         // 中转站/聚合站带前缀的 ID(如 opencode/kimi-k2.6)
         val modalities = ModelRegistry.resolveInputModalities("opencode/kimi-k2.6")
-        assertTrue("带前缀 kimi-k2.6 应支持 image,实际=$modalities", "image" in modalities)
+        assertTrue("Prefixed kimi-k2.6 should support image, actual=$modalities", "image" in modalities)
     }
 }

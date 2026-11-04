@@ -85,10 +85,10 @@ class MpMomentAutoPlanTest {
 
     @Test
     fun hintFollowsTheHourOfDay() {
-        assertTrue(MpMomentAutoPlan.hintFor(9).startsWith("早上"))
-        assertTrue(MpMomentAutoPlan.hintFor(12).startsWith("中午"))
-        assertTrue(MpMomentAutoPlan.hintFor(15).startsWith("下午"))
-        assertTrue(MpMomentAutoPlan.hintFor(20).startsWith("晚上"))
+        assertTrue(MpMomentAutoPlan.hintFor(9).startsWith("Just woke up in the morning"))
+        assertTrue(MpMomentAutoPlan.hintFor(12).startsWith("Free at midday"))
+        assertTrue(MpMomentAutoPlan.hintFor(15).startsWith("A spare moment in the afternoon"))
+        assertTrue(MpMomentAutoPlan.hintFor(20).startsWith("Done with work in the evening"))
     }
 
     private fun decide(

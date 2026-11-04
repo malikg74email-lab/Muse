@@ -145,7 +145,7 @@ class ReasoningReplayModelGuardWireTest {
         provider().completeText(request(history, "deepseek-v4", withTools = false))
 
         val message = capturedAssistantMessage()
-        assertNull("无 tools 时不发 reasoning_content", message["reasoning_content"])
+        assertNull("reasoning_content should not be sent when there are no tools", message["reasoning_content"])
         assertFalse(message.toString().contains("foreign thinking"))
     }
 
@@ -166,6 +166,6 @@ class ReasoningReplayModelGuardWireTest {
         val message = capturedAssistantMessage()
         assertEquals("", message["reasoning_content"]?.jsonPrimitive?.content)
         assertFalse(message.toString().contains("responses reasoning"))
-        assertTrue("降级后请求仍合法（正文照发）", message["content"]?.jsonPrimitive?.content == "answer")
+        assertTrue("After degradation the request should still be valid (body text still sent)", message["content"]?.jsonPrimitive?.content == "answer")
     }
 }

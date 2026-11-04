@@ -501,7 +501,7 @@ class FactStore(
             i++
         }
         if (merged > 0) {
-            Logger.i("FactStore", "反思合并: $merged 条重复事实(scope=$scope, space=$spaceId)")
+            Logger.i("FactStore", "Reflection merge: $merged duplicate facts (scope=$scope, space=$spaceId)")
         }
         merged
     }
@@ -522,7 +522,7 @@ class FactStore(
             if (dao.updateEntityKey(f.id, key) > 0) updated++
         }
         if (updated > 0) {
-            Logger.i("FactStore", "反思回填实体键: $updated 条(scope=$scope, space=$spaceId)")
+            Logger.i("FactStore", "Reflection entity-key backfill: $updated entries (scope=$scope, space=$spaceId)")
         }
         updated
     }
@@ -640,7 +640,7 @@ class FactStore(
                 }
             }
             if (promoted > 0) {
-                Logger.i("FactStore", "反思晋升: $promoted 条事实提升重要度(scope=$scope, space=$spaceId)")
+                Logger.i("FactStore", "Reflection promotion: $promoted facts raised in importance (scope=$scope, space=$spaceId)")
             }
             promoted
         }
@@ -710,7 +710,7 @@ class FactStore(
                 ),
             )
         }.onError { msg, t ->
-            Logger.w("FactStore", "记录修订失败(fact=$factId): $msg", t)
+            Logger.w("FactStore", "Failed to record revision (fact=$factId): $msg", t)
         }
     }
 
@@ -796,7 +796,7 @@ class FactStore(
                 if (verdict.highConfidenceSame) {
                     io.zer0.common.Logger.d(
                         "FactStore",
-                        "LLM 判定同实体同事实: [${sameKey[0].fact.take(30)}] ≈ [${cleaned.take(30)}] (${verdict.confidence})",
+                        "LLM judged same entity, same fact: [${sameKey[0].fact.take(30)}] ≈ [${cleaned.take(30)}] (${verdict.confidence})",
                     )
                     return sameKey[0]
                 }
@@ -978,9 +978,7 @@ class FactStore(
             }
             io.zer0.common.Logger.d(
                 "FactStore",
-                "合并相似事实(scope=$scope, space=$spaceId, entity=$entityKey): ${existingSimilar.fact.take(
-                    30,
-                )}… ↔ ${cleaned.take(30)}… → id=${existingSimilar.id}",
+                "Merging similar facts (scope=$scope, spaceId=$spaceId, entity=$entityKey): ${existingSimilar.fact.take(30)}… ↔ ${cleaned.take(30)}… → id=${existingSimilar.id}",
             )
             // Phase 3 (P1): 合并后的最终文本立即对账,注入不再携带旧表述
             scheduleReconcile(
@@ -1272,15 +1270,15 @@ class FactStore(
         val ids = hits.mapNotNull { fact -> fact.id.takeIf { it > 0L } }
         if (ids.isEmpty()) return
         runCatching { dao.updateLastHitAt(ids, Instant.now().toString()) }
-            .onFailure { Logger.w("FactStore", "命中回写失败(不影响检索): ${it.message}") }
+            .onFailure { Logger.w("FactStore", "Hit write-back failed (does not affect retrieval): ${it.message}") }
         // 命中次数同样验证“这条记忆还在被用到”，与时间一起回写
         runCatching { dao.incrementHitCount(ids) }
-            .onFailure { Logger.w("FactStore", "命中计数失败(不影响检索): ${it.message}") }
+            .onFailure { Logger.w("FactStore", "Hit counting failed (does not affect retrieval): ${it.message}") }
         // v17: 命中同时给持久分数加成,被引用的记忆不易出场
         runCatching {
             val config = MemoryConfig()
             dao.boostScores(ids, config.hitBonus, revivalCeiling(config), Instant.now().toString())
-        }.onFailure { Logger.w("FactStore", "命中分数回拨失败(不影响检索): ${it.message}") }
+        }.onFailure { Logger.w("FactStore", "Hit score write-back failed (does not affect retrieval): ${it.message}") }
     }
 
     /**
@@ -1296,7 +1294,7 @@ class FactStore(
         runCatching {
             val config = MemoryConfig()
             dao.boostScores(ids, config.hitBonus, revivalCeiling(config), Instant.now().toString())
-        }.onFailure { Logger.w("FactStore", "出场记忆回拨失败(不影响检索): ${it.message}") }
+        }.onFailure { Logger.w("FactStore", "Appearance memory write-back failed (does not affect retrieval): ${it.message}") }
     }
 
     private suspend fun runFtsOrLikeSearchScoped(
@@ -1880,7 +1878,7 @@ class FactStore(
                     syncFtsRow(merged.id, FactFtsManager.toNgram(merged.fact))
                     dao.deleteFts(id)
                     dao.deleteById(id)
-                    io.zer0.common.Logger.d("FactStore", "update 触发去重合并: $id → ${merged.id}")
+                    io.zer0.common.Logger.d("FactStore", "update triggered dedup merge: $id → ${merged.id}")
                     reconciled = Fact(id = merged.id, fact = merged.fact, scope = merged.scope, spaceId = merged.spaceId)
                 } else {
                     reconciled = Fact(
@@ -2061,7 +2059,7 @@ class FactStore(
             for ((scope, spaceId, facts) in batches) {
                 resultOf { hook.onFactsChanged(facts, scope, spaceId) }
                     .onError { msg, t ->
-                        Logger.w("FactStore", "写后对账失败(下次编译兜底): ${t?.message ?: msg}")
+                        Logger.w("FactStore", "Post-write reconciliation failed (next compile will catch up): ${t?.message ?: msg}")
                     }
             }
         } finally {
@@ -2303,7 +2301,7 @@ class FactStore(
                 dao.releaseAboveThreshold(config.compileThreshold, scope, spaceId)
             }
             if (outOfRecall > 0) {
-                Logger.d("FactStore", "applyDecay: $outOfRecall 条事实分数低于阈值,已退出召回(行保留)")
+                Logger.d("FactStore", "applyDecay: $outOfRecall facts scored below the threshold and left recall (rows kept)")
             }
             outOfRecall
         }
@@ -2347,7 +2345,7 @@ class FactStore(
      */
     private suspend fun supersededIds(scope: String?, spaceId: String?): Set<Long> =
         runCatching { dao.getSupersededIds(scope, spaceId).toSet() }
-            .onFailure { Logger.w("FactStore", "读取被取代记忆失败(本次不剔除): ${it.message}") }
+            .onFailure { Logger.w("FactStore", "Failed to read superseded memories (not excluding this time): ${it.message}") }
             .getOrDefault(emptySet())
 
     /**
@@ -2358,7 +2356,7 @@ class FactStore(
      */
     private suspend fun mergedIds(scope: String?, spaceId: String?): Set<Long> =
         runCatching { dao.getMergedIds(scope, spaceId).toSet() }
-            .onFailure { Logger.w("FactStore", "读取已合并记忆失败(本次不剔除): ${it.message}") }
+            .onFailure { Logger.w("FactStore", "Failed to read merged memories (not excluding this time): ${it.message}") }
             .getOrDefault(emptySet())
 
     /**

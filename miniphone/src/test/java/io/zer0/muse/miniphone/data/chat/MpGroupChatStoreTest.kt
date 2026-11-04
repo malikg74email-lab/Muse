@@ -57,7 +57,7 @@ class MpGroupChatStoreTest {
         assertEquals(GROUP_THREAD_ID, threadId)
         val thread = requireNotNull(db.threadDao().getThread(GROUP_THREAD_ID))
         assertTrue("会话是群聊", thread.isGroup)
-        assertEquals("群名就是拼接结果", "阿远、小满、阿吾", thread.title)
+        assertEquals("群名就是拼接结果", "阿远, 小满, 阿吾", thread.title)
         assertEquals("要找人开口时用第一个成员", "c1", thread.characterId)
 
         val members = db.threadMemberDao().observeMembers(GROUP_THREAD_ID).first()
@@ -79,10 +79,10 @@ class MpGroupChatStoreTest {
 
     @Test
     fun groupTitleJoinsSelectedNamesAndSkipsBlanks() {
-        assertEquals("阿远、小满", groupTitleOf(listOf("阿远", "小满")))
+        assertEquals("阿远, 小满", groupTitleOf(listOf("阿远", "小满")))
         assertEquals("只有一个也照实写", "阿远", groupTitleOf(listOf(" 阿远 ")))
-        assertEquals("三个还是逐个列", "阿远、小满、阿吾", groupTitleOf(listOf("阿远", "小满", "阿吾")))
-        assertEquals("没有名字的人不占一个位置", "阿远、小满、阿吾", groupTitleOf(listOf("阿远", "", "小满", "  ", "阿吾")))
+        assertEquals("三个还是逐个列", "阿远, 小满, 阿吾", groupTitleOf(listOf("阿远", "小满", "阿吾")))
+        assertEquals("没有名字的人不占一个位置", "阿远, 小满, 阿吾", groupTitleOf(listOf("阿远", "", "小满", "  ", "阿吾")))
         assertEquals("没有名字就交给界面兜底", "", groupTitleOf(listOf("", "  ")))
     }
 
@@ -90,9 +90,9 @@ class MpGroupChatStoreTest {
     fun groupTitleFoldsLongMemberListsIntoACount() {
         val names = listOf("阿远", "小满", "阿吾", "阿岑", "阿迟")
 
-        assertEquals("超过三个人只列前两个,数字是全部角色数", "阿远、小满等 5 人", groupTitleOf(names))
-        assertEquals("刚好四个也开始收", "阿远、小满等 4 人", groupTitleOf(names.take(4)))
-        assertEquals("收口写法里的 N 不含本机用户", "等 5 人", groupTitleTailOf(5))
+        assertEquals("超过三个人只列前两个,数字是全部角色数", "阿远, 小满 and 5 people", groupTitleOf(names))
+        assertEquals("刚好四个也开始收", "阿远, 小满 and 4 people", groupTitleOf(names.take(4)))
+        assertEquals("收口写法里的 N 不含本机用户", " and 5 people", groupTitleTailOf(5))
     }
 
     @Test

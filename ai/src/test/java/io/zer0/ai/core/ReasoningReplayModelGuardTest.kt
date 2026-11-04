@@ -36,11 +36,11 @@ class ReasoningReplayModelGuardTest {
         val history = assistant(modelId = "claude-sonnet-4-5", signature = "sig-claude")
         val result = normalize(listOf(history), "deepseek-v4").single()
 
-        assertNull("跨模型时 reasoning 不应外发", result.reasoning)
-        assertNull("跨模型时 signature 不应外发", result.thinkingSignature)
-        assertNull("跨模型时 encrypted_content 不应外发", result.thinkingEncryptedContent)
-        assertEquals("正文必须原样保留", "answer", result.content)
-        assertEquals("产出模型记录保留（供 UI/排障）", "claude-sonnet-4-5", result.modelId)
+        assertNull("Reasoning should not be sent out across models", result.reasoning)
+        assertNull("Signature should not be sent out across models", result.thinkingSignature)
+        assertNull("encrypted_content should not be sent out across models", result.thinkingEncryptedContent)
+        assertEquals("The body text must be kept exactly as is", "answer", result.content)
+        assertEquals("The producing model record is kept (for UI/troubleshooting)", "claude-sonnet-4-5", result.modelId)
     }
 
     @Test
@@ -57,7 +57,7 @@ class ReasoningReplayModelGuardTest {
         val history = assistant(modelId = null, signature = "sig-legacy")
         val result = normalize(listOf(history), "claude-sonnet-4-5").single()
 
-        assertEquals("来源未知时不剥离", "thinking text", result.reasoning)
+        assertEquals("Do not strip when the source is unknown", "thinking text", result.reasoning)
         assertEquals("sig-legacy", result.thinkingSignature)
     }
 
@@ -66,7 +66,7 @@ class ReasoningReplayModelGuardTest {
         val history = assistant(modelId = "[ais]Claude-Sonnet-4-5")
         val result = normalize(listOf(history), "claude-sonnet-4-5").single()
 
-        assertEquals("归一化后视为同模型", "thinking text", result.reasoning)
+        assertEquals("After normalization it counts as the same model", "thinking text", result.reasoning)
     }
 
     @Test
@@ -74,7 +74,7 @@ class ReasoningReplayModelGuardTest {
         val history = assistant(modelId = "openrouter/anthropic/claude-sonnet-4-5")
         val result = normalize(listOf(history), "claude-sonnet-4-5").single()
 
-        assertEquals("剥前缀后同模型，保留回放", "thinking text", result.reasoning)
+        assertEquals("Same model after prefix stripping, keep the replay", "thinking text", result.reasoning)
     }
 
     @Test

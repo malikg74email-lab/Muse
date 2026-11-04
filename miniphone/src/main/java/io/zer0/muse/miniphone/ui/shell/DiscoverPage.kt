@@ -59,7 +59,7 @@ internal fun DiscoverPage(modifier: Modifier = Modifier, onOpenMoments: () -> Un
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                text = "朋友圈",
+                text = "Moments",
                 style = typography.body.copy(color = colors.textPrimary),
             )
             Spacer(Modifier.weight(1f))

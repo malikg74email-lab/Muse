@@ -190,7 +190,7 @@ class MiniPhoneShellViewModelTest {
         val threadId = viewModel.createGroup(listOf("c3", "c1", "c2"))
 
         assertEquals("g1", threadId)
-        assertEquals("顺序就是选中的顺序", "阿吾、阿远、小满", groups.createdTitle)
+        assertEquals("顺序就是选中的顺序", "阿吾, 阿远, 小满", groups.createdTitle)
         assertEquals(listOf("c3", "c1", "c2"), groups.createdMembers)
     }
 

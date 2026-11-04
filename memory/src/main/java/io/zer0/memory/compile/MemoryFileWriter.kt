@@ -112,7 +112,7 @@ class MemoryFileWriter(
                 }
                 lastWrittenByTarget[key] = content
             }.onFailure {
-                Logger.w(TAG, "写入 memory.md 失败: ${it.message}", it)
+                Logger.w(TAG, "Failed to write memory.md: ${it.message}", it)
             }
         }
         Logger.d(TAG, "memory.md updated (${content.length} chars, locale=$locale)")
@@ -123,7 +123,7 @@ class MemoryFileWriter(
         val file = File(targetDir(target), "memory.md")
         if (file.exists()) file.readText() else null
     }.getOrElse {
-        Logger.w(TAG, "读取 memory.md 失败: ${it.message}")
+        Logger.w(TAG, "Failed to read memory.md: ${it.message}")
         null
     }
 
@@ -145,7 +145,7 @@ class MemoryFileWriter(
             }
             Logger.d(TAG, "daily/$date.md updated (${body.length} chars)")
         }.onFailure {
-            Logger.w(TAG, "写入 daily/$date.md 失败: ${it.message}", it)
+            Logger.w(TAG, "Failed to write daily/$date.md: ${it.message}", it)
         }
     }
 
@@ -173,7 +173,7 @@ class MemoryFileWriter(
         if (!file.exists()) return@runCatching ""
         normalizeDailyBody(file.readText())
     }.getOrElse {
-        Logger.w(TAG, "读取 daily/$date.md 失败: ${it.message}")
+        Logger.w(TAG, "Failed to read daily/$date.md: ${it.message}")
         ""
     }
 
@@ -189,7 +189,7 @@ class MemoryFileWriter(
             ?.sortedBy { it.date }
             ?: emptyList()
     }.getOrElse {
-        Logger.w(TAG, "列出 daily 文件失败: ${it.message}")
+        Logger.w(TAG, "Failed to list daily files: ${it.message}")
         emptyList()
     }
 
@@ -232,11 +232,11 @@ class MemoryFileWriter(
             if (content.length > maxChars) {
                 content = content.take(maxChars)
             }
-            Logger.w(TAG, "assembleWeekFromDaily: 总长超过上限($maxChars 字),已从最老条目开始截断")
+            Logger.w(TAG, "assembleWeekFromDaily: total length exceeds the limit ($maxChars chars); truncated starting from the oldest entries")
         }
         "$content\n"
     }.getOrElse {
-        Logger.w(TAG, "assembleWeekFromDaily 失败: ${it.message}", it)
+        Logger.w(TAG, "assembleWeekFromDaily failed: ${it.message}", it)
         ""
     }
 
@@ -256,7 +256,7 @@ class MemoryFileWriter(
         val cutoff = runCatching {
             LocalDate.parse(referenceDate).minusDays(retentionDays.toLong()).toString()
         }.getOrElse {
-            Logger.w(TAG, "rollDailyWindow: referenceDate 解析失败($referenceDate),跳过")
+            Logger.w(TAG, "rollDailyWindow: failed to parse referenceDate ($referenceDate), skipping")
             return@runCatching RollResult(emptyList(), emptyList(), "")
         }
 
@@ -281,7 +281,7 @@ class MemoryFileWriter(
         val combined = blocks.joinToString("\n\n")
         RollResult(entries.map { it.date }, emptyList(), combined)
     }.getOrElse {
-        Logger.w(TAG, "rollDailyWindow 失败: ${it.message}", it)
+        Logger.w(TAG, "rollDailyWindow failed: ${it.message}", it)
         RollResult(emptyList(), emptyList(), "")
     }
 
@@ -291,7 +291,7 @@ class MemoryFileWriter(
             runCatching {
                 File(dailyDir(target), "$date.md").delete()
             }.onFailure {
-                Logger.w(TAG, "删除 daily/$date.md 失败: ${it.message}")
+                Logger.w(TAG, "Failed to delete daily/$date.md: ${it.message}")
             }
         }
     }
@@ -302,7 +302,7 @@ class MemoryFileWriter(
             File(dailyDir(target), "$date.md").delete()
             File(dailyDir(target), "$date.md.fingerprint").delete()
         }.onFailure {
-            Logger.w(TAG, "删除 daily/$date.md 失败: ${it.message}")
+            Logger.w(TAG, "Failed to delete daily/$date.md: ${it.message}")
         }
     }
 
@@ -311,7 +311,7 @@ class MemoryFileWriter(
         val file = File(dailyDir(target), "$date.md.fingerprint")
         if (file.exists()) file.readText().trim() else null
     }.getOrElse {
-        Logger.w(TAG, "读取 daily/$date.md.fingerprint 失败: ${it.message}")
+        Logger.w(TAG, "Failed to read daily/$date.md.fingerprint: ${it.message}")
         null
     }
 
@@ -320,7 +320,7 @@ class MemoryFileWriter(
         runCatching {
             File(dailyDir(target), "$date.md.fingerprint").writeText(fingerprint)
         }.onFailure {
-            Logger.w(TAG, "写入 daily/$date.md.fingerprint 失败: ${it.message}", it)
+            Logger.w(TAG, "Failed to write daily/$date.md.fingerprint: ${it.message}", it)
         }
     }
 
@@ -329,7 +329,7 @@ class MemoryFileWriter(
         runCatching {
             File(dailyDir(target), "$date.md.fingerprint").delete()
         }.onFailure {
-            Logger.w(TAG, "删除 daily/$date.md.fingerprint 失败: ${it.message}")
+            Logger.w(TAG, "Failed to delete daily/$date.md.fingerprint: ${it.message}")
         }
     }
 
@@ -340,7 +340,7 @@ class MemoryFileWriter(
                 DAILY_FILE_RE.matches(name) || name.endsWith(".md.fingerprint")
             }?.forEach { it.delete() }
         }.onFailure {
-            Logger.w(TAG, "清空 daily 文件失败: ${it.message}", it)
+            Logger.w(TAG, "Failed to clear daily files: ${it.message}", it)
         }
     }
 
@@ -361,7 +361,7 @@ class MemoryFileWriter(
         dir?.deleteRecursively()
         deleted
     }.getOrElse {
-        Logger.w(TAG, "删除 scope 目录失败: ${it.message}", it)
+        Logger.w(TAG, "Failed to delete scope directory: ${it.message}", it)
         0
     }
 

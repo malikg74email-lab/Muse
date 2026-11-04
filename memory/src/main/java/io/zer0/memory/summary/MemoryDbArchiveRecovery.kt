@@ -71,9 +71,9 @@ class MemoryDbArchiveRecovery(
         val directory = databaseFile.parentFile
             ?.listFiles { file -> file.isDirectory && file.name == archiveId }
             ?.singleOrNull()
-            ?: return@withContext Result.failure(IllegalArgumentException("记忆库归档不存在: $archiveId"))
+            ?: return@withContext Result.failure(IllegalArgumentException("Memory archive does not exist: $archiveId"))
         val version = parseStoredVersion(directory.name, databaseFile.name)
-            ?: return@withContext Result.failure(IllegalArgumentException("记忆库归档名称非法: $archiveId"))
+            ?: return@withContext Result.failure(IllegalArgumentException("Invalid memory archive name: $archiveId"))
         runCatching { readSnapshot(directory) }
             .map { snapshot ->
                 ArchiveInfo(
@@ -96,15 +96,15 @@ class MemoryDbArchiveRecovery(
     suspend fun restoreLatestIfEmpty(): Result<RecoveryReport> = withContext(Dispatchers.IO) {
         if (!currentDatabaseIsEmpty()) {
             return@withContext Result.failure(
-                IllegalStateException("当前记忆库已有数据，拒绝覆盖恢复"),
+                IllegalStateException("The current memory database already has data; refusing to overwrite it with a restore"),
             )
         }
         val candidate = archiveCandidates()
             .maxWithOrNull(compareBy<ArchiveCandidate> { it.info.storedVersion }.thenBy { it.directory.lastModified() })
-            ?: return@withContext Result.failure(IllegalStateException("没有可读取的记忆库归档"))
+            ?: return@withContext Result.failure(IllegalStateException("No readable memory archive available"))
         val snapshot = readSnapshot(candidate.directory)
         if (snapshot.totalRows() == 0) {
-            return@withContext Result.failure(IllegalStateException("归档中没有可恢复的记忆数据"))
+            return@withContext Result.failure(IllegalStateException("The archive contains no recoverable memory data"))
         }
 
         database.withTransaction {
@@ -142,7 +142,7 @@ class MemoryDbArchiveRecovery(
             val version = parseStoredVersion(directory.name, databaseFile.name) ?: return@mapNotNull null
             val snapshot = runCatching { readSnapshot(directory) }
                 .onFailure { error ->
-                    Logger.w(TAG, "跳过不可读取的记忆库归档: ${directory.name}: ${error.message}")
+                    Logger.w(TAG, "Skipping unreadable memory archive: ${directory.name}: ${error.message}")
                 }
                 .getOrNull()
                 ?: return@mapNotNull null
@@ -170,7 +170,7 @@ class MemoryDbArchiveRecovery(
     private fun readSnapshot(directory: File): Snapshot {
         val databaseNameOnly = context.getDatabasePath(databaseName).name
         val archiveDatabase = File(directory, databaseNameOnly)
-        require(archiveDatabase.isFile) { "归档缺少主数据库文件" }
+        require(archiveDatabase.isFile) { "Archive is missing the main database file" }
         val temporaryPrefix = "memory_archive_read_${UUID.randomUUID()}"
         val temporaryDatabase = File(context.cacheDir, temporaryPrefix)
         val temporarySidecars = listOf("wal", "shm").map { suffix ->

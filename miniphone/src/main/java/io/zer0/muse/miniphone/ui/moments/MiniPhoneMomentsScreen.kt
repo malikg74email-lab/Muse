@@ -451,18 +451,18 @@ private const val EMPTY_CARD_STEP_RATIO: Float = 0.62f
 private const val EMPTY_DOT_INSET_RATIO: Float = 0.18f
 private const val EMPTY_DOT_TOP_RATIO: Float = 0.28f
 
-private const val PAGE_TITLE: String = "朋友圈"
-private const val MINE_PAGE_TITLE: String = "我的朋友圈"
+private const val PAGE_TITLE: String = "Moments"
+private const val MINE_PAGE_TITLE: String = "My Moments"
 private const val ALL_KEY: String = "mp-moments-all"
 private const val MINE_KEY: String = "mp-moments-mine"
-private const val BACK_DESCRIPTION: String = "返回"
-private const val COMPOSE_DESCRIPTION: String = "写一条"
-private const val DEFAULT_SELF_NAME: String = "我"
-private const val EMPTY_TITLE: String = "还没有动态"
-private const val EMPTY_HINT: String = "下拉刷新，等角色说点什么"
-private const val MINE_EMPTY_TITLE: String = "还没有自己的动态"
-private const val MINE_EMPTY_HINT: String = "点右上角写一条，记下现在"
-private const val LOADING_TEXT: String = "载入中……"
+private const val BACK_DESCRIPTION: String = "Back"
+private const val COMPOSE_DESCRIPTION: String = "Write one"
+private const val DEFAULT_SELF_NAME: String = "Me"
+private const val EMPTY_TITLE: String = "No updates yet"
+private const val EMPTY_HINT: String = "Pull down to refresh and wait for a character to say something"
+private const val MINE_EMPTY_TITLE: String = "No updates of your own yet"
+private const val MINE_EMPTY_HINT: String = "Tap the button at the top right to write one and capture the moment"
+private const val LOADING_TEXT: String = "Loading……"
 
 /** 离列表末端还剩几条时开始要下一页。 */
 private const val LOAD_MORE_THRESHOLD: Int = 2

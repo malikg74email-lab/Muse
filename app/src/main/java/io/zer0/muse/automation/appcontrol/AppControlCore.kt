@@ -198,15 +198,15 @@ object AppControlCore {
 
     /** 渲染应用列表（给模型看；按名称排序，标注系统应用与自身）。 */
     fun renderAppList(apps: List<InstalledAppInfo>, limit: Int = 200): String {
-        if (apps.isEmpty()) return "未找到可启动的应用（或受系统包可见性限制无法列出）。"
+        if (apps.isEmpty()) return "No launchable app found (or listing is limited by system package visibility)."
         val sorted = apps.sortedBy { it.label.lowercase() }
         val shown = sorted.take(limit)
         return buildString {
-            appendLine("共 ${sorted.size} 个可启动应用${if (sorted.size > shown.size) "（仅列出前 ${shown.size} 个）" else ""}：")
+            appendLine("${sorted.size} launchable apps in total${if (sorted.size > shown.size) " (only the first ${shown.size} listed)" else ""}:")
             shown.forEach { app ->
                 append("- ${app.label} | ${app.packageName}")
-                if (app.system) append(" | 系统应用")
-                if (app.self) append(" | 本应用")
+                if (app.system) append(" | System app")
+                if (app.self) append(" | This app")
                 appendLine()
             }
         }.trimEnd()

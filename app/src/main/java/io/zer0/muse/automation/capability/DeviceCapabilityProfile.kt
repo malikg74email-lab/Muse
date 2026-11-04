@@ -69,45 +69,45 @@ data class DeviceCapabilityProfile(
      * 保持短小：进入 system prompt 的每一行都在花用户的钱，只写"影响决策"的事实。
      */
     fun renderForModel(): String = buildString {
-        appendLine("## 设备能力档案（当前真实可用性）")
+        appendLine("## Device capability profile (current real availability)")
         appendLine(
-            "- 无障碍(读屏/手势/输入): " +
-                if (accessibility) "可用" else "不可用（未开启 Muse 无障碍服务）",
+            "- Accessibility (screen reading/gestures/input): " +
+                if (accessibility) "Available" else "Unavailable (the Shaheen 2 accessibility service is not enabled)",
         )
         appendLine(
-            "- Shell 通道(Shizuku/adb: input/screencap/pm/am/settings): " +
-                if (shizuku) "可用" else "不可用（未安装 Shizuku 或未授权）",
+            "- Shell channel (Shizuku/adb: input/screencap/pm/am/settings): " +
+                if (shizuku) "Available" else "Unavailable (Shizuku not installed or not authorised)",
         )
         appendLine(
-            "- Root(su: 系统分区读写/完整控制): " +
-                if (root) "可用" else "不可用",
+            "- Root (su: system partition read/write/full control): " +
+                if (root) "Available" else "Unavailable",
         )
         appendLine(
-            "- 截屏能力: " +
+            "- Screenshot capability: " +
                 if (canScreenshot) {
                     if (accessibilityScreenshot && !shizuku && !root) {
-                        "可用（走 Android 14+ 无障碍截图）"
+                        "Available (via Android 14+ accessibility screenshots)"
                     } else {
-                        "可用（走 Shell/Root）"
+                        "Available (via Shell/Root)"
                     }
                 } else {
-                    "不可用（需 Android 14+ 无障碍、Shizuku/adb 或 Root）"
+                    "Unavailable (requires Android 14+ accessibility, Shizuku/adb or Root)"
                 },
         )
         appendLine(
-            "- 虚拟屏(把应用启动到独立屏幕,不打扰用户当前界面): " +
-                if (virtualDisplay) "可用" else "不可用",
+            "- Virtual screen (launch apps onto a separate screen without disturbing the user's current interface): " +
+                if (virtualDisplay) "Available" else "Unavailable",
         )
         appendLine(
-            "- 内置 Node 运行时(跑脚本/数据处理/MCP stdio): " +
-                if (nodeRuntime) "可用" else "不可用（运行时未就绪）",
+            "- Built-in Node runtime (run scripts/data processing/MCP stdio): " +
+                if (nodeRuntime) "Available" else "Unavailable (runtime not ready)",
         )
         append(
-            "- 当前最高权限层: " + when (highestLevel) {
+            "- Current highest permission tier: " + when (highestLevel) {
                 PermissionLevel.ROOT -> "Root"
                 PermissionLevel.SHELL -> "Shell(Shizuku/adb)"
-                PermissionLevel.ACCESSIBILITY -> "无障碍"
-                PermissionLevel.NONE -> "无（只能做应用内操作，无法控制其他应用）"
+                PermissionLevel.ACCESSIBILITY -> "Accessibility"
+                PermissionLevel.NONE -> "None (can only operate inside the app; cannot control other apps)"
             },
         )
     }
@@ -118,26 +118,26 @@ data class DeviceCapabilityProfile(
      * 这些不是建议而是硬约束（每条都对应一次真实踩坑），因此与能力档案一起注入。
      */
     fun renderOperatingGuide(): String = buildString {
-        appendLine("## 操作手机的决策规程")
-        appendLine("1. 动手前先确认能力：上表列出的是**当前**真实可用性；表里写「不可用」的通道不要反复重试，直接换方案或向用户说明缺哪一项权限。")
-        appendLine("2. 按最低够用层级选通道：")
-        appendLine("   - 应用层（**不需要任何自动化授权**，永远先试这一层）：`app_list` 查名称与包名、`app_launch` 启动应用、`app_settings` 打开某个应用的系统设置页（可让用户自己改权限/清数据）。")
-        appendLine("   - 界面交互：优先无障碍（可读控件树、可注入手势），比坐标盲点可靠。")
-        appendLine("   - 需要截屏、系统界面、安装应用、改系统设置或强停/清数据/卸载时，才用 Shell/Root（`app_force_stop`/`app_clear_data`/`app_uninstall`/`device_shell`）。")
-        appendLine("3. 每步都要验证：动作发出后重新读一次屏幕/状态确认结果（文字是否变化、页面是否切换），不要连发多个盲操作。")
-        appendLine("4. 界面失败先看结构再换手段：先用读屏结果定位控件（文本/描述/层级）；找不到再考虑坐标点击；坐标也不稳时改用 Shell/Root 的命令级方案。")
-        appendLine("5. 重复性/长流程优先写成脚本：用内置 Node 完成循环、JSON/正则处理、批量请求，比逐步推理省时省 token；稳定后沉淀为技能。")
+        appendLine("## Decision procedure for operating the phone")
+        appendLine("1. Confirm capabilities before acting: the table above lists the **current** real availability; do not keep retrying a channel marked 'unavailable' — switch approach or tell the user which permission is missing.")
+        appendLine("2. Choose the channel by the lowest sufficient tier:")
+        appendLine("   - App layer (**needs no automation authorisation at all**, always try this layer first): `app_list` to look up names and package names, `app_launch` to launch an app, `app_settings` to open an app's system settings page (letting the user change permissions/clear data themselves).")
+        appendLine("   - Interface interaction: prefer accessibility (can read the control tree and inject gestures); more reliable than blind coordinate taps.")
+        appendLine("   - Only when you need screenshots, system UI, app installation, system-settings changes, or force-stop/clear-data/uninstall, use Shell/Root (`app_force_stop`/`app_clear_data`/`app_uninstall`/`device_shell`).")
+        appendLine("3. Verify every step: after issuing an action, read the screen/state once more to confirm the result (whether the text changed, whether the page switched); do not fire several blind operations in a row.")
+        appendLine("4. When the interface fails, look at the structure before switching means: first locate the control from the screen-reading result (text/description/hierarchy); if not found, consider coordinate taps; when coordinates are also unreliable, switch to a Shell/Root command-level approach.")
+        appendLine("5. Prefer scripts for repetitive/long processes: use the built-in Node for loops, JSON/regex processing and batch requests; cheaper in time and tokens than step-by-step reasoning; once stable, settle it into a skill.")
         appendLine(
-            "6. 不打扰用户：调用 `ui_agent` 时优先用 display=auto 并提供 package_name；" +
-                "它会尝试创建本次专属虚拟屏，Shell/Root 或 App 不支持时明确降级到前台。" +
-                "display=virtual 仅在能力档案显示虚拟屏可用时指定；不要假设兼容虚拟屏与 Agent 独立屏是同一块屏。",
+            "6. Do not disturb the user: when calling `ui_agent`, prefer display=auto and provide package_name;" +
+                "it will try to create a dedicated virtual screen for this run, and clearly degrade to the foreground when Shell/Root or the app does not support it." +
+                "Specify display=virtual only when the capability profile shows the virtual screen is available; do not assume the compatible virtual screen and the Agent's separate screen are the same screen.",
         )
-        appendLine("7. 高风险动作（发消息、支付、删除、改系统设置）先说明将要做什么，待用户确认后再执行。")
-        appendLine("8. 缺权限就如实说：说明「需要哪一项」（如 Shizuku/Root/无障碍），不要用模拟结果代替真实执行，也不要谎报成功。")
+        appendLine("7. For high-risk actions (sending messages, paying, deleting, changing system settings), first explain what you are about to do, and execute only after the user confirms.")
+        appendLine("8. When a permission is missing, say so truthfully: state 'which one is needed' (e.g. Shizuku/Root/accessibility); do not substitute simulated results for real execution, and do not falsely report success.")
         appendLine(
-            "9. 动手前先查地图：要操作设备（点击/滑屏/读屏/启停应用/shell）之前，先调 `tool_status`\n" +
-                "   看哪些真可用。它会把工具分成可用与因权限受阻两组，并告诉你缺什么。\n" +
-                "   不要先答应「我帮你点一下」再去撞墙 —— 那比一开始就说做不了更伤。",
+            "9. Check the map before acting: before operating the device (tapping/swiping/reading the screen/starting or stopping apps/shell), first call `tool_status`\n" +
+                "   to see what is really available. It divides tools into available and permission-blocked groups and tells you what is missing.\n" +
+                "   Do not promise 'I'll tap it for you' first and then hit a wall — that hurts more than saying at the start that it cannot be done.",
         )
     }
 

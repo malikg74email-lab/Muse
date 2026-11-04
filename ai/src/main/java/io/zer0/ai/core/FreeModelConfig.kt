@@ -52,7 +52,7 @@ object FreeModelConfig {
      * UI 引导提示文案:当用户选择 SiliconFlow 供应商且未填 key 时展示。
      */
     const val FREE_PROVIDER_HINT: String =
-        "免登录可用免费模型(GLM-4-9B / Qwen3-8B),填写 API Key 解锁更多模型"
+        "Free models available without sign-in (GLM-4-9B / Qwen3-8B); enter an API Key to unlock more models"
 
     /**
      * 检查指定的 provider + model 是否符合免费模型条件。

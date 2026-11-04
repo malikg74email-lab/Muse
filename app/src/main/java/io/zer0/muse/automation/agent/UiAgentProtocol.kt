@@ -93,15 +93,15 @@ object UiAgentProtocol {
 
     /** 动作的人类可读描述(用于动作史回填)。 */
     fun describe(action: Action): String = when (action) {
-        is Action.Tap -> "点击(${action.x},${action.y})"
-        is Action.TapText -> "语义点击(有界滚动 ${action.maxSwipes} 次)"
-        is Action.TapId -> "控件 ID 点击(有界滚动 ${action.maxSwipes} 次)"
-        is Action.Swipe -> "滑动(${action.x1},${action.y1})→(${action.x2},${action.y2})"
-        is Action.TextInput -> "输入文本(${action.text.length}字符)"
-        is Action.Key -> "按键 ${action.key}"
-        is Action.Launch -> "启动 ${action.packageName}"
-        is Action.Wait -> "等待 ${action.ms}ms"
-        is Action.Finish -> "结束"
+        is Action.Tap -> "Tap (${action.x},${action.y})"
+        is Action.TapText -> "Semantic tap (bounded scrolling, ${action.maxSwipes} times)"
+        is Action.TapId -> "Control-ID tap (bounded scrolling, ${action.maxSwipes} times)"
+        is Action.Swipe -> "Swipe (${action.x1},${action.y1})→(${action.x2},${action.y2})"
+        is Action.TextInput -> "Input text (${action.text.length} characters)"
+        is Action.Key -> "Key press ${action.key}"
+        is Action.Launch -> "Launch ${action.packageName}"
+        is Action.Wait -> "Wait ${action.ms}ms"
+        is Action.Finish -> "Finish"
     }
 
     private fun parseFinish(args: Map<String, String>): Action.Finish {

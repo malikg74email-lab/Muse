@@ -47,7 +47,7 @@ object AnnotationStore {
             runCatching {
                 AppJson.decodeFromString(ListSerializer(Annotation.serializer()), target.readText())
             }.onSuccess { _all.value = it.take(MAX_ITEMS) }
-                .onFailure { e -> Logger.w(TAG, "批注恢复失败: ${e.message}") }
+                .onFailure { e -> Logger.w(TAG, "Annotation restore failed: ${e.message}") }
         }
     }
 
@@ -83,6 +83,6 @@ object AnnotationStore {
                 target,
                 AppJson.encodeToString(ListSerializer(Annotation.serializer()), items),
             )
-        }.onFailure { e -> Logger.w(TAG, "批注持久化失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Annotation persistence failed: ${e.message}") }
     }
 }

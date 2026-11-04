@@ -250,4 +250,4 @@ private const val GALLERY_DISMISS_DRAG_PX = 120f
 
 private const val MIN_ZOOM: Float = 1f
 private const val MAX_ZOOM: Float = 5f
-private const val BROKEN_IMAGE_TEXT: String = "图片无法显示"
+private const val BROKEN_IMAGE_TEXT: String = "Image can't be displayed"

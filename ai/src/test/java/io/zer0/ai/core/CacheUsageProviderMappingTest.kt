@@ -39,7 +39,7 @@ class CacheUsageProviderMappingTest {
         assertEquals(1_200, usage.cachedTokensTotal)
         assertEquals(150, usage.total)
         // Anthropic 的 input_tokens 不含缓存，计价时要声明口径
-        assertFalse("Anthropic 的 prompt 不含缓存部分", usage.promptTokensIncludeCache)
+        assertFalse("Anthropic's prompt does not include the cache portion", usage.promptTokensIncludeCache)
     }
 
     @Test
@@ -50,7 +50,7 @@ class CacheUsageProviderMappingTest {
         assertEquals(7, usage.completionTokens)
         assertEquals(0, usage.cacheReadTokens)
         assertEquals(0, usage.cacheWriteTokens)
-        assertFalse("即使 usage 缺失，Anthropic 的 prompt 口径仍是「不含缓存」", usage.promptTokensIncludeCache)
+        assertFalse("Even when usage is missing, Anthropic's prompt convention is still 'excludes cache'", usage.promptTokensIncludeCache)
     }
 
     @Test

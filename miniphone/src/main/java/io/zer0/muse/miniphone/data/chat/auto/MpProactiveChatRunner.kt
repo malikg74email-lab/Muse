@@ -96,7 +96,7 @@ class MpProactiveChatRunner(
 
     /** 判定为不发:留一条能看出原因的日志,然后结束。 */
     private fun skip(reason: MpProactiveChatSkipReason): MpProactiveChatOutcome {
-        Logger.d(TAG, "主动私信跳过 | reason=${reason.value}")
+        Logger.d(TAG, "Proactive message skipped | reason=${reason.value}")
         return MpProactiveChatOutcome.Skipped(reason)
     }
 
@@ -110,7 +110,7 @@ class MpProactiveChatRunner(
         return when {
             character == null -> skip(MpProactiveChatSkipReason.NO_CHARACTER)
             content.isNullOrBlank() -> {
-                Logger.w(TAG, "主动私信跳过 | reason=${MpProactiveChatSkipReason.NO_CONTENT.value}")
+                Logger.w(TAG, "Proactive message skipped | reason=${MpProactiveChatSkipReason.NO_CONTENT.value}")
                 MpProactiveChatOutcome.Skipped(MpProactiveChatSkipReason.NO_CONTENT)
             }
 
@@ -159,7 +159,7 @@ class MpProactiveChatRunner(
         // 时间戳写失败不影响已经落库的消息:最多让下一轮少一次防抖保护
         resultOf { store.markProactiveChat(at) }
             .onError { msg, t -> fail("settings_write", t, msg) }
-        Logger.d(TAG, "主动私信落库 | threadId=${thread.id} | characterId=${thread.characterId} | len=${content.length}")
+        Logger.d(TAG, "Proactive message stored | threadId=${thread.id} | characterId=${thread.characterId} | len=${content.length}")
         return MpProactiveChatOutcome.Sent(threadId = thread.id, characterId = thread.characterId)
     }
 
@@ -186,14 +186,14 @@ class MpProactiveChatRunner(
 
     /** 按小时给一句开口的由头,交给宿主的生成器当素材的收尾指令。 */
     private fun focusFor(atMillis: Long): String = when (MpProactiveChatPlan.hourOf(atMillis, zone)) {
-        in 8..10 -> "早上刚醒,随口打个招呼"
-        in 11..13 -> "中午休息,问一句吃了没"
-        in 14..17 -> "下午想起对方,闲聊一句"
-        else -> "晚上,随口聊两句"
+        in 8..10 -> "Just woke up in the morning; drop a casual greeting"
+        in 11..13 -> "On a midday break; ask whether they've eaten"
+        in 14..17 -> "Thinking of them in the afternoon; make a little small talk"
+        else -> "Evening; chat a little, casually"
     }
 
     private fun fail(reason: String, throwable: Throwable?, message: String) {
-        Logger.w(TAG, "主动私信失败 | reason=$reason | ${throwable?.message ?: message}", throwable)
+        Logger.w(TAG, "Proactive message failed | reason=$reason | ${throwable?.message ?: message}", throwable)
     }
 
     private companion object {

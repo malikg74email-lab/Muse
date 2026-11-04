@@ -21,7 +21,7 @@ internal object AsrAudioCapture {
     @SuppressLint("MissingPermission")
     fun create(sampleRate: Int, tag: String): Session? {
         if (sampleRate !in 8_000..48_000) {
-            Logger.w(tag, "不支持的 ASR 采样率: $sampleRate")
+            Logger.w(tag, "Unsupported ASR sample rate: $sampleRate")
             return null
         }
         val minBuffer = try {
@@ -31,11 +31,11 @@ internal object AsrAudioCapture {
                 AudioFormat.ENCODING_PCM_16BIT,
             )
         } catch (e: IllegalArgumentException) {
-            Logger.w(tag, "获取 AudioRecord 缓冲区失败: ${e.message}", e)
+            Logger.w(tag, "Getting the AudioRecord buffer failed: ${e.message}", e)
             return null
         }
         if (minBuffer <= 0) {
-            Logger.w(tag, "AudioRecord 缓冲区大小无效: $minBuffer")
+            Logger.w(tag, "AudioRecord buffer size invalid: $minBuffer")
             return null
         }
         val bufferSize = (minBuffer * 2)
@@ -57,10 +57,10 @@ internal object AsrAudioCapture {
                     bufferSize * 2,
                 )
             } catch (e: SecurityException) {
-                Logger.w(tag, "AudioRecord 音源 $source 被拒绝: ${e.message}")
+                Logger.w(tag, "AudioRecord source $source rejected: ${e.message}")
                 null
             } catch (e: IllegalArgumentException) {
-                Logger.w(tag, "AudioRecord 音源 $source 参数无效: ${e.message}")
+                Logger.w(tag, "AudioRecord source $source has invalid parameters: ${e.message}")
                 null
             }
             if (recorder != null) {
@@ -70,7 +70,7 @@ internal object AsrAudioCapture {
                 recorder.release()
             }
         }
-        Logger.w(tag, "所有 AudioRecord 音源均初始化失败")
+        Logger.w(tag, "All AudioRecord sources failed to initialize")
         return null
     }
 }

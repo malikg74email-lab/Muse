@@ -28,7 +28,7 @@ class ToolTraceProjectionTest {
         assertEquals(MessageRole.SYSTEM, projected[1].role)
         assertTrue(projected[1].content.contains(ToolTraceProjection.SUMMARY_MARKER))
         assertTrue(projected[1].content.contains("search"))
-        assertTrue(projected[1].content.contains("成功(SUCCESS)"))
+        assertTrue(projected[1].content.contains("Success (SUCCESS)"))
         assertTrue(projected[1].content.contains("old result"))
         assertEquals(MessageRole.ASSISTANT, projected[3].role)
         assertEquals(listOf(latestCall), projected[3].toolCalls)
@@ -51,7 +51,7 @@ class ToolTraceProjectionTest {
 
         assertEquals(3, projected.size)
         assertTrue(projected[1].content.contains(ToolTraceProjection.SUMMARY_MARKER))
-        assertTrue(projected[1].content.contains("助手说明"))
+        assertTrue(projected[1].content.contains("Assistant note"))
         assertTrue(projected[1].content.contains("我先查一下设备信息"))
     }
 
@@ -108,7 +108,7 @@ class ToolTraceProjectionTest {
         val twice = ToolTraceProjection.project(once)
 
         assertEquals(4, once.size)
-        assertTrue(once.first().content.contains("结果(截断)"))
+        assertTrue(once.first().content.contains("Result (truncated)"))
         assertTrue(once.first().content.contains("…"))
         assertEquals(once, twice)
     }
@@ -168,9 +168,9 @@ class ToolTraceProjectionTest {
         assertEquals(3, projected.size)
         assertEquals(MessageRole.SYSTEM, projected[0].role)
         assertTrue(projected[0].content.contains("search"))
-        assertTrue(projected[0].content.contains("成功(SUCCESS)"))
+        assertTrue(projected[0].content.contains("Success (SUCCESS)"))
         assertEquals(failedCard, projected[2])
-        assertTrue(projected.none { it.content.contains("失败(FAILED)") })
+        assertTrue(projected.none { it.content.contains("Failed (FAILED)") })
     }
 
     @Test

@@ -346,7 +346,7 @@ class MemoryTicker(
     private fun canRunStep(stepKey: String, completed: Map<String, String>): Boolean {
         if (stepKey in completed) return false
         if (!stepBackoff.shouldRun(stepKey)) {
-            Logger.d(TAG, "步骤 $stepKey 处于失败退避窗口,跳过本轮(连续失败 ${stepBackoff.failureCount(stepKey)} 次)")
+            Logger.d(TAG, "Step $stepKey is in a failure-backoff window, skipping this round (consecutive failures: ${stepBackoff.failureCount(stepKey)})")
             return false
         }
         return true
@@ -392,12 +392,12 @@ class MemoryTicker(
             return
         }
         _errorSigs[label] = sig
-        Logger.w(TAG, "$label 失败: $msg", err)
+        Logger.w(TAG, "$label failed: $msg", err)
     }
 
     private fun markStepRecovered(label: String) {
         val prev = _errorSigs.remove(label) ?: return
-        Logger.i(TAG, "$label 恢复正常(之前: $prev)")
+        Logger.i(TAG, "$label recovered (previously: $prev)")
     }
 
     /** 返回每个步骤的健康快照(深拷贝,调用方安全持有)。 */
@@ -458,7 +458,7 @@ class MemoryTicker(
 
     private suspend fun writeDailyState(context: DailyContext, completedSteps: Map<String, String>, dailyCompletedAt: String?) {
         if (io.zer0.common.ProcessWriteGate.restoring) {
-            Logger.d(TAG, "daily state: 备份恢复进行中，跳过 checkpoint 写入")
+            Logger.d(TAG, "daily state: backup restore in progress, skipping checkpoint write")
             return
         }
         val entity = DailyStateEntity(
@@ -484,7 +484,7 @@ class MemoryTicker(
     private suspend fun restoreDailyProgress(context: DailyContext): Map<String, String> {
         val state = readDailyState(context) ?: return emptyMap()
         if (state.schemaVersion != DAILY_STATE_SCHEMA_VERSION) {
-            Logger.i(TAG, "daily state schema 不匹配(${state.schemaVersion} != $DAILY_STATE_SCHEMA_VERSION),重置进度")
+            Logger.i(TAG, "daily state schema mismatch (${state.schemaVersion} != $DAILY_STATE_SCHEMA_VERSION), resetting progress")
             return emptyMap()
         }
         if (state.logicalDate != context.logicalDate) return emptyMap()
@@ -493,7 +493,7 @@ class MemoryTicker(
         return runCatching {
             json.decodeFromString(stepsSerializer, state.completedSteps)
         }.getOrElse {
-            Logger.w(TAG, "restoreDailyProgress: completedSteps JSON 解析失败,重置进度: ${it.message}")
+            Logger.w(TAG, "restoreDailyProgress: failed to parse completedSteps JSON, resetting progress: ${it.message}")
             emptyMap()
         }
     }
@@ -541,7 +541,7 @@ class MemoryTicker(
             if (result.changed) {
                 Logger.d(TAG, "rolling summary updated: ${sessionId.take(8)}… (trigger=$trigger, ${result.summary.length} chars)")
                 markSuccess("rollingSummary")
-                markStepRecovered("滚动摘要")
+                markStepRecovered("Rolling summary")
                 return true
             } else {
                 // changed=false 可能是: 空对话 / LLM 返回空 / 增量无新内容
@@ -553,7 +553,7 @@ class MemoryTicker(
             throw e
         } catch (e: Throwable) {
             markFailure("rollingSummary", e)
-            logStepError("滚动摘要 ($sessionId)", e)
+            logStepError("Rolling summary ($sessionId)", e)
             return false
         } finally {
             _summaryInProgressLock.withLock { _summaryInProgress.remove(sessionId) }
@@ -632,7 +632,7 @@ class MemoryTicker(
 
     private suspend fun doDaily(model: Model?, locale: String, timeZone: String) {
         if (io.zer0.common.ProcessWriteGate.restoring) {
-            Logger.d(TAG, "daily: 备份恢复进行中，跳过本次记忆流水线")
+            Logger.d(TAG, "daily: backup restore in progress, skipping this memory pipeline run")
             return
         }
         // v1.78 (H7): 用 compareAndSet 原子化 check-then-act,消除竞态
@@ -644,10 +644,10 @@ class MemoryTicker(
             // v1.0.53: 进度失效校验 — daily_state 记录完成但 compiled_sections 为空
             // (旧版 updateContent UPDATE 语义在空表上静默丢写),重置进度让编译重跑。
             if (completed.isNotEmpty() && !compiler.hasAnyCompiledSection()) {
-                Logger.w(TAG, "每日任务: checkpoint 存在但 compiled_sections 为空(旧版写入 bug),重置进度重跑")
+                Logger.w(TAG, "Daily task: a checkpoint exists but compiled_sections is empty (legacy write bug), resetting progress and rerunning")
                 completed = emptyMap()
             }
-            Logger.i(TAG, "每日任务开始 (${context.logicalDate})")
+            Logger.i(TAG, "Daily task started (${context.logicalDate})")
             var hasFailed = false
 
             // 审查修复 (B-5): Step 0 + Step 1 整段纳入 _compileTodayLock。
@@ -685,7 +685,7 @@ class MemoryTicker(
                             markStepRecovered("compileDaily")
                         } else {
                             hasFailed = true
-                            val err = IllegalArgumentException("无法计算昨天日期")
+                            val err = IllegalArgumentException("Cannot compute yesterday's date")
                             markFailure("compileDaily", err)
                             logStepError("compileDaily", err)
                         }
@@ -726,7 +726,7 @@ class MemoryTicker(
                 throw e
             } catch (e: Throwable) {
                 hasFailed = true
-                Logger.w(TAG, "assembleWeekFromDaily 失败: ${e.message}", e)
+                Logger.w(TAG, "assembleWeekFromDaily failed: ${e.message}", e)
             }
 
             // Step 3: rollDailyWindow——把滚出 N 日窗口的 daily 条目 fold 进 longterm 并删除源文件。
@@ -770,10 +770,10 @@ class MemoryTicker(
                                 .onSuccess { facts ->
                                     if (facts.isNotEmpty()) {
                                         resultOf { compiler.reconcileFactsSectionWithStore(facts, target) }
-                                            .onError { msg, t -> Logger.w(TAG, "facts 产物对账失败: ${t?.message ?: msg}") }
+                                            .onError { msg, t -> Logger.w(TAG, "Facts output reconciliation failed: ${t?.message ?: msg}") }
                                     }
                                 }
-                                .onError { msg, t -> Logger.w(TAG, "facts 表读取失败(对账跳过): ${t?.message ?: msg}") }
+                                .onError { msg, t -> Logger.w(TAG, "Failed to read the facts table (reconciliation skipped): ${t?.message ?: msg}") }
                         }
                         completed = completed + ("compileFacts" to Instant.now().toString())
                         writeDailyState(context, completed, null)
@@ -797,7 +797,7 @@ class MemoryTicker(
                     val result = deepProcessor.processDirtySessions(summaryManager, model, locale, runtimeContext.getConfig())
                     completed = completed + ("deepMemory" to Instant.now().toString())
                     if (result.processed > 0) {
-                        Logger.i(TAG, "deep-memory: ${result.processed} session, ${result.factsAdded} 条新事实")
+                        Logger.i(TAG, "deep-memory: ${result.processed} sessions, ${result.factsAdded} new facts")
                     }
                     writeDailyState(context, completed, null)
                     markSuccess("deepMemory")
@@ -813,7 +813,7 @@ class MemoryTicker(
 
             // 每日规则去重与 LLM 语义整合覆盖全部助手分库,不只默认 FactStore。
             val additionalStores = resultOf { getFactStoresForMaintenance() }
-                .onError { msg, t -> Logger.w(TAG, "读取助手记忆分库失败: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w(TAG, "Failed to read the assistant memory store: ${t?.message ?: msg}") }
                 .getOrNull()
                 .orEmpty()
             val maintenanceStores = (listOfNotNull(factStore) + additionalStores)
@@ -821,19 +821,19 @@ class MemoryTicker(
             for (store in maintenanceStores) {
                 resultOf { store.dedupPassAllSpaces() }
                     .onError { msg, t ->
-                        Logger.w(TAG, "每日记忆去重失败(${store.assistantId}): ${t?.message ?: msg}")
+                        Logger.w(TAG, "Daily memory dedup failed (${store.assistantId}): ${t?.message ?: msg}")
                     }
                     .onSuccess { count ->
-                        if (count > 0) Logger.i(TAG, "每日记忆去重(${store.assistantId}): 合并 $count 条")
+                        if (count > 0) Logger.i(TAG, "Daily memory dedup (${store.assistantId}): merged $count entries")
                     }
                 factConsolidator?.let { consolidator ->
                     resultOf { consolidator.consolidateAll(store) }
                         .onError { msg, t ->
-                            Logger.w(TAG, "每日 LLM 记忆整合失败(${store.assistantId}): ${t?.message ?: msg}")
+                            Logger.w(TAG, "Daily LLM memory consolidation failed (${store.assistantId}): ${t?.message ?: msg}")
                         }
                         .onSuccess { count ->
                             if (count > 0) {
-                                Logger.i(TAG, "每日 LLM 记忆整合(${store.assistantId}): 合并 $count 组")
+                                Logger.i(TAG, "Daily LLM memory consolidation (${store.assistantId}): merged $count groups")
                             }
                         }
                 }
@@ -843,17 +843,17 @@ class MemoryTicker(
             // 与写入时查重(快路径)互补,清理历史沉淀的重复;失败不影响主流程。
             reflectionRunner?.let { runner ->
                 resultOf { runner.runReflection(scope = target.scope, spaceId = target.spaceId) }
-                    .onError { msg, t -> Logger.w(TAG, "每日记忆反思失败: ${t?.message ?: msg}") }
+                    .onError { msg, t -> Logger.w(TAG, "Daily memory reflection failed: ${t?.message ?: msg}") }
             }
 
             if (hasFailed) {
                 val done = completed.keys.joinToString(", ")
-                Logger.w(TAG, "每日任务部分失败,已完成: [$done],下次 tick 重试未完成步骤")
+                Logger.w(TAG, "Daily task partially failed; completed: [$done]; unfinished steps will be retried on the next tick")
             } else {
                 _lastDailyJobDate = context.logicalDate
                 _lastDailyJobDateByTarget[context.stateKey] = context.logicalDate
                 writeDailyState(context, completed, Instant.now().toString())
-                Logger.i(TAG, "每日任务完成")
+                Logger.i(TAG, "Daily task complete")
             }
         } finally {
             // v1.78 (H7): AtomicBoolean 用 set(false) 释放
@@ -1038,14 +1038,14 @@ class MemoryTicker(
                         runtimeContext.getConfig(),
                     )
                 }.onError { msg, t ->
-                    Logger.w(TAG, "notifySessionEnd: processSession 失败: $msg", t)
+                    Logger.w(TAG, "notifySessionEnd: processSession failed: $msg", t)
                 }
             }
         } catch (e: CancellationException) {
             // v1.78 (H3): 必须重抛协程取消信号,否则会破坏协程取消语义
             throw e
         } catch (e: Throwable) {
-            Logger.w(TAG, "notifySessionEnd 后台失败: ${e.message}")
+            Logger.w(TAG, "notifySessionEnd background failure: ${e.message}")
         }
     }
 
@@ -1104,13 +1104,13 @@ class MemoryTicker(
         }
         when {
             queuedBehindStop ->
-                Logger.w(TAG, "记忆日检计时器正在停止，start 已排队:停止完成后会自动重启")
+                Logger.w(TAG, "Memory daily-check timer is stopping; start queued: it will restart automatically once the stop completes")
             started && !isTimerRunning() ->
-                Logger.w(TAG, "记忆日检计时器未能启动(scope 已取消或计时 job 已死)，本次 start 丢失")
+                Logger.w(TAG, "Memory daily-check timer could not start (scope cancelled or timer job dead); this start was lost")
             started && revivedDeadTimer ->
-                Logger.w(TAG, "记忆日检计时器此前已停摆(计时 job 不活跃)，本次 start 重建")
-            started -> Logger.i(TAG, "v3 已启动(turn-based,daily check timer ${DAILY_CHECK_INTERVAL_MS / 60000}min)")
-            else -> Logger.d(TAG, "start 忽略:记忆日检计时器已在运行")
+                Logger.w(TAG, "Memory daily-check timer had stalled (timer job inactive); rebuilt by this start")
+            started -> Logger.i(TAG, "v3 started (turn-based, daily check timer ${DAILY_CHECK_INTERVAL_MS / 60000}min)")
+            else -> Logger.d(TAG, "start ignored: the memory daily-check timer is already running")
         }
     }
 
@@ -1209,10 +1209,10 @@ class MemoryTicker(
         }
         when {
             restarted && isTimerRunning() ->
-                Logger.i(TAG, "记忆日检计时器已重启(stop 期间收到过 start)")
+                Logger.i(TAG, "Memory daily-check timer restarted (a start was received during stop)")
             restarted ->
-                Logger.w(TAG, "记忆日检计时器未能重启(scope 已取消)，stop 期间的 start 请求丢失")
-            else -> Logger.i(TAG, "记忆日检计时器已停止")
+                Logger.w(TAG, "Memory daily-check timer could not restart (scope cancelled); the start request received during stop was lost")
+            else -> Logger.i(TAG, "Memory daily-check timer stopped")
         }
     }
 
@@ -1224,7 +1224,7 @@ class MemoryTicker(
         if (_stopped) return
         // B-7: 备份恢复(文件级替换 DB)窗口内跳过写入型编译,避免写丢失。
         if (io.zer0.common.ProcessWriteGate.restoring) {
-            Logger.d(TAG, "tick: 备份恢复进行中,跳过本次记忆编译")
+            Logger.d(TAG, "tick: backup restore in progress, skipping this memory compile")
             return
         }
         if (!isMemoryEnabled()) return
@@ -1290,7 +1290,7 @@ class MemoryTicker(
         if (_stopped) return
         if (!isMemoryEnabled()) return
         if (io.zer0.common.ProcessWriteGate.restoring) {
-            Logger.d(TAG, "forceCompileNow: 备份恢复进行中，跳过本次记忆编译")
+            Logger.d(TAG, "forceCompileNow: backup restore in progress, skipping this memory compile")
             return
         }
         // 1. 强制重跑 compileFacts(从 30 天摘要提取 fact,忽略指纹缓存外的 checkpoint)
@@ -1310,7 +1310,7 @@ class MemoryTicker(
                     markFailure("compileFacts", t)
                     logStepError("compileFacts(force)", t)
                 } else {
-                    Logger.w(TAG, "compileFacts(force) 失败: $msg")
+                    Logger.w(TAG, "compileFacts(force) failed: $msg")
                 }
             }
         }
@@ -1320,7 +1320,7 @@ class MemoryTicker(
         resultOf {
             val result = deepProcessor.processDirtySessions(summaryManager, model, locale, runtimeContext.getConfig())
             if (result.processed > 0) {
-                Logger.i(TAG, "forceCompileNow: deep-memory ${result.processed} session, ${result.factsAdded} 新事实")
+                Logger.i(TAG, "forceCompileNow: deep-memory ${result.processed} sessions, ${result.factsAdded} new facts")
             }
             markSuccess("deepMemory")
             markStepRecovered("deepMemory(force)")
@@ -1329,7 +1329,7 @@ class MemoryTicker(
                 markFailure("deepMemory", t)
                 logStepError("deepMemory(force)", t)
             } else {
-                Logger.w(TAG, "deepMemory(force) 失败: $msg")
+                Logger.w(TAG, "deepMemory(force) failed: $msg")
             }
         }
         // 3. 刷新 today 编译记忆(让 system prompt 下次注入用最新内容)

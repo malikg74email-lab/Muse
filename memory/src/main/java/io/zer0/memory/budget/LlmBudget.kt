@@ -167,8 +167,8 @@ object LlmBudget {
         if (highCost >= budget) {
             Logger.w(
                 DEFAULT_TAG,
-                "LlmBudget.truncateBySegments: 高优先级段(facts+longterm)本身超预算" +
-                    "(需要 $highCost token >= 预算 $budget), 回退整段截断",
+                "LlmBudget.truncateBySegments: the high-priority segments (facts+longterm) alone exceed the budget" +
+                    "($highCost tokens needed >= budget $budget), falling back to whole-text truncation",
             )
             return segments
         }
@@ -190,15 +190,15 @@ object LlmBudget {
                     val inChars = full.length - trimmed.length
                     Logger.w(
                         DEFAULT_TAG,
-                        "LlmBudget.truncateBySegments: 预算不足,裁剪段 '${segments[idx].heading}' " +
-                            "(drop $inChars 字符 / ${full.length} 字符)",
+                        "LlmBudget.truncateBySegments: budget insufficient, trimming segment '${segments[idx].heading}' " +
+                            "(drop $inChars chars / ${full.length} chars)",
                     )
                 }
                 if (trimmed.isBlank()) {
                     // 连标题都没保住,直接丢弃该段(已记日志)
                     Logger.w(
                         DEFAULT_TAG,
-                        "LlmBudget.truncateBySegments: 预算不足,丢弃段 '${segments[idx].heading}'",
+                        "LlmBudget.truncateBySegments: budget insufficient, discarding segment '${segments[idx].heading}'",
                     )
                     continue
                 }

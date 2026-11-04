@@ -41,7 +41,7 @@ class PipelineLog(
                 file.appendText(line + "\n")
             }.onFailure {
                 // 观测失败不影响管线
-                Logger.w(TAG, "pipeline_log 写入失败: ${it.message}")
+                Logger.w(TAG, "pipeline_log write failed: ${it.message}")
             }
         }
     }
@@ -89,7 +89,7 @@ class PipelineLog(
         runCatching { if (rotated.exists()) rotated.delete() }
         if (!file.renameTo(rotated)) {
             // rename 失败:截断当前文件保底,避免无限增长
-            Logger.w(TAG, "pipeline_log 滚动失败,截断当前文件")
+            Logger.w(TAG, "pipeline_log roll failed; truncating the current file")
             file.writeText("")
         }
     }

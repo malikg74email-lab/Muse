@@ -145,11 +145,11 @@ class OpenAiRealtimeAsrController(
         // dispose 后必须保持终态；否则 scope 已取消但 start 仍会把 state 改成 Connecting，造成 UI 永久假连接。
         if (isDisposed.get()) return
         if (_state.value.status == ASRStatus.Listening) {
-            Logger.w(TAG, "已在录音,忽略重复 start")
+            Logger.w(TAG, "Already recording; ignoring duplicate start")
             return
         }
         if (config.apiKey.isBlank()) {
-            Logger.w(TAG, "OpenAI Realtime ASR 未配置 apiKey")
+            Logger.w(TAG, "OpenAI Realtime ASR apiKey not configured")
             _state.update { it.copy(status = ASRStatus.Error, errorMessage = asrError(R.string.asr_error_no_apikey)) }
             return
         }
@@ -223,7 +223,7 @@ class OpenAiRealtimeAsrController(
             // session.updated 可能延迟,直接进入 Listening 即可)
             val sessionUpdate = buildSessionUpdateMessage()
             if (!ws.send(sessionUpdate)) {
-                Logger.w(TAG, "发送 session.update 失败")
+                Logger.w(TAG, "Sending session.update failed")
                 cleanupConnection()
                 if (isInitial) {
                     _state.update {
@@ -241,7 +241,7 @@ class OpenAiRealtimeAsrController(
             // P2-13: 握手期间用户可能已 stop/dispose — 状态不再处于 Connecting 时放弃启动录音
             if (isInitial) {
                 if (_state.value.status != ASRStatus.Connecting) {
-                    Logger.d(TAG, "握手完成但状态已变化(${_state.value.status}),放弃启动录音")
+                    Logger.d(TAG, "Handshake complete but the state has changed (${_state.value.status}); abandoning recording start")
                     cleanupConnection()
                     return false
                 }
@@ -249,7 +249,7 @@ class OpenAiRealtimeAsrController(
                 _state.update { it.copy(status = ASRStatus.Listening, errorMessage = null) }
             } else {
                 if (_state.value.status != ASRStatus.Connecting) {
-                    Logger.d(TAG, "重连完成但状态已变化(${_state.value.status}),放弃恢复")
+                    Logger.d(TAG, "Reconnect complete but the state has changed (${_state.value.status}); abandoning recovery")
                     return false
                 }
                 // 重连成功:重置退避计数,补发缓冲的音频帧
@@ -259,7 +259,7 @@ class OpenAiRealtimeAsrController(
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "establishConnection 异常: ${e.message}")
+            Logger.w(TAG, "establishConnection exception: ${e.message}")
             cleanupConnection()
             if (isInitial) {
                 _state.update {
@@ -293,16 +293,16 @@ class OpenAiRealtimeAsrController(
         }
         if (status == ASRStatus.Stopping) {
             // 用户主动停止中,WebSocket 关闭属正常收尾,不重连
-            Logger.d(TAG, "Stopping 中 WebSocket 关闭,不重连: code=$code reason=$reason")
+            Logger.d(TAG, "WebSocket closed while Stopping, not reconnecting: code=$code reason=$reason")
             return
         }
         if (status == ASRStatus.Connecting) {
             // establishConnection 内部 cleanupConnection 触发的 close,
             // 由 establishConnection/attemptReconnect 自己处理失败,避免重连次数双倍递增
-            Logger.d(TAG, "Connecting 中 WebSocket 关闭,由 establishConnection 处理: code=$code reason=$reason")
+            Logger.d(TAG, "WebSocket closed while Connecting, handled by establishConnection: code=$code reason=$reason")
             return
         }
-        Logger.w(TAG, "WebSocket 断开,触发重连: code=$code reason=$reason (attempt=$reconnectAttempt)")
+        Logger.w(TAG, "WebSocket disconnected, triggering reconnect: code=$code reason=$reason (attempt=$reconnectAttempt)")
         scheduleReconnect()
     }
 
@@ -315,12 +315,12 @@ class OpenAiRealtimeAsrController(
     private fun scheduleReconnect() {
         if (isDisposed.get()) return
         if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
-            Logger.w(TAG, "重连超过 $MAX_RECONNECT_ATTEMPTS 次,放弃,切 Error 状态")
+            Logger.w(TAG, "Reconnect exceeded $MAX_RECONNECT_ATTEMPTS attempts; giving up and switching to the Error state")
             failAsr(asrError(R.string.asr_reconnect_exhausted))
             return
         }
         val delayMs = minOf(MAX_RECONNECT_DELAY_MS, 1000L * (1L shl reconnectAttempt))
-        Logger.w(TAG, "调度第 ${reconnectAttempt + 1} 次重连,${delayMs}ms 后执行")
+        Logger.w(TAG, "Scheduling reconnect attempt ${reconnectAttempt + 1}, executing in ${delayMs}ms")
         _state.update {
             it.copy(
                 status = ASRStatus.Reconnecting,
@@ -341,7 +341,7 @@ class OpenAiRealtimeAsrController(
         // 退避期间用户可能手动 stop 或 dispose,校验状态
         val status = _state.value.status
         if (status != ASRStatus.Reconnecting) {
-            Logger.d(TAG, "退避期间状态变化($status),取消重连")
+            Logger.d(TAG, "State changed during backoff ($status); cancelling reconnect")
             return
         }
         // 临时切 Connecting 表示正在建立连接(退避已完成)
@@ -349,14 +349,14 @@ class OpenAiRealtimeAsrController(
         val success = establishConnection(isInitial = false)
         if (!success) {
             // 重连失败:继续退避(状态会被 scheduleReconnect 切回 Reconnecting)
-            Logger.w(TAG, "重连失败 (attempt=$reconnectAttempt),继续调度")
+            Logger.w(TAG, "Reconnect failed (attempt=$reconnectAttempt), continuing to schedule")
             scheduleReconnect()
         }
     }
 
     /** 任务 1:重连成功回调 — 重置退避计数,补发缓冲的音频帧。 */
     private fun onReconnected() {
-        Logger.i(TAG, "重连成功,补发缓冲音频帧(${audioBuffer.size} 帧,$audioBufferBytes 字节)")
+        Logger.i(TAG, "Reconnect succeeded, re-sending buffered audio frames (${audioBuffer.size} frames, $audioBufferBytes bytes)")
         reconnectAttempt = 0
         _state.update { it.copy(status = ASRStatus.Listening, errorMessage = null) }
         flushAudioBuffer()
@@ -373,7 +373,7 @@ class OpenAiRealtimeAsrController(
      */
     private fun flushAudioBuffer() {
         val ws = webSocket ?: run {
-            Logger.w(TAG, "flushAudioBuffer: webSocket 为空,丢弃缓冲")
+            Logger.w(TAG, "flushAudioBuffer: webSocket is null, discarding the buffer")
             clearAudioBuffer()
             return
         }
@@ -390,7 +390,7 @@ class OpenAiRealtimeAsrController(
                 val audioBase64 = android.util.Base64.encodeToString(chunk, android.util.Base64.NO_WRAP)
                 val appendMsg = buildInputAudioBufferAppendMessage(audioBase64)
                 if (!ws.send(appendMsg)) {
-                    Logger.w(TAG, "补发音频帧失败,剩余 ${audioBuffer.size} 帧丢弃")
+                    Logger.w(TAG, "Re-sending audio frames failed; discarding the remaining ${audioBuffer.size} frames")
                     break
                 }
             }
@@ -427,7 +427,7 @@ class OpenAiRealtimeAsrController(
         try {
             record.startRecording()
         } catch (e: IllegalStateException) {
-            Logger.w(TAG, "AudioRecord 启动失败: ${e.message}", e)
+            Logger.w(TAG, "AudioRecord start failed: ${e.message}", e)
             record.release()
             audioRecord = null
             _state.update { it.copy(status = ASRStatus.Error, errorMessage = asrError(R.string.asr_error_recording_start_failed)) }
@@ -453,7 +453,7 @@ class OpenAiRealtimeAsrController(
 
                         // 2. 本地 VAD(若启用):静音超阈值主动触发 stop
                         if (vadDetector?.processFrame(chunk, read, amp) == true) {
-                            Logger.d(TAG, "本地 VAD 触发,主动停止")
+                            Logger.d(TAG, "Local VAD triggered; stopping proactively")
                             scope.launch { stop() }
                             break
                         }
@@ -467,7 +467,7 @@ class OpenAiRealtimeAsrController(
                     } else if (read == 0) {
                         delay(10L)
                     } else if (read < 0) {
-                        Logger.w(TAG, "AudioRecord.read 错误: $read")
+                        Logger.w(TAG, "AudioRecord.read error: $read")
                         if (shouldReportAsrCaptureFailure(_state.value.status, coroutineContext[Job]?.isActive == true)) {
                             failAsr(asrError(R.string.asr_error_recording_read_failed, read))
                         }
@@ -478,7 +478,7 @@ class OpenAiRealtimeAsrController(
                 throw cancelled
             } catch (error: Exception) {
                 if (shouldReportAsrCaptureFailure(_state.value.status, coroutineContext[Job]?.isActive == true)) {
-                    Logger.w(TAG, "录音循环异常: ${error.message}", error)
+                    Logger.w(TAG, "Recording loop exception: ${error.message}", error)
                     failAsr(error.message ?: "AudioRecord read failed")
                 }
             }
@@ -496,10 +496,10 @@ class OpenAiRealtimeAsrController(
             )
             val appendMsg = buildInputAudioBufferAppendMessage(audioBase64)
             if (!ws.send(appendMsg)) {
-                Logger.w(TAG, "发送音频块失败")
+                Logger.w(TAG, "Sending audio chunk failed")
             }
         } else {
-            Logger.d(TAG, "背压超限,丢帧 queueSize=${ws?.queueSize()}")
+            Logger.d(TAG, "Backpressure limit exceeded, dropping frames queueSize=${ws?.queueSize()}")
         }
     }
 
@@ -511,7 +511,7 @@ class OpenAiRealtimeAsrController(
                 audioBuffer.addLast(frame)
                 audioBufferBytes += frame.size
             } else {
-                Logger.w(TAG, "重连期间音频缓冲已满($audioBufferBytes 字节),丢帧")
+                Logger.w(TAG, "Audio buffer full during reconnect ($audioBufferBytes bytes), dropping frames")
             }
         }
     }
@@ -551,7 +551,7 @@ class OpenAiRealtimeAsrController(
             "error" -> {
                 val errObj = event.optObject("error")
                 val msg = errObj?.optString("message") ?: event.toString()
-                Logger.w(TAG, "Realtime ASR 错误: $msg")
+                Logger.w(TAG, "Realtime ASR error: $msg")
                 failAsr(msg)
             }
             "session.created", "session.updated" -> {
@@ -596,7 +596,7 @@ class OpenAiRealtimeAsrController(
         scope.launch {
             delay(STOP_TIMEOUT_MS)
             if (_state.value.status == ASRStatus.Stopping) {
-                Logger.w(TAG, "stop() 等待收尾超时,强制切 Idle")
+                Logger.w(TAG, "stop() timed out waiting for wrap-up, forcing Idle")
                 val full = buildTranscript()
                 _state.update { it.copy(status = ASRStatus.Idle, transcript = full) }
                 cleanupConnection()
@@ -882,7 +882,7 @@ private class RealtimeSession(
     var onDisconnected: ((code: Int, reason: String) -> Unit)? = null
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
-        Logger.d(TAG, "WebSocket 连接已建立")
+        Logger.d(TAG, "WebSocket connection established")
     }
 
     override fun onMessage(webSocket: WebSocket, text: String) {
@@ -893,7 +893,7 @@ private class RealtimeSession(
             // 持续派发给 Controller 处理(transcription.delta / completed / error)
             onEvent(obj)
         }.onError { message, throwable ->
-            Logger.w(TAG, "解析服务端消息失败: ${throwable?.message ?: message}")
+            Logger.w(TAG, "Parsing the server message failed: ${throwable?.message ?: message}")
         }
     }
 
@@ -906,14 +906,14 @@ private class RealtimeSession(
     }
 
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-        Logger.w(TAG, "WebSocket 关闭: code=$code reason=$reason")
+        Logger.w(TAG, "WebSocket closed: code=$code reason=$reason")
         onDisconnected?.invoke(code, reason)
         closeChannel()
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-        Logger.w(TAG, "WebSocket 失败: ${t.message}")
-        onDisconnected?.invoke(FAILURE_CODE, t.message ?: "WebSocket 连接失败")
+        Logger.w(TAG, "WebSocket failure: ${t.message}")
+        onDisconnected?.invoke(FAILURE_CODE, t.message ?: "WebSocket connection failed")
         closeChannel()
     }
 
@@ -931,10 +931,10 @@ private class RealtimeSession(
                 val errMsg = (event["error"] as? JsonObject)?.let {
                     (it["message"] as? JsonPrimitive)?.content
                 } ?: event.toString()
-                Logger.w(TAG, "等待 $type 时收到 error: $errMsg")
+                Logger.w(TAG, "Received error while waiting for $type: $errMsg")
                 return null
             }
-            Logger.d(TAG, "等待 $type 时丢弃非目标事件: $eventType")
+            Logger.d(TAG, "Discarding a non-target event while waiting for $type: $eventType")
         }
         return null
     }

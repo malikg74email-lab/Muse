@@ -84,11 +84,11 @@ class StreamGuardTest {
         val events = withTimeout(10_000) { provider().streamChat(request()).toList() }
 
         assertTrue(
-            "空 name tool call 的 arguments 应恢复为正文",
+            "The arguments of an empty-name tool call should be recovered as body text",
             events.any { it is ChatStreamEvent.ContentDelta && it.delta.contains("北京") },
         )
-        assertFalse("不应输出 ToolCallDelta", events.any { it is ChatStreamEvent.ToolCallDelta })
-        assertTrue("应以 Done 结束", events.last() is ChatStreamEvent.Done)
+        assertFalse("Should not output ToolCallDelta", events.any { it is ChatStreamEvent.ToolCallDelta })
+        assertTrue("Should end with Done", events.last() is ChatStreamEvent.Done)
     }
 
     @Test
@@ -104,9 +104,9 @@ class StreamGuardTest {
 
         val events = withTimeout(10_000) { provider().streamChat(request()).toList() }
 
-        assertTrue("应输出 reasoning", events.any { it is ChatStreamEvent.ReasoningDelta })
-        assertTrue("应输出 content", events.any { it is ChatStreamEvent.ContentDelta && it.delta == "最终回答内容" })
-        assertTrue("应以 Done 结束", events.last() is ChatStreamEvent.Done)
+        assertTrue("Should output reasoning", events.any { it is ChatStreamEvent.ReasoningDelta })
+        assertTrue("Should output content", events.any { it is ChatStreamEvent.ContentDelta && it.delta == "最终回答内容" })
+        assertTrue("Should end with Done", events.last() is ChatStreamEvent.Done)
     }
 
     @Test
@@ -121,7 +121,7 @@ class StreamGuardTest {
         val events = withTimeout(10_000) { provider().streamChat(request()).toList() }
 
         assertTrue(events.any { it is ChatStreamEvent.ContentDelta })
-        assertTrue("空 finishReason 后应正常 Done", events.last() is ChatStreamEvent.Done)
+        assertTrue("Should finish with Done normally after an empty finishReason", events.last() is ChatStreamEvent.Done)
     }
 
     @Test
@@ -150,14 +150,14 @@ class StreamGuardTest {
         val events = withTimeout(10_000) { provider().streamChat(request()).toList() }
 
         assertTrue(
-            "非流式回退应把有效工具名回传给上层",
+            "The non-streaming fallback should pass the valid tool name back to the caller",
             events.any { it is ChatStreamEvent.ToolCallDelta && it.name == "echo" },
         )
         assertTrue(
-            "非流式回退应把工具参数回传给上层",
+            "The non-streaming fallback should pass the tool arguments back to the caller",
             events.any { it is ChatStreamEvent.ToolCallDelta && it.argumentsDelta?.contains("\"ok\"") == true },
         )
-        assertTrue("回退完成后 Flow 必须发出 Done", events.last() is ChatStreamEvent.Done)
+        assertTrue("After the fallback completes, the Flow must emit Done", events.last() is ChatStreamEvent.Done)
     }
 
     @Test
@@ -184,11 +184,11 @@ class StreamGuardTest {
         val events = withTimeout(10_000) { provider().streamChat(request()).toList() }
 
         assertTrue(
-            "回退连续失败必须把明确错误传给上层",
+            "Consecutive fallback failures must pass a clear error to the caller",
             events.any { it is ChatStreamEvent.Error },
         )
         assertFalse(
-            "回退失败不能伪装成正常 Done-only 完成",
+            "A fallback failure must not masquerade as a normal Done-only completion",
             events.last() is ChatStreamEvent.Done,
         )
     }
@@ -234,15 +234,15 @@ class StreamGuardTest {
         val events = withTimeout(15_000) { provider().streamChat(request()).toList() }
 
         assertFalse(
-            "协议畸形首次不应把 reasoning 当正文（避免思考泄漏）",
+            "On the first protocol malformation, reasoning should not be treated as body text (to avoid thinking leakage)",
             events.any { it is ChatStreamEvent.ContentDelta && it.delta.contains("内部推理") },
         )
         assertTrue(
-            "应报错以便上层重试",
+            "Should report an error so the caller can retry",
             events.any { it is ChatStreamEvent.Error },
         )
         assertTrue(
-            "reasoning 仍应作为思考过程下发",
+            "Reasoning should still be delivered as thinking process",
             events.any { it is ChatStreamEvent.ReasoningDelta },
         )
     }
@@ -276,11 +276,11 @@ class StreamGuardTest {
         val events = withTimeout(15_000) { provider().streamChat(request()).toList() }
 
         assertTrue(
-            "应回传工具调用给上层",
+            "Should pass the tool call back to the caller",
             events.any { it is ChatStreamEvent.ToolCallDelta },
         )
         assertFalse(
-            "有工具调用待执行时，reasoning 不得兜底成正文",
+            "When a tool call is pending execution, reasoning must not fall back into body text",
             events.any { it is ChatStreamEvent.ContentDelta && it.delta.contains("内部推理") },
         )
     }
@@ -311,7 +311,7 @@ class StreamGuardTest {
         val events = withTimeout(15_000) { provider().streamChat(request()).toList() }
 
         assertTrue(
-            "普通停止原因下 reasoning-only 仍应兜底成正文，避免空回复",
+            "Under a normal stop reason, reasoning-only should still fall back into body text to avoid an empty reply",
             events.any { it is ChatStreamEvent.ContentDelta && it.delta.contains("思考内容") },
         )
     }

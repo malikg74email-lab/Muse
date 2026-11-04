@@ -38,7 +38,7 @@ class LlmFactConsolidator(
     suspend fun consolidate(store: FactStore, scope: String, spaceId: String, maxGroups: Int = DEFAULT_MAX_GROUPS): Int =
         withContext(Dispatchers.IO) {
             val groups = resultOf { store.findSimilarGroups(scope, spaceId, maxGroups) }
-                .onError { msg, t -> Logger.w(TAG, "查找相似记忆簇失败: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w(TAG, "Failed to find similar memory clusters: ${t?.message ?: msg}") }
                 .getOrNull() ?: return@withContext 0
 
             var mergedCount = 0
@@ -63,12 +63,12 @@ class LlmFactConsolidator(
                         scope = scope,
                         spaceId = spaceId,
                     )
-                }.onError { msg, t -> Logger.w(TAG, "原子合并记忆失败: ${t?.message ?: msg}") }
+                }.onError { msg, t -> Logger.w(TAG, "Atomic memory merge failed: ${t?.message ?: msg}") }
                     .getOrNull()
                 if (removed != null && removed >= 0) mergedCount++
             }
             if (mergedCount > 0) {
-                Logger.i(TAG, "LLM 记忆整合: 合并 $mergedCount 组重复记忆 (scope=$scope)")
+                Logger.i(TAG, "LLM memory consolidation: merged $mergedCount groups of duplicate memories (scope=$scope)")
             }
             mergedCount
         }
@@ -80,7 +80,7 @@ class LlmFactConsolidator(
      */
     suspend fun consolidateAll(store: FactStore, maxGroups: Int = DEFAULT_MAX_GROUPS): Int {
         val pairs = resultOf { store.listScopeSpacePairs() }
-            .onError { msg, t -> Logger.w(TAG, "枚举记忆空间失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to enumerate memory spaces: ${t?.message ?: msg}") }
             .getOrNull() ?: return 0
         var total = 0
         for ((scope, spaceId) in pairs) {
@@ -108,7 +108,7 @@ class LlmFactConsolidator(
         } catch (e: TimeoutCancellationException) {
             // 客户端自身的超时也抛 TimeoutCancellationException(带自己的 coroutine),
             // 它不属于调用方的取消,按“本次没合成出来”降级;真正的取消继续向上抛。
-            Logger.w(TAG, "手动合并生成超时: ${e.message}")
+            Logger.w(TAG, "Manual merge generation timed out: ${e.message}")
             null
         }
     }
@@ -127,13 +127,13 @@ class LlmFactConsolidator(
     private suspend fun mergeTexts(texts: List<String>, maxTokens: Int, timeoutMs: Long): String? {
         val totalLength = texts.sumOf { it.length }
         val user = buildString {
-            appendLine("以下是多条内容重复或高度相似的记忆,请把它们合并成一条:保留所有关键信息")
-            appendLine("(人名、时间、地点、数字、事件),去重,语言自然简洁,不要遗漏任何事实细节。")
-            appendLine("如果发现这些记忆其实内容不同、不应该合并,请只输出一个字符串 __SKIP__。")
+            appendLine("Below are several memories whose content duplicates or is highly similar. Merge them into one: keep all key information")
+            appendLine("(names, times, places, numbers, events), remove duplicates, use natural concise language, and do not omit any factual detail.")
+            appendLine("If these memories actually differ in content and should not be merged, output only the string __SKIP__.")
             appendLine()
             texts.forEachIndexed { idx, text -> appendLine("${idx + 1}. $text") }
             appendLine()
-            append("请直接输出合并后的一条记忆,不要任何前缀、编号或引号:")
+            append("Output the single merged memory directly, with no prefix, numbering, or quotation marks:")
         }
         val result = resultOf {
             withTimeoutOrNull(timeoutMs) {
@@ -146,7 +146,7 @@ class LlmFactConsolidator(
                     timeoutMs = timeoutMs,
                 ).trim()
             }
-        }.onError { msg, t -> Logger.w(TAG, "LLM 合并记忆失败: ${t?.message ?: msg}") }
+        }.onError { msg, t -> Logger.w(TAG, "LLM memory merge failed: ${t?.message ?: msg}") }
             .getOrNull() ?: return null
 
         // 启发式护栏: 显式跳过 / 异常输出 / 疑似未合并原样输出
@@ -184,7 +184,7 @@ class LlmFactConsolidator(
         /** 手动合并超时:输入更长,给模型比自动路径更宽的时间。 */
         private const val MANUAL_MERGE_TIMEOUT_MS = 45_000L
 
-        private const val SYSTEM_PROMPT = "你是记忆整理助手。你的任务是把同一簇的重复记忆合并成一条:" +
-            "保留所有关键信息,去重,语言自然简洁。宁可不合并,也不要编造或丢失关键信息。"
+        private const val SYSTEM_PROMPT = "You are a memory organization assistant. Your task is to merge the duplicate memories in one cluster into a single memory:" +
+            "Keep all key information, remove duplicates, and use natural concise language. Rather than not merging, never fabricate or lose key information."
     }
 }

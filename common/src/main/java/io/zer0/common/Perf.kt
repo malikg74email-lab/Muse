@@ -106,7 +106,7 @@ object Perf {
             try {
                 cb(name, elapsedMs)
             } catch (t: Throwable) {
-                Logger.w("Perf", "sink 回调异常: ${t.message}", t)
+                Logger.w("Perf", "sink callback exception: ${t.message}", t)
             }
         }
         if (elapsedMs >= SLOW_THRESHOLD_MS) {

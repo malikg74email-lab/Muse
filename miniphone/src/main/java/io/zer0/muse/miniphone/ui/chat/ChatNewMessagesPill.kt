@@ -102,7 +102,7 @@ internal fun ChatNewMessagesPill(count: Int, onClick: () -> Unit, modifier: Modi
 }
 
 /** 胶囊上的字:条数 + 一句「有几条没看」。 */
-internal fun newMessagePillLabel(count: Int): String = "$count 条新消息"
+internal fun newMessagePillLabel(count: Int): String = "$count new messages"
 
 /** 判定「贴底」允许的像素级偏差:滚动停稳时未必严格落在整数像素上。 */
 private const val BOTTOM_TOLERANCE_PX: Int = 2

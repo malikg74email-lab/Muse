@@ -88,11 +88,11 @@ class NotificationMemoryDigest(
         model: Model? = null,
         locale: String = "zh-CN",
     ): DigestResult = mutex.withLock {
-        if (notifications.isEmpty()) return@withLock DigestResult(skipped = true, reason = "无通知")
+        if (notifications.isEmpty()) return@withLock DigestResult(skipped = true, reason = "No notifications")
         val fingerprint = fingerprintOf(notifications)
         synchronized(processedFingerprints) {
             if (processedFingerprints.containsKey(fingerprint)) {
-                return@withLock DigestResult(skipped = true, reason = "该批通知已梳理")
+                return@withLock DigestResult(skipped = true, reason = "This batch of notifications has already been digested")
             }
         }
 
@@ -118,13 +118,13 @@ class NotificationMemoryDigest(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "通知梳理 LLM 调用失败: ${e.message}", e)
-            return@withLock DigestResult(skipped = true, reason = "LLM 调用失败")
+            Logger.w(TAG, "Notification digest LLM call failed: ${e.message}", e)
+            return@withLock DigestResult(skipped = true, reason = "LLM call failed")
         }
         val parsed = parseResult(raw)
         if (parsed == null || parsed.facts.isEmpty()) {
             markProcessed(fingerprint)
-            return@withLock DigestResult(skipped = true, reason = "无可记内容")
+            return@withLock DigestResult(skipped = true, reason = "Nothing worth recording")
         }
 
         // 落库:source=notification,便于用户识别与清理；写入侧再做相似度去重。
@@ -142,11 +142,11 @@ class NotificationMemoryDigest(
                 )
             }
         val inserted = runCatching { factStore.addBatch(entries, scope, spaceId) }
-            .onFailure { Logger.w(TAG, "通知事实落库失败: ${it.message}", it) }
+            .onFailure { Logger.w(TAG, "Failed to store notification facts: ${it.message}", it) }
             .getOrDefault(0)
 
         markProcessed(fingerprint)
-        Logger.i(TAG, "通知梳理完成: 输入 ${notifications.size} 条 → 落库 $inserted 条")
+        Logger.i(TAG, "Notification digest complete: ${notifications.size} notifications in → $inserted facts stored")
         DigestResult(extracted = inserted)
     }
 
@@ -163,7 +163,7 @@ class NotificationMemoryDigest(
     }
 
     private fun buildUserContent(notifications: List<NotificationInput>): String = buildString {
-        appendLine("## 最近收到的通知")
+        appendLine("## Recent notifications")
         appendLine()
         notifications.sortedBy { it.timestamp }.forEach { n ->
             val app = n.appLabel.ifBlank { n.packageName }
@@ -183,7 +183,7 @@ class NotificationMemoryDigest(
             s = s.substring(start, end + 1)
         }
         return runCatching { json.decodeFromString(DigestJson.serializer(), s) }
-            .onFailure { Logger.w(TAG, "通知梳理 JSON 解析失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Notification digest JSON parse failed: ${it.message}") }
             .getOrNull()
     }
 
@@ -207,7 +207,7 @@ class NotificationMemoryDigest(
             val isZh = locale.startsWith("zh")
             val existingSection = if (!existingPreview.isNullOrBlank()) {
                 if (isZh) {
-                    "\n## 已有记忆（避免重复）\n\n$existingPreview\n"
+                    "\n## Existing memories (avoid duplicates)\n\n$existingPreview\n"
                 } else {
                     "\n## Existing memories (avoid duplicates)\n\n$existingPreview\n"
                 }
@@ -216,31 +216,31 @@ class NotificationMemoryDigest(
             }
             return if (isZh) {
                 """
-你是一个记忆整理助手。用户希望助手「记得」他手机上收到的通知，并能在之后自然提起。
-下面给你用户最近收到的一批通知，请从中提炼值得长期记住的事实。
+You are a memory organizer. The user wants the assistant to REMEMBER notifications received on their phone.
+Below is a batch of recent notifications. Extract facts worth remembering long-term.
 
 $existingSection
-## 值得记的（尽量多记）
-- 快递/物流、订单状态、外卖进度
-- 日程提醒、会议、约会、航班车次
-- 账单/缴费/还款提醒、金额与截止日期
-- 健康提醒（吃药、体检、运动）
-- 验证码、预约确认、取件码等有时效的具体信息
-- 用户与他人的约定、待办事项
+## Worth remembering (prefer more)
+- Deliveries, orders, food progress
+- Calendar reminders, meetings, flights/trains
+- Bills, payments, deadlines with amounts
+- Health reminders (medication, checkups)
+- Verification codes, appointment/parcel pickup codes
+- Commitments and to-dos
 
-## 不值得记的（剔除）
-- 纯营销推广、广告、优惠券推送
-- 新闻资讯、天气播报（除非用户明显关心）
-- 社交点赞、关注、评论提醒
-- 系统更新、App 版本提示
+## Not worth remembering (drop)
+- Pure marketing, ads, coupons
+- News, generic weather
+- Social likes/follows/comments
+- System or app updates
 
-## 输出要求
-- 每条事实用一句独立的、自足的中文短句表达（脱离上下文也能看懂）
-- 合并同一事项的多条通知（如同一快递的多次更新只记最终状态）
-- 与「已有记忆」重复的不要重复输出
-- 只输出 JSON，不要任何额外说明或 markdown 围栏：
-{"facts": ["事实1", "事实2"]}
-如果整批通知都不值得记，返回 {"facts": []}
+## Output
+- One self-contained sentence per fact
+- Merge multiple notifications about the same item
+- Skip anything already in "Existing memories"
+- JSON only, no markdown fences:
+{"facts": ["fact 1", "fact 2"]}
+If nothing is worth remembering, return {"facts": []}
                 """.trimIndent()
             } else {
                 """

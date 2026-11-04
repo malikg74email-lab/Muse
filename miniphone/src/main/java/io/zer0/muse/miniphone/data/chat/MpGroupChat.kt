@@ -26,7 +26,7 @@ internal fun normalizeGroupTitle(raw: String): String = raw.trim().take(GROUP_TI
 internal const val MIN_GROUP_MEMBERS: Int = 2
 
 /** 群名里名字之间的分隔符。 */
-internal const val GROUP_TITLE_SEPARATOR: String = "、"
+internal const val GROUP_TITLE_SEPARATOR: String = ", "
 
 /** 群名里最多逐个列几个人名;超过这个数就收成「阿远、小满等 5 人」。 */
 internal const val GROUP_TITLE_MAX_NAMES: Int = 3
@@ -49,7 +49,7 @@ internal fun groupTitleOf(memberNames: List<String>): String {
 }
 
 /** 收口写法里的「等 N 人」——N 是全部角色数。 */
-internal fun groupTitleTailOf(personCount: Int): String = "等 $personCount 人"
+internal fun groupTitleTailOf(personCount: Int): String = " and $personCount people"
 
 /** 收口时逐个列出来的名字个数。 */
 private const val GROUP_TITLE_TAIL_NAMES: Int = 2

@@ -106,10 +106,10 @@ internal fun assembleShellState(threads: List<MpThreadEntity>, characters: List<
 }
 
 /** 群里在预览行前的标记。 */
-internal const val GROUP_PREVIEW_MARK: String = "[群]"
+internal const val GROUP_PREVIEW_MARK: String = "[Group]"
 
 /** 群名空着时的兜底:宁可叫「群聊」,也不让一行会话没有名字。 */
-internal const val UNTITLED_GROUP_NAME: String = "群聊"
+internal const val UNTITLED_GROUP_NAME: String = "Group chat"
 
 /** 群会话的预览行:带出 [GROUP_PREVIEW_MARK],后面接最后一条消息。 */
 internal fun groupPreviewOf(lastMessagePreview: String?): String {
@@ -118,4 +118,4 @@ internal fun groupPreviewOf(lastMessagePreview: String?): String {
 }
 
 /** 角色已被删除时,会话里显示的名字。 */
-internal const val UNKNOWN_CHARACTER_NAME: String = "已注销的角色"
+internal const val UNKNOWN_CHARACTER_NAME: String = "Deactivated character"

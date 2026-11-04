@@ -16,9 +16,9 @@ import io.zer0.muse.miniphone.data.db.MpMessageType
 internal enum class ChatMenuAction(
     val label: String,
 ) {
-    COPY("复制"),
-    DELETE("删除"),
-    RESEND("重发"),
+    COPY("Copy"),
+    DELETE("Delete"),
+    RESEND("Resend"),
 }
 
 /**

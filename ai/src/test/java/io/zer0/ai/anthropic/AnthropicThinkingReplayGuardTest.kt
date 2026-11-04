@@ -122,7 +122,7 @@ class AnthropicThinkingReplayGuardTest {
         provider().completeText(request(history, "claude-sonnet-4-5"))
 
         val blocks = capturedAssistantBlocks()
-        assertTrue("无签名时不得发 thinking 块", blocks.blocksOfType("thinking").isEmpty())
+        assertTrue("A thinking block must not be sent when there is no signature", blocks.blocksOfType("thinking").isEmpty())
         // 降级后仍是合法请求：正文照发
         assertEquals(
             "answer",
@@ -144,7 +144,7 @@ class AnthropicThinkingReplayGuardTest {
         provider().completeText(request(history, "claude-sonnet-4-5"))
 
         val blocks = capturedAssistantBlocks()
-        assertTrue("跨模型时不得发 thinking 块", blocks.blocksOfType("thinking").isEmpty())
+        assertTrue("A thinking block must not be sent across models", blocks.blocksOfType("thinking").isEmpty())
         assertEquals(
             "answer",
             blocks.blocksOfType("text").single()["text"]?.jsonPrimitive?.content,

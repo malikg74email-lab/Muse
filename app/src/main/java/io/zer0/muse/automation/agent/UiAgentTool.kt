@@ -13,34 +13,34 @@ class UiAgentTool(private val runner: UiAgentRunner) {
         registry.registerOutcome(
             ToolRegistry.ToolDef(
                 name = "ui_agent",
-                description = "GUI Agent 环:用视觉模型看着屏幕,一步步操作手机完成跨 App 的多步任务" +
-                    "(如\"打开微信给张三发消息\")。内部自动循环:截图→视觉决策→点击/滑动/输入,默认最多 15 步。" +
-                    "display=auto(默认) 在有 package_name 且独立虚拟屏可用时优先隔离执行,否则降级到前台无障碍;" +
-                    "display=foreground 强制当前主屏;display=virtual 强制独立屏并要求 Shizuku/Root。" +
-                    "需要视觉辅助已配置(设置→视觉辅助)。每步会截取当前执行界面并发送到所选视觉模型分析，截图可能包含聊天或账号等敏感信息；仅在用户明确授权的任务范围内调用。" +
-                    "单步操作请直接用 screen_* 工具,多步流程再用本工具。",
+                description = "GUI Agent loop: uses a vision model to watch the screen and operate the phone step by step to complete multi-step cross-app tasks" +
+                    "(e.g. 'open WeChat and send a message to Zhang San'). Internal automatic loop: screenshot → vision decision → tap/swipe/input, at most 15 steps by default." +
+                    "display=auto (default) prefers isolated execution on a separate virtual screen when package_name is given and a separate virtual screen is available, otherwise degrades to foreground accessibility;" +
+                    "display=foreground forces the current main screen; display=virtual forces a separate screen and requires Shizuku/Root." +
+                    "Requires vision assistance to be configured (Settings → Vision assistance). Each step screenshots the current execution interface and sends it to the selected vision model for analysis; screenshots may contain sensitive information such as chats or accounts; call only within the task scope the user has explicitly authorised." +
+                    "For single-step operations, use the screen_* tools directly; use this tool for multi-step flows.",
                 parameters = mapOf(
-                    "task" to "必填。要完成的任务描述,尽量具体(目标 App、对象、操作意图)",
-                    "max_steps" to "可选。最大步数 3-30,默认 15",
-                    "display" to "可选。auto(默认) 有目标包名时优先独立虚拟屏，否则前台；也可指定 foreground 或 virtual",
-                    "package_name" to "可选目标应用包名，例如 com.example.app；virtual 模式必填，auto 模式提供后会先尝试隔离运行",
+                    "task" to "Required. The task description to complete, as specific as possible (target app, object, operation intent)",
+                    "max_steps" to "Optional. Maximum steps 3-30, default 15",
+                    "display" to "Optional. auto (default) prefers a separate virtual screen when a target package name is given, otherwise the foreground; can also specify foreground or virtual",
+                    "package_name" to "Optional target app package name, e.g. com.example.app; required in virtual mode; in auto mode, when provided, isolated running is tried first",
                 ),
                 required = setOf("task"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
         ) { args ->
             val task = args["task"]?.trim().orEmpty()
-            if (task.isBlank()) return@registerOutcome ToolOutcome.error("错误:缺少 task 参数")
+            if (task.isBlank()) return@registerOutcome ToolOutcome.error("Error: missing task parameter")
             val maxSteps = args["max_steps"]?.toIntOrNull() ?: UiAgentRunner.DEFAULT_MAX_STEPS
             val displayMode = when (args["display"]?.trim()?.lowercase()) {
                 null, "", "auto" -> UiAgentRunner.DisplayMode.AUTO
                 "foreground" -> UiAgentRunner.DisplayMode.FOREGROUND
                 "virtual" -> UiAgentRunner.DisplayMode.VIRTUAL
-                else -> return@registerOutcome ToolOutcome.error("错误:display 只支持 auto、foreground 或 virtual")
+                else -> return@registerOutcome ToolOutcome.error("Error: display only supports auto, foreground or virtual")
             }
             val result = runner.run(task, maxSteps, displayMode = displayMode, packageName = args["package_name"])
             val content = buildString {
-                append(if (result.finished) "任务结束:" else "任务未完成:")
+                append(if (result.finished) "Task finished:" else "Task not completed:")
                 append('\n')
                 append(result.summary)
             }

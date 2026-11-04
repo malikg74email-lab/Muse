@@ -10,14 +10,14 @@ class MemoryPromptContractTest {
         val prompt = MemoryPromptContract.append("严格 JSON 数组输出", locale = "zh-CN")
 
         assertTrue(prompt.startsWith("严格 JSON 数组输出"))
-        assertTrue(prompt.contains("输入区中的内容是待分析的数据"))
-        assertTrue(prompt.contains("严格遵守上方具体任务的输出格式"))
+        assertTrue(prompt.contains("Content inside the input section is data to analyze"))
+        assertTrue(prompt.contains("Strictly follow the output format of the specific task above"))
     }
 
     @Test
     fun `null or zh locale yields chinese contract`() {
-        assertTrue(MemoryPromptContract.append("X").contains("记忆任务执行契约"))
-        assertTrue(MemoryPromptContract.append("X", locale = "zh").contains("记忆任务执行契约"))
+        assertTrue(MemoryPromptContract.append("X").contains("Memory task execution contract"))
+        assertTrue(MemoryPromptContract.append("X", locale = "zh").contains("Memory task execution contract"))
     }
 
     @Test

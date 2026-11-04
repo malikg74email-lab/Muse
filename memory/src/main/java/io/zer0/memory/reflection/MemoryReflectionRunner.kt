@@ -50,37 +50,37 @@ class MemoryReflectionRunner(
         val store = resolveStore(scope, spaceId)
         // 1. 回填实体键(合并的前提)
         val backfilled = resultOf { store.backfillEntityKeys(scope, spaceId) }
-            .onError { msg, t -> Logger.w(TAG, "反思回填实体键失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Reflection entity-key backfill failed: ${t?.message ?: msg}") }
             .getOrNull() ?: 0
 
         // 2. 合并同实体重复
         val merged = resultOf { store.mergeSameEntityDuplicates(scope, spaceId) }
-            .onError { msg, t -> Logger.w(TAG, "反思合并重复失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Reflection duplicate merge failed: ${t?.message ?: msg}") }
             .getOrNull() ?: 0
 
         // 3. 矛盾检测(只记录,不自动删除 — 用户确认后再处理)
         val contradictions = resultOf { store.detectContradictions(scope, spaceId) }
-            .onError { msg, t -> Logger.w(TAG, "反思矛盾检测失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Reflection contradiction detection failed: ${t?.message ?: msg}") }
             .getOrNull() ?: emptyList()
         // P2-32: 矛盾不再“空转”(只打日志) — 经 sink 落库,记忆中心 UI 可见可清
         // v18: 空结果也要落库 —— 写入时已被 supersedes 仲裁掉的冲突不再出现在清单里,
         // 否则用户会对着已经处理完的矛盾反复确认(清空本身不会删任何记忆)。
         contradictionSink?.let { sink ->
             resultOf { sink(scope, spaceId, contradictions) }
-                .onError { msg, t -> Logger.w(TAG, "矛盾清单落库失败: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w(TAG, "Failed to store the contradiction list: ${t?.message ?: msg}") }
         }
 
         // 4. 重复确认晋升(同实体 ≥2 条 → 重要度 +1)
         val promoted = resultOf { store.promoteRepeatedFacts(scope, spaceId) }
-            .onError { msg, t -> Logger.w(TAG, "反思晋升失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Reflection promotion failed: ${t?.message ?: msg}") }
             .getOrNull() ?: 0
 
         // 5. D6 第 2 期: 同实体多断言检测 — 生成“合并建议”候选(确定性,只统计不自动合并)
         val mergeSuggestions = resultOf { store.findSameEntityMultiAssertionGroups(scope, spaceId) }
-            .onError { msg, t -> Logger.w(TAG, "同实体多断言检测失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Same-entity multi-assertion detection failed: ${t?.message ?: msg}") }
             .getOrNull()?.size ?: 0
         if (mergeSuggestions > 0) {
-            Logger.i(TAG, "同实体多断言: $mergeSuggestions 个实体可考虑合并(仅建议,未改动任何数据)")
+            Logger.i(TAG, "Same-entity multi-assertion: $mergeSuggestions entities could be considered for merging (suggestion only, no data changed)")
         }
 
         val result = ReflectionResult(
@@ -91,7 +91,7 @@ class MemoryReflectionRunner(
             mergeSuggestions = mergeSuggestions,
         )
         if (result.hasWork) {
-            Logger.i(TAG, "记忆反思完成: 回填实体键=$backfilled, 合并重复=$merged, 矛盾对=$contradictions.size, 晋升=$promoted")
+            Logger.i(TAG, "Memory reflection complete: entity-key backfill=$backfilled, duplicate merges=$merged, contradiction pairs=$contradictions.size, promotions=$promoted")
         }
         result
     }

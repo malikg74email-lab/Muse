@@ -96,7 +96,7 @@ internal object MemoryDbDowngradeGuard {
         }
 
         MemoryLegacyReset.mark(context, databaseName)
-        Logger.w(TAG, "MemoryDb v$storedVersion 已归档，准备打开 v$currentVersion")
+        Logger.w(TAG, "MemoryDb v$storedVersion archived; about to open v$currentVersion")
         return archiveDirectory
     }
 
@@ -150,7 +150,7 @@ internal object MemoryDbDowngradeGuard {
             }
         }.onFailure { error ->
             // The original WAL and SHM are archived with the main file if checkpointing fails.
-            Logger.w(TAG, "WAL checkpoint 未完成，将与 sidecar 一起归档", error)
+            Logger.w(TAG, "WAL checkpoint incomplete; archiving together with the sidecars", error)
         }
     }
 

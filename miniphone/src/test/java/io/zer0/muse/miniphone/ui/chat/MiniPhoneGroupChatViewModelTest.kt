@@ -96,7 +96,7 @@ class MiniPhoneGroupChatViewModelTest {
         val state = awaitState(viewModel) { it.members.size == 3 }
 
         assertEquals(listOf("c1", "c2", "c-gone"), state.members.map { it.characterId })
-        assertEquals(listOf("阿远", "小满", "已注销的角色"), state.members.map { it.name })
+        assertEquals(listOf("阿远", "小满", "Deactivated character"), state.members.map { it.name })
         assertEquals("少了一个人也还是三行 + 自己", 4, state.memberCount)
     }
 
@@ -262,7 +262,7 @@ class MiniPhoneGroupChatViewModelTest {
 
         val state = awaitState(viewModel) { current -> current.members.size == 3 }
         assertEquals("重复与已在群里的不算新人", listOf("c1", "c2", "c3"), state.members.map { it.characterId })
-        assertEquals("默认名跟着重算", "阿远、小满、阿吾", state.groupTitle)
+        assertEquals("默认名跟着重算", "阿远, 小满, 阿吾", state.groupTitle)
     }
 
     @Test
@@ -287,7 +287,7 @@ class MiniPhoneGroupChatViewModelTest {
         val state = awaitState(viewModel) { current -> current.members.size == 2 }
         assertEquals(listOf("c1", "c3"), state.members.map { it.characterId })
         assertEquals("他说过的话还在", 1, db.messageDao().countInThread(GROUP_THREAD_ID))
-        assertEquals("默认名跟着剩下的人重算", "阿远、阿吾", state.groupTitle)
+        assertEquals("默认名跟着剩下的人重算", "阿远, 阿吾", state.groupTitle)
     }
 
     @Test

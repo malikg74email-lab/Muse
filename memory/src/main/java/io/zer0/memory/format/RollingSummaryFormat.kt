@@ -36,11 +36,11 @@ object RollingSummaryFormat {
     private fun isZh(locale: String): Boolean = locale.startsWith("zh")
 
     /** 按 locale 取 facts 段标题文本。 */
-    fun getFactSectionTitle(locale: String = "zh-CN"): String = if (isZh(locale)) FACT_SECTION_TITLES[0] else FACT_SECTION_TITLES[1]
+    fun getFactSectionTitle(locale: String = "zh-CN"): String = FACT_SECTION_TITLES[1]
 
     /** 按 locale 取 timeline 段标题文本。 */
     fun getTimelineSectionTitle(locale: String = "zh-CN"): String =
-        if (isZh(locale)) TIMELINE_SECTION_TITLES[0] else TIMELINE_SECTION_TITLES[1]
+        TIMELINE_SECTION_TITLES[1]
 
     /** prompt 中的"输出格式要求"文案块。 */
     fun buildFormatRequirements(locale: String = "zh-CN"): String {
@@ -57,15 +57,15 @@ Do not output any preamble, conclusion, XML tags, or code fences outside those h
             """.trimIndent()
         }
         return """
-## 输出格式
-最终答案必须只包含两个三级标题，标题文本和顺序固定：
-1. 第一行必须是 `### 重要事实`
-2. 第二个标题必须是 `### 事情经过`
+## Output Format
+The final answer must contain exactly two third-level headings, in fixed order:
+1. The first line must be `### Key Facts`
+2. The second heading must be `### Timeline`
 
-两个标题下的正文都必须使用无序列表，列表项必须以 `- ` 开头。
-如果某一节没有内容，也要输出一个列表项：`- 无`。
-标题之外不要输出前言、后记、XML 标签或代码块。
-        """.trimIndent()
+Use unordered lists under both headings; each item must start with `- `.
+If a section has no content, write one item: `- None`.
+Do not output any preamble, conclusion, XML tags, or code fences outside those headings.
+            """.trimIndent()
     }
 
     /** 格式修复调用的稳定 system 指令。 */
@@ -79,22 +79,22 @@ $requirements
             """.trimIndent()
         }
         return """
-你是滚动摘要的格式修复器。上一步生成的摘要草稿不符合要求的结构，无法解析。请把给定草稿中的信息原样重排进规定结构：不要新增、删除或改写事实内容，不要解释，直接输出修复后的摘要全文。
+You are the format repairer for rolling summaries. The previous draft violates the required fixed structure and cannot be parsed. Rearrange the information in the draft into the required structure: do not add, remove, or rewrite factual content, do not explain, and output only the full repaired summary.
 
 $requirements
-        """.trimIndent()
+            """.trimIndent()
     }
 
     /** 格式修复调用的动态输入：失败原因 + 待修复草稿。 */
     fun buildRepairInput(locale: String = "zh-CN", issues: List<String> = emptyList(), summaryText: String = ""): String {
         val zh = isZh(locale)
-        val issuesLabel = if (zh) "## 校验失败原因" else "## Validation Failures"
-        val draftLabel = if (zh) "## 待修复草稿" else "## Draft To Repair"
+        val issuesLabel = if (zh) "## Validation Failures" else "## Validation Failures"
+        val draftLabel = if (zh) "## Draft To Repair" else "## Draft To Repair"
         val issueLines = issues
             .map { "- ${it.trim()}" }
             .filter { it != "- " }
             .joinToString("\n")
-            .ifEmpty { if (zh) "- 未知" else "- unknown" }
+            .ifEmpty { if (zh) "- unknown" else "- unknown" }
 
         return "$issuesLabel\n\n$issueLines\n\n$draftLabel\n\n<draft-summary>\n$summaryText\n</draft-summary>"
     }
@@ -182,15 +182,15 @@ $requirements
         val fact = locateHeading(lines, FACT_SECTION_TITLES)
         val timeline = locateHeading(lines, TIMELINE_SECTION_TITLES)
 
-        if (fact == null) issues += """missing fact section heading ("### 重要事实" / "### Key Facts")"""
-        if (timeline == null) issues += """missing timeline section heading ("### 事情经过" / "### Timeline")"""
+        if (fact == null) issues += """missing fact section heading ("### Key Facts")"""
+        if (timeline == null) issues += """missing timeline section heading ("### Timeline")"""
         if (fact != null && timeline != null && timeline.first > fact.first && timeline.second > fact.second) {
             issues += "timeline heading is nested deeper than the fact heading, so the fact section cannot be delimited"
         }
         if (fact != null) {
             val body = extractFactSection(text)
             if (body.isEmpty()) {
-                issues += """fact section body is empty; write "- 无" / "- None" when there are no facts"""
+                issues += """fact section body is empty; write "- None" when there are no facts"""
             }
         }
         return ValidationResult(issues.isEmpty(), issues)

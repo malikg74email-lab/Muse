@@ -74,17 +74,17 @@ class DashScopeFileAsrClient(
      */
     suspend fun recognizeFile(audioUrl: String): AsrResult? = withContext(Dispatchers.IO) {
         if (config.apiKey.isBlank()) {
-            Logger.w(TAG, "apiKey 为空")
+            Logger.w(TAG, "apiKey is empty")
             return@withContext null
         }
         val taskId = submitTranscription(audioUrl) ?: return@withContext null
-        Logger.d(TAG, "submit 成功,task_id=$taskId,开始轮询")
+        Logger.d(TAG, "submit succeeded, task_id=$taskId, starting polling")
         val result = pollTask(taskId) ?: return@withContext null
         // result.transcription_url 指向一个 JSON,需再 fetch
         val transcriptionJson = fetchTranscriptionUrl(result.transcriptionUrl) ?: return@withContext null
         val text = parseTranscriptionJson(transcriptionJson)
         if (text.isBlank()) {
-            Logger.w(TAG, "转录结果文本为空")
+            Logger.w(TAG, "Transcription result text is empty")
             return@withContext null
         }
         AsrResult(text = text, isFinal = true, durationMs = result.audioDurationMs)
@@ -100,8 +100,8 @@ class DashScopeFileAsrClient(
      */
     override suspend fun recognize(audioData: ByteArray, sampleRate: Int): AsrResult? {
         val url = config.fileAudioUrl.ifBlank {
-            Logger.w(TAG, "异步文件转录需要 fileAudioUrl 配置,当前为空")
-            return AsrResult(text = "", errorMessage = "异步文件转录需要 fileAudioUrl 配置，当前为空")
+            Logger.w(TAG, "Async file transcription requires the fileAudioUrl configuration, which is currently empty")
+            return AsrResult(text = "", errorMessage = "Async file transcription requires the fileAudioUrl configuration, which is currently empty")
         }
         return recognizeFile(url)
     }
@@ -147,7 +147,7 @@ class DashScopeFileAsrClient(
                 .build()
             httpClient.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) {
-                    Logger.w(TAG, "submit 失败: HTTP ${resp.code} ${resp.body.string().take(200)}")
+                    Logger.w(TAG, "submit failed: HTTP ${resp.code} ${resp.body.string().take(200)}")
                     return@resultOf null
                 }
                 val body = resp.body.string()
@@ -155,12 +155,12 @@ class DashScopeFileAsrClient(
                 val output = obj["output"]?.jsonObject
                 val taskId = output?.get("task_id")?.jsonPrimitive?.contentOrNull
                 if (taskId.isNullOrBlank()) {
-                    Logger.w(TAG, "submit 响应缺 task_id: ${body.take(200)}")
+                    Logger.w(TAG, "submit response is missing task_id: ${body.take(200)}")
                     return@resultOf null
                 }
                 taskId
             }
-        }.onError { msg, t -> Logger.w(TAG, "submitTranscription 失败: $msg", t) }
+        }.onError { msg, t -> Logger.w(TAG, "submitTranscription failed: $msg", t) }
             .getOrNull()
     }
 
@@ -171,7 +171,7 @@ class DashScopeFileAsrClient(
             val status = queryTask(taskId) ?: return@withContext null
             when (status.taskStatus) {
                 "SUCCEEDED" -> {
-                    Logger.d(TAG, "task=$taskId SUCCEEDED,耗时 ${System.currentTimeMillis() - (deadline - config.pollTimeoutMs)}ms")
+                    Logger.d(TAG, "task=$taskId SUCCEEDED, took ${System.currentTimeMillis() - (deadline - config.pollTimeoutMs)}ms")
                     return@withContext status.result
                 }
                 "FAILED" -> {
@@ -184,7 +184,7 @@ class DashScopeFileAsrClient(
                 }
             }
         }
-        Logger.w(TAG, "task=$taskId 轮询超时(${config.pollTimeoutMs}ms)")
+        Logger.w(TAG, "task=$taskId polling timed out (${config.pollTimeoutMs}ms)")
         null
     }
 
@@ -209,7 +209,7 @@ class DashScopeFileAsrClient(
                     ?.let { parseResult(it) }
                 TaskStatus(taskStatus = taskStatus, message = message, result = result)
             }
-        }.onError { msg, t -> Logger.w(TAG, "queryTask($taskId) 失败: $msg", t) }
+        }.onError { msg, t -> Logger.w(TAG, "queryTask($taskId) failed: $msg", t) }
             .getOrNull()
     }
 
@@ -230,7 +230,7 @@ class DashScopeFileAsrClient(
                 if (!resp.isSuccessful) return@resultOf null
                 resp.body.string()
             }
-        }.onError { msg, t -> Logger.w(TAG, "fetchTranscriptionUrl 失败: $msg", t) }
+        }.onError { msg, t -> Logger.w(TAG, "fetchTranscriptionUrl failed: $msg", t) }
             .getOrNull()
     }
 
@@ -247,7 +247,7 @@ class DashScopeFileAsrClient(
                     sentenceEl.jsonObject["text"]?.jsonPrimitive?.contentOrNull ?: ""
                 }
             }
-        }.onError { msg, t -> Logger.w(TAG, "parseTranscriptionJson 失败: $msg", t) }
+        }.onError { msg, t -> Logger.w(TAG, "parseTranscriptionJson failed: $msg", t) }
             .getOrNull() ?: ""
     }
 

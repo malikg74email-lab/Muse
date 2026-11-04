@@ -51,7 +51,7 @@ object ToolCallSanitizer {
         knownToolNames: Set<String> = emptySet(),
     ): List<ToolCall> = toolCalls.mapNotNull { tc ->
         if (tc.name.isBlank()) {
-            safeWarn("丢弃工具调用：name 为空, id=${tc.id}")
+            safeWarn("Discarding tool call: name is empty, id=${tc.id}")
             return@mapNotNull null
         }
         val effectiveName =
@@ -62,25 +62,25 @@ object ToolCallSanitizer {
                 if (salvaged == null) {
                     // 不打印 name 原文（可能夹带用户内容），只给出长度与首字符类别。
                     safeWarn(
-                        "丢弃工具调用：name 不是合法标识符(id=${tc.id}, len=${tc.name.length})" +
-                            "，疑似模型把正文写进了函数名且无法还原",
+                        "Discarding tool call: name is not a valid identifier (id=${tc.id}, len=${tc.name.length})" +
+                            ", the model likely wrote body text into the function name and it cannot be recovered",
                     )
                     return@mapNotNull null
                 }
-                safeWarn("工具名混入正文,已还原(id=${tc.id}, len=${tc.name.length} -> $salvaged)")
+                safeWarn("Body text was mixed into the tool name and has been recovered (id=${tc.id}, len=${tc.name.length} -> $salvaged)")
                 salvaged
             }
         val repaired = repairArguments(tc.arguments)
         if (repaired == null) {
             safeWarn(
-                "工具参数无法解析,保留调用并降级为 {}: " +
+                "Tool arguments could not be parsed; keeping the call and degrading to {}: " +
                     safeArgumentsForLog(effectiveName, tc.arguments),
             )
             tc.copy(name = effectiveName, arguments = "{}")
         } else {
             if (repaired != tc.arguments) {
                 safeWarn(
-                    "工具参数已修复: ${safeArgumentsForLog(effectiveName, tc.arguments)}" +
+                    "Tool arguments repaired: ${safeArgumentsForLog(effectiveName, tc.arguments)}" +
                         " repaired=[REDACTED]",
                 )
             }

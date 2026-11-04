@@ -230,7 +230,7 @@ internal data class AnthropicModelInfo(
  * v1.0.53 Phase 3: Anthropic usage -> [io.zer0.ai.core.UsageTokens]。
  */
 @Deprecated(
-    "映射已移到 AnthropicProvider.anthropicUsageTokens，此方法会静默丢缓存字段",
+    "The mapping has moved to AnthropicProvider.anthropicUsageTokens; this method silently drops the cache fields",
     ReplaceWith("anthropicUsageTokens(this, output_tokens)"),
 )
 internal fun AnthropicUsage.toUsageTokens(): io.zer0.ai.core.UsageTokens = io.zer0.ai.core.UsageTokens(

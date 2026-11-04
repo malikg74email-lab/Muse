@@ -145,7 +145,7 @@ class GeminiImageProvider(
     }
 
     override suspend fun poll(taskId: String): ImagePollResult {
-        error("Gemini 图片生成不支持异步任务: $taskId")
+        error("Gemini image generation does not support asynchronous tasks: $taskId")
     }
 
     /**

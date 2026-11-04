@@ -60,7 +60,7 @@ class ProviderRequestBodySnapshotTest {
     private fun assertJsonEquals(expected: String, actual: String) {
         val expectedJson: JsonElement = AppJson.parseToJsonElement(expected)
         val actualJson: JsonElement = AppJson.parseToJsonElement(actual)
-        assertEquals("请求体快照不一致\n期望=$expected\n实际=$actual", expectedJson, actualJson)
+        assertEquals("Request body snapshot mismatch\nExpected=$expected\nActual=$actual", expectedJson, actualJson)
     }
 
     @Test

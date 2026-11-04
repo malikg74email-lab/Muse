@@ -61,7 +61,7 @@ class AndroidAppController(
                     self = pkg == context.packageName,
                 )
             }.distinctBy { it.packageName }
-        }.onFailure { Logger.w(TAG, "列出应用失败: ${it.message}") }.getOrDefault(emptyList())
+        }.onFailure { Logger.w(TAG, "Failed to list apps: ${it.message}") }.getOrDefault(emptyList())
     }
 
     /** 按包名或用户可见名称定位应用。 */
@@ -78,7 +78,7 @@ class AndroidAppController(
         }
         ChannelAvailability(shell = state.shellEnabled, root = state.rootEnabled)
     }.getOrElse {
-        Logger.w(TAG, "通道探测失败: ${it.message}")
+        Logger.w(TAG, "Channel probe failed: ${it.message}")
         ChannelAvailability(shell = false, root = false)
     }
 
@@ -126,14 +126,14 @@ class AndroidAppController(
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
                 true
-            }.onFailure { Logger.w(TAG, "Intent 启动失败: ${it.message}") }.getOrDefault(false)
+            }.onFailure { Logger.w(TAG, "Intent launch failed: ${it.message}") }.getOrDefault(false)
             if (ok) return AppActionResult.Success(ExecutionChannel.APP)
         }
         // 无启动 Intent（如被隐藏的应用）→ 交给分层通道
         return if (manager.launchApp(packageName)) {
             AppActionResult.Success(ExecutionChannel.APP)
         } else {
-            AppActionResult.Failed("无法启动 $packageName（无启动入口且自动化通道不可用）")
+            AppActionResult.Failed("Could not launch $packageName (no launch entry and the automation channel is unavailable)")
         }
     }
 
@@ -146,8 +146,8 @@ class AndroidAppController(
         return runCatching { context.startActivity(intent) }
             .map { AppActionResult.Success(ExecutionChannel.APP) }
             .getOrElse {
-                Logger.w(TAG, "打开应用设置页失败: ${it.message}")
-                AppActionResult.Failed("无法打开 $packageName 的设置页")
+                Logger.w(TAG, "Failed to open the app settings page: ${it.message}")
+                AppActionResult.Failed("Could not open the settings page of $packageName")
             }
     }
 
@@ -156,7 +156,7 @@ class AndroidAppController(
         val command = AppControlCore.buildCommand(action, packageName)
         val executed = command?.let { manager.execTiered(it) }
         return when {
-            command == null -> AppActionResult.Failed("内部错误：动作 $action 未登记设备命令")
+            command == null -> AppActionResult.Failed("Internal error: action $action has no registered device command")
             // 两档通道都不可用：如实回报缺少能力，让模型向用户说明
             executed == null -> AppActionResult.Unavailable(UnavailableReason.NEED_SHELL_OR_ROOT)
             else -> {
@@ -168,7 +168,7 @@ class AndroidAppController(
                 if (ok) {
                     AppActionResult.Success(via)
                 } else {
-                    AppActionResult.Failed(detail.output.ifBlank { "命令失败（退出码 ${detail.exitCode}）" })
+                    AppActionResult.Failed(detail.output.ifBlank { "Command failed (exit code ${detail.exitCode})" })
                 }
             }
         }

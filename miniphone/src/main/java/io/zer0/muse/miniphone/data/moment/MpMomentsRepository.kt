@@ -199,8 +199,8 @@ class MpMomentsRepository(
     }
 
     private companion object {
-        const val DEFAULT_SELF_NAME: String = "我"
-        const val DEFAULT_CHARACTER_NAME: String = "角色"
+        const val DEFAULT_SELF_NAME: String = "Me"
+        const val DEFAULT_CHARACTER_NAME: String = "Character"
     }
 }
 

@@ -81,8 +81,8 @@ class TokenCostCalculatorTest {
     fun `costFor looks up pricing by provider and model`() {
         val usage = TokenCostCalculator.Usage(promptTokens = 1_000_000, completionTokens = 1_000_000)
         val cost = TokenCostCalculator.costFor("openrouter", "gpt-4o", usage)
-        assertTrue("gpt-4o 有定价应可计算", cost.known)
-        assertTrue("成本应为正", cost.usd > 0)
+        assertTrue("gpt-4o has pricing, so the cost should be calculable", cost.known)
+        assertTrue("The cost should be positive", cost.usd > 0)
     }
 
     @Test

@@ -341,10 +341,10 @@ internal class ChatSendController(
 
     private companion object {
         /** 角色没给出回复时落在列表里的系统提示。 */
-        const val NO_REPLY_TEXT: String = "对方没有回应"
+        const val NO_REPLY_TEXT: String = "The other party didn't respond"
 
         /** 语音消息的正文:库里不存音频,只存这句预览文案,会话列表与未读预览都用它。 */
-        const val VOICE_PREVIEW_TEXT: String = "[语音]"
+        const val VOICE_PREVIEW_TEXT: String = "[Voice]"
     }
 }
 

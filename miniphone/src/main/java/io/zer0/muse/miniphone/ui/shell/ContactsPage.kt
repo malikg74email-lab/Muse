@@ -161,12 +161,12 @@ private fun ContactsEmptyState(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "通讯录还是空的",
+            text = "Your contacts are still empty",
             style = typography.title.copy(color = colors.textPrimary),
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "手机里的联系人会在这里按首字母排队",
+            text = "Contacts on this phone will be lined up here by first letter",
             style = typography.caption.copy(color = colors.textSecondary),
         )
     }

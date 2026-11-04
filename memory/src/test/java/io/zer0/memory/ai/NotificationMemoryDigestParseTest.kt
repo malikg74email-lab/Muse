@@ -84,8 +84,8 @@ class NotificationMemoryDigestParseTest {
     @Test
     fun `system prompt contains keep and drop guidance`() {
         val prompt = NotificationMemoryDigest.buildSystemPrompt("zh-CN", null)
-        assertTrue(prompt.contains("值得记"))
-        assertTrue(prompt.contains("不值得记"))
+        assertTrue(prompt.contains("Worth remembering"))
+        assertTrue(prompt.contains("Not worth remembering"))
         assertTrue(prompt.contains("facts"))
     }
 

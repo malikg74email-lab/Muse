@@ -78,7 +78,7 @@ class MpMomentAutoRunner(
 
     /** 判定为不发:留一条能看出原因的日志,然后结束。 */
     private fun skip(reason: MpMomentSkipReason): MpMomentAutoOutcome {
-        Logger.d(TAG, "朋友圈定时跳过 | reason=${reason.value}")
+        Logger.d(TAG, "Scheduled Moments skipped | reason=${reason.value}")
         return MpMomentAutoOutcome.Skipped(reason)
     }
 
@@ -87,31 +87,31 @@ class MpMomentAutoRunner(
         val character: MpCharacter = characters.random(random)
         val focus = MpMomentAutoPlan.hintFor(MpMomentAutoPlan.hourOf(at, zone))
         val hint = material.forMoment(character.id, focus)
-        Logger.d(TAG, "朋友圈定时生成 | characterId=${character.id} | focus=$focus")
+        Logger.d(TAG, "Scheduled Moments generating | characterId=${character.id} | focus=$focus")
         val content = resultOf { host.composeMoment(character.id, hint) }
             .onError { msg, t -> fail("compose_error", t, msg) }
             .getOrNull()
         if (content.isNullOrBlank()) {
             // 宿主已经把失败吞成 null 了;这里再记一笔「这一轮没结果」就收手,不重试
-            Logger.w(TAG, "朋友圈定时失败 | reason=compose_null")
+            Logger.w(TAG, "Scheduled Moments failed | reason=compose_null")
             return MpMomentAutoOutcome.Failed(FAIL_COMPOSE)
         }
         val moment = resultOf { repository.insertFromCharacter(character, content) }
             .onError { msg, t -> fail("insert_error", t, msg) }
             .getOrNull()
         if (moment == null) {
-            Logger.w(TAG, "朋友圈定时失败 | reason=empty_content")
+            Logger.w(TAG, "Scheduled Moments failed | reason=empty_content")
             return MpMomentAutoOutcome.Failed(FAIL_INSERT)
         }
         // 时间戳写失败不影响已经落库的动态:最多让下一轮少一次防抖保护
         resultOf { store.markGenerated(at) }
             .onError { msg, t -> fail("settings_write", t, msg) }
-        Logger.d(TAG, "朋友圈定时落库 | momentId=${moment.id} | len=${moment.content.length}")
+        Logger.d(TAG, "Scheduled Moments stored | momentId=${moment.id} | len=${moment.content.length}")
         return MpMomentAutoOutcome.Published(momentId = moment.id, characterId = character.id)
     }
 
     private fun fail(reason: String, throwable: Throwable?, message: String) {
-        Logger.w(TAG, "朋友圈定时失败 | reason=$reason | ${throwable?.message ?: message}", throwable)
+        Logger.w(TAG, "Scheduled Moments failed | reason=$reason | ${throwable?.message ?: message}", throwable)
     }
 
     private companion object {

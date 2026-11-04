@@ -96,11 +96,11 @@ object MpMomentAutoPlan {
 
     /** 按小时给一句「这一条写点什么」的范围提示,交给宿主的生成器当素材。 */
     fun hintFor(hourOfDay: Int): String = when (hourOfDay) {
-        in 8..10 -> "早上刚醒，随手记一句今天的状态"
-        in 11..13 -> "中午得空，说点手头在做的事"
-        in 14..17 -> "下午的碎片时间，记一句"
-        in 18..21 -> "晚上收工，随便聊聊今天"
-        else -> "夜里还没睡，随口感叹一句"
+        in 8..10 -> "Just woke up in the morning, jot down a line about how today feels"
+        in 11..13 -> "Free at midday, say a bit about what's at hand"
+        in 14..17 -> "A spare moment in the afternoon, note a line"
+        in 18..21 -> "Done with work in the evening, chat a little about today"
+        else -> "Still up at night, muse a little, casually"
     }
 
     /** 从没生成过(`null` / `0`)不算「太快」,否则首次唤醒永远发不出去。 */

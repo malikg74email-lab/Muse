@@ -62,17 +62,17 @@ class MpCharacterMaterial(
 
     /** 唯一的拼装处：上下文 → 时间 → 收尾指令，顺序与两类共用。 */
     private suspend fun compose(characterId: String, focus: String?, kind: Kind): String = buildString {
-        appendLine("最近和用户的对话（旧→新）：")
+        appendLine("Recent conversation with the user (oldest first):")
         val turns = recentTurns(characterId)
         if (turns.isEmpty()) {
-            appendLine("还没有和用户聊过。")
+            appendLine("You haven't chatted with the user yet.")
         } else {
             turns.forEach { turn -> appendLine(turn) }
         }
         if (kind.includesLastMoment) {
             lastMoment(characterId)?.let { own ->
-                appendLine("上一条我发的动态：$own")
-                appendLine("别和上一条重复同样的话题。")
+                appendLine("My last Moments post: $own")
+                appendLine("Don't repeat the same topic as the last post.")
             }
         }
         appendLine(timeLine())
@@ -87,22 +87,22 @@ class MpCharacterMaterial(
      */
     private suspend fun recentTurns(characterId: String): List<String> {
         val threadId = resultOf { threadDao.findThreadByCharacter(characterId) }
-            .onError { msg, t -> Logger.w(TAG, "读取私信会话失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read the private-chat thread: ${t?.message ?: msg}") }
             .getOrNull()
             ?.id
             ?: return emptyList()
         val newestFirst = resultOf { messageDao.pageMessages(threadId, RECENT_TURN_LIMIT, 0) }
-            .onError { msg, t -> Logger.w(TAG, "读取私信记录失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "Failed to read the private messages: ${t?.message ?: msg}") }
             .getOrNull()
             .orEmpty()
         return newestFirst.asReversed()
             .filter { message -> message.sender != MpActorType.SYSTEM && message.content.isNotBlank() }
-            .map { message -> "${speakerOf(message)}：${message.content.trim().take(MAX_TURN_CHARS)}" }
+            .map { message -> "${speakerOf(message)}: ${message.content.trim().take(MAX_TURN_CHARS)}" }
     }
 
     /** 上一条自己发的动态，截到 [MAX_LAST_MOMENT_CHARS] 字；没发过就是 null。 */
     private suspend fun lastMoment(characterId: String): String? = resultOf { momentDao.lastMomentByAuthor(characterId) }
-        .onError { msg, t -> Logger.w(TAG, "读取上一条动态失败: ${t?.message ?: msg}") }
+        .onError { msg, t -> Logger.w(TAG, "Failed to read the last post: ${t?.message ?: msg}") }
         .getOrNull()
         ?.content
         ?.trim()
@@ -115,41 +115,41 @@ class MpCharacterMaterial(
         val hour = at.hour
         val hourWord = HOUR_WORDS[if (hour % 12 == 0) 12 else hour % 12]
         // 「两点」不是「二点」:钟点上的 2 读作两
-        val spokenHour = if (hourWord == "二") "两" else hourWord
-        return "现在是${WEEKDAY_WORDS[at.dayOfWeek.value - 1]}${clockPrefixOf(hour)}$spokenHour" +
-            "点（${phaseOf(hour)}）。"
+        val spokenHour = if (hourWord == "two") "two" else hourWord
+        return "It is ${WEEKDAY_WORDS[at.dayOfWeek.value - 1]} ${clockPrefixOf(hour)} $spokenHour" +
+            " o'clock (${phaseOf(hour)})."
     }
 
-    private fun speakerOf(message: MpMessageEntity): String = if (message.sender == MpActorType.USER) "用户" else "我"
+    private fun speakerOf(message: MpMessageEntity): String = if (message.sender == MpActorType.USER) "User" else "Me"
 
     /** 给时钟用的说法：读起来像人话（「晚上九点」而不是「21 点」）。 */
     private fun clockPrefixOf(hour: Int): String = when (hour) {
-        in 5..7 -> "清晨"
-        in 8..11 -> "上午"
-        12, 13 -> "中午"
-        in 14..17 -> "下午"
-        in 18..19 -> "傍晚"
-        in 20..22 -> "晚上"
-        else -> "深夜"
+        in 5..7 -> "early morning"
+        in 8..11 -> "morning"
+        12, 13 -> "midday"
+        in 14..17 -> "afternoon"
+        in 18..19 -> "early evening"
+        in 20..22 -> "evening"
+        else -> "late night"
     }
 
     /** 判定用的时段名：早 / 上午 / 午间 / 下午 / 傍晚 / 夜 / 深夜。 */
     private fun phaseOf(hour: Int): String = when (hour) {
-        in 5..7 -> "早"
-        in 8..10 -> "上午"
-        in 11..13 -> "午间"
-        in 14..17 -> "下午"
-        in 18..19 -> "傍晚"
-        in 20..22 -> "夜"
-        else -> "深夜"
+        in 5..7 -> "early"
+        in 8..10 -> "morning"
+        in 11..13 -> "midday"
+        in 14..17 -> "afternoon"
+        in 18..19 -> "evening"
+        in 20..22 -> "night"
+        else -> "late night"
     }
 
     private companion object {
         const val TAG: String = "MiniPhoneMaterial"
 
         /** 收尾指令的措辞：朋友圈说「这次可以写」，私信说「此刻的由头」。 */
-        const val FOCUS_LABEL_MOMENT: String = "这次可以写："
-        const val FOCUS_LABEL_CHAT: String = "此刻的由头："
+        const val FOCUS_LABEL_MOMENT: String = "This time, write about: "
+        const val FOCUS_LABEL_CHAT: String = "The occasion right now: "
 
         /** 最近几条对话：再多也写不进一条 30-80 字的动态。 */
         const val RECENT_TURN_LIMIT: Int = 8
@@ -160,11 +160,11 @@ class MpCharacterMaterial(
         /** 上一条动态的截断长度：够看出话题就行。 */
         const val MAX_LAST_MOMENT_CHARS: Int = 60
 
-        val WEEKDAY_WORDS: List<String> = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+        val WEEKDAY_WORDS: List<String> = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
         /** 1..12 的中文说法（下标 0 占位）。 */
         val HOUR_WORDS: List<String> = listOf(
-            "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二",
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
         )
     }
 }

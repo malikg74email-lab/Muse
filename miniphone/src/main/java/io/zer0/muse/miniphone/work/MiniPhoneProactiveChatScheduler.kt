@@ -50,13 +50,13 @@ object MiniPhoneProactiveChatScheduler {
                 ExistingPeriodicWorkPolicy.KEEP,
                 request,
             )
-        }.onError { msg, t -> Logger.w(TAG, "主动私信注册失败 | reason=${t?.message ?: msg}", t) }
+        }.onError { msg, t -> Logger.w(TAG, "Proactive message registration failed | reason=${t?.message ?: msg}", t) }
     }
 
     /** 取消周期任务(下次 [start] 会重新排期)。 */
     fun stop(context: Context) {
         resultOf { WorkManager.getInstance(context.applicationContext).cancelUniqueWork(UNIQUE_WORK_NAME) }
-            .onError { msg, t -> Logger.w(TAG, "主动私信取消失败 | reason=${t?.message ?: msg}", t) }
+            .onError { msg, t -> Logger.w(TAG, "Proactive message cancellation failed | reason=${t?.message ?: msg}", t) }
     }
 
     private const val TAG: String = "MiniPhoneChat"

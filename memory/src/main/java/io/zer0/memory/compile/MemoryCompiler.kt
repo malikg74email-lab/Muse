@@ -305,7 +305,7 @@ class MemoryCompiler(
                 // 指纹置 null,保证下次编译重新合并(而非 SKIPPED)
                 updateStoredContent(section.key, filtered, null, Instant.now().toString(), resolvedTarget)
                 val removedCount = countRemovedLines(current, filtered)
-                Logger.i("MemoryCompiler", "purgeTombstonedFacts: ${section.key} 剔除 $removedCount 行")
+                Logger.i("MemoryCompiler", "purgeTombstonedFacts: ${section.key} removed $removedCount lines")
                 removedAny = true
             }
         }
@@ -407,7 +407,7 @@ class MemoryCompiler(
         val input = if (currentFacts.isNotBlank()) {
             val isZh = locale.startsWith("zh")
             val factsLabel = if (isZh) {
-                "## 已记录的重要事实(供参考,不要在 today 里重复)"
+                "## Already Recorded Facts (for reference, do not repeat in today)"
             } else {
                 "## Already Recorded Facts (for reference, do not repeat in today)"
             }
@@ -425,13 +425,13 @@ class MemoryCompiler(
             )
         }.onError { msg, t ->
             // v1.78 (M1): 记录 LLM 失败原因,避免静默吞异常
-            Logger.w("MemoryCompiler", "compileToday LLM 调用失败: $msg", t)
+            Logger.w("MemoryCompiler", "compileToday LLM call failed: $msg", t)
         }.getOrNull() ?: return@withContext Result.FAILED
 
         // v1.0.51: 空响应防御 — LLM 返回空/纯标签时不覆盖已有内容,返回 FAILED 供下次重试
         val normalized = CompiledMemoryState.normalizeLlmResult(result, "compileToday")
         if (normalized.isBlank()) {
-            Logger.w("MemoryCompiler", "compileToday: LLM 返回空响应,保留旧内容,返回 FAILED")
+            Logger.w("MemoryCompiler", "compileToday: LLM returned an empty response; keeping the old content, returning FAILED")
             return@withContext Result.FAILED
         }
         // v2.6.2（记忆审计）: 读写必须使用同一 target —— 旧实现读用 target、写漏传，
@@ -520,13 +520,13 @@ class MemoryCompiler(
                 maxTokens = 250,
             )
         }.onError { msg, t ->
-            Logger.w("MemoryCompiler", "compileDaily($logicalDate) LLM 调用失败: $msg", t)
+            Logger.w("MemoryCompiler", "compileDaily($logicalDate) LLM call failed: $msg", t)
         }.getOrNull() ?: return@withContext Result.FAILED
 
         // v1.0.51: 空响应防御 — 不写空 daily 文件,返回 FAILED 供下次重试
         val normalized = CompiledMemoryState.normalizeLlmResult(result, "compileDaily")
         if (normalized.isBlank()) {
-            Logger.w("MemoryCompiler", "compileDaily($logicalDate): LLM 返回空响应,返回 FAILED")
+            Logger.w("MemoryCompiler", "compileDaily($logicalDate): LLM returned an empty response, returning FAILED")
             return@withContext Result.FAILED
         }
         fileWriter.writeDailyMd(logicalDate, normalized, target)
@@ -627,13 +627,13 @@ class MemoryCompiler(
                 maxTokens = 600,
             )
         }.onError { msg, t ->
-            Logger.w("MemoryCompiler", "compileWeek LLM 调用失败: $msg", t)
+            Logger.w("MemoryCompiler", "compileWeek LLM call failed: $msg", t)
         }.getOrNull() ?: return@withContext Result.FAILED
 
         // v1.0.51: 空响应防御 — 不覆盖已有 week,不写指纹(避免锁死),返回 FAILED 供下次重试
         val normalized = CompiledMemoryState.normalizeLlmResult(result, "compileWeek")
         if (normalized.isBlank()) {
-            Logger.w("MemoryCompiler", "compileWeek: LLM 返回空响应,保留旧内容,返回 FAILED")
+            Logger.w("MemoryCompiler", "compileWeek: LLM returned an empty response; keeping the old content, returning FAILED")
             return@withContext Result.FAILED
         }
         updateStoredContent(Section.WEEK.key, normalized, fp, Instant.now().toString(), target)
@@ -697,9 +697,7 @@ class MemoryCompiler(
             val trimmedTail = prevLongterm.takeLast(prevLongterm.length - 4000)
             Logger.d(
                 "MemoryCompiler",
-                "foldIntoLongTerm: 截断旧 longterm(${prevLongterm.length} → 4000 chars),丢失 ${trimmedTail.length} chars: ${trimmedTail.take(
-                    500,
-                )}…",
+                "foldIntoLongTerm: truncated old longterm (${prevLongterm.length} → 4000 chars), lost ${trimmedTail.length} chars: ${trimmedTail.take(500)}…",
             )
             prevLongterm.take(4000)
         } else {
@@ -707,11 +705,11 @@ class MemoryCompiler(
         }
         val isZh = locale.startsWith("zh")
         val input = if (prevLongtermCapped.isNotBlank()) {
-            val prevLabel = if (isZh) "## 上一份长期情况" else "## Previous long-term context"
-            val newLabel = if (isZh) "## 新沉淀内容" else "## Newly settled content"
+            val prevLabel = if (isZh) "## Previous long-term context" else "## Previous long-term context"
+            val newLabel = if (isZh) "## Newly settled content" else "## Newly settled content"
             "$prevLabel\n\n$prevLongtermCapped\n\n$newLabel\n\n$trimmed"
         } else {
-            val newLabel = if (isZh) "## 新沉淀内容" else "## Newly settled content"
+            val newLabel = if (isZh) "## Newly settled content" else "## Newly settled content"
             "$newLabel\n\n$trimmed"
         }
 
@@ -724,13 +722,13 @@ class MemoryCompiler(
                 maxTokens = 600,
             )
         }.onError { msg, t ->
-            Logger.w("MemoryCompiler", "foldIntoLongTerm LLM 调用失败: $msg", t)
+            Logger.w("MemoryCompiler", "foldIntoLongTerm LLM call failed: $msg", t)
         }.getOrNull() ?: return@withContext Result.FAILED
 
         // v1.0.51: 空响应防御 — 不覆盖已有 longterm,不写指纹(避免锁死),返回 FAILED
         val normalized = CompiledMemoryState.normalizeLlmResult(result, "compileLongterm")
         if (normalized.isBlank()) {
-            Logger.w("MemoryCompiler", "foldIntoLongTerm: LLM 返回空响应,保留旧内容,返回 FAILED")
+            Logger.w("MemoryCompiler", "foldIntoLongTerm: LLM returned an empty response; keeping the old content, returning FAILED")
             return@withContext Result.FAILED
         }
         updateStoredContent(Section.LONGTERM.key, normalized, fp, Instant.now().toString(), target)
@@ -822,11 +820,11 @@ class MemoryCompiler(
         val isZh = locale.startsWith("zh")
         val newFacts = factParts.joinToString("\n")
         val combined = if (prevFacts.isNotBlank()) {
-            val existingLabel = if (isZh) "## 现有 Facts" else "## Existing Facts"
-            val newLabel = if (isZh) "## 新增候选 Facts" else "## New Candidate Facts"
+            val existingLabel = if (isZh) "## Existing Facts" else "## Existing Facts"
+            val newLabel = if (isZh) "## New Candidate Facts" else "## New Candidate Facts"
             "$existingLabel\n\n$prevFacts\n\n$newLabel\n\n$newFacts"
         } else {
-            val newLabel = if (isZh) "## 新增候选 Facts" else "## New Candidate Facts"
+            val newLabel = if (isZh) "## New Candidate Facts" else "## New Candidate Facts"
             "$newLabel\n\n$newFacts"
         }
 
@@ -840,13 +838,13 @@ class MemoryCompiler(
             )
         }.onError { msg, t ->
             // v1.78 (M1): 记录 LLM 失败原因
-            Logger.w("MemoryCompiler", "compileFacts LLM 调用失败: $msg", t)
+            Logger.w("MemoryCompiler", "compileFacts LLM call failed: $msg", t)
         }.getOrNull() ?: return@withContext Result.FAILED
 
         // v1.0.51: 空响应防御 — 不覆盖已有 facts,返回 FAILED 供下次重试
         val normalized = CompiledMemoryState.normalizeLlmResult(result, "compileFacts")
         if (normalized.isBlank()) {
-            Logger.w("MemoryCompiler", "compileFacts: LLM 返回空响应,保留旧 facts,返回 FAILED")
+            Logger.w("MemoryCompiler", "compileFacts: LLM returned an empty response; keeping the old facts, returning FAILED")
             return@withContext Result.FAILED
         }
         // S-04: LLM 输出再过滤一遍(防 LLM 复述已删事实)
@@ -860,7 +858,7 @@ class MemoryCompiler(
             resultOf { absorbFactLines(filteredResult, scope, spaceId, tombstones, scopedStore) }
             resultOf { scopedStore.getByScopeAndSpace(scope, spaceId) }
                 .onSuccess { resultOf { reconcileFactsSectionWithStore(it, resolvedTarget) } }
-                .onError { msg, t -> Logger.w("MemoryCompiler", "compileFacts 投影失败(保留 LLM 产物): ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w("MemoryCompiler", "compileFacts projection failed (keeping the LLM output): ${t?.message ?: msg}") }
         }
         Result.COMPILED
     }
@@ -910,7 +908,7 @@ class MemoryCompiler(
             if (source.isEmpty()) {
                 if (current.isBlank()) return@withContext 0
                 clearStoredByKey(Section.FACTS.key, Instant.now().toString(), resolvedTarget)
-                Logger.i("MemoryCompiler", "FACTS 段已清空: 事实表为空(scope=$scope, space=$spaceId)")
+                Logger.i("MemoryCompiler", "FACTS section cleared: the facts table is empty (scope=$scope, space=$spaceId)")
                 return@withContext 1
             }
             val projected = FactsSectionProjector.project(
@@ -919,7 +917,7 @@ class MemoryCompiler(
             if (projected.isBlank()) {
                 if (current.isBlank()) return@withContext 0
                 clearStoredByKey(Section.FACTS.key, Instant.now().toString(), target)
-                Logger.i("MemoryCompiler", "FACTS 段已清空: 全部事实被墓碑过滤(scope=$scope, space=$spaceId)")
+                Logger.i("MemoryCompiler", "FACTS section cleared: all facts were filtered out by tombstones (scope=$scope, space=$spaceId)")
                 return@withContext 1
             }
             if (projected.trim() == current.trim()) return@withContext 0
@@ -932,7 +930,7 @@ class MemoryCompiler(
                 now = Instant.now().toString(),
                 target = resolvedTarget,
             )
-            Logger.i("MemoryCompiler", "FACTS 段确定性投影: ${projected.lines().size} 条 / ${projected.length} 字符")
+            Logger.i("MemoryCompiler", "FACTS section deterministic projection: ${projected.lines().size} entries / ${projected.length} chars")
             1
         }
 
@@ -966,10 +964,10 @@ class MemoryCompiler(
                     spaceId = spaceId,
                 )
             }.onSuccess { absorbed++ }
-                .onError { msg, t -> Logger.w("MemoryCompiler", "候选吸收失败: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w("MemoryCompiler", "Candidate absorption failed: ${t?.message ?: msg}") }
         }
         if (absorbed > 0) {
-            Logger.i("MemoryCompiler", "FACTS 候选吸收: $absorbed 条编译产物事实补录入表")
+            Logger.i("MemoryCompiler", "FACTS candidate absorption: $absorbed compiled-output facts added to the table")
         }
         return absorbed
     }
@@ -1055,11 +1053,11 @@ class MemoryCompiler(
     /** 拼装 memory.md(4 个 ## 标题段,空段写占位符)。 */
     private fun assembleCompiledMarkdown(facts: String, today: String, week: String, longterm: String, locale: String = "zh-CN"): String {
         val isZh = locale.startsWith("zh")
-        val empty = if (isZh) "（暂无）" else "(none)"
-        val factsTitle = if (isZh) "重要事实" else "Key facts"
-        val todayTitle = if (isZh) "今天" else "Today"
-        val weekTitle = if (isZh) "本周早些时候" else "Earlier this week"
-        val longtermTitle = if (isZh) "长期情况" else "Long-term context"
+        val empty = "(none)"
+        val factsTitle = if (isZh) "Key facts" else "Key facts"
+        val todayTitle = if (isZh) "Today" else "Today"
+        val weekTitle = if (isZh) "Earlier this week" else "Earlier this week"
+        val longtermTitle = if (isZh) "Long-term context" else "Long-term context"
         val section = { title: String, content: String ->
             "## $title\n\n${content.ifBlank { empty }}"
         }

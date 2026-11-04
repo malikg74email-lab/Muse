@@ -125,8 +125,8 @@ sealed class ProviderSpecificConfig {
             if (promptCacheTtl != "5m" && promptCacheTtl != "1h") {
                 io.zer0.common.Logger.w(
                     "ProviderSpecificConfig",
-                    "Anthropic.promptCacheTtl 非法值 '$promptCacheTtl',应为 '5m' 或 '1h'。" +
-                        "反序列化时无法改值(immutable),调用方应自行修正。",
+                    "Anthropic.promptCacheTtl invalid value '$promptCacheTtl', must be '5m' or '1h'." +
+                        "The value cannot be changed during deserialization (immutable); the caller should fix it itself.",
                 )
             }
         }

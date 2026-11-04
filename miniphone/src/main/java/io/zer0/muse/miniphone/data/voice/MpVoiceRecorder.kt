@@ -88,12 +88,12 @@ internal class MpVoiceRecorder(
 
     /** 拿一个可用的采集器;初始化抛异常或拿不到都当作这次录音没开始。 */
     private fun openRecord(): MpAudioRecord? = runCatching { factory.create(SAMPLE_RATE, CHANNELS, BITS_PER_SAMPLE) }
-        .onFailure { Logger.w(TAG, "麦克风初始化失败: ${it.message}") }
+        .onFailure { Logger.w(TAG, "Microphone initialization failed: ${it.message}") }
         .getOrNull()
 
     /** 起采;采集器拒绝启动也算失败。 */
     private fun beginCapture(record: MpAudioRecord): Boolean = runCatching { record.start() }
-        .onFailure { Logger.w(TAG, "起采失败: ${it.message}") }
+        .onFailure { Logger.w(TAG, "Failed to start capture: ${it.message}") }
         .isSuccess
 
     override suspend fun stop(): ByteArray? = withContext(ioDispatcher) {
@@ -135,7 +135,7 @@ internal class MpVoiceRecorder(
                         // 采集器暂时没数据:让出一下,不要空转烧 CPU
                         delay(READ_RETRY_MS)
                     } else {
-                        Logger.w(TAG, "AudioRecord.read 返回 $read,本次录音提前结束")
+                        Logger.w(TAG, "AudioRecord.read returned $read; this recording ended early")
                         break
                     }
                 }
@@ -143,9 +143,9 @@ internal class MpVoiceRecorder(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Logger.w(TAG, "录音写入失败: ${e.message}")
+            Logger.w(TAG, "Failed to write the recording: ${e.message}")
         } catch (e: IllegalStateException) {
-            Logger.w(TAG, "采集器状态异常: ${e.message}")
+            Logger.w(TAG, "Recorder state error: ${e.message}")
         } finally {
             // 正常结束、写满上限、被取消都在这里停采:pump 退出后不该继续占着麦克风
             current.record.stopQuietly()
@@ -155,7 +155,7 @@ internal class MpVoiceRecorder(
     private fun createTempFile(): File? = runCatching {
         directory.mkdirs()
         File(directory, TEMP_PREFIX + UUID.randomUUID() + TEMP_SUFFIX)
-    }.onFailure { Logger.w(TAG, "临时文件创建失败: ${it.message}") }.getOrNull()
+    }.onFailure { Logger.w(TAG, "Failed to create the temporary file: ${it.message}") }.getOrNull()
 
     /** 临时文件里只有裸 PCM,读出来补上 WAV 头;一个字节都没采到就当没有音频。 */
     private fun readWavOrNull(file: File): ByteArray? = runCatching {
@@ -166,7 +166,7 @@ internal class MpVoiceRecorder(
             header.copyInto(wav)
             pcm.copyInto(wav, header.size)
         }
-    }.onFailure { Logger.w(TAG, "读取录音失败: ${it.message}") }.getOrNull()
+    }.onFailure { Logger.w(TAG, "Failed to read the recording: ${it.message}") }.getOrNull()
 
     /** 一次录音的全部现场:采集器、临时文件、写入上限。 */
     private class Session(
@@ -206,11 +206,11 @@ internal fun cleanupStaleRecordings(directory: File, now: Long = System.currentT
     (directory.listFiles() ?: emptyArray())
         .filter { it.isFile && it.isStaleRecording(now) }
         .count { it.deleteQuietly() }
-}.onFailure { Logger.w(TAG, "清理残留录音失败: ${it.message}") }.getOrDefault(0)
+}.onFailure { Logger.w(TAG, "Failed to clean up leftover recordings: ${it.message}") }.getOrDefault(0)
 
 private fun File.isStaleRecording(now: Long): Boolean = name.startsWith(TEMP_PREFIX) && now - lastModified() > STALE_RECORDING_MS
 
-private fun File.deleteQuietly(): Boolean = runCatching { delete() }.onFailure { Logger.w(TAG, "删除残留录音失败: $name") }.getOrDefault(false)
+private fun File.deleteQuietly(): Boolean = runCatching { delete() }.onFailure { Logger.w(TAG, "Failed to delete the leftover recording: $name") }.getOrDefault(false)
 
 private const val TAG = "MpVoiceRecorder"
 
@@ -233,7 +233,7 @@ private const val TEMP_SUFFIX = ".pcm"
  * @param bitsPerSample 位深
  */
 internal fun wavHeader(dataLength: Int, sampleRate: Int, channels: Int = 1, bitsPerSample: Int = 16): ByteArray {
-    require(dataLength >= 0) { "dataLength 不能为负: $dataLength" }
+    require(dataLength >= 0) { "dataLength must not be negative: $dataLength" }
     val blockAlign = channels * bitsPerSample / 8
     val header = ByteArray(WAV_HEADER_SIZE)
     header.writeIntLe(OFFSET_RIFF_SIZE, WAV_HEADER_SIZE - 8 + dataLength) // RIFF 块长度 = 36 + dataLength
@@ -346,9 +346,9 @@ private class SystemMpAudioRecord(private val record: AudioRecord) : MpAudioReco
 }
 
 private fun MpAudioRecord.stopQuietly() {
-    runCatching { stop() }.onFailure { Logger.w("MpVoiceRecorder", "停采失败: ${it.message}") }
+    runCatching { stop() }.onFailure { Logger.w("MpVoiceRecorder", "Failed to stop capture: ${it.message}") }
 }
 
 private fun MpAudioRecord.releaseQuietly() {
-    runCatching { release() }.onFailure { Logger.w("MpVoiceRecorder", "释放采集器失败: ${it.message}") }
+    runCatching { release() }.onFailure { Logger.w("MpVoiceRecorder", "Failed to release the recorder: ${it.message}") }
 }

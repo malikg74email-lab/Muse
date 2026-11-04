@@ -37,7 +37,7 @@ class ContextHistoryDigestTest {
 
         assertTrue(digest != null)
         assertTrue(digest!!.content.contains("search_memory"))
-        assertTrue(digest.content.contains("工具结果: 找到 3 条记忆"))
+        assertTrue(digest.content.contains("Tool result: 找到 3 条记忆"))
     }
 
     @Test
@@ -53,7 +53,7 @@ class ContextHistoryDigestTest {
         // 最新的几条保留,更早的折叠为省略说明
         assertTrue(digest!!.content.contains("消息40"))
         assertFalse(digest.content.contains("消息1 "))
-        assertTrue(digest.content.contains("未展开"))
+        assertTrue(digest.content.contains("not expanded"))
     }
 
     @Test

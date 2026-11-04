@@ -166,11 +166,11 @@ class MemoryAutoSaveSchedulerParseTest {
             model = null,
         )
 
-        assertTrue(capturedHistory.contains("**系统**: system instruction"))
-        assertTrue(capturedHistory.contains("**用户**: user statement"))
-        assertTrue(capturedHistory.contains("**助手**: assistant statement"))
-        assertTrue(capturedHistory.contains("**工具**: tool result"))
-        assertFalse(capturedHistory.contains("**助手**: system instruction"))
-        assertFalse(capturedHistory.contains("**助手**: tool result"))
+        assertTrue(capturedHistory.contains("**System**: system instruction"))
+        assertTrue(capturedHistory.contains("**User**: user statement"))
+        assertTrue(capturedHistory.contains("**Assistant**: assistant statement"))
+        assertTrue(capturedHistory.contains("**Tool**: tool result"))
+        assertFalse(capturedHistory.contains("**Assistant**: system instruction"))
+        assertFalse(capturedHistory.contains("**Assistant**: tool result"))
     }
 }

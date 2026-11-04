@@ -94,7 +94,7 @@ open class MuseAccessibilityService : AccessibilityService() {
         internal fun notifyConnectionChanged(connected: Boolean) {
             connectionListeners.forEach { listener ->
                 runCatching { listener(connected) }
-                    .onFailure { Logger.w(TAG, "连接监听回调失败: ${it.message}") }
+                    .onFailure { Logger.w(TAG, "Connection listener callback failed: ${it.message}") }
             }
         }
     }
@@ -113,7 +113,7 @@ open class MuseAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         connected = true
         instance = this
-        Logger.i(TAG, "无障碍服务已连接")
+        Logger.i(TAG, "Accessibility service connected")
         notifyConnectionChanged(true)
     }
 
@@ -131,13 +131,13 @@ open class MuseAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        Logger.w(TAG, "无障碍服务被系统中断")
+        Logger.w(TAG, "Accessibility service interrupted by the system")
     }
 
     override fun onDestroy() {
         connected = false
         instance = null
-        Logger.i(TAG, "无障碍服务已销毁")
+        Logger.i(TAG, "Accessibility service destroyed")
         notifyConnectionChanged(false)
         super.onDestroy()
     }
@@ -162,7 +162,7 @@ open class MuseAccessibilityService : AccessibilityService() {
         val info = runCatching { serviceInfo }.getOrNull() ?: return false
         val capable = info.capabilities and AccessibilityServiceInfo.CAPABILITY_CAN_TAKE_SCREENSHOT != 0
         if (!capable) {
-            Logger.w(TAG, "服务未获得截图能力(capabilities=${info.capabilities});检查 XML 是否声明 android:canTakeScreenshot")
+            Logger.w(TAG, "Service has not obtained screenshot capability (capabilities=${info.capabilities}); check whether the XML declares android:canTakeScreenshot")
         }
         return capable
     }
@@ -173,14 +173,14 @@ open class MuseAccessibilityService : AccessibilityService() {
     }
 
     fun getUiHierarchy(): String {
-        val root = rootInActiveWindow ?: return "[error] 无活动窗口(无障碍服务未授权或无前台窗口)"
+        val root = rootInActiveWindow ?: return "[error] No active window (accessibility service not authorised or no foreground window)"
         val sb = StringBuilder()
         try {
             sb.append("[activity] ").append(getCurrentActivityName().ifBlank { "unknown" }).append('\n')
             val counter = intArrayOf(0)
             dumpNode(root, "0", sb, counter)
             return if (counter[0] >= MAX_NODES) {
-                sb.append("\n[truncated] 已达到最大节点数 $MAX_NODES")
+                sb.append("\n[truncated] Maximum node count $MAX_NODES reached")
                 sb.toString()
             } else {
                 sb.toString()
@@ -254,7 +254,7 @@ open class MuseAccessibilityService : AccessibilityService() {
         check(Looper.myLooper() != Looper.getMainLooper()) { "takeScreenshot must not run on main thread" }
         // AccessibilityService.takeScreenshot() 需 API 34+,低版本不支持
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            Logger.w(TAG, "takeScreenshot 需 Android 14+(API 34),当前 API ${Build.VERSION.SDK_INT}")
+            Logger.w(TAG, "takeScreenshot requires Android 14+ (API 34), current API ${Build.VERSION.SDK_INT}")
             return false
         }
         if (path.isBlank()) return false
@@ -270,13 +270,13 @@ open class MuseAccessibilityService : AccessibilityService() {
                 }
 
                 override fun onFailure(errorCode: Int) {
-                    Logger.w(TAG, "takeScreenshot 失败 errorCode=$errorCode")
+                    Logger.w(TAG, "takeScreenshot failed errorCode=$errorCode")
                     latch.countDown()
                 }
             },
         )
         if (!latch.await(SCREENSHOT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-            Logger.w(TAG, "takeScreenshot 超时")
+            Logger.w(TAG, "takeScreenshot timed out")
             return false
         }
         return result
@@ -405,7 +405,7 @@ open class MuseAccessibilityService : AccessibilityService() {
             true
         } catch (e: Exception) {
             // 必要容错:文件 IO 可能失败(磁盘满/权限),记录日志而非吞异常
-            Logger.e(TAG, "saveScreenshot 失败: ${e.message}", e)
+            Logger.e(TAG, "saveScreenshot failed: ${e.message}", e)
             false
         } finally {
             hardwareBuffer.close()

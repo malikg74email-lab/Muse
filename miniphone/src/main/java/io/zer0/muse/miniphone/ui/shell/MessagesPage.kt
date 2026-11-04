@@ -213,12 +213,12 @@ private fun ThreadsEmptyState(onGoContacts: () -> Unit, modifier: Modifier = Mod
         EmptyBubble()
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "还没有聊天",
+            text = "No chats yet",
             style = typography.title.copy(color = colors.textPrimary),
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "去通讯录找个角色开始吧",
+            text = "Go to Contacts and find a character to start",
             style = typography.caption.copy(color = colors.textSecondary),
         )
         Spacer(Modifier.height(18.dp))
@@ -275,5 +275,5 @@ private val ThreadTextGap = 12.dp
 
 private const val MAX_BADGE_COUNT: Int = 99
 private const val FULL_BADGE_TEXT: String = "99+"
-private const val EMPTY_PREVIEW_TEXT: String = "还没有消息"
-private const val GO_CONTACTS_LABEL: String = "去通讯录"
+private const val EMPTY_PREVIEW_TEXT: String = "No messages yet"
+private const val GO_CONTACTS_LABEL: String = "Go to Contacts"

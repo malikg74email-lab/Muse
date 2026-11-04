@@ -294,12 +294,12 @@ private val TrackHeight = 22.dp
 private val TrackPadding = 3.dp
 private val TrackKnob = 16.dp
 
-private const val TITLE: String = "写动态"
-private const val CLOSE_LABEL: String = "取消"
-private const val CONFIRM_LABEL: String = "发布"
-private const val PLACEHOLDER: String = "这一刻的想法……"
-private const val PICK_LABEL: String = "选择图片"
-private const val ONLY_SELF_LABEL: String = "仅自己可见"
+private const val TITLE: String = "Write an update"
+private const val CLOSE_LABEL: String = "Cancel"
+private const val CONFIRM_LABEL: String = "Post"
+private const val PLACEHOLDER: String = "What's on your mind right now……"
+private const val PICK_LABEL: String = "Choose an image"
+private const val ONLY_SELF_LABEL: String = "Only visible to me"
 
 /** 选图网格的列数。 */
 private const val PICKED_COLUMNS: Int = 3

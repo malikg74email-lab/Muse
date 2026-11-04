@@ -388,17 +388,17 @@ interface Provider {
         val lower = raw.lowercase()
         val hint = when {
             "401" in lower || "unauthorized" in lower || "invalid api key" in lower ->
-                "API Key 无效或已过期"
-            "403" in lower || "forbidden" in lower -> "无访问权限(检查 Key 权限/地区限制)"
+                "API Key is invalid or expired"
+            "403" in lower || "forbidden" in lower -> "No access permission (check the Key permissions / regional restrictions)"
             "404" in lower || "model not found" in lower || "does not exist" in lower ->
-                "模型不存在或 Base URL 路径错误"
-            "429" in lower || "rate limit" in lower -> "触发限流,稍后重试"
-            "insufficient" in lower || "quota" in lower || "balance" in lower -> "余额或额度不足"
-            "timeout" in lower || "timed out" in lower -> "请求超时(15s),检查网络或 Base URL"
+                "Model does not exist or the Base URL path is wrong"
+            "429" in lower || "rate limit" in lower -> "Rate limit triggered, retry later"
+            "insufficient" in lower || "quota" in lower || "balance" in lower -> "Insufficient balance or quota"
+            "timeout" in lower || "timed out" in lower -> "Request timed out (15s), check the network or Base URL"
             "connect" in lower || "unable to resolve" in lower || "unknownhost" in lower ->
-                "无法连接(检查网络 / Base URL / 代理)"
-            "unexpected" in lower -> "上游返回了非预期格式(多为中转站兼容性问题,聊天可能仍可用)"
-            raw.isBlank() -> "未知错误(${t::class.simpleName ?: "Throwable"})"
+                "Cannot connect (check network / Base URL / proxy)"
+            "unexpected" in lower -> "Upstream returned an unexpected format (mostly a relay-station compatibility issue; chat may still work)"
+            raw.isBlank() -> "Unknown error (${t::class.simpleName ?: "Throwable"})"
             else -> raw
         }
         return if (raw.isNotBlank() && hint != raw) "$hint — $raw" else hint

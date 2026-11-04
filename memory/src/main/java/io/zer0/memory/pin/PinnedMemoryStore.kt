@@ -237,7 +237,7 @@ class PinnedMemoryStore(
     private fun renderEntries(entries: List<PinnedEntry>): String {
         if (entries.isEmpty()) return ""
         return buildString {
-            appendLine("## Pinned Memories (用户要求始终记住的内容)")
+            appendLine("## Pinned Memories (content the user asked to always remember)")
             for (e in entries) {
                 appendLine("- ${e.content}")
             }

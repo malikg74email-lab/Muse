@@ -225,12 +225,12 @@ object OAuthManager {
         }
         val deviceCodeUrl = config.deviceCodeUrl
         if (deviceCodeUrl.isNullOrBlank()) {
-            val msg = "Device Flow 不可用:deviceCodeUrl 为空"
+            val msg = "Device Flow unavailable: deviceCodeUrl is empty"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
         if (config.clientId.isBlank()) {
-            val msg = "Device Flow 不可用:clientId 为空"
+            val msg = "Device Flow unavailable: clientId is empty"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -257,7 +257,7 @@ object OAuthManager {
                 val response = buildHttpClient().newCall(request).execute().use { resp ->
                     if (!resp.isSuccessful) {
                         val body = resp.body?.string().orEmpty()
-                        error("device_code 请求失败: HTTP ${resp.code}${oauthErrorField(body)}")
+                        error("device_code request failed: HTTP ${resp.code}${oauthErrorField(body)}")
                     }
                     io.zer0.common.AppJson.decodeFromString(
                         DeviceCodeResponse.serializer(),
@@ -272,14 +272,14 @@ object OAuthManager {
             }
         }
         if (deviceResp.isFailure) {
-            val msg = "device_code 请求异常: ${deviceResp.exceptionOrNull()?.message ?: "未知"}"
+            val msg = "device_code request exception: ${deviceResp.exceptionOrNull()?.message ?: "unknown"}"
             Logger.w(TAG, msg)
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(deviceResp.exceptionOrNull() ?: IllegalStateException(msg))
         }
         val dc = deviceResp.getOrThrow()
         if (dc.device_code.isBlank() || dc.user_code.isBlank()) {
-            val msg = "device_code 响应缺字段: device_code/user_code 为空"
+            val msg = "device_code response missing fields: device_code/user_code is empty"
             Logger.w(TAG, msg)
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
@@ -319,12 +319,12 @@ object OAuthManager {
                     currentInterval = (currentInterval + 5000L).coerceAtMost(60_000L)
                 }
                 "expired_token" -> {
-                    val msg = "device_code 已过期,请重新发起 OAuth 登录"
+                    val msg = "device_code has expired; please start the OAuth sign-in again"
                     _stateFlow.value = State.ERROR(msg)
                     return Result.failure(IllegalStateException(msg))
                 }
                 "access_denied" -> {
-                    val msg = "用户拒绝了授权请求"
+                    val msg = "The user declined the authorization request"
                     _stateFlow.value = State.ERROR(msg)
                     return Result.failure(IllegalStateException(msg))
                 }
@@ -332,13 +332,13 @@ object OAuthManager {
                     // 无 error 但也无 access_token,继续轮询
                 }
                 else -> {
-                    val msg = "OAuth token 轮询失败: ${tokenResp.error} — ${tokenResp.error_description ?: "未知"}"
+                    val msg = "OAuth token polling failed: ${tokenResp.error} — ${tokenResp.error_description ?: "unknown"}"
                     _stateFlow.value = State.ERROR(msg)
                     return Result.failure(IllegalStateException(msg))
                 }
             }
         }
-        val msg = "OAuth 登录超时,请重试"
+        val msg = "OAuth sign-in timed out; please retry"
         _stateFlow.value = State.ERROR(msg)
         return Result.failure(IllegalStateException(msg))
     }
@@ -358,7 +358,7 @@ object OAuthManager {
     @Suppress("CyclomaticComplexMethod", "ReturnCount", "TooGenericExceptionCaught", "LongMethod")
     private suspend fun launchCodexDeviceAuth(config: OAuthConfig, providerId: String): Result<String> {
         if (config.clientId.isBlank()) {
-            val msg = "Codex 登录不可用:clientId 为空"
+            val msg = "Codex sign-in unavailable: clientId is empty"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -379,13 +379,13 @@ object OAuthManager {
                     .build()
                 buildHttpClient().newCall(request).execute().use { resp ->
                     val text = resp.body?.string().orEmpty()
-                    if (!resp.isSuccessful) error("usercode 请求失败: HTTP ${resp.code}${oauthErrorField(text)}")
+                    if (!resp.isSuccessful) error("usercode request failed: HTTP ${resp.code}${oauthErrorField(text)}")
                     io.zer0.common.AppJson.decodeFromString(CodexUserCodeResponse.serializer(), text)
                 }
-            }.onError { msg, t -> Logger.w(TAG, "Codex usercode 请求异常: $msg", t) }.getOrNull()
+            }.onError { msg, t -> Logger.w(TAG, "Codex usercode request exception: $msg", t) }.getOrNull()
         }
         if (userCodeResp == null || userCodeResp.resolvedUserCode.isBlank() || userCodeResp.deviceAuthId.isBlank()) {
-            val msg = "Codex 登录失败:未获取到设备码"
+            val msg = "Codex sign-in failed: no device code obtained"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -416,7 +416,7 @@ object OAuthManager {
                         val text = resp.body?.string().orEmpty()
                         io.zer0.common.AppJson.decodeFromString(CodexAuthCodeResponse.serializer(), text)
                     }
-                }.onError { msg, t -> Logger.w(TAG, "Codex 设备码轮询异常: $msg", t) }.getOrNull()
+                }.onError { msg, t -> Logger.w(TAG, "Codex device code polling exception: $msg", t) }.getOrNull()
             }
             if (polled != null && polled.authorizationCode.isNotBlank()) {
                 codeResult = CodexAuthCode(polled.authorizationCode, polled.codeVerifier)
@@ -424,7 +424,7 @@ object OAuthManager {
             }
         }
         if (codeResult == null) {
-            val msg = "Codex 授权超时或未完成,请重试"
+            val msg = "Codex authorization timed out or did not complete; please retry"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -444,15 +444,15 @@ object OAuthManager {
                 buildHttpClient().newCall(request).execute().use { resp ->
                     val text = resp.body?.string().orEmpty()
                     if (!resp.isSuccessful) {
-                        Logger.w(TAG, "Codex token 交换失败: HTTP ${resp.code}${oauthErrorField(text)}")
+                        Logger.w(TAG, "Codex token exchange failed: HTTP ${resp.code}${oauthErrorField(text)}")
                         return@use null
                     }
                     io.zer0.common.AppJson.decodeFromString(TokenResponse.serializer(), text)
                 }
-            }.onError { msg, t -> Logger.w(TAG, "Codex token 交换异常: $msg", t) }.getOrNull()
+            }.onError { msg, t -> Logger.w(TAG, "Codex token exchange exception: $msg", t) }.getOrNull()
         }
         if (tokenResp == null || tokenResp.access_token.isBlank()) {
-            val msg = "Codex token 交换失败"
+            val msg = "Codex token exchange failed"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -503,7 +503,7 @@ object OAuthManager {
     @Suppress("CyclomaticComplexMethod", "ReturnCount")
     suspend fun launchAuthorizationCodeFlow(activity: Activity, config: OAuthConfig, providerId: String = ""): Result<String> {
         if (config.clientId.isBlank()) {
-            val msg = "Auth Code Flow 不可用:clientId 为空"
+            val msg = "Auth Code Flow unavailable: clientId is empty"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -523,7 +523,7 @@ object OAuthManager {
                 }
             }
         } ?: run {
-            val msg = "已有 OAuth 授权流程正在等待回调"
+            val msg = "An OAuth authorization flow is already waiting for a callback"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -538,7 +538,7 @@ object OAuthManager {
         // 3. 打开浏览器
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(authUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { activity.startActivity(intent) }.onFailure {
-            val msg = "无法打开浏览器: ${it.message ?: "未知"}"
+            val msg = "Cannot open the browser: ${it.message ?: "unknown"}"
             _stateFlow.value = State.ERROR(msg)
             clearPendingAuthCodeFlow(pending)
             return Result.failure(it)
@@ -553,7 +553,7 @@ object OAuthManager {
             config.redirectUri.startsWith("http://127.0.0.1:")
         ) {
             runCatching { LoopbackCallbackServer.start(config.redirectUri, pending) }.getOrElse {
-                Logger.e(TAG, "Loopback 回调服务器启动失败", it)
+                Logger.e(TAG, "Loopback callback server failed to start", it)
                 null
             }
         } else {
@@ -563,8 +563,8 @@ object OAuthManager {
         loopbackServer?.stop()
         if (codeResult.isFailure) {
             clearPendingAuthCodeFlow(pending)
-            val error = codeResult.exceptionOrNull() ?: IllegalStateException("授权回调失败")
-            _stateFlow.value = State.ERROR(error.message ?: "授权回调失败")
+            val error = codeResult.exceptionOrNull() ?: IllegalStateException("Authorization callback failed")
+            _stateFlow.value = State.ERROR(error.message ?: "Authorization callback failed")
             return Result.failure(error)
         }
         val code = codeResult.getOrThrow()
@@ -574,7 +574,7 @@ object OAuthManager {
         val tokenResp = exchangeCodeForToken(config, code, codeVerifier)
         clearPendingAuthCodeFlow(pending)
         if (tokenResp == null || tokenResp.access_token.isBlank()) {
-            val msg = "OAuth token 交换失败"
+            val msg = "OAuth token exchange failed"
             _stateFlow.value = State.ERROR(msg)
             return Result.failure(IllegalStateException(msg))
         }
@@ -597,15 +597,15 @@ object OAuthManager {
      */
     fun completeAuthorizationCodeFlow(code: String, state: String): Boolean {
         val pending = pendingAuthCodeFlow.value ?: run {
-            Logger.w(TAG, "completeAuthorizationCodeFlow 但无 pending Auth Code Flow")
+            Logger.w(TAG, "completeAuthorizationCodeFlow but no pending Auth Code Flow")
             return false
         }
         if (state != pending.state) {
-            Logger.w(TAG, "OAuth state 不匹配: expected=${pending.state.take(4)}***, got=${state.take(4)}***")
+            Logger.w(TAG, "OAuth state mismatch: expected=${pending.state.take(4)}***, got=${state.take(4)}***")
             return false
         }
         if (code.isBlank()) {
-            Logger.w(TAG, "OAuth 回调 code 为空")
+            Logger.w(TAG, "OAuth callback code is empty")
             return false
         }
         return pending.deferred.complete(code)
@@ -620,7 +620,7 @@ object OAuthManager {
         return try {
             Result.success(withTimeout(timeoutMs) { deferred.await() })
         } catch (timeout: TimeoutCancellationException) {
-            Result.failure(IllegalStateException("OAuth 授权回调超时", timeout))
+            Result.failure(IllegalStateException("OAuth authorization callback timed out", timeout))
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
@@ -692,7 +692,7 @@ object OAuthManager {
      */
     suspend fun refreshTokenIfNeeded(providerId: String, config: OAuthConfig? = null): Result<String> {
         if (providerId.isBlank()) {
-            return Result.failure(IllegalArgumentException("providerId 为空"))
+            return Result.failure(IllegalArgumentException("providerId is empty"))
         }
         val lock = refreshLocks.computeIfAbsent(providerId) { Mutex() }
         return lock.withLock { refreshTokenIfNeededLocked(providerId, config) }
@@ -700,10 +700,10 @@ object OAuthManager {
 
     private suspend fun refreshTokenIfNeededLocked(providerId: String, config: OAuthConfig? = null): Result<String> {
         val store = secureStore ?: run {
-            return Result.failure(IllegalStateException("SecureCredentialStore 未初始化"))
+            return Result.failure(IllegalStateException("SecureCredentialStore not initialized"))
         }
         val bundle = store.getOAuthToken(providerId)
-            ?: return Result.failure(IllegalStateException("无已存储的 OAuth token"))
+            ?: return Result.failure(IllegalStateException("No stored OAuth token"))
         val now = System.currentTimeMillis()
         val bufferMs = REFRESH_BUFFER_SECONDS * 1000L
         // 未过期(含 expiresAt=0 未知)直接返回当前 access_token
@@ -713,18 +713,18 @@ object OAuthManager {
         // 过期但无 refresh_token,无法刷新
         val refreshToken = bundle.refreshToken
         if (refreshToken.isNullOrBlank()) {
-            return Result.failure(IllegalStateException("token 已过期且无 refresh_token"))
+            return Result.failure(IllegalStateException("Token expired and no refresh_token"))
         }
         // B-24: 优先使用调用方传入的 config(跨 App 重启后持久化配置仍可刷新),
         // 仅在调用方未传时退回内存缓存(providerConfigs 只在 launch* 流程填充)
         val oauthConfig = config ?: synchronized(providerConfigs) { providerConfigs[providerId] }
-            ?: return Result.failure(IllegalStateException("无缓存的 OAuthConfig,无法刷新"))
+            ?: return Result.failure(IllegalStateException("No cached OAuthConfig; cannot refresh"))
         // 调用 refresh_token grant
         val refreshResult = refreshAccessToken(oauthConfig, refreshToken)
         if (refreshResult == null || refreshResult.access_token.isBlank()) {
             // 刷新失败,清掉本地存储(强制用户重新登录)
             store.deleteOAuthToken(providerId)
-            return Result.failure(IllegalStateException("refresh_token 已失效,请重新登录"))
+            return Result.failure(IllegalStateException("refresh_token is no longer valid; please sign in again"))
         }
         // 更新 TokenBundle(refresh_token 部分供应商每次刷新都返回新的,部分只首次返回;
         // 若响应未带 refresh_token,保留旧值以备下次刷新)
@@ -767,7 +767,7 @@ object OAuthManager {
                     val body = resp.body?.string().orEmpty()
                     if (!resp.isSuccessful) {
                         // C-25: 响应体原文可能回显敏感参数,只记 HTTP code + 脱敏 error 字段
-                        Logger.w(TAG, "refresh_token 失败: HTTP ${resp.code}${oauthErrorField(body)}")
+                        Logger.w(TAG, "refresh_token failed: HTTP ${resp.code}${oauthErrorField(body)}")
                         return@use null
                     }
                     io.zer0.common.AppJson.decodeFromString(
@@ -775,7 +775,7 @@ object OAuthManager {
                         body,
                     )
                 }
-            }.onError { msg, t -> Logger.w(TAG, "refresh_token 请求异常: $msg", t) }.getOrNull()
+            }.onError { msg, t -> Logger.w(TAG, "refresh_token request exception: $msg", t) }.getOrNull()
         }
     }
 
@@ -821,9 +821,9 @@ object OAuthManager {
                         body,
                     )
                 }
-            }.onError { msg, t -> Logger.w(TAG, "OAuth token 轮询请求异常: $msg", t) }
+            }.onError { msg, t -> Logger.w(TAG, "OAuth token polling request exception: $msg", t) }
                 .getOrNull()
-                ?: TokenResponse(error = "network_error", error_description = "网络请求失败")
+                ?: TokenResponse(error = "network_error", error_description = "Network request failed")
         }
     }
 
@@ -849,7 +849,7 @@ object OAuthManager {
                     val body = resp.body?.string().orEmpty()
                     if (!resp.isSuccessful) {
                         // C-25: 响应体原文可能回显敏感参数,只记 HTTP code + 脱敏 error 字段
-                        Logger.w(TAG, "token 交换失败: HTTP ${resp.code}${oauthErrorField(body)}")
+                        Logger.w(TAG, "Token exchange failed: HTTP ${resp.code}${oauthErrorField(body)}")
                         return@use null
                     }
                     val token = io.zer0.common.AppJson.decodeFromString(
@@ -857,12 +857,12 @@ object OAuthManager {
                         body,
                     )
                     if (token.access_token.isBlank()) {
-                        Logger.w(TAG, "token 响应无 access_token: error=${token.error}, desc=${token.error_description}")
+                        Logger.w(TAG, "Token response has no access_token: error=${token.error}, desc=${token.error_description}")
                         return@use null
                     }
                     token
                 }
-            }.onError { msg, t -> Logger.w(TAG, "token 交换请求异常: $msg", t) }.getOrNull()
+            }.onError { msg, t -> Logger.w(TAG, "Token exchange request exception: $msg", t) }.getOrNull()
         }
     }
 
@@ -914,7 +914,7 @@ object OAuthManager {
 }
 
 /** OAuth 流程被取消时用的异常(用户主动取消 / 页面退出)。 */
-private class OAuthCancelledException : Exception("OAuth 流程已取消")
+private class OAuthCancelledException : Exception("OAuth flow cancelled")
 
 /**
  * v2.x（Codex）: 解析 JWT payload 里的指定 claim（无签名校验 —— 仅读取声明，

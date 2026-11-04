@@ -66,10 +66,10 @@ class MiniPhoneGroupChatUiTest {
         compose.onNodeWithTag(MiniPhoneTags.thread("t-group")).assertIsDisplayed()
         compose.onNodeWithTag(MiniPhoneTags.thread("t-dm")).assertIsDisplayed()
         compose.onNodeWithText("阿远、小满、我").assertIsDisplayed()
-        compose.onNodeWithText("[群] 晚上见").assertIsDisplayed()
+        compose.onNodeWithText("[Group] 晚上见").assertIsDisplayed()
         compose.onNodeWithText("在吗").assertIsDisplayed()
-        assertEquals("[群] 在吗", groupPreviewOf("在吗"))
-        assertEquals("没有最后一条消息时也要能认出是群", "[群]", groupPreviewOf(null))
+        assertEquals("[Group] 在吗", groupPreviewOf("在吗"))
+        assertEquals("没有最后一条消息时也要能认出是群", "[Group]", groupPreviewOf(null))
     }
 
     @Test
@@ -112,7 +112,7 @@ class MiniPhoneGroupChatUiTest {
         // 只选一个:还是按不动
         compose.onNodeWithTag(MiniPhoneTags.groupPick("c1")).performClick()
         compose.waitForIdle()
-        compose.onNodeWithTag(MiniPhoneTags.GROUP_CREATE_COUNT).assertTextEquals("已选 1 人,至少选 2 人")
+        compose.onNodeWithTag(MiniPhoneTags.GROUP_CREATE_COUNT).assertTextEquals("1 people selected; select at least 2")
         compose.onNodeWithTag(MiniPhoneTags.GROUP_CREATE_DONE).assertIsNotEnabled()
 
         // 选到两个:完成可用,点下去带着这两个 id 建群并直接进群
@@ -142,7 +142,7 @@ class MiniPhoneGroupChatUiTest {
         }
 
         compose.onNodeWithTag(MiniPhoneTags.groupPickMark("c1"), useUnmergedTree = true).assertExists()
-        compose.onNodeWithTag(MiniPhoneTags.GROUP_CREATE_COUNT).assertTextEquals("已选 1 人,至少选 2 人")
+        compose.onNodeWithTag(MiniPhoneTags.GROUP_CREATE_COUNT).assertTextEquals("1 people selected; select at least 2")
     }
 
     /** 真落库再读回来,顺带验证群名与预览标记确实从实体走到了列表。 */

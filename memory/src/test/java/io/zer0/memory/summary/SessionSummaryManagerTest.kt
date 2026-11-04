@@ -39,7 +39,7 @@ class SessionSummaryManagerTest {
             model = null,
         )
 
-        assertTrue(llmClient.userContent.contains("助手当时表达的感受"))
+        assertTrue(llmClient.userContent.contains("Assistant self-reported Vibe"))
         assertTrue(llmClient.userContent.contains("Vibe: 有些担心"))
         assertFalse(llmClient.userContent.contains("Sparks:"))
         assertFalse(llmClient.userContent.contains("Reflections:"))

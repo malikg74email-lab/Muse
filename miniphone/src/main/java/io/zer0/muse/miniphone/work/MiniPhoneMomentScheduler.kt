@@ -51,7 +51,7 @@ object MiniPhoneMomentScheduler {
                 ExistingPeriodicWorkPolicy.KEEP,
                 request,
             )
-        }.onError { msg, t -> Logger.w(TAG, "朋友圈定时注册失败 | reason=${t?.message ?: msg}", t) }
+        }.onError { msg, t -> Logger.w(TAG, "Scheduled Moments registration failed | reason=${t?.message ?: msg}", t) }
         // 主动私信:同样的 3 小时周期 + 90 分钟初始延迟,与上面错开半拍
         MiniPhoneProactiveChatScheduler.start(context)
     }
@@ -59,7 +59,7 @@ object MiniPhoneMomentScheduler {
     /** 取消周期任务(下次 [start] 会重新排期)。 */
     fun stop(context: Context) {
         resultOf { WorkManager.getInstance(context.applicationContext).cancelUniqueWork(UNIQUE_WORK_NAME) }
-            .onError { msg, t -> Logger.w(TAG, "朋友圈定时取消失败 | reason=${t?.message ?: msg}", t) }
+            .onError { msg, t -> Logger.w(TAG, "Scheduled Moments cancellation failed | reason=${t?.message ?: msg}", t) }
         MiniPhoneProactiveChatScheduler.stop(context)
     }
 

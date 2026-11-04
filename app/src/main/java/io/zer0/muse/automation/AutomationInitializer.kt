@@ -168,7 +168,7 @@ object AutomationInitializer {
             io.zer0.muse.accessibility.MuseAccessibilityService.addConnectionListener { connected ->
                 appScope.launch {
                     runCatching { mgr.refreshPermissions() }
-                        .onFailure { Logger.w(TAG, "a11y 连接($connected)后刷新权限失败: ${it.message}") }
+                        .onFailure { Logger.w(TAG, "Refreshing permissions after the a11y connection ($connected) failed: ${it.message}") }
                 }
             }
 

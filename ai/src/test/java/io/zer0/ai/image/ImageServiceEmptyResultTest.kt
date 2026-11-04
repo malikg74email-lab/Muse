@@ -74,11 +74,11 @@ class ImageServiceEmptyResultTest {
         runBlocking {
             try {
                 service.generate(prompt = "一只猫", providerConfig = config)
-                fail("空结果必须抛 IMAGE_NO_RESULTS, 而非返回空列表/假图")
+                fail("An empty result must throw IMAGE_NO_RESULTS rather than returning an empty list / fake images")
             } catch (e: IllegalStateException) {
                 // error(ErrorCode...) 在 Kotlin 中抛 IllegalStateException
                 assertTrue(
-                    "错误消息应标识 IMAGE_NO_RESULTS, 实际: ${e.message}",
+                    "The error message should identify IMAGE_NO_RESULTS, actual: ${e.message}",
                     e.message?.contains(ErrorCode.IMAGE_NO_RESULTS.toMessage()) == true,
                 )
             }

@@ -270,7 +270,7 @@ class OpenAIProvider(
         // v2.6.1: 剥掉中转站模型列表里的前导分组标签(可能有多级,如 "[a][b]model")。
         val base = stripChannelGroupLabelsImpl(prefixStripped)
         if (base != modelId) {
-            Logger.d("OpenAIProvider", "模型名归一化: \"$modelId\" -> \"$base\"(剥离分组/配置前缀)")
+            Logger.d("OpenAIProvider", "Model name normalized: \"$modelId\" -> \"$base\" (stripped group/config prefix)")
         }
         // 审计修复 (用户反馈): 请求层 DeepSeek 模型名归一化(见 normalizeDeepSeekModelId)
         return normalizeDeepSeekModelId(base, baseUrl())
@@ -342,7 +342,7 @@ class OpenAIProvider(
      */
     private fun logResponsesFailureForensics(t: Throwable?, response: Response?) {
         runCatching {
-            val head = response?.let { forensicResponseHead(it) } ?: "no-response(网络层失败,无 HTTP 响应)"
+            val head = response?.let { forensicResponseHead(it) } ?: "no-response (network layer failure, no HTTP response)"
             val bodyHead = response?.let { forensicBodyHead(it) }
             Logger.w(
                 "OpenAIProvider",
@@ -470,7 +470,7 @@ class OpenAIProvider(
             //   (避免日志里出现误导性的 finishReason=null + aborted=true 组合)。
             if (!streamGuardDone.compareAndSet(false, true)) {
                 if (pendingFallback.get()) {
-                    Logger.d("OpenAIProvider", "stream-guard: 回退进行中, 跳过 Done 事件")
+                    Logger.d("OpenAIProvider", "stream-guard: fallback in progress, skipping the Done event")
                     return
                 }
                 // v1.0.53: 第一次 emitDone 已发送 Done+close,此处只需确保流关闭,不重发 Done。
@@ -535,8 +535,8 @@ class OpenAIProvider(
                         val recoveredText = acc.args.current()
                         Logger.w(
                             "OpenAIProvider",
-                            "stream-guard: 拦截空 name tool call (localIndex=$localIndex, args=${acc.args.length} chars)," +
-                                "恢复为文本: ${recoveredText.take(50)}",
+                            "stream-guard: intercepted an empty-name tool call (localIndex=$localIndex, args=${acc.args.length} chars)," +
+                                "recovered as text: ${recoveredText.take(50)}",
                         )
                         contentCharsSent.addAndGet(recoveredText.length)
                         trySend(ChatStreamEvent.ContentDelta(recoveredText))
@@ -550,7 +550,7 @@ class OpenAIProvider(
                 pendingFallback.set(true)
                 Logger.w(
                     "OpenAIProvider",
-                    "stream-guard: 检测到流式过早结束 (chars=$totalChars, reasoning=$reasoningChars, duration=${deltaDuration}ms), 自动回退到非流式请求 | url=${sanitizeUrl(
+                    "stream-guard: detected premature stream end (chars=$totalChars, reasoning=$reasoningChars, duration=${deltaDuration}ms), automatically falling back to a non-streaming request | url=${sanitizeUrl(
                         url,
                     )}",
                 )
@@ -560,10 +560,10 @@ class OpenAIProvider(
                         // v1.0.48: 缩短退避到 500ms+jitter — 原 1.5s 导致结束后卡顿明显,
                         //   429 已有重试机制兜底,无需过长退避
                         val backoffMs = 500L + Random.nextLong(0, 300)
-                        Logger.d("OpenAIProvider", "stream-guard: 回退前等待 ${backoffMs}ms(rpm 退避)")
+                        Logger.d("OpenAIProvider", "stream-guard: waiting ${backoffMs}ms before fallback (rpm backoff)")
                         delay(backoffMs)
                         if (request.abortSignal.aborted) {
-                            Logger.d("OpenAIProvider", "stream-guard: 等待期间用户取消,放弃回退")
+                            Logger.d("OpenAIProvider", "stream-guard: user cancelled during the wait, abandoning fallback")
                             pendingFallback.set(false)
                             trySend(ChatStreamEvent.Done(finishReason))
                             close()
@@ -585,15 +585,15 @@ class OpenAIProvider(
                         if (!streamSourceClosed.get() && streamProducedMore) {
                             Logger.i(
                                 "OpenAIProvider",
-                                "stream-guard: 等待期间流式已恢复(content=$currentContent, reasoning=$currentReasoning)," +
-                                    "放弃回退,继续接收流式",
+                                "stream-guard: streaming recovered during the wait (content=$currentContent, reasoning=$currentReasoning)," +
+                                    "abandoning fallback, continuing to receive the stream",
                             )
                             pendingFallback.set(false)
                             streamGuardDone.set(false)
                             return@launch
                         }
                         if (streamSourceClosed.get()) {
-                            Logger.d("OpenAIProvider", "stream-guard: SSE 已关闭,继续执行非流式回退")
+                            Logger.d("OpenAIProvider", "stream-guard: SSE closed, continuing with the non-streaming fallback")
                         }
                         // v1.0.48: 回退重试 — 商汤 API 偶发 Connection reset,重试 1 次提高成功率
                         var completion: ChatCompletion? = null
@@ -607,7 +607,7 @@ class OpenAIProvider(
                                 throw e
                             } catch (e: Exception) {
                                 lastError = e
-                                Logger.w("OpenAIProvider", "stream-guard: 非流式回退第 $attempt 次失败: ${e.message}")
+                                Logger.w("OpenAIProvider", "stream-guard: non-streaming fallback attempt $attempt failed: ${e.message}")
                                 if (attempt < 2 && !request.abortSignal.aborted) {
                                     // v1.0.53: 429 限流时等满 RPM 窗口(10s)再重试,避免连续撞限流
                                     val isRateLimited = e.message?.contains("429") == true ||
@@ -670,15 +670,15 @@ class OpenAIProvider(
                                     malformedToolCallRetries.incrementAndGet()
                                     Logger.w(
                                         "OpenAIProvider",
-                                        "stream-guard: 协议畸形 — finish_reason=$finishReason 但未解析出 toolCall" +
+                                        "stream-guard: protocol malformed — finish_reason=$finishReason but no toolCall was parsed" +
                                             " (text=${text.length}, reasoning=${reasoning.length})，" +
-                                            "第 ${malformedToolCallRetries.get()}/$MAX_MALFORMED_TOOLCALL_RETRIES 次，不吐 reasoning，触发重试",
+                                            "attempt ${malformedToolCallRetries.get()}/$MAX_MALFORMED_TOOLCALL_RETRIES, not emitting reasoning, triggering a retry",
                                     )
                                     if (reasoning.isNotEmpty()) {
                                         trySend(ChatStreamEvent.ReasoningDelta(reasoning))
                                     }
                                     fallbackFailure = IllegalStateException(
-                                        "模型声称调用工具但未返回有效 tool_call(finish_reason=$finishReason)",
+                                        "The model claimed to call a tool but returned no valid tool_call (finish_reason=$finishReason)",
                                     )
                                 } else if (text.isNotBlank()) {
                                     trySend(ChatStreamEvent.ContentDelta(text))
@@ -691,7 +691,7 @@ class OpenAIProvider(
                                     if (claimedToolCall) {
                                         Logger.w(
                                             "OpenAIProvider",
-                                            "stream-guard: 重试后仍为协议畸形，退回 reasoning 兜底(避免空白回复)",
+                                            "stream-guard: still protocol-malformed after retry, falling back to reasoning (to avoid an empty reply)",
                                         )
                                     }
                                     trySend(ChatStreamEvent.ContentDelta(reasoning))
@@ -699,28 +699,28 @@ class OpenAIProvider(
                             }
                             Logger.i(
                                 "OpenAIProvider",
-                                "stream-guard: 非流式回退成功 (text=${text.length} chars, reasoning=${reasoning.length} chars, toolCalls=${toolCalls.size})",
+                                "stream-guard: non-streaming fallback succeeded (text=${text.length} chars, reasoning=${reasoning.length} chars, toolCalls=${toolCalls.size})",
                             )
                         } else {
-                            Logger.w("OpenAIProvider", "stream-guard: 非流式回退最终失败: ${lastError?.message}")
-                            fallbackFailure = lastError ?: IllegalStateException("非流式回退未返回结果")
+                            Logger.w("OpenAIProvider", "stream-guard: non-streaming fallback ultimately failed: ${lastError?.message}")
+                            fallbackFailure = lastError ?: IllegalStateException("Non-streaming fallback returned no result")
                         }
                     } catch (e: kotlinx.coroutines.CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        Logger.w("OpenAIProvider", "stream-guard: 非流式回退异常: ${e.message}")
+                        Logger.w("OpenAIProvider", "stream-guard: non-streaming fallback exception: ${e.message}")
                         fallbackFailure = e
                     }
                     pendingFallback.set(false)
                     when {
                         request.abortSignal.aborted -> {
-                            scope.trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成", fallbackFailure))
+                            scope.trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user", fallbackFailure))
                         }
                         fallbackFailure != null -> {
                             val failure = checkNotNull(fallbackFailure)
                             trySend(
                                 ChatStreamEvent.Error(
-                                    "非流式回退失败: ${failure.message}",
+                                    "Non-streaming fallback failed: ${failure.message}",
                                     failure,
                                 ),
                             )
@@ -735,7 +735,7 @@ class OpenAIProvider(
             // 收尾：用户停止时发 StreamInterrupted（让 FirstEventWatchdog 明确感知中断，
             // 不再等待 15s 超时触发非流式回退）；正常完成才发 Done。
             if (request.abortSignal.aborted) {
-                scope.trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成"))
+                scope.trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user"))
             } else {
                 trySend(ChatStreamEvent.Done(finishReason))
             }
@@ -787,7 +787,7 @@ class OpenAIProvider(
                             if (code == 429 && !anyDeltaSent.get() && retryCount.get() < MAX_RETRIES &&
                                 !request.abortSignal.aborted && switchToNextKey()
                             ) {
-                                Logger.i("OpenAIProvider", "streamChat onOpen 429 限流,已切换到下一个 key,立即重试")
+                                Logger.i("OpenAIProvider", "streamChat onOpen 429 rate limited, switched to the next key, retrying immediately")
                                 httpRequest = buildHttpRequest()
                                 retryCount.incrementAndGet()
                                 connectionGeneration.incrementAndGet()
@@ -807,10 +807,10 @@ class OpenAIProvider(
                             // 审计修复 (7.2): 响应体截断 500 字符 — 部分中转站错误响应会回显
                             // 请求内容(含对话/参数),全量打日志可能把用户对话写入日志文件。
                             if (code == 400) {
-                                Logger.w("OpenAIProvider", "streamChat 400 请求摘要: ${describeRequestBody(body)}")
+                                Logger.w("OpenAIProvider", "streamChat 400 request summary: ${describeRequestBody(body)}")
                                 Logger.w(
                                     "OpenAIProvider",
-                                    "streamChat 400 响应摘要: ${ProviderError.safeErrorDetail(errText) ?: "<empty>"}",
+                                    "streamChat 400 response summary: ${ProviderError.safeErrorDetail(errText) ?: "<empty>"}",
                                 )
                             }
                             // v1.0.1: 401/403 鉴权失败时标记当前 key 失败(多 key 场景)
@@ -963,8 +963,8 @@ class OpenAIProvider(
                                             toolCallIndexMap[apiIndex] = pending
                                             Logger.d(
                                                 "OpenAIProvider",
-                                                "tool_calls 续片归位: apiIndex=$apiIndex → localIndex=$pending" +
-                                                    " (累积 args=${target.args.length} chars)",
+                                                "tool_calls continuation re-homing: apiIndex=$apiIndex → localIndex=$pending" +
+                                                    " (accumulated args=${target.args.length} chars)",
                                             )
                                         }
                                     }
@@ -975,8 +975,8 @@ class OpenAIProvider(
                                     // 需要这段原始数据才能定位是上游格式异常还是解析问题。
                                     Logger.w(
                                         "OpenAIProvider",
-                                        "tool_calls 片段 apiIndex=$apiIndex 未在 map 中找到(首片丢失?),跳过该片 | " +
-                                            "片段内容: id=${tc.id ?: "null"} name=${tc.function?.name ?: "null"} " +
+                                        "tool_calls fragment apiIndex=$apiIndex not found in the map (first fragment lost?), skipping this fragment | " +
+                                            "fragment content: id=${tc.id ?: "null"} name=${tc.function?.name ?: "null"} " +
                                             "argsLen=${tc.function?.arguments?.length ?: 0} " +
                                             "args=${tc.function?.arguments?.take(200) ?: ""}",
                                     )
@@ -1035,13 +1035,13 @@ class OpenAIProvider(
                                         }
                                         Logger.w(
                                             "OpenAIProvider",
-                                            "stream-guard: 空 name tool call 超过 $MAX_EMPTY_NAME_TOOL_CALLS 条,按正文增量恢复 (localIndex=$localIndex)",
+                                            "stream-guard: empty-name tool calls exceeded $MAX_EMPTY_NAME_TOOL_CALLS, recovering as content deltas (localIndex=$localIndex)",
                                         )
                                         return@forEach
                                     }
                                     Logger.d(
                                         "OpenAIProvider",
-                                        "stream-guard: 空 name tool call 缓冲中 (localIndex=$localIndex, 累积 args=${acc.args.length} chars)",
+                                        "stream-guard: buffering an empty-name tool call (localIndex=$localIndex, accumulated args=${acc.args.length} chars)",
                                     )
                                     return@forEach
                                 }
@@ -1098,7 +1098,7 @@ class OpenAIProvider(
                     override fun onClosed(eventSource: EventSource) {
                         if (myGeneration != connectionGeneration.get()) {
                             if (request.abortSignal.aborted) {
-                                scope.trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成"))
+                                scope.trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user"))
                                 close()
                             } else if (consumerClosed.get() || scope.isClosedForSend) {
                                 close()
@@ -1114,11 +1114,11 @@ class OpenAIProvider(
                         //   若尚未触发 stream-guard,在此触发以检测流式过早结束并回退
                         // v1.0.24: 回退进行中时不 close,等回退协程完成
                         if (pendingFallback.get()) {
-                            Logger.d("OpenAIProvider", "streamChat onClosed: 回退进行中, 等待完成")
+                            Logger.d("OpenAIProvider", "streamChat onClosed: fallback in progress, waiting for completion")
                             return
                         }
                         if (!streamGuardDone.get()) {
-                            Logger.d("OpenAIProvider", "streamChat onClosed: 未收到 Done 事件, 触发 stream-guard")
+                            Logger.d("OpenAIProvider", "streamChat onClosed: no Done event received, triggering stream-guard")
                             emitDoneWithStreamGuard(null)
                         } else {
                             close()
@@ -1128,7 +1128,7 @@ class OpenAIProvider(
                     override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
                         if (myGeneration != connectionGeneration.get()) {
                             if (request.abortSignal.aborted) {
-                                scope.trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成", t))
+                                scope.trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user", t))
                                 close()
                             } else if (consumerClosed.get() || scope.isClosedForSend) {
                                 close()
@@ -1138,11 +1138,11 @@ class OpenAIProvider(
                         streamSourceClosed.set(true)
                         // v1.0.24: 回退进行中时不 close,等回退协程完成
                         if (pendingFallback.get()) {
-                            Logger.d("OpenAIProvider", "streamChat onFailure: 回退进行中, 忽略连接错误 t=${t?.message}")
+                            Logger.d("OpenAIProvider", "streamChat onFailure: fallback in progress, ignoring connection error t=${t?.message}")
                             return
                         }
                         if (streamGuardDone.get() || consumerClosed.get() || scope.isClosedForSend) {
-                            Logger.d("OpenAIProvider", "streamChat onFailure: 流已完成或消费者已关闭,忽略收尾回调")
+                            Logger.d("OpenAIProvider", "streamChat onFailure: stream already finished or consumer closed, ignoring the trailing callback")
                             close()
                             return
                         }
@@ -1150,7 +1150,7 @@ class OpenAIProvider(
                             // v1.0.53: 区分真实中止与收尾清理 — 流正常完成后 ChatViewModel 会 abort signal
                             //   清理资源,此时若 onFailure 回调在飞,原日志会误导为"用户中止"。
                             if (streamGuardDone.get()) {
-                                Logger.d("OpenAIProvider", "streamChat onFailure: 流已完成后的收尾回调(忽略,非用户中止)")
+                                Logger.d("OpenAIProvider", "streamChat onFailure: trailing callback after the stream finished (ignoring, not a user abort)")
                             } else {
                                 Logger.d(
                                     "OpenAIProvider",
@@ -1159,7 +1159,7 @@ class OpenAIProvider(
                                 )
                                 // 用户主动停止：发 StreamInterrupted 让下游（含 FirstEventWatchdog）明确感知中断，
                                 // 避免静默 close 导致 watchdog 误判为“无首事件”继续触发非流式回退。
-                                scope.trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成"))
+                                scope.trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user"))
                             }
                             close()
                             return
@@ -1183,7 +1183,7 @@ class OpenAIProvider(
                                 // v1.0.1: 429 时切换到下一个 key(多 key 场景)
                                 //  切换成功后立即重试(不等 backoff),因为新 key 可能未限流
                                 if (switchToNextKey()) {
-                                    Logger.i("OpenAIProvider", "streamChat 429 限流,已切换到下一个 key,立即重试")
+                                    Logger.i("OpenAIProvider", "streamChat 429 rate limited, switched to the next key, retrying immediately")
                                     backoffMs = 0L
                                 }
                             }
@@ -1285,7 +1285,7 @@ class OpenAIProvider(
                     val code = resp.code
                     // v1.0.1: 429 切换 key 重试(多 key 场景);401/403 标记 key 失败
                     if (code == 429 && !request.abortSignal.aborted && keySwitchDepth < MAX_KEY_SWITCHES && switchToNextKey()) {
-                        Logger.i("OpenAIProvider", "completeText 429 限流,已切换到下一个 key,重试 ($keySwitchDepth/$MAX_KEY_SWITCHES)")
+                        Logger.i("OpenAIProvider", "completeText 429 rate limited, switched to the next key, retry ($keySwitchDepth/$MAX_KEY_SWITCHES)")
                         return@withContext completeTextImpl(request, keySwitchDepth + 1)
                     }
                     if (code == 401 || code == 403) {
@@ -1297,10 +1297,10 @@ class OpenAIProvider(
                     Logger.w("OpenAIProvider", "completeText HTTP $code: $msg")
                     // v1.0.28: HTTP 400 时记录请求体和完整响应体,帮助诊断中转站参数错误
                     if (code == 400) {
-                        Logger.w("OpenAIProvider", "completeText 400 请求摘要: ${describeRequestBody(body)}")
+                        Logger.w("OpenAIProvider", "completeText 400 request summary: ${describeRequestBody(body)}")
                         Logger.w(
                             "OpenAIProvider",
-                            "completeText 400 响应摘要: ${ProviderError.safeErrorDetail(errText) ?: "<empty>"}",
+                            "completeText 400 response summary: ${ProviderError.safeErrorDetail(errText) ?: "<empty>"}",
                         )
                     }
                     // L-OAI11: 用自定义异常替代字符串前缀判断
@@ -1341,7 +1341,7 @@ class OpenAIProvider(
                         "nameLen=${tc.name.length},valid=$nameValid,argsLen=${tc.arguments.length}" +
                             if (tc.arguments.trim() == "{}") ",emptyObj" else ""
                     }
-                    Logger.i("OpenAIProvider", "completeText toolCalls 参数形态: $shape | finish=${choice.finishReason}")
+                    Logger.i("OpenAIProvider", "completeText toolCalls argument shape: $shape | finish=${choice.finishReason}")
                 }
                 // Phase 7: 如果有 tool_calls,允许 text 为空(工具调用场景)
                 // M-OAI8: 如果有推理内容(reasoning_content),也允许 text 为空
@@ -1354,7 +1354,7 @@ class OpenAIProvider(
                     val shape = ProviderHttpSupport.describeJsonShape(raw)
                     Logger.w(
                         "OpenAIProvider",
-                        "completeText 返回空文本(无 content/reasoning_content/tool_calls)，响应形态: $shape",
+                        "completeText returned empty text (no content/reasoning_content/tool_calls), response shape: $shape",
                     )
                     throw ErrorCode.INVALID_RESPONSE.toProviderException(
                         "empty_text (upstream returned no content; response shape: $shape)",
@@ -1376,8 +1376,8 @@ class OpenAIProvider(
                     val leakPreview = text.take(200)
                     Logger.w(
                         "OpenAIProvider",
-                        "疑似协议泄漏: finishReason=${choice.finishReason} " +
-                            "但 text 含 tool_calls 协议片段(${text.length} chars)，前 200 字: $leakPreview",
+                        "Suspected protocol leak: finishReason=${choice.finishReason} " +
+                            "but the text contains tool_calls protocol fragments (${text.length} chars), first 200 chars: $leakPreview",
                     )
                 }
                 ChatCompletion(
@@ -1397,7 +1397,7 @@ class OpenAIProvider(
             } else if (t is OpenAIHttpException) {
                 // L-OAI11: 已记录的 HTTP 错误,不重复 log
             } else {
-                Logger.e("OpenAIProvider", "completeText 异常", t)
+                Logger.e("OpenAIProvider", "completeText exception", t)
             }
             throw t
         } finally {
@@ -1510,7 +1510,7 @@ class OpenAIProvider(
                 config.hiddenFromSettings,
             )
         ) {
-            Logger.i("OpenAIProvider", "listModels: SiliconFlow 免费模型 provider(未填 key),返回预设 ${config.models.size} 个模型")
+            Logger.i("OpenAIProvider", "listModels: SiliconFlow free-model provider (no key entered), returning the preset ${config.models.size} models")
             return@withContext config.models
         }
         val url = resolvedBaseUrl.trimEnd('/') + "/models"
@@ -1527,7 +1527,7 @@ class OpenAIProvider(
         // v1.0.8 (7.5): 凭证预检 — allowMissingApiKey=false 时 apiKey 为空直接抛错,
         //   避免发无意义的 401 请求浪费一次网络往返。
         if (!config.allowMissingApiKey && config.apiKey.isBlank()) {
-            Logger.w("OpenAIProvider", "listModels: apiKey 为空,跳过请求(providerId=${config.id})")
+            Logger.w("OpenAIProvider", "listModels: apiKey is empty, skipping the request (providerId=${config.id})")
             throw OpenAIHttpException(401, ErrorCode.INVALID_RESPONSE.toMessage("model_list_missing_key", 401))
         }
 
@@ -1571,7 +1571,7 @@ class OpenAIProvider(
                         in 500..599 -> "server_error"
                         else -> "http_error"
                     }
-                    Logger.w("OpenAIProvider", "listModels 失败 [$category] HTTP ${resp.code}: $errMsg")
+                    Logger.w("OpenAIProvider", "listModels failed [$category] HTTP ${resp.code}: $errMsg")
                     // L-OAI16: 用 OpenAIHttpException 替代通用 RuntimeException,
                     //   保留 HTTP code 作为类型信息(与 completeText 一致),便于上层区分错误来源。
                     throw OpenAIHttpException(resp.code, errMsg)
@@ -1596,7 +1596,7 @@ class OpenAIProvider(
                     )
                 }
                 // v1.0.8 (7.5): 成功日志 — 记录上游返回的模型数量,便于排查"返回 0 个模型"场景
-                Logger.i("OpenAIProvider", "listModels 成功: 上游返回 ${models.size} 个模型")
+                Logger.i("OpenAIProvider", "listModels succeeded: upstream returned ${models.size} models")
                 // v1.132: 去重 + 过滤 + 排序 + 元信息丰富
                 val seen = HashSet<String>()
                 models.asSequence()
@@ -1731,7 +1731,7 @@ class OpenAIProvider(
             throw e
         } catch (e: java.io.IOException) {
             // v1.0.8 (7.5): 网络错误日志 — 记录具体 IOException 类型,便于排查 DNS / TLS / 超时
-            Logger.w("OpenAIProvider", "listModels 网络错误: ${e.javaClass.simpleName} - ${e.message}")
+            Logger.w("OpenAIProvider", "listModels network error: ${e.javaClass.simpleName} - ${e.message}")
             throw e
         }
     }
@@ -2061,7 +2061,7 @@ class OpenAIProvider(
         if (t is kotlin.coroutines.cancellation.CancellationException) throw t
         Logger.w(
             "OpenAIProvider",
-            "工具 '$name' 的 parametersJsonSchema 解析失败,跳过该工具: ${t.message}",
+            "Failed to parse the parametersJsonSchema of tool '$name', skipping this tool: ${t.message}",
         )
         null
     }
@@ -2099,7 +2099,7 @@ class OpenAIProvider(
                 if (imageBase64List.isNotEmpty() && !model.supportsVisionInput()) {
                     Logger.w(
                         "OpenAIProvider",
-                        "toOpenAI: 模型 ${model.id} 不支持视觉,丢弃 ${imageBase64List.size} 张图片(防御性过滤)",
+                        "toOpenAI: model ${model.id} does not support vision, discarding ${imageBase64List.size} images (defensive filtering)",
                     )
                 }
                 // v1.0.2 修复 HTTP 400: assistant + tool_calls 时 content 为空,改传空字符串而非 JsonNull。
@@ -2124,11 +2124,11 @@ class OpenAIProvider(
                     // M-OAI8: 图片数量限制 + 单张大小限制,超限丢弃
                     val validImages = imageBase64List.filter { it.isNotEmpty() }
                     if (validImages.size > MAX_VISION_IMAGES) {
-                        Logger.w("OpenAIProvider", "图片数量 ${validImages.size} 超过上限 $MAX_VISION_IMAGES,丢弃多余的")
+                        Logger.w("OpenAIProvider", "Image count ${validImages.size} exceeds the limit $MAX_VISION_IMAGES, discarding the excess")
                     }
                     validImages.take(MAX_VISION_IMAGES).forEach { b64 ->
                         if (b64.length > MAX_IMAGE_BASE64_LEN) {
-                            Logger.w("OpenAIProvider", "图片 base64 长度 ${b64.length} 超过 $MAX_IMAGE_BASE64_LEN,丢弃")
+                            Logger.w("OpenAIProvider", "Image base64 length ${b64.length} exceeds $MAX_IMAGE_BASE64_LEN, discarding")
                             return@forEach
                         }
                         // M-OAI5: 从 magic bytes 推断 mime type
@@ -2399,8 +2399,8 @@ class OpenAIProvider(
                     val recoveredText = acc.args.current()
                     Logger.w(
                         "OpenAIProvider",
-                        "stream-guard(Responses): 拦截空 name tool call (localIndex=$localIndex, args=${acc.args.length} chars)," +
-                            "恢复为文本: ${recoveredText.take(50)}",
+                        "stream-guard(Responses): intercepted an empty-name tool call (localIndex=$localIndex, args=${acc.args.length} chars)," +
+                            "recovered as text: ${recoveredText.take(50)}",
                     )
                     trySend(ChatStreamEvent.ContentDelta(recoveredText))
                 }
@@ -2460,7 +2460,7 @@ class OpenAIProvider(
                             if (code == 429 && !anyDeltaSent.get() && retryCount.get() < MAX_RETRIES &&
                                 !request.abortSignal.aborted && switchToNextKey()
                             ) {
-                                Logger.i("OpenAIProvider", "streamChatResponses onOpen 429 限流,已切换 key,立即重试")
+                                Logger.i("OpenAIProvider", "streamChatResponses onOpen 429 rate limited, switched key, retrying immediately")
                                 httpRequest = buildHttpRequest()
                                 retryCount.incrementAndGet()
                                 connectionGeneration.incrementAndGet()
@@ -2584,15 +2584,15 @@ class OpenAIProvider(
                                         trySend(ChatStreamEvent.ContentDelta(argsDelta))
                                         Logger.d(
                                             "OpenAIProvider",
-                                            "stream-guard(Responses): 增量恢复空 name tool call 为 ContentDelta " +
-                                                "(localIndex=$localIndex, 本次=${argsDelta.length} chars, " +
-                                                "累积=${acc.args.length} chars)",
+                                            "stream-guard(Responses): incrementally recovering an empty-name tool call as ContentDelta " +
+                                                "(localIndex=$localIndex, this time=${argsDelta.length} chars, " +
+                                                "accumulated=${acc.args.length} chars)",
                                         )
                                     } else {
                                         Logger.d(
                                             "OpenAIProvider",
-                                            "stream-guard(Responses): 空 name tool call 无 args 增量,跳过 " +
-                                                "(localIndex=$localIndex, 累积 args=${acc.args.length} chars)",
+                                            "stream-guard(Responses): empty-name tool call has no args delta, skipping " +
+                                                "(localIndex=$localIndex, accumulated args=${acc.args.length} chars)",
                                         )
                                     }
                                     return
@@ -2694,7 +2694,7 @@ class OpenAIProvider(
                     override fun onClosed(eventSource: EventSource) {
                         if (myGeneration != connectionGeneration.get()) {
                             if (request.abortSignal.aborted) {
-                                scope.trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成"))
+                                scope.trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user"))
                                 close()
                             } else if (consumerClosed.get() || scope.isClosedForSend) {
                                 close()
@@ -2703,7 +2703,7 @@ class OpenAIProvider(
                         }
                         // v1.0.23: 同 ChatCompletions 路径,未收到 Done 事件时触发 stream-guard
                         if (!streamGuardDone.get()) {
-                            Logger.d("OpenAIProvider", "streamChatResponses onClosed: 未收到 Done 事件, 触发 stream-guard")
+                            Logger.d("OpenAIProvider", "streamChatResponses onClosed: no Done event received, triggering stream-guard")
                             emitDoneWithStreamGuard(null)
                         } else {
                             close()
@@ -2718,7 +2718,7 @@ class OpenAIProvider(
                         logResponsesFailureForensics(t, response)
                         if (myGeneration != connectionGeneration.get()) {
                             if (request.abortSignal.aborted) {
-                                scope.trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成", t))
+                                scope.trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user", t))
                                 close()
                             } else if (consumerClosed.get() || scope.isClosedForSend) {
                                 close()
@@ -2726,13 +2726,13 @@ class OpenAIProvider(
                             return
                         }
                         if (streamGuardDone.get() || consumerClosed.get() || scope.isClosedForSend) {
-                            Logger.d("OpenAIProvider", "streamChatResponses onFailure: 流已完成或消费者已关闭,忽略收尾回调")
+                            Logger.d("OpenAIProvider", "streamChatResponses onFailure: stream already finished or consumer closed, ignoring the trailing callback")
                             close()
                             return
                         }
                         if (request.abortSignal.aborted) {
                             Logger.d("OpenAIProvider", "streamChatResponses aborted by user")
-                            trySend(ChatStreamEvent.StreamInterrupted("用户已停止生成", t))
+                            trySend(ChatStreamEvent.StreamInterrupted("Generation stopped by the user", t))
                             close()
                             return
                         }
@@ -2838,7 +2838,7 @@ class OpenAIProvider(
                 if (!resp.isSuccessful) {
                     val code = resp.code
                     if (code == 429 && !request.abortSignal.aborted && keySwitchDepth < MAX_KEY_SWITCHES && switchToNextKey()) {
-                        Logger.i("OpenAIProvider", "completeTextResponses 429 限流,已切换 key,重试 ($keySwitchDepth/$MAX_KEY_SWITCHES)")
+                        Logger.i("OpenAIProvider", "completeTextResponses 429 rate limited, switched key, retry ($keySwitchDepth/$MAX_KEY_SWITCHES)")
                         return@withContext completeTextResponses(request, keySwitchDepth + 1)
                     }
                     if (code == 401 || code == 403) {
@@ -2864,14 +2864,14 @@ class OpenAIProvider(
                     val outputTypes = parsed.output.mapNotNull { it.type }.distinct()
                     Logger.w(
                         "OpenAIProvider",
-                        "completeTextResponses 返回空 | outputSize=${parsed.output.size} " +
+                        "completeTextResponses returned empty | outputSize=${parsed.output.size} " +
                             "| outputTypes=$outputTypes | outputTextBlank=${parsed.outputText.isNullOrBlank()} " +
                             "| status=${parsed.status} | rawHead=${raw.take(600)}",
                     )
                     // 宽松兜底：扫描 output 里任何形似文本的节点
                     val loose = extractResponsesVisibleTextLoose(parsed)
                     if (loose.isNotBlank()) {
-                        Logger.i("OpenAIProvider", "completeTextResponses 宽松提取命中 ${loose.length} 字符")
+                        Logger.i("OpenAIProvider", "completeTextResponses loose extraction matched ${loose.length} characters")
                         return@withContext ChatCompletion(
                             text = loose,
                             finishReason = parsed.incompleteDetails?.reason ?: parsed.status,
@@ -2912,7 +2912,7 @@ class OpenAIProvider(
             } else if (t is OpenAIHttpException) {
                 // 已记录的 HTTP 错误
             } else {
-                Logger.e("OpenAIProvider", "completeTextResponses 异常", t)
+                Logger.e("OpenAIProvider", "completeTextResponses exception", t)
             }
             throw t
         } finally {
@@ -3038,7 +3038,7 @@ class OpenAIProvider(
                 if (disposition == ResponsesMessageDisposition.SKIP) {
                     Logger.w(
                         "OpenAIProvider",
-                        "buildResponsesRequestBody: 跳过纯空消息(Responses 不接受空 content) | role=${msg.role}",
+                        "buildResponsesRequestBody: skipping a purely empty message (Responses does not accept empty content) | role=${msg.role}",
                     )
                     continue
                 }
@@ -3181,7 +3181,7 @@ class OpenAIProvider(
             if (imageBase64List.isNotEmpty() && !model.supportsVisionInput()) {
                 Logger.w(
                     "OpenAIProvider",
-                    "toResponsesInputItem: 模型 ${model.id} 不支持视觉,丢弃 ${imageBase64List.size} 张图片(防御性过滤)",
+                    "toResponsesInputItem: model ${model.id} does not support vision, discarding ${imageBase64List.size} images (defensive filtering)",
                 )
             }
             JsonPrimitive(content)
@@ -3196,11 +3196,11 @@ class OpenAIProvider(
                 )
                 val validImages = imageBase64List.filter { it.isNotEmpty() }
                 if (validImages.size > MAX_VISION_IMAGES) {
-                    Logger.w("OpenAIProvider", "图片数量 ${validImages.size} 超过上限 $MAX_VISION_IMAGES,丢弃多余的")
+                    Logger.w("OpenAIProvider", "Image count ${validImages.size} exceeds the limit $MAX_VISION_IMAGES, discarding the excess")
                 }
                 validImages.take(MAX_VISION_IMAGES).forEach { b64 ->
                     if (b64.length > MAX_IMAGE_BASE64_LEN) {
-                        Logger.w("OpenAIProvider", "图片 base64 长度 ${b64.length} 超过 $MAX_IMAGE_BASE64_LEN,丢弃")
+                        Logger.w("OpenAIProvider", "Image base64 length ${b64.length} exceeds $MAX_IMAGE_BASE64_LEN, discarding")
                         return@forEach
                     }
                     val mimeType = inferMimeType(b64)

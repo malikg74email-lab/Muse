@@ -46,7 +46,7 @@ class MiniPhoneMomentsUiTest {
 
         compose.onNodeWithTag(MiniPhoneMomentsTags.COVER).assertExists()
         compose.onNodeWithTag(MiniPhoneMomentsTags.EMPTY).assertIsDisplayed()
-        compose.onNodeWithText("还没有动态").assertIsDisplayed()
+        compose.onNodeWithText("No updates yet").assertIsDisplayed()
         compose.onNodeWithTag(MiniPhoneMomentsTags.commentInput("m1")).assertDoesNotExist()
     }
 
@@ -160,12 +160,12 @@ class MiniPhoneMomentsUiTest {
 
     @Test
     fun likersLineFoldsLongLists() {
-        assertEquals("❤️ 阿远，小满，老陈", likersLineOf(listOf("阿远", "小满", "老陈")))
+        assertEquals("❤️ 阿远, 小满, 老陈", likersLineOf(listOf("阿远", "小满", "老陈")))
         assertEquals("只有一个也带心", "❤️ 阿远", likersLineOf(listOf("阿远")))
         assertEquals("没人点赞就没有这一行", "", likersLineOf(emptyList()))
 
         val twelve = (1..12).map { index -> "人$index" }
-        assertEquals("超过十人:前九个 + 等 12 人", "❤️ " + twelve.take(9).joinToString("，") + "，等 12 人", likersLineOf(twelve))
+        assertEquals("超过十人:前九个 + 等 12 人", "❤️ " + twelve.take(9).joinToString(", ") + ", and 12 people", likersLineOf(twelve))
         assertFalse("第十个人不该出现", likersLineOf(twelve).contains("人10"))
     }
 
@@ -174,7 +174,7 @@ class MiniPhoneMomentsUiTest {
         render(MomentsUiState(moments = listOf(momentUi(likes = listOf("阿远", "小满", "老陈"))), isLoaded = true))
 
         compose.onNodeWithTag(MiniPhoneMomentsTags.likers("m1"), useUnmergedTree = true)
-            .assertTextEquals("❤️ 阿远，小满，老陈")
+            .assertTextEquals("❤️ 阿远, 小满, 老陈")
     }
 
     @Test
@@ -193,7 +193,7 @@ class MiniPhoneMomentsUiTest {
         compose.waitForIdle()
 
         compose.onNodeWithTag(MiniPhoneMomentsTags.COMMENT_DELETE_DIALOG).assertIsDisplayed()
-        compose.onNodeWithText("这条评论和它下面的回复会一起删除。").assertIsDisplayed()
+        compose.onNodeWithText("This comment and the replies under it will be deleted together.").assertIsDisplayed()
         assertEquals("确认之前不删", null, deleted)
 
         compose.onNodeWithTag(MiniPhoneMomentsTags.COMMENT_DELETE_CONFIRM).performClick()

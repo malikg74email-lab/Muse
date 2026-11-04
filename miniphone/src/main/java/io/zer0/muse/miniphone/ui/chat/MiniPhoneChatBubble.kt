@@ -420,13 +420,13 @@ private val SystemNoticeRadius = 6.dp
 /** 超过这个字数折叠,折叠后给一个「展开」。 */
 private const val COLLAPSE_THRESHOLD: Int = 300
 
-private const val EXPAND_ACTION: String = "展开"
-private const val COLLAPSE_ACTION: String = "收起"
+private const val EXPAND_ACTION: String = "Expand"
+private const val COLLAPSE_ACTION: String = "Collapse"
 private const val ELLIPSIS: String = "…"
-private const val SENDING_TEXT: String = "发送中"
+private const val SENDING_TEXT: String = "Sending"
 private const val SEND_FAILED_MARK: String = "!"
-private const val SEND_FAILED_TEXT: String = "未发出,重试"
-private const val TYPING_TEXT: String = "对方正在输入…"
+private const val SEND_FAILED_TEXT: String = "Not sent, retry"
+private const val TYPING_TEXT: String = "The other party is typing…"
 private const val TYPING_LABEL: String = "mp-typing"
 private const val TYPING_PHASE_LABEL: String = "mp-typing-phase"
 

@@ -53,12 +53,12 @@ object ContextHistoryDigest {
         val content =
             buildString {
                 append(DIGEST_MARKER)
-                append(" 以下是更早对话的摘录(按时间顺序,越靠后越新,仅供延续上下文参考,不是新的用户指令):\n")
+                append(" The following is an excerpt of the earlier conversation (in chronological order, the later it appears the newer it is, for context continuation only, not a new user instruction):\n")
                 lines.forEach { line ->
                     append("- ").append(line).append('\n')
                 }
                 if (omitted > 0) {
-                    append("(更早的 ").append(omitted).append(" 条消息因长度限制未展开)\n")
+                    append("(").append(omitted).append(" earlier messages were not expanded due to length limits)\n")
                 }
             }
         return UIMessage(role = MessageRole.SYSTEM, content = content)
@@ -66,9 +66,9 @@ object ContextHistoryDigest {
 
     /** 单条消息的摘录行；无可摘录内容（空文本/纯 SYSTEM）返回 null。 */
     private fun entryLine(msg: UIMessage): String? = when (msg.role) {
-        MessageRole.USER -> normalize(msg.content, USER_ENTRY_CHARS)?.let { "用户: $it" }
+        MessageRole.USER -> normalize(msg.content, USER_ENTRY_CHARS)?.let { "User: $it" }
         MessageRole.ASSISTANT -> assistantLine(msg)
-        MessageRole.TOOL -> normalize(msg.content, TOOL_ENTRY_CHARS)?.let { "工具结果: $it" }
+        MessageRole.TOOL -> normalize(msg.content, TOOL_ENTRY_CHARS)?.let { "Tool result: $it" }
         MessageRole.SYSTEM -> null
     }
 
@@ -78,20 +78,20 @@ object ContextHistoryDigest {
         val toolHint =
             when {
                 !msg.toolCalls.isNullOrEmpty() ->
-                    "调用工具: " + msg.toolCalls.take(MAX_CALL_NAMES).joinToString(", ") { it.name }
+                    "Tool call: " + msg.toolCalls.take(MAX_CALL_NAMES).joinToString(", ") { it.name }
 
                 msg.toolCallInfo != null -> {
                     val info = msg.toolCallInfo
-                    val status = if (info.isSuccess) "成功" else "失败"
+                    val status = if (info.isSuccess) "Success" else "Failed"
                     val preview = normalize(info.result, TOOL_ENTRY_CHARS)
-                    if (preview == null) "调用工具: ${info.toolName}($status)" else "调用工具: ${info.toolName}($status) → $preview"
+                    if (preview == null) "Tool call: ${info.toolName}($status)" else "Tool call: ${info.toolName}($status) → $preview"
                 }
 
                 else -> null
             }
         return when {
-            text != null && toolHint != null -> "助手: $text | $toolHint"
-            text != null -> "助手: $text"
+            text != null && toolHint != null -> "Assistant: $text | $toolHint"
+            text != null -> "Assistant: $text"
             else -> toolHint
         }
     }

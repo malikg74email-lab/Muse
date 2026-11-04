@@ -58,7 +58,7 @@ class DeviceCapabilityHook(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "能力档案注入失败: ${e.message}", e)
+            Logger.w(TAG, "Capability profile injection failed: ${e.message}", e)
             ""
         }
     }
@@ -74,7 +74,7 @@ class DeviceCapabilityHook(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "权限刷新失败，使用缓存状态: ${e.message}")
+            Logger.w(TAG, "Permission refresh failed, using the cached state: ${e.message}")
             automationManager.permissionState.value
         }
 
@@ -103,7 +103,7 @@ class DeviceCapabilityHook(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        Logger.w(TAG, "$name 探测失败，记为不可用: ${e.message}", e)
+        Logger.w(TAG, "$name probe failed, recorded as unavailable: ${e.message}", e)
         fallback
     }
 

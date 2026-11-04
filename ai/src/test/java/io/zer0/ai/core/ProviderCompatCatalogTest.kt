@@ -182,7 +182,7 @@ class ProviderCompatCatalogTest {
                 ),
             )
             assertEquals(1, lines.size)
-            assertTrue(lines.single().contains("目录声明冲突"))
+            assertTrue(lines.single().contains("Catalog declaration conflict"))
             assertTrue(lines.single().contains("opencode-go=zhipu"))
             assertTrue(lines.single().contains("zhipu=kimi"))
             assertEquals(
@@ -203,8 +203,8 @@ class ProviderCompatCatalogTest {
                 ),
             )
             assertEquals(1, lines.size)
-            assertTrue(lines.single().contains("目录单边声明"))
-            assertTrue(lines.single().contains("zhipu=<未声明>"))
+            assertTrue(lines.single().contains("Catalog one-sided declaration"))
+            assertTrue(lines.single().contains("zhipu=<undeclared>"))
         } finally {
             Logger.sink = null
         }

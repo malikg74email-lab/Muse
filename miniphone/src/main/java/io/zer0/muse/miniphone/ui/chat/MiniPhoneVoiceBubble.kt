@@ -283,8 +283,8 @@ private const val INACTIVE_BAR_ALPHA: Float = 0.28f
 private const val SHORT_VOICE_MS: Long = 15_000L
 private const val MEDIUM_VOICE_MS: Long = 60_000L
 
-internal const val VOICE_UNAVAILABLE_TEXT: String = "语音无法播放"
+internal const val VOICE_UNAVAILABLE_TEXT: String = "Voice can't be played"
 private const val UNKNOWN_DURATION: String = "--:--"
-private const val VOICE_PLAY_LABEL: String = "播放语音"
-private const val VOICE_PAUSE_LABEL: String = "暂停语音"
+private const val VOICE_PLAY_LABEL: String = "Play voice"
+private const val VOICE_PAUSE_LABEL: String = "Pause voice"
 private const val FILE_PREFIX: String = "file://"

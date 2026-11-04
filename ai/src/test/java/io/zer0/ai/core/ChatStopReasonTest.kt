@@ -10,13 +10,13 @@ class ChatStopReasonTest {
     @Test
     fun `recognizes length limited reasons across providers`() {
         listOf("length", "max_tokens", "MAX_TOKENS", "max_output_tokens", "token_limit_exceeded")
-            .forEach { assertTrue("应识别长度终止原因: $it", ChatStopReason.isLengthLimited(it)) }
+            .forEach { assertTrue("Should recognise a length termination reason: $it", ChatStopReason.isLengthLimited(it)) }
     }
 
     @Test
     fun `does not classify natural completion or tool calls as truncation`() {
         listOf(null, "stop", "end_turn", "completed", "tool_calls", "SAFETY")
-            .forEach { assertFalse("不应识别为长度终止原因: $it", ChatStopReason.isLengthLimited(it)) }
+            .forEach { assertFalse("Should not recognise as a length termination reason: $it", ChatStopReason.isLengthLimited(it)) }
     }
 
     /**
@@ -27,12 +27,12 @@ class ChatStopReasonTest {
     @Test
     fun `recognizes tool call stop reasons`() {
         listOf("tool_calls", "TOOL_CALLS", "function_call", "tool call", "function_calls")
-            .forEach { assertTrue("应识别为工具调用停止: $it", ChatStopReason.isToolCallStop(it)) }
+            .forEach { assertTrue("Should recognise as a tool-call stop: $it", ChatStopReason.isToolCallStop(it)) }
     }
 
     @Test
     fun `does not treat regular completion as tool call stop`() {
         listOf(null, "stop", "length", "max_tokens", "completed", "end_turn")
-            .forEach { assertFalse("不应识别为工具调用停止: $it", ChatStopReason.isToolCallStop(it)) }
+            .forEach { assertFalse("Should not recognise as a tool-call stop: $it", ChatStopReason.isToolCallStop(it)) }
     }
 }

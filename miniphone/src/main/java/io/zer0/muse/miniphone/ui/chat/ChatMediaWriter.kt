@@ -54,6 +54,6 @@ internal class ChatMediaWriter(
 
     companion object {
         /** 图片消息的正文:库里不存图,只存这句预览文案,列表与未读预览都用它。 */
-        const val IMAGE_PREVIEW_TEXT: String = "[图片]"
+        const val IMAGE_PREVIEW_TEXT: String = "[Image]"
     }
 }

@@ -88,10 +88,10 @@ class KlingVideoProvider(
     override suspend fun submit(request: VideoGenRequest): VideoSubmitResult = withContext(Dispatchers.IO) {
         resultOf {
             if (request.apiKey.isBlank()) {
-                error("Kling API key 为空")
+                error("Kling API key is empty")
             }
             if (request.prompt.isBlank()) {
-                error("Prompt 为空")
+                error("Prompt is empty")
             }
 
             val images = request.referenceImages.filter { it.isNotBlank() }
@@ -120,7 +120,7 @@ class KlingVideoProvider(
                 if (!resp.isSuccessful) {
                     val apiMsg = parseApiErrorMessage(respBody)
                     error(
-                        "Kling submit 失败: HTTP ${resp.code}" +
+                        "Kling submit failed: HTTP ${resp.code}" +
                             (apiMsg?.let { ": $it" }
                                 ?: ProviderError.safeErrorDetail(respBody)?.let { ": $it" }.orEmpty()),
                     )
@@ -133,12 +133,12 @@ class KlingVideoProvider(
                     error("Kling submit API error: code=$code message=$msg")
                 }
                 val data = root["data"]?.jsonObject
-                    ?: error("Kling submit 响应缺少 data: $respBody")
+                    ?: error("Kling submit response is missing data: $respBody")
                 val taskId = data["task_id"]?.jsonPrimitive?.content
-                    ?: error("Kling submit 响应缺少 task_id: $respBody")
+                    ?: error("Kling submit response is missing task_id: $respBody")
                 apiKeyForQuery[taskId] = request.apiKey
                 baseUrlForQuery[taskId] = request.baseUrl?.trim()?.trimEnd('/')?.ifBlank { baseUrl } ?: baseUrl
-                Logger.i(TAG, "submit 成功: taskId=$taskId")
+                Logger.i(TAG, "submit succeeded: taskId=$taskId")
                 VideoSubmitResult(taskId = taskId, isAsync = true, modelName = request.model)
             }
         }.getOrThrow()
@@ -187,7 +187,7 @@ class KlingVideoProvider(
                         baseUrlForQuery.remove(taskId)
                         return@use VideoPollResult(
                             status = PollStatus.FAILED,
-                            errorMessage = "Kling query 响应缺少 data: $respBody",
+                            errorMessage = "Kling query response is missing data: $respBody",
                         )
                     }
 
@@ -206,7 +206,7 @@ class KlingVideoProvider(
                         if (videoUrl == null) {
                             VideoPollResult(
                                 status = PollStatus.FAILED,
-                                errorMessage = "Kling 任务成功但未找到视频 URL: $respBody",
+                                errorMessage = "Kling task succeeded but no video URL was found: $respBody",
                             )
                         } else {
                             VideoPollResult(status = status, videoUrl = videoUrl)
@@ -215,7 +215,7 @@ class KlingVideoProvider(
                     PollStatus.FAILED -> {
                         val failInfo = data["task_fail_info"]?.jsonObject
                         val errMsg = failInfo?.get("message")?.jsonPrimitive?.content
-                            ?: "Kling 任务失败(status=$statusStr)"
+                            ?: "Kling task failed (status=$statusStr)"
                         apiKeyForQuery.remove(taskId)
                         baseUrlForQuery.remove(taskId)
                         VideoPollResult(status = status, errorMessage = errMsg)
@@ -228,7 +228,7 @@ class KlingVideoProvider(
             is io.zer0.common.Result.Success -> r.data
             is io.zer0.common.Result.Error -> VideoPollResult(
                 status = PollStatus.PENDING,
-                errorMessage = "Kling poll 异常: ${r.throwable?.message ?: r.throwable?.toString() ?: r.message}",
+                errorMessage = "Kling poll exception: ${r.throwable?.message ?: r.throwable?.toString() ?: r.message}",
             )
         }
     }
@@ -269,7 +269,7 @@ class KlingVideoProvider(
             "succeed", "success", "succeeds" -> PollStatus.SUCCESS
             "failed", "fail", "error" -> PollStatus.FAILED
             else -> {
-                Logger.w(TAG, "未知任务状态: $statusStr，映射为 FAILED")
+                Logger.w(TAG, "Unknown task status: $statusStr, mapping to FAILED")
                 PollStatus.FAILED
             }
         }

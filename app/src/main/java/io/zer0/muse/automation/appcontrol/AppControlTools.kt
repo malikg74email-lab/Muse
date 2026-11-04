@@ -34,10 +34,10 @@ class AppControlTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "app_list",
-                description = "列出本机可启动的应用（名称 + 包名）。当用户用中文名提到某个应用、" +
-                    "而你不确定它的包名时，先用本工具查到包名，再调用 app_launch 等操作。",
+                description = "List the launchable apps on this device (name + package name). When the user mentions an app by a Chinese name," +
+                    "and you are not sure of its package name, first use this tool to look up the package name, then call app_launch etc.",
                 parameters = mapOf(
-                    "query" to "可选，按名称或包名过滤，如「微信」",
+                    "query" to "Optional, filter by name or package name, e.g. 'WeChat'",
                 ),
                 required = emptySet(),
                 riskLevel = ToolRiskLevel.NORMAL,
@@ -59,8 +59,8 @@ class AppControlTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "app_launch",
-                description = "启动一个应用（按包名或中文名）。启动成功后应调用 screen_read 确认界面已就绪。",
-                parameters = mapOf("app" to "必填，包名或应用名，如 com.tencent.mm 或「微信」"),
+                description = "Launch an app (by package name or Chinese name). After a successful launch, call screen_read to confirm the interface is ready.",
+                parameters = mapOf("app" to "Required, package name or app name, e.g. com.tencent.mm or 'WeChat'"),
                 required = setOf("app"),
                 riskLevel = ToolRiskLevel.NORMAL,
             ),
@@ -71,9 +71,9 @@ class AppControlTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "app_settings",
-                description = "打开某个应用的系统设置详情页（可查看/修改权限、通知、存储占用）。" +
-                    "此类操作适合让用户自己确认，比直接清数据更安全。",
-                parameters = mapOf("app" to "必填，包名或应用名"),
+                description = "Open an app's system settings details page (can view/modify permissions, notifications, storage usage)." +
+                    "Such operations are suited to letting the user confirm themselves; safer than clearing data directly.",
+                parameters = mapOf("app" to "Required, package name or app name"),
                 required = setOf("app"),
                 riskLevel = ToolRiskLevel.NORMAL,
             ),
@@ -87,9 +87,9 @@ class AppControlTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "app_force_stop",
-                description = "强行停止一个应用（等价于设置里的「强行停止」）。需要 Shizuku/adb 或 Root；" +
-                    "没有这些权限时本工具会明确告知，不要反复重试。",
-                parameters = mapOf("app" to "必填，包名或应用名"),
+                description = "Force-stop an app (equivalent to 'Force stop' in settings). Requires Shizuku/adb or Root;" +
+                    "when those permissions are missing, this tool will clearly say so; do not retry repeatedly.",
+                parameters = mapOf("app" to "Required, package name or app name"),
                 required = setOf("app"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
@@ -100,8 +100,8 @@ class AppControlTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "app_clear_data",
-                description = "清空一个应用的全部数据（不可撤销）。需要 Shizuku/adb 或 Root。执行前必须向用户确认。",
-                parameters = mapOf("app" to "必填，包名或应用名"),
+                description = "Clear all of an app's data (irreversible). Requires Shizuku/adb or Root. Must confirm with the user before executing.",
+                parameters = mapOf("app" to "Required, package name or app name"),
                 required = setOf("app"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),
@@ -112,8 +112,8 @@ class AppControlTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "app_uninstall",
-                description = "卸载一个应用。需要 Shizuku/adb 或 Root；系统应用会被拒绝。执行前必须向用户确认。",
-                parameters = mapOf("app" to "必填，包名或应用名"),
+                description = "Uninstall an app. Requires Shizuku/adb or Root; system apps will be refused. Must confirm with the user before executing.",
+                parameters = mapOf("app" to "Required, package name or app name"),
                 required = setOf("app"),
                 riskLevel = ToolRiskLevel.HIGH,
             ),

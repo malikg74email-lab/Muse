@@ -380,7 +380,7 @@ val ChatStreamEvent.Error.providerError: ProviderError?
  * 供未迁移的 Provider 使用。
  */
 @Deprecated(
-    "Provider 应直接抛 ProviderException,用 (throwable as? ProviderException)?.providerError 替代字符串推断",
+    "Providers should throw ProviderException directly; use (throwable as? ProviderException)?.providerError instead of string inference",
     ReplaceWith("(throwable as? ProviderException)?.providerError"),
 )
 fun inferFromMessage(message: String, throwable: Throwable?): ProviderError? {

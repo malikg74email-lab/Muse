@@ -402,7 +402,7 @@ private const val LOAD_OLDER_THRESHOLD: Int = 2
 
 private const val TYPING_ITEM_KEY: String = "mp-chat-typing-item"
 private const val ACTIVITY_ITEM_KEY: String = "mp-chat-activity-item"
-private const val BACK_DESCRIPTION: String = "返回"
+private const val BACK_DESCRIPTION: String = "Back"
 
 private val TopBarButtonSize = 40.dp
 private val TopBarIconSize = 20.dp

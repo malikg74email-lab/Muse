@@ -134,7 +134,7 @@ class MemoryEdgeBuilder(
         // 4) 语义近邻（中）—— 依赖 embedding，可能失败，失败即跳过
         val semanticCount = if (req.semanticProvider != null) {
             runCatching { ctx.buildSemanticEdges() }
-                .onFailure { Logger.w(TAG, "语义补边失败(跳过): ${it.message}") }
+                .onFailure { Logger.w(TAG, "Semantic edge building failed (skipped): ${it.message}") }
                 .getOrDefault(0)
         } else {
             0
@@ -146,12 +146,12 @@ class MemoryEdgeBuilder(
                 enhanceWithLlm(ctx.pending, req.model)
             }
             runCatching { linkDao.insertBatch(ctx.pending) }
-                .onFailure { Logger.w(TAG, "补边落库失败: ${it.message}") }
+                .onFailure { Logger.w(TAG, "Edge persistence failed: ${it.message}") }
         }
         Logger.i(
             TAG,
-            "补边完成: 实体=${ctx.counts[Kind.ENTITY]} 会话=${ctx.counts[Kind.SESSION]} " +
-                "分类=${ctx.counts[Kind.CATEGORY]} 语义=$semanticCount",
+            "Edge building complete: entities=${ctx.counts[Kind.ENTITY]} sessions=${ctx.counts[Kind.SESSION]} " +
+                "categories=${ctx.counts[Kind.CATEGORY]} semantic=$semanticCount",
         )
         BuildResult(
             entityEdges = ctx.counts[Kind.ENTITY] ?: 0,
@@ -317,8 +317,8 @@ class MemoryEdgeBuilder(
 
         /** v2.6.2: LLM 深化关系类型的 system prompt。 */
         private const val EDGE_ENHANCE_SYSTEM_PROMPT =
-            "你是记忆关系分析器。给定两条事实 A 与 B，判断它们的关系类型。" +
-                "只回复一个词：causes（A 导致 B）/ contradicts（互相矛盾）/ " +
-                "part_of（B 是 A 的一部分或反之）/ related_to（普通关联）。不要解释。"
+            "You are a memory relationship analyzer. Given two facts A and B, determine their relationship type." +
+                "Reply with a single word: causes (A causes B) / contradicts (mutually contradictory) / " +
+                "part_of (B is part of A or vice versa) / related_to (ordinary association). Do not explain."
     }
 }

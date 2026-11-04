@@ -193,8 +193,8 @@ internal fun likersLineOf(names: List<String>): String {
     val folded = shown.size > LIKERS_INLINE_MAX
     val parts = shown.take(if (folded) LIKERS_SHOWN_WHEN_FOLDED else shown.size)
     val namesText = parts.joinToString(LIKERS_SEPARATOR)
-    return if (folded) "$LIKERS_MARK$namesText${LIKERS_SEPARATOR}等 ${shown.size} 人" else "$LIKERS_MARK$namesText"
+    return if (folded) "$LIKERS_MARK$namesText${LIKERS_SEPARATOR}and ${shown.size} people" else "$LIKERS_MARK$namesText"
 }
 
 private const val LIKERS_MARK: String = "❤️ "
-private const val LIKERS_SEPARATOR: String = "，"
+private const val LIKERS_SEPARATOR: String = ", "

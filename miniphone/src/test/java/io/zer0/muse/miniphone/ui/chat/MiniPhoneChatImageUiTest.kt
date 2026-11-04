@@ -73,7 +73,7 @@ class MiniPhoneChatImageUiTest {
         render(chatState(imageMessage("m1", MpActorType.USER, "/no/such/dir/photo.jpg")))
 
         compose.onNodeWithTag(MiniPhoneChatTags.imageBroken("m1"), useUnmergedTree = true).assertExists()
-        compose.onNodeWithText("图片无法显示").assertExists()
+        compose.onNodeWithText("Image can't be displayed").assertExists()
     }
 
     @Test

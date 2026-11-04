@@ -91,14 +91,14 @@ class VideoGenerationService(
             // 同步返回:直接取 videoUrl(不需要 taskId)
             if (!submitResult.isAsync) {
                 val url = submitResult.videoUrl
-                    ?: error("视频任务同步返回但未提供 videoUrl")
+                    ?: error("Video task returned synchronously but provided no videoUrl")
                 onProgress?.invoke(0)
                 return@resultOf url
             }
 
             // 异步任务必须携带 taskId
             if (taskId.isNullOrBlank()) {
-                error("视频任务提交失败:无 taskId")
+                error("Video task submission failed: no taskId")
             }
 
             // 2. 异步轮询
@@ -146,7 +146,7 @@ class VideoGenerationService(
      */
     fun cancel(taskId: String) {
         cancelledTasks[taskId] = true
-        Logger.i(TAG, "任务已取消: taskId=$taskId")
+        Logger.i(TAG, "Task cancelled: taskId=$taskId")
     }
 
     /**
@@ -203,13 +203,13 @@ class VideoGenerationService(
                         consecutiveErrors++
                         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
                             error(
-                                "${provider.providerId} 任务连续 $consecutiveErrors 次查询异常: ${e.message}",
+                                "${provider.providerId} task query failed $consecutiveErrors times in a row: ${e.message}",
                             )
                         }
                         Logger.w(
                             TAG,
-                            "查询异常 ($consecutiveErrors/${MAX_CONSECUTIVE_ERRORS})" +
-                                ",将重试: ${e.message}",
+                            "Query error ($consecutiveErrors/${MAX_CONSECUTIVE_ERRORS})" +
+                                ", will retry: ${e.message}",
                         )
                         null
                     }
@@ -217,19 +217,19 @@ class VideoGenerationService(
                     if (pollResult != null) {
                         // 取消围栏:poll 返回后检查是否已被取消
                         if (cancelledTasks.remove(taskId) != null) {
-                            throw CancellationException("任务已被用户取消: taskId=$taskId")
+                            throw CancellationException("Task was cancelled by the user: taskId=$taskId")
                         }
 
                         when (pollResult.status) {
                             PollStatus.SUCCESS -> {
                                 consecutiveErrors = 0
                                 val url = pollResult.videoUrl
-                                    ?: error("${provider.providerId} 任务成功但未返回 videoUrl")
+                                    ?: error("${provider.providerId} task succeeded but returned no videoUrl")
                                 return@withTimeoutOrNull url
                             }
                             PollStatus.FAILED -> {
                                 consecutiveErrors = 0
-                                error(pollResult.errorMessage ?: "${provider.providerId} 任务失败")
+                                error(pollResult.errorMessage ?: "${provider.providerId} task failed")
                             }
                             PollStatus.PENDING -> {
                                 // PENDING + errorMessage 表示查询本身出错(网络/HTTP 错误)
@@ -237,14 +237,14 @@ class VideoGenerationService(
                                     consecutiveErrors++
                                     if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
                                         error(
-                                            "${provider.providerId} 任务连续 $consecutiveErrors 次查询失败," +
-                                                "最后错误: ${pollResult.errorMessage}",
+                                            "${provider.providerId} task query failed $consecutiveErrors times in a row," +
+                                                "last error: ${pollResult.errorMessage}",
                                         )
                                     }
                                     Logger.w(
                                         TAG,
-                                        "查询失败 ($consecutiveErrors/${MAX_CONSECUTIVE_ERRORS})" +
-                                            ",将重试: ${pollResult.errorMessage}",
+                                        "Query failed ($consecutiveErrors/${MAX_CONSECUTIVE_ERRORS})" +
+                                            ", will retry: ${pollResult.errorMessage}",
                                     )
                                 } else {
                                     // 纯 PENDING(正常处理中),重置错误计数
@@ -258,7 +258,7 @@ class VideoGenerationService(
                 delay(TICK_MS)
             }
             null
-        } ?: error("${provider.providerId} 任务超时(taskId=$taskId, timeoutMs=$timeoutMs)")
+        } ?: error("${provider.providerId} task timed out (taskId=$taskId, timeoutMs=$timeoutMs)")
 
         // 清理取消围栏(任务已正常完成)
         cancelledTasks.remove(taskId)

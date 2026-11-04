@@ -151,9 +151,9 @@ internal fun MePage(
  * 宿主没报版本时只留前半段,不补一个假版本号。
  */
 internal fun miniPhoneVersionLabel(dbVersion: Int, appVersion: String): String {
-    val module = "小手机数据 v$dbVersion"
+    val module = "Mini-phone data v$dbVersion"
     val app = appVersion.trim()
-    return if (app.isEmpty()) module else "$module / 应用 $app"
+    return if (app.isEmpty()) module else "$module / App $app"
 }
 
 /** 设置区的一行:左边标题 + 说明,右边开关。两张设置卡长得一样,只是文案与回调不同。 */
@@ -309,21 +309,21 @@ private fun ClearChatsConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit
     }
 }
 
-private const val EMPTY_NICKNAME: String = "还没有昵称"
-private const val EMPTY_SIGNATURE: String = "这个人还没写签名"
-private const val AUTO_MOMENT_TITLE: String = "自动发朋友圈"
-private const val AUTO_MOMENT_DESCRIPTION: String = "关掉之后角色不再自己在后台发动态"
-private const val CHAT_PROACTIVE_TITLE: String = "角色主动私信"
-private const val CHAT_PROACTIVE_DESCRIPTION: String = "角色会偶尔主动找你说话，只在 08:00–22:00 之间，默认关闭"
-private const val MY_MOMENTS_TITLE: String = "我的朋友圈"
-private const val MY_MOMENTS_DESCRIPTION: String = "只看自己发过的动态,也可以接着发"
-private const val CLEAR_CHATS_TITLE: String = "清空聊天记录"
-private const val CLEAR_CHATS_DESCRIPTION: String = "删掉全部会话与消息,朋友圈不受影响"
-private const val VERSION_TITLE: String = "版本信息"
-private const val CLEAR_CHATS_DIALOG_TITLE: String = "清空聊天记录?"
-private const val CLEAR_CHATS_DIALOG_HINT: String = "所有会话和消息会被删除,无法恢复。朋友圈动态不会动。"
-private const val CANCEL_LABEL: String = "取消"
-private const val CLEAR_LABEL: String = "清空"
+private const val EMPTY_NICKNAME: String = "No nickname yet"
+private const val EMPTY_SIGNATURE: String = "This person hasn't written a signature yet"
+private const val AUTO_MOMENT_TITLE: String = "Automatic Moments posts"
+private const val AUTO_MOMENT_DESCRIPTION: String = "When off, characters no longer post updates on their own in the background"
+private const val CHAT_PROACTIVE_TITLE: String = "Characters message first"
+private const val CHAT_PROACTIVE_DESCRIPTION: String = "Characters will occasionally start a conversation with you, only between 08:00–22:00; off by default"
+private const val MY_MOMENTS_TITLE: String = "My Moments"
+private const val MY_MOMENTS_DESCRIPTION: String = "See only the updates you posted; you can keep posting from there too"
+private const val CLEAR_CHATS_TITLE: String = "Clear chat history"
+private const val CLEAR_CHATS_DESCRIPTION: String = "Deletes all conversations and messages; Moments are not affected"
+private const val VERSION_TITLE: String = "Version info"
+private const val CLEAR_CHATS_DIALOG_TITLE: String = "Clear chat history?"
+private const val CLEAR_CHATS_DIALOG_HINT: String = "All conversations and messages will be deleted and cannot be recovered. Moments posts will not be touched."
+private const val CANCEL_LABEL: String = "Cancel"
+private const val CLEAR_LABEL: String = "Clear"
 private const val CHEVRON_TEXT: String = "›"
 
 private val SectionGap = 12.dp

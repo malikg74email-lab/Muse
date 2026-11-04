@@ -130,7 +130,7 @@ class SessionSummaryManager(
             true
         }.onError { msg, t ->
             // v1.78 (M5): 记录删除失败原因
-            Logger.w("SessionSummaryManager", "delete(${sessionId.take(8)}…) 失败: $msg", t)
+            Logger.w("SessionSummaryManager", "delete(${sessionId.take(8)}…) failed: $msg", t)
         }.getOrNull() ?: false
     }
 
@@ -213,16 +213,16 @@ class SessionSummaryManager(
         val factsBudget = maxOf(15, (budget.totalBudget * 0.3).toInt())
         val eventsBudget = budget.totalBudget - factsBudget
         val budgetText = if (isZh) {
-            "$factTitle 最多 $factsBudget 字。$timelineTitle 最多 $eventsBudget 字。"
+            "$factTitle at most $factsBudget characters. $timelineTitle at most $eventsBudget characters."
         } else {
             "$factTitle max ${maxOf(
                 10,
                 (factsBudget * 0.6).toInt(),
             )} words. $timelineTitle max ${maxOf(20, (eventsBudget * 0.6).toInt())} words."
         }
-        val prevLabel = if (isZh) "## 已有摘要" else "## Existing Summary"
-        val newLabel = if (isZh) "## 新增对话" else "## New Conversation"
-        val budgetLabel = if (isZh) "## 本次摘要预算" else "## This Run's Summary Budget"
+        val prevLabel = if (isZh) "## Existing Summary" else "## Existing Summary"
+        val newLabel = if (isZh) "## New Conversation" else "## New Conversation"
+        val budgetLabel = if (isZh) "## This Run's Summary Budget" else "## This Run's Summary Budget"
         val userContent = listOfNotNull(
             prevSummary.takeIf { it.isNotBlank() }?.let { "$prevLabel\n\n$it" },
             "$newLabel\n\n${maskedConv.masked}",
@@ -239,7 +239,7 @@ class SessionSummaryManager(
             )
         }.onError { msg, t ->
             // v1.78 (M5): 记录 rollingSummary LLM 失败原因
-            Logger.w("SessionSummaryManager", "rollingSummary LLM 调用失败 (${sessionId.take(8)}…): $msg", t)
+            Logger.w("SessionSummaryManager", "rollingSummary LLM call failed (${sessionId.take(8)}…): $msg", t)
         }.getOrNull() ?: return@withContext Draft(prevSummary, changed = false, null)
 
         var newSummary = rawResult.trim()
@@ -262,7 +262,7 @@ class SessionSummaryManager(
                 )
             }.onError { msg, t ->
                 // v1.78 (M5): 记录格式修复 LLM 失败原因
-                Logger.w("SessionSummaryManager", "格式修复 LLM 调用失败 (${sessionId.take(8)}…, attempt=$repairsUsed): $msg", t)
+                Logger.w("SessionSummaryManager", "Format-repair LLM call failed (${sessionId.take(8)}…, attempt=$repairsUsed): $msg", t)
             }.getOrNull() ?: break
             if (repairResult.isBlank()) {
                 validation = RollingSummaryFormat.ValidationResult(false, validation.issues + "format repair returned empty")
@@ -327,10 +327,10 @@ class SessionSummaryManager(
     /** 从消息列表构建带时间戳的对话文本(供 LLM 总结)。 */
     private fun buildConversationText(messages: List<UIMessage>, locale: String, zone: java.time.ZoneId): String {
         val isZh = locale.startsWith("zh")
-        val userLabel = if (isZh) "用户" else "User"
-        val assistantLabel = if (isZh) "助手" else "Assistant"
+        val userLabel = if (isZh) "User" else "User"
+        val assistantLabel = if (isZh) "Assistant" else "Assistant"
         val assistantVibeLabel = if (isZh) {
-            "助手当时表达的感受（Vibe 自述）"
+            "Assistant self-reported Vibe"
         } else {
             "Assistant self-reported Vibe"
         }
@@ -375,7 +375,7 @@ class SessionSummaryManager(
                 json.decodeFromString(TimeContext.SourceTimeRange.serializer(), it)
             }.getOrElse { e ->
                 // v1.78 (M5): 记录 sourceTimeRange JSON 解析失败
-                Logger.w("SessionSummaryManager", "sourceTimeRange JSON 解析失败: ${e.message}")
+                Logger.w("SessionSummaryManager", "sourceTimeRange JSON parse failed: ${e.message}")
                 null
             }
         }

@@ -30,9 +30,9 @@ internal object MiniPhoneTimeFormat {
         val nowDate = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
         return when {
             thenDate == nowDate -> clock
-            thenDate == nowDate.minusDays(1) -> "昨天 $clock"
-            thenDate.year == nowDate.year -> "${thenDate.monthValue} 月 ${thenDate.dayOfMonth} 日 $clock"
-            else -> "${thenDate.year} 年 ${thenDate.monthValue} 月 ${thenDate.dayOfMonth} 日 $clock"
+            thenDate == nowDate.minusDays(1) -> "Yesterday $clock"
+            thenDate.year == nowDate.year -> "${thenDate.monthValue}/${thenDate.dayOfMonth} $clock"
+            else -> "${thenDate.year}/${thenDate.monthValue}/${thenDate.dayOfMonth} $clock"
         }
     }
 }
@@ -61,17 +61,17 @@ private val RelativeClock: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:m
 internal fun relativeTimeOf(epochMs: Long, now: Long = System.currentTimeMillis()): String {
     if (epochMs <= 0L) return ""
     val diff = now - epochMs
-    if (diff < MINUTE_MS) return "刚刚"
-    if (diff < HOUR_MS) return "${diff / MINUTE_MS} 分钟前"
+    if (diff < MINUTE_MS) return "Just now"
+    if (diff < HOUR_MS) return "${diff / MINUTE_MS} minutes ago"
 
     val zone = ZoneId.systemDefault()
     val then = Instant.ofEpochMilli(epochMs).atZone(zone)
     val thenDate = then.toLocalDate()
     val nowDate = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
     return when {
-        thenDate == nowDate -> "${diff / HOUR_MS} 小时前"
-        thenDate == nowDate.minusDays(1) -> "昨天 ${then.format(RelativeClock)}"
-        thenDate.year == nowDate.year -> "${thenDate.monthValue}月${thenDate.dayOfMonth}日 ${then.format(RelativeClock)}"
-        else -> "${thenDate.year}年${thenDate.monthValue}月${thenDate.dayOfMonth}日"
+        thenDate == nowDate -> "${diff / HOUR_MS} hours ago"
+        thenDate == nowDate.minusDays(1) -> "Yesterday ${then.format(RelativeClock)}"
+        thenDate.year == nowDate.year -> "${thenDate.monthValue}/${thenDate.dayOfMonth} ${then.format(RelativeClock)}"
+        else -> "${thenDate.year}/${thenDate.monthValue}/${thenDate.dayOfMonth}"
     }
 }

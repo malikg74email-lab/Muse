@@ -98,7 +98,7 @@ class CacheUsageSplitTest {
             "claude-sonnet-4",
             anthropic.copy(promptTokensIncludeCache = true),
         )
-        assertTrue("相减口径会漏掉输入费，金额应更小", clamped.usd < cost.usd)
+        assertTrue("The subtraction convention would miss input fees, so the amount should be smaller", clamped.usd < cost.usd)
     }
 
     @Test

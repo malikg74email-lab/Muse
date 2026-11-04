@@ -62,7 +62,7 @@ fun Flow<ChatStreamEvent>.withFirstEventWatchdog(
             } else if (completion.text.isNotBlank()) {
                 trySend(
                     ChatStreamEvent.Error(
-                        "流式已输出内容但未完成,已保留当前内容(可重试生成)",
+                        "Streaming produced content but did not finish; the current content has been kept (generation can be retried)",
                         null,
                     ),
                 )
@@ -85,7 +85,7 @@ fun Flow<ChatStreamEvent>.withFirstEventWatchdog(
             close(cancelled)
             throw cancelled
         } catch (t: Throwable) {
-            trySend(ChatStreamEvent.Error(t.message ?: "非流式回退失败", t))
+            trySend(ChatStreamEvent.Error(t.message ?: "Non-streaming fallback failed", t))
         } finally {
             close()
         }
@@ -121,7 +121,7 @@ fun Flow<ChatStreamEvent>.withFirstEventWatchdog(
                         // 部分 OpenAI 兼容中转会建立 SSE 后只返回一个空 Done。
                         // 这不是可展示的正常回复,立即走一次非流式请求,避免用户看到空消息并长时间等待。
                         if (!meaningfulEventReceived.get()) {
-                            emitFallback("流式响应为空，正在切换请求方式", cancelUpstream = false)
+                            emitFallback("Streaming response was empty, switching the request method", cancelUpstream = false)
                         } else {
                             trySend(event)
                             finished.set(true)
@@ -147,7 +147,7 @@ fun Flow<ChatStreamEvent>.withFirstEventWatchdog(
             // 不应继续等待 45s/90s 的首事件看门狗。立即复用非流式回退，避免用户看到长时间
             // loading；仍保持打开的 SSE 不会进入这里，而用户停止/显式错误路径会先把 finished 置 true。
             if (!meaningfulEventReceived.get() && !finished.get()) {
-                emitFallback("流式响应为空，正在切换请求方式", cancelUpstream = false)
+                emitFallback("Streaming response was empty, switching the request method", cancelUpstream = false)
             }
         } catch (t: Throwable) {
             if (t is kotlinx.coroutines.CancellationException) {
@@ -168,7 +168,7 @@ fun Flow<ChatStreamEvent>.withFirstEventWatchdog(
         delay(timeoutMs)
         if (!firstEventReceived.get() && !finished.get()) {
             // 审计修复 (7.8): 用户已停止时不再发 fallback,省一次计费请求。
-            emitFallback("网络较慢，已切换请求方式", cancelUpstream = true)
+            emitFallback("Network is slow, switched the request method", cancelUpstream = true)
         }
     }
 

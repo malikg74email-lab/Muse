@@ -89,7 +89,7 @@ class VideoGenerationServiceTest {
         val service = serviceWith(provider)
         val result = service.generateVideo(config(specId = "slow"), request(), timeoutMs = 1)
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("任务超时") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("task timed out") == true)
     }
 
     @Test

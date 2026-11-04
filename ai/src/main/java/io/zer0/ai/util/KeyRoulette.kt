@@ -122,7 +122,7 @@ class KeyRoulette {
             while (blocksForProvider.size > MAX_RECORDS_PER_PROVIDER) blocksForProvider.removeAt(0)
         }
 
-        Logger.i(TAG, "pickNext: 429 限流,把 key=${maskKey(currentKey)} 加入软黑名单 60s,切换到下一个 key")
+        Logger.i(TAG, "pickNext: 429 rate limited, adding key=${maskKey(currentKey)} to the soft blacklist for 60s, switching to the next key")
 
         // 重新 pick(会跳过软黑名单中的 key,除非没有其他选择)
         return pick(providerId, keysString)
@@ -154,7 +154,7 @@ class KeyRoulette {
             )
             while (blocksForProvider.size > MAX_RECORDS_PER_PROVIDER) blocksForProvider.removeAt(0)
         }
-        Logger.w(TAG, "markFailed: key=${maskKey(key)} 标记为失败(hardBlock=$hardBlock, ttl=${ttlMs}ms)")
+        Logger.w(TAG, "markFailed: key=${maskKey(key)} marked as failed (hardBlock=$hardBlock, ttl=${ttlMs}ms)")
     }
 
     /** 清除所有缓存的 key 使用数据。 */

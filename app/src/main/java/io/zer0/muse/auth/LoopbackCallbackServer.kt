@@ -33,12 +33,12 @@ internal object LoopbackCallbackServer {
     private val SUCCESS_HTML =
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Muse OAuth</title></head>" +
             "<body style=\"font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0\">" +
-            "<div style=\"text-align:center\"><h2>&#10003; 授权成功</h2><p>可以关闭此页面，回到 Muse 继续。</p></div></body></html>"
+            "<div style=\"text-align:center\"><h2>&#10003; Authorization successful</h2><p>You can close this page and return to Shaheen 2 to continue.</p></div></body></html>"
 
     private val FAILURE_HTML =
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Muse OAuth</title></head>" +
             "<body style=\"font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0\">" +
-            "<div style=\"text-align:center\"><h2>&#10007; 授权失败</h2><p>请回到 Muse 查看错误信息后重试。</p></div></body></html>"
+            "<div style=\"text-align:center\"><h2>&#10007; Authorization failed</h2><p>Please return to Shaheen 2 to see the error and retry.</p></div></body></html>"
 
     /**
      * 在 redirectUri 指定的端口启动 loopback 服务器。
@@ -52,7 +52,7 @@ internal object LoopbackCallbackServer {
         val hostPort = if (hostEnd > 0) slash.take(hostEnd) else slash
         val port = hostPort.substringAfter(':', "80").toIntOrNull() ?: 80
         val serverSocket = ServerSocket(port, 1, java.net.InetAddress.getByName("127.0.0.1"))
-        Logger.i(TAG, "Loopback 回调服务器已启动: 127.0.0.1:$port")
+        Logger.i(TAG, "Loopback callback server started: 127.0.0.1:$port")
         val executor = Executors.newSingleThreadExecutor { r -> Thread(r, "oauth-loopback") }
         val closed = AtomicBoolean(false)
         executor.execute {
@@ -63,7 +63,7 @@ internal object LoopbackCallbackServer {
             } catch (_: java.net.SocketException) {
                 // stop() 关闭 socket 的正常打断
             } catch (t: Throwable) {
-                Logger.e(TAG, "loopback 回调服务器异常", t)
+                Logger.e(TAG, "Loopback callback server exception", t)
             }
         }
         return LoopbackServerHandle(serverSocket, executor, closed)
@@ -93,22 +93,22 @@ internal object LoopbackCallbackServer {
             val state = params["state"]
             ok = when {
                 error != null -> {
-                    Logger.w(TAG, "授权服务器返回 error=$error")
+                    Logger.w(TAG, "Authorization server returned error=$error")
                     false
                 }
                 code.isNullOrBlank() || state.isNullOrBlank() -> {
-                    Logger.w(TAG, "回调缺少 code/state")
+                    Logger.w(TAG, "Callback is missing code/state")
                     false
                 }
                 // 复用既有 state 校验 + deferred resolve 路径
                 !OAuthManager.completeAuthorizationCodeFlow(code, state) -> {
-                    Logger.w(TAG, "state 校验失败或无 pending 流程")
+                    Logger.w(TAG, "State validation failed or no pending flow")
                     false
                 }
                 else -> true
             }
         } catch (t: Throwable) {
-            Logger.e(TAG, "解析 loopback 回调失败", t)
+            Logger.e(TAG, "Parsing the loopback callback failed", t)
         }
         try {
             val body = (if (ok) SUCCESS_HTML else FAILURE_HTML).toByteArray(Charsets.UTF_8)
@@ -122,7 +122,7 @@ internal object LoopbackCallbackServer {
                 out.flush()
             }
         } catch (t: Throwable) {
-            Logger.w(TAG, "写回响应失败: ${t.message}")
+            Logger.w(TAG, "Writing the response back failed: ${t.message}")
         }
     }
 }
@@ -137,6 +137,6 @@ internal class LoopbackServerHandle(
         if (!closed.compareAndSet(false, true)) return
         runCatching { serverSocket.close() }
         runCatching { executor.shutdownNow() }
-        Logger.i("LoopbackCallbackServer", "Loopback 回调服务器已停止")
+        Logger.i("LoopbackCallbackServer", "Loopback callback server stopped")
     }
 }

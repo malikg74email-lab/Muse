@@ -22,14 +22,14 @@ class ModelReasoningReplayTest {
         assertNotNull(d)
         assertEquals(ReasoningCarrier.REASONING_CONTENT, d!!.carrier)
         assertEquals(ReasoningReplayPolicy.REQUIRE_TOOL_CALL, d.policy)
-        assertTrue("DeepSeek 思考模式字段不能省，需发空串占位", d.requiresNonEmptyReasoning)
+        assertTrue("DeepSeek thinking-mode fields cannot be omitted; an empty-string placeholder must be sent", d.requiresNonEmptyReasoning)
     }
 
     @Test
     fun `kimi与glm思考系声明reasoning_content`() {
         listOf("kimi-k2.5", "kimi-k3", "glm-z1-air", "glm-4.7", "glm-5").forEach { id ->
             val d = declare(id)
-            assertNotNull("$id 应声明回放", d)
+            assertNotNull("$id should declare replay", d)
             assertEquals(ReasoningCarrier.REASONING_CONTENT, d!!.carrier)
         }
     }
@@ -38,9 +38,9 @@ class ModelReasoningReplayTest {
     fun `qwen与doubao容忍缺省故不需要空串占位`() {
         listOf("qwen3-235b", "qwq-32b", "doubao-1.5-thinking-pro").forEach { id ->
             val d = declare(id)
-            assertNotNull("$id 应声明回放", d)
+            assertNotNull("$id should declare replay", d)
             assertEquals(ReasoningCarrier.REASONING_CONTENT, d!!.carrier)
-            assertTrue("$id 不需要空串占位", !d.requiresNonEmptyReasoning)
+            assertTrue("$id does not need an empty-string placeholder", !d.requiresNonEmptyReasoning)
         }
     }
 
@@ -73,7 +73,7 @@ class ModelReasoningReplayTest {
             "deepseek-v4-flash",
         )
         val contract = compat.reasoningReplayContract
-        assertNotNull("未知 host 下应由模型级声明兜底", contract)
+        assertNotNull("Under an unknown host, the model-level declaration should be the fallback", contract)
         assertEquals(ReasoningCarrier.REASONING_CONTENT, contract!!.carrier)
     }
 

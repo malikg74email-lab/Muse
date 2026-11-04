@@ -9,6 +9,6 @@ package io.zer0.ai.core
  */
 internal fun malformedStreamFrameError(provider: String, data: String, throwable: Throwable?): ChatStreamEvent.Error =
     ChatStreamEvent.Error(
-        message = "$provider 流式响应格式异常（frameLength=${data.length}），本轮请求已终止，请重试。",
+        message = "$provider streaming response format error (frameLength=${data.length}); this request has been terminated, please retry.",
         throwable = throwable,
     )

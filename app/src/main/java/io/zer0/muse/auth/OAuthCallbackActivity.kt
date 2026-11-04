@@ -39,7 +39,7 @@ class OAuthCallbackActivity : Activity() {
     /** 从 Intent 解析 code + state,转发给 [OAuthManager]。 */
     private fun handleIntent(intent: Intent?) {
         val data: Uri = intent?.data ?: run {
-            Logger.w(TAG, "OAuthCallbackActivity 收到空 data,忽略")
+            Logger.w(TAG, "OAuthCallbackActivity received empty data, ignoring")
             return
         }
         val code = data.getQueryParameter("code").orEmpty()
@@ -48,13 +48,13 @@ class OAuthCallbackActivity : Activity() {
         val error = data.getQueryParameter("error")
         if (!error.isNullOrBlank()) {
             val desc = data.getQueryParameter("error_description").orEmpty()
-            Logger.w(TAG, "OAuth 回调报错: error=$error, desc=$desc")
+            Logger.w(TAG, "OAuth callback error: error=$error, desc=$desc")
             // 直接置 OAuthManager 为 ERROR 态,让挂起的 launchAuthorizationCodeFlow 返回失败
             OAuthManager.cancel()
             return
         }
         if (code.isBlank() || state.isBlank()) {
-            Logger.w(TAG, "OAuth 回调缺 code/state,忽略: $data")
+            Logger.w(TAG, "OAuth callback is missing code/state, ignoring: $data")
             return
         }
         OAuthManager.completeAuthorizationCodeFlow(code, state)

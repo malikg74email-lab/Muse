@@ -205,10 +205,10 @@ class MpProactiveChatRunnerTest {
         runner(host = host, store = FakeChatStore(enabled = true)).run()
 
         val hint = host.lastHint.orEmpty()
-        assertTrue("素材应带最近对话: $hint", hint.contains("用户：今天加班到好晚"))
-        assertTrue("素材应带角色自己说过的话: $hint", hint.contains("我：到家了吗"))
-        assertTrue("素材应带当前时间: $hint", hint.contains("现在是周二下午两点"))
-        assertTrue("由头放在最后一句: $hint", hint.lines().last().startsWith("此刻的由头："))
+        assertTrue("素材应带最近对话: $hint", hint.contains("User: 今天加班到好晚"))
+        assertTrue("素材应带角色自己说过的话: $hint", hint.contains("Me: 到家了吗"))
+        assertTrue("素材应带当前时间: $hint", hint.contains("It is Tuesday afternoon two o'clock (afternoon)."))
+        assertTrue("由头放在最后一句: $hint", hint.lines().last().startsWith("The occasion right now: "))
     }
 
     private fun runner(host: MiniPhoneHost, store: MpMomentAutoStore): MpProactiveChatRunner = MpProactiveChatRunner(

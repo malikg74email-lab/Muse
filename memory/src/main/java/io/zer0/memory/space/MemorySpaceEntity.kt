@@ -58,7 +58,7 @@ data class MemorySpaceEntity(
         const val DEFAULT_SPACE_ID = "default"
 
         /** 默认 Space 名称。 */
-        const val DEFAULT_SPACE_NAME = "默认"
+        const val DEFAULT_SPACE_NAME = "Default"
 
         /** 默认 Space 图标。 */
         const val DEFAULT_SPACE_ICON = "bookmark"

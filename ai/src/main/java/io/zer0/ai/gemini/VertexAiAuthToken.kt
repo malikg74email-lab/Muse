@@ -111,19 +111,19 @@ class VertexAiAuthToken(
                 cachedToken = token.accessToken
                 cachedExpiresAt = now + effectiveExpiresIn * 1000L
             }
-            Logger.d(TAG, "Vertex AI token 刷新成功,有效期 ${effectiveExpiresIn}s")
+            Logger.d(TAG, "Vertex AI token refreshed successfully, valid for ${effectiveExpiresIn}s")
             return@withContext token.accessToken
         }
         // M-GEM7: 刷新失败,若旧 token 未完全过期,降级用旧 token
         val stale = cachedToken
         val now = System.currentTimeMillis()
         if (stale != null && now < cachedExpiresAt) {
-            Logger.w(TAG, "Token 刷新失败,降级用旧 token(剩余 ${cachedExpiresAt - now}ms)")
+            Logger.w(TAG, "Token refresh failed, degrading to the old token (remaining ${cachedExpiresAt - now}ms)")
             return@withContext stale
         }
         // M-GEM7: 无可用 token,抛含原因的异常 (v1.0.27 Phase 5-A: 改用 ProviderException)
         throw ProviderException(
-            ProviderError.AuthError(displayMessage = "Vertex AI token 刷新失败且无可用旧 token"),
+            ProviderError.AuthError(displayMessage = "Vertex AI token refresh failed and no usable old token is available"),
         )
     }
 
@@ -180,7 +180,7 @@ class VertexAiAuthToken(
                 if (!resp.isSuccessful) {
                     Logger.w(
                         TAG,
-                        "Token 交换失败 HTTP ${resp.code}: " +
+                        "Token exchange failed HTTP ${resp.code}: " +
                             (io.zer0.ai.core.ProviderError.safeErrorDetail(body) ?: "<empty>"),
                     )
                     return@use null
@@ -190,7 +190,7 @@ class VertexAiAuthToken(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "Token 交换异常: ${e.message}")
+            Logger.w(TAG, "Token exchange exception: ${e.message}")
             null
         }
     }

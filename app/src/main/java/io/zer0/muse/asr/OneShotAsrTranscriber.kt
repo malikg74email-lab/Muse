@@ -44,7 +44,7 @@ class OneShotAsrTranscriber(
         if (wavBytes.isEmpty()) return null
         val config = effectiveConfig() ?: return null
         if (!config.supportsFileTranscription()) {
-            Logger.w(TAG, "当前识别引擎(${config.provider})不提供整段音频转写端点")
+            Logger.w(TAG, "The current recognition engine (${config.provider}) does not provide a whole-audio transcription endpoint")
             return null
         }
         val base = config.baseUrl.ifBlank { config.defaultBaseUrl().ifBlank { DEFAULT_BASE_URL } }
@@ -70,11 +70,11 @@ class OneShotAsrTranscriber(
         val providers = settings.providersFlow.first()
         val resolved = SpeechProviderResolver.resolveAsr(config, providers)
         if (resolved.isProviderFallback) {
-            Logger.w(TAG, "跟随供应商配置不可用(${resolved.fallbackReason}),录音转写改用手填配置")
+            Logger.w(TAG, "Following the provider configuration is unavailable (${resolved.fallbackReason}); recording transcription falls back to the manually entered configuration")
         }
         val effective = config.withResolvedEndpoint(resolved)
         if (effective.apiKey.isBlank()) {
-            Logger.w(TAG, "语音识别未配置 apiKey,跳过录音转写")
+            Logger.w(TAG, "Speech recognition apiKey not configured; skipping recording transcription")
             return null
         }
         return effective
@@ -102,17 +102,17 @@ class OneShotAsrTranscriber(
             try {
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        Logger.w(TAG, "录音转写失败: HTTP ${response.code} ${response.message}")
+                        Logger.w(TAG, "Recording transcription failed: HTTP ${response.code} ${response.message}")
                         return@withContext null
                     }
                     val text = parseOneShotTranscription(response.body?.string().orEmpty())
-                    if (text == null) Logger.w(TAG, "录音转写响应里没有可用文本(HTTP ${response.code})")
+                    if (text == null) Logger.w(TAG, "No usable text in the recording transcription response (HTTP ${response.code})")
                     text
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Logger.w(TAG, "录音转写请求异常: ${e.message}")
+                Logger.w(TAG, "Recording transcription request exception: ${e.message}")
                 null
             }
         }

@@ -415,7 +415,7 @@ private fun MiniPhonePageFrame(
             ) {
                 Icon(
                     imageVector = MiniPhoneIcons.Home,
-                    contentDescription = "回到桌面",
+                    contentDescription = "Back to home screen",
                     tint = colors.textSecondary,
                     modifier = Modifier.size(18.dp),
                 )
@@ -446,7 +446,7 @@ private fun GroupCreateEntry(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = MiniPhoneIcons.Plus,
-            contentDescription = "发起群聊",
+            contentDescription = "Start group chat",
             tint = colors.accent,
             modifier = Modifier.size(18.dp),
         )

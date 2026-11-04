@@ -527,7 +527,7 @@ class MemoryTickerTest {
             assertFalse(ticker.isTimerRunning())
             assertTrue(
                 "「要它跑却没在跑」必须留下 WARN，实际: $warnings",
-                warnings.any { it.contains("排队") },
+                warnings.any { it.contains("start queued") },
             )
 
             gate.complete(Unit)
@@ -606,7 +606,7 @@ class MemoryTickerTest {
             assertFalse("scope 已死时不可能有计时器在跑", ticker.isTimerRunning())
             assertTrue(
                 "请求启动但最终没有计时器时必须打 WARN，实际: $warnings",
-                warnings.any { it.contains("未能启动") },
+                warnings.any { it.contains("could not start") },
             )
         } finally {
             Logger.sink = previousSink

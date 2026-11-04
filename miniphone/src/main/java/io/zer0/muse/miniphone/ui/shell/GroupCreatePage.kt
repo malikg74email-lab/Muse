@@ -110,7 +110,7 @@ internal fun GroupPickHeader(title: String, hint: String, canFinish: Boolean, ta
             ) {
                 Icon(
                     imageVector = MiniPhoneIcons.Back,
-                    contentDescription = "返回",
+                    contentDescription = "Back",
                     tint = colors.textPrimary,
                     modifier = Modifier.size(GroupHeaderIconSize),
                 )
@@ -287,15 +287,15 @@ private fun GroupPickEmptyState(title: String, hint: String, modifier: Modifier 
 
 /** 已选人数那一行:不到两个人时顺带说明门槛。 */
 internal fun selectedHintOf(selectedCount: Int): String = if (selectedCount < MIN_GROUP_MEMBERS) {
-    "已选 $selectedCount 人,至少选 $MIN_GROUP_MEMBERS 人"
+    "$selectedCount people selected; select at least $MIN_GROUP_MEMBERS"
 } else {
-    "已选 $selectedCount 人"
+    "$selectedCount people selected"
 }
 
-private const val GROUP_CREATE_TITLE: String = "发起群聊"
-private const val GROUP_PICK_DONE_LABEL: String = "完成"
-private const val EMPTY_CONTACTS_TITLE: String = "通讯录还是空的"
-private const val EMPTY_CONTACTS_HINT: String = "先有角色,才凑得起一个群"
+private const val GROUP_CREATE_TITLE: String = "Start group chat"
+private const val GROUP_PICK_DONE_LABEL: String = "Done"
+private const val EMPTY_CONTACTS_TITLE: String = "Your contacts are still empty"
+private const val EMPTY_CONTACTS_HINT: String = "You need characters first before you can form a group"
 
 /** 建群页的标签前缀:派生出的值就是对外约定的那几个标签。 */
 private const val GROUP_CREATE_TAG_PREFIX: String = "mp-group-create"

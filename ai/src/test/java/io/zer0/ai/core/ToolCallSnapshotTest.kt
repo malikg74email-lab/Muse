@@ -39,7 +39,7 @@ class ToolCallSnapshotTest {
         val result = events.normalize()
         assertEquals(1, result.toolCalls.size)
         assertEquals(
-            "快照应覆盖而非追加，最终参数必须等于完整参数",
+            "Snapshots should overwrite rather than append; the final arguments must equal the complete arguments",
             full,
             result.toolCalls.first().arguments,
         )
@@ -57,7 +57,7 @@ class ToolCallSnapshotTest {
 
         val result = events.normalize()
         assertEquals(
-            "普通增量帧应拼接成完整 JSON",
+            "Ordinary delta frames should concatenate into complete JSON",
             """{"content":"前半句"}""",
             result.toolCalls.first().arguments,
         )
@@ -85,7 +85,7 @@ class ToolCallSnapshotTest {
 
         val result = events.normalize()
         val args = result.toolCalls.first().arguments
-        assertEquals("两次快照后仍应只有一份完整参数", full, args)
-        assertTrue("参数长度不应翻倍", args.length < full.length * 2)
+        assertEquals("After two snapshots there should still be only one complete set of arguments", full, args)
+        assertTrue("The argument length should not double", args.length < full.length * 2)
     }
 }

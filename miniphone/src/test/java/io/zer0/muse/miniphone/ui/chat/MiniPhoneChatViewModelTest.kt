@@ -99,7 +99,7 @@ class MiniPhoneChatViewModelTest {
         val state = awaitChat(viewModel) { chat -> chat.messages.size == 2 && !chat.isGenerating }
         val notice = state.messages.last()
         assertEquals(MpMessageType.SYSTEM, notice.type)
-        assertEquals("对方没有回应", notice.content)
+        assertEquals("The other party didn't respond", notice.content)
         assertFalse("系统提示不参与左右分栏", notice.isMine)
         assertEquals(listOf(MpActorType.USER, MpActorType.SYSTEM), storedSenders())
     }
@@ -255,7 +255,7 @@ class MiniPhoneChatViewModelTest {
         val viewModel = createViewModel(FakeHost(answer = "在的", characters = listOf(MpCharacter(id = "someone-else", name = "别人"))))
 
         val state = awaitChat(viewModel) { chat -> chat.peerName.isNotEmpty() }
-        assertEquals("已注销的角色", state.peerName)
+        assertEquals("Deactivated character", state.peerName)
     }
 
     @Test

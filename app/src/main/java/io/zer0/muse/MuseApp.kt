@@ -189,12 +189,12 @@ class MuseApp : Application(), ImageLoaderFactory {
         Logger.sink = { level, tag, msg, t ->
             io.zer0.muse.debug.DebugLogStore.log(level, tag, msg, t)
         }
-        Logger.i("MuseApp", "onCreate: muse 启动")
+        Logger.i("MuseApp", "onCreate: Shaheen 2 started")
         // H1: Safe Mode 检查 — 上次崩溃后跳过全部服务启动,仅保留 CrashHandler + Logger。
         // MainActivity.onCreate 会再次检查并展示 SafeModeScreen,这里提前 return 防止
         // Koin/后台 Runner 再次触发同一崩溃,导致用户无法抵达 SafeModeScreen
         if (MuseCrashHandler.checkSafeMode(this)) {
-            Logger.w("MuseApp", "Safe mode active — 跳过服务初始化")
+            Logger.w("MuseApp", "Safe mode active — skipping service initialization")
             // v2.6.0: 安全模式同样安装 Activity 追踪(OAuth 等仍可用)
             io.zer0.muse.ui.common.CurrentActivityTracker.install(this)
             super.onCreate()
@@ -223,7 +223,7 @@ class MuseApp : Application(), ImageLoaderFactory {
             }
         if (koinResult.getOrNull() == null) {
             koinResult.onError { msg, t ->
-                Logger.e("MuseApp", "startKoin 失败 — 标记 Safe Mode 并跳过服务初始化: $msg", t)
+                Logger.e("MuseApp", "startKoin failed — marking Safe Mode and skipping service initialization: $msg", t)
             }
             MuseCrashHandler.markSafeMode(this)
             return
@@ -246,7 +246,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 io.zer0.muse.tools.TodoTool.installPersistence { sessionId, list ->
                     repo.save(sessionId, list)
                 }
-            }.onFailure { Logger.w("MuseApp", "待办持久化注入失败，退化为纯内存: ${it.message}") }
+            }.onFailure { Logger.w("MuseApp", "Todo persistence injection failed, degrading to in-memory only: ${it.message}") }
             // v1.0.80: 初始化 UI 自动化模块(三层权限: 无障碍/Shell/Root)
             try {
                 val toolRegistry =
@@ -266,7 +266,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Logger.w("MuseApp", "快速记录悬浮窗默认值迁移失败: ${e.message}", e)
+                    Logger.w("MuseApp", "Quick-note floating window default migration failed: ${e.message}", e)
                 }
             }
             appScope.launch {
@@ -275,7 +275,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Logger.w("MuseApp", "用户头像私有存储迁移失败: ${e.message}", e)
+                    Logger.w("MuseApp", "User avatar private-storage migration failed: ${e.message}", e)
                 }
             }
             // v1.0.53: RAG embedding 来源一次性迁移。读路径不再改写配置,必须启动时迁移一次,
@@ -286,7 +286,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Logger.w("MuseApp", "RAG embedding 来源迁移失败: ${e.message}", e)
+                    Logger.w("MuseApp", "RAG embedding source migration failed: ${e.message}", e)
                 }
             }
             // ANR 检测 + 性能监控(在 startKoin 之后、服务初始化之前启动)
@@ -324,8 +324,8 @@ class MuseApp : Application(), ImageLoaderFactory {
             // 让老用户无需重新登录即可恢复。幂等，无 OAuth 时静默跳过。
             appScope.launch {
                 resultOf { settings.healCodexAccountHeadersIfNeeded() }
-                    .onError { msg, t -> Logger.w("MuseApp", "Codex 账号头自愈失败: $msg", t) }
-                    .onSuccess { n -> if (n > 0) Logger.i("MuseApp", "Codex 账号头自愈完成: 修复 $n 个供应商") }
+                    .onError { msg, t -> Logger.w("MuseApp", "Codex account header self-healing failed: $msg", t) }
+                    .onSuccess { n -> if (n > 0) Logger.i("MuseApp", "Codex account header self-healing done: fixed $n providers") }
             }
             // Phase 8.10: 创建通知渠道(幂等,Android 8.0+ 必需)
             notificationManager.ensureChannels()
@@ -337,42 +337,42 @@ class MuseApp : Application(), ImageLoaderFactory {
             // v2.6.2（用户反馈）: 启动通知 → 记忆后台梳理调度。
             // 默认关（notificationMemoryEnabledFlow=false），未开启时调度器空转不调 LLM。
             resultOf { notificationMemoryScheduler.start() }
-                .onError { msg, t -> Logger.w("MuseApp", "notificationMemoryScheduler.start 失败: $msg", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "notificationMemoryScheduler.start failed: $msg", t) }
             // v2.6.2（记忆审计）: 启动记忆辅助数据清理调度（群聊记忆 / Agent 私信）
             resultOf { memoryHousekeepingScheduler.start() }
-                .onError { msg, t -> Logger.w("MuseApp", "memoryHousekeepingScheduler.start 失败: $msg", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "memoryHousekeepingScheduler.start failed: $msg", t) }
             // v1.0.51: 存量记忆迁移 — 升级后首次启动补跑历史 session 的 rollingSummary
             // 三道守卫保证幂等:DataStore 标志位 + AtomicBoolean + 记忆开关
             // 通过 backfillProgressFlow 实时报告进度,MemoryScreen 顶部显示进度条
             appScope.launch {
                 resultOf { memoryBackfillMigration.migrateIfNeeded() }
-                    .onError { msg, t -> Logger.w("MuseApp", "memory backfill 迁移失败: $msg", t) }
-                    .onSuccess { ran -> if (ran) Logger.i("MuseApp", "memory backfill 迁移已执行") }
+                    .onError { msg, t -> Logger.w("MuseApp", "memory backfill migration failed: $msg", t) }
+                    .onSuccess { ran -> if (ran) Logger.i("MuseApp", "memory backfill migration executed") }
             }
             // v1.0.52 P2-2: 确保默认记忆 Space 存在(防止数据库迁移异常导致默认 Space 缺失)
             appScope.launch {
                 resultOf { memorySpaceRepository.ensureDefaultSpaceExists() }
-                    .onError { msg, t -> Logger.w("MuseApp", "ensureDefaultSpaceExists 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "ensureDefaultSpaceExists failed: $msg", t) }
             }
             // B5-01: 启动时恢复被强杀的中断生成(已产出内容 + [已中断] 标记)
             appScope.launch {
                 resultOf { sessionRepository.recoverInterruptedGenerations() }
-                    .onError { msg, t -> Logger.w("MuseApp", "恢复中断生成失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Resuming interrupted generation failed: $msg", t) }
             }
             // A9: B5-01 只处理 generation_checkpoints,回合账本里的悬挂行需要单独收敛 ——
             // 上一次进程被杀时 turn 行没机会写 finishedAt,既不标失败也不被接管。
             // 只处理超过保守窗口的行,重复启动幂等,失败不影响启动。
             appScope.launch {
                 resultOf { sessionRepository.closeStaleOpenTurns() }
-                    .onSuccess { if (it > 0) Logger.i("MuseApp", "已收敛悬挂生成回合: $it 条") }
-                    .onError { msg, t -> Logger.w("MuseApp", "收敛悬挂生成回合失败: $msg", t) }
+                    .onSuccess { if (it > 0) Logger.i("MuseApp", "Converged dangling generation turns: $it turns") }
+                    .onError { msg, t -> Logger.w("MuseApp", "Converging dangling generation turns failed: $msg", t) }
             }
 
             // v1.0.74: 启动清理孤儿子 agent 线程(进程被杀遗留的 open 线程 → closed,
             // 避免"后台子 agent 任务"跨版本残留显示)
             appScope.launch {
                 resultOf { subagentThreadStore.cleanupOrphanThreads() }
-                    .onError { msg, t -> Logger.w("MuseApp", "清理孤儿子 agent 线程失败: ${t?.message ?: msg}") }
+                    .onError { msg, t -> Logger.w("MuseApp", "Cleaning up orphan sub-agent threads failed: ${t?.message ?: msg}") }
             }
 
             // v2.x 遗留收尾: 启动时保守清理微信渠道媒体目录(filesDir/channel_media/),
@@ -393,13 +393,13 @@ class MuseApp : Application(), ImageLoaderFactory {
                         java.io.File(filesDir, "channel_media"),
                         protectedPaths = protectedMedia,
                     )
-                }.onError { msg, t -> Logger.w("MuseApp", "channel_media 清理失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "channel_media cleanup failed: $msg", t) }
             }
 
             // B5-02: 启动时恢复被强杀中断的群聊生成账本(从断点续跑)
             appScope.launch {
                 resultOf { groupChatScheduler.recoverInterruptedGenerations() }
-                    .onError { msg, t -> Logger.w("MuseApp", "恢复群聊账本失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Restoring group chat ledger failed: $msg", t) }
             } // v1.92: ChatViewModel 为 single 单例,onCleared 永不调用。
             // 注册 ProcessLifecycleOwner 观察者,在 ON_STOP 时释放 TTS/ASR 资源并停止 memory ticker,
             // 在 ON_START 时重启 memory ticker。
@@ -408,7 +408,7 @@ class MuseApp : Application(), ImageLoaderFactory {
             // 原为 lazy inject,仅 UI/前台流程首次访问,后台启动流(定时任务、自动化、
             // 无 UI 的场景)不触发 → 媒体工具缺失。启动即解析保证所有入口可用。
             runCatching { chatViewModel.toString() }
-                .onFailure { t -> Logger.w("MuseApp", "ChatViewModel Early-init 失败: ${t.message}", t) }
+                .onFailure { t -> Logger.w("MuseApp", "ChatViewModel Early-init failed: ${t.message}", t) }
             // Shaheen 2 startup fix: initializeRuntime 现运行在 IO 线程,而
             // LifecycleRegistry.addObserver 强制主线程(违反抛 IllegalStateException),
             // 仅此一处注册跳回主线程执行;观察者内容与注册时机(相对顺序)不变。
@@ -417,55 +417,55 @@ class MuseApp : Application(), ImageLoaderFactory {
                     LifecycleEventObserver { _, event ->
                         when (event) {
                             Lifecycle.Event.ON_STOP -> {
-                                Logger.i("MuseApp", "Process ON_STOP: 释放 ChatViewModel 资源 + 停止 MemoryTicker")
+                                Logger.i("MuseApp", "Process ON_STOP: releasing ChatViewModel resources + stopping MemoryTicker")
                                 // v1.0.29: 切后台时如果正在生成,启动前台服务保活。必须同步执行。
                                 resultOf { chatViewModel.onAppBackground() }
-                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppBackground 失败: $msg", t) }
+                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppBackground failed: $msg", t) }
                                 // ChatGenerationManager 在任务登记时立即启动前台服务；这里不再重复启动。
                                 // 这样单聊、群聊以及工具计划都由同一个 activeGenerations 快照保活。
                                 resultOf { chatViewModel.releaseForBackground() }
-                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.release 失败: $msg", t) }
+                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.release failed: $msg", t) }
                                 // v1.0.30: memoryTicker.stop 含 30s 超时等待，移入协程
                                 appScope.launch {
                                     resultOf { memoryTicker.stop() }
-                                        .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.stop 失败: $msg", t) }
+                                        .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.stop failed: $msg", t) }
                                     // P1-1: AppLifecycleHook.onAppBackground
                                     resultOf {
                                         hookRegistry.executeNoResult(
                                             io.zer0.muse.hook.AppLifecycleHook::class,
                                         ) { it.onAppBackground() }
                                     }
-                                        .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppBackground 失败: $msg", t) }
+                                        .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppBackground failed: $msg", t) }
                                 }
                             }
                             Lifecycle.Event.ON_START -> {
                                 // 生成任务可能仍在执行，不能因为页面回到前台就停止保活服务。
                                 // ChatGenerationService 会在 activeGenerations 变空后自行退出。
                                 resultOf { chatViewModel.onAppForeground() }
-                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppForeground 失败: $msg", t) }
+                                    .onError { msg, t -> Logger.w("MuseApp", "chatViewModel.onAppForeground failed: $msg", t) }
                                 // 回前台时重启 memory ticker
                                 resultOf { memoryTicker.start() }
-                                    .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.start 失败: $msg", t) }
+                                    .onError { msg, t -> Logger.w("MuseApp", "memoryTicker.start failed: $msg", t) }
                                 if (resumePatrolTriggered.compareAndSet(false, true)) {
                                     appScope.launch {
                                         resultOf {
                                             proactiveScheduler.runCycle(
                                                 io.zer0.muse.proactive.ProactiveScheduler.TRIGGER_RESUME,
                                             )
-                                        }.onError { msg, t -> Logger.w("MuseApp", "app_resume 主动消息巡检失败: $msg", t) }
+                                        }.onError { msg, t -> Logger.w("MuseApp", "app_resume proactive message inspection failed: $msg", t) }
                                     }
                                 }
                                 // v1.0.16: 回前台清理 OkHttp 空闲连接，移入协程
                                 appScope.launch {
                                     resultOf { io.zer0.ai.core.ProviderHttpSupport.evictIdleConnections() }
-                                        .onError { msg, t -> Logger.w("MuseApp", "evictIdleConnections 失败: $msg", t) }
+                                        .onError { msg, t -> Logger.w("MuseApp", "evictIdleConnections failed: $msg", t) }
                                     // P1-1: AppLifecycleHook.onAppForeground
                                     resultOf {
                                         hookRegistry.executeNoResult(
                                             io.zer0.muse.hook.AppLifecycleHook::class,
                                         ) { it.onAppForeground() }
                                     }
-                                        .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppForeground 失败: $msg", t) }
+                                        .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppForeground failed: $msg", t) }
                                 }
                             }
                             else -> {}
@@ -480,15 +480,15 @@ class MuseApp : Application(), ImageLoaderFactory {
                     val preferred = settings.getDefaultAssistantId()
                     assistantRepository.ensureDefaultExists(preferred)
                 }
-                    .onError { msg, t -> Logger.w("MuseApp", "ensureDefaultExists 失败", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "ensureDefaultExists failed", t) }
                 // P1-4: 注册楼层式上下文限制 Hook
                 resultOf {
                     hookRegistry.register(io.zer0.muse.hook.FloorContextLimiterHook(settings))
-                }.onError { msg, t -> Logger.w("MuseApp", "FloorContextLimiterHook 注册失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "FloorContextLimiterHook registration failed: $msg", t) }
                 // P1-2: 注册 Worldbook 动态提示注入 Hook(常驻 + 关键词触发 + 深度注入)
                 resultOf {
                     hookRegistry.register(io.zer0.muse.worldbook.WorldBookHook(worldBookRepository))
-                }.onError { msg, t -> Logger.w("MuseApp", "WorldBookHook 注册失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "WorldBookHook registration failed: $msg", t) }
                 // v2.x（插件 Hook 体系 MVP）: 把已启用插件声明的 prompt_finalize hook 挂进注册表。
                 resultOf {
                     io.zer0.muse.data.plugin.PluginHookBridge(
@@ -498,12 +498,12 @@ class MuseApp : Application(), ImageLoaderFactory {
                         appScope = appScope,
                         settings = settings,
                     ).start()
-                }.onError { msg, t -> Logger.w("MuseApp", "PluginHookBridge 启动失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "PluginHookBridge startup failed: $msg", t) }
                 // 插件激活会在启动时评估插件脚本，而 JsSandbox 原先只在工具被调用时才 init，
         // 导致所有带 JS 入口的插件在开机第一次激活时必然报「JsSandbox 未初始化」。
         // 在派发激活事件之前先把 sandbox 就绪（init 幂等）。
         resultOf { io.zer0.muse.tools.JsSandbox.init(applicationContext) }
-            .onError { msg, t -> Logger.w("MuseApp", "JsSandbox init 失败: $msg", t) }
+            .onError { msg, t -> Logger.w("MuseApp", "JsSandbox init failed: $msg", t) }
         // v2.6.13: 插件激活事件（activationEvents）派发。
                 // 之前这个字段只被展示、从不派发，作者写了 onStartup 也不会被叫到。
                 resultOf {
@@ -513,10 +513,10 @@ class MuseApp : Application(), ImageLoaderFactory {
                         appScope = appScope,
                         settings = settings,
                     ).start()
-                }.onError { msg, t -> Logger.w("MuseApp", "PluginActivationBridge 启动失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "PluginActivationBridge startup failed: $msg", t) }
                 // v2.x（诊断导出项目 A）: 生成链路轨迹记录仪初始化（纯观察者，异常内部吞）
                 resultOf { io.zer0.muse.diagnostic.GenerationTrace.init(applicationContext) }
-                    .onError { msg, t -> Logger.w("MuseApp", "GenerationTrace init 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "GenerationTrace init failed: $msg", t) }
                 // v2.x Agent 化: 注册设备能力档案 Hook —— 把三层控制通道的真实可用性 +
                 // 操作决策规程注入 system prompt,让模型第一步就选对通道,而不是靠试错。
                 resultOf {
@@ -538,7 +538,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                             ),
                         )
                     }
-                }.onError { msg, t -> Logger.w("MuseApp", "DeviceCapabilityHook 注册失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "DeviceCapabilityHook registration failed: $msg", t) }
             }
             // Phase 8.8: 初始化内置 Skills(缺失则插入;已存在仅刷新定义字段,保留用户启停)
             // P0-11: 不用 upsert(REPLACE)——避免用 seed 的 enabled 覆盖用户关闭的选择。
@@ -547,15 +547,15 @@ class MuseApp : Application(), ImageLoaderFactory {
             appScope.launch {
                 resultOf {
                     SkillExecutor.BUILT_IN_SKILLS.forEach { skillRepository.seedOrRefreshBuiltIn(it) }
-                }.onError { msg, t -> Logger.w("MuseApp", "内置 Skills 初始化失败", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "Built-in Skills initialization failed", t) }
             }
             // v0.43: seed 内置开发文档到知识库(用稳定 id,升级时内容更新但不重复;fileType="devdoc" 用于 UI 过滤)
             // v2.4.x: seed 后追加内部文档向量索引(增量、后台;embedding 不可用时保留关键词兜底)
             appScope.launch {
                 resultOf { seedDevDocs() }
-                    .onError { msg, t -> Logger.w("MuseApp", "seedDevDocs 失败", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "seedDevDocs failed", t) }
                 resultOf { indexDevDocs() }
-                    .onError { msg, t -> Logger.w("MuseApp", "indexDevDocs 失败", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "indexDevDocs failed", t) }
             }
             // v1.0.17: 快速记录 JSON → Room 一次性迁移
             // 通过 SharedPreferences 标志 quick_notes_migrated 保证仅执行一次:
@@ -564,7 +564,7 @@ class MuseApp : Application(), ImageLoaderFactory {
             // fire-and-forget,失败不阻塞启动(下次启动重试,upsert REPLACE 幂等)
             appScope.launch {
                 resultOf { migrateQuickNotesIfNeeded() }
-                    .onError { msg, t -> Logger.w("MuseApp", "快速记录迁移失败: ${t?.message ?: msg}", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Quick note migration failed: ${t?.message ?: msg}", t) }
             }
             // v1.0.12: 启动时从 filesDir/rag/hnsw_index.bin 异步加载 HNSW 索引
             // (startKoin 之后、RagService 首次使用之前)。加载失败时首次检索走暴力遍历
@@ -572,7 +572,7 @@ class MuseApp : Application(), ImageLoaderFactory {
             // SAVE_INTERVAL 个 chunk 后自动重建并保存。fire-and-forget,不阻塞启动。
             appScope.launch {
                 resultOf { ragService.loadVectorIndexIfNeeded(settings.getRagConfig()) }
-                    .onError { msg, t -> Logger.w("MuseApp", "HNSW 索引加载失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "HNSW index loading failed: $msg", t) }
             }
             // v1.0.14 P0-1: 订阅 ChatPreferences.hapticFeedback,同步到 MuseHaptics 总开关。
             // 用户在「设置 → 聊天行为 → 触感反馈」切换后,所有 MuseHaptics.light/medium/heavy/soft
@@ -590,49 +590,49 @@ class MuseApp : Application(), ImageLoaderFactory {
                         if (!started) {
                             Logger.w(
                                 "MuseApp",
-                                "WebServer 启动未完成: ${webServer.lastError.value ?: "unknown error"}",
+                                "WebServer startup incomplete: ${webServer.lastError.value ?: "unknown error"}",
                             )
                         }
                     }
-                }.onError { msg, t -> Logger.w("MuseApp", "WebServer 启动失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MuseApp", "WebServer startup failed: $msg", t) }
             }
             // v0.23: 启动定时任务轮询(后台协程,每 60s 检查到期任务并通知)
             // 真正崩溃已在 v0.22 修复(SettingsRepository init 块顺序),可安全恢复 Runner
             // M1: 统一用 resultOf{} 替代 runCatching{}(项目 Result 约定)
             resultOf { scheduledTaskRunner.start() }
-                .onError { msg, t -> Logger.w("MuseApp", "ScheduledTaskRunner 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "ScheduledTaskRunner startup failed", t) }
             // v2.6.9: 开机/进程重启后恢复常驻保活（用户开过才恢复）
             // 注意：从后台启动前台服务在 Android 12+ 有限制，失败不影响主流程。
             resultOf {
                 appScope.launch {
                     if (settings.keepAliveEnabledFlow.first()) {
                         io.zer0.muse.schedule.KeepAliveService.start(this@MuseApp)
-                        Logger.i("MuseApp", "已恢复常驻保活服务")
+                        Logger.i("MuseApp", "Resident keep-alive service restored")
                     }
                 }
-            }.onError { msg, t -> Logger.w("MuseApp", "恢复常驻保活失败: $msg", t) }
+            }.onError { msg, t -> Logger.w("MuseApp", "Restoring resident keep-alive failed: $msg", t) }
             // v2.0: 渠道自动回复监听(webhook 入站 → 自动跑一轮 → 回发到来源)
             resultOf { channelAutoReply.start() }
-                .onError { msg, t -> Logger.w("MuseApp", "ChannelAutoReply 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "ChannelAutoReply startup failed", t) }
             // v2.0: ClawBot 长轮询接收 — 只存在启用中的 WECLAW 渠道时才起接收循环。
             // 判定要读 ChannelManager 的持久化配置(启动时为空的 StateFlow),所以放在
             // 启动协程里先 refresh 再判;之后渠道增删/启停由接收器自己跟随起停。
             appScope.launch {
                 resultOf { weClawReceiver.startForEnabledChannels() }
-                    .onError { msg, t -> Logger.w("MuseApp", "WeClawReceiver 启动失败", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "WeClawReceiver startup failed", t) }
             }
             // v2.0: Telegram 长轮询接收
             resultOf { telegramReceiver.restart() }
-                .onError { msg, t -> Logger.w("MuseApp", "TelegramReceiver 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "TelegramReceiver startup failed", t) }
             // v2.0: 钉钉 Stream 接收
             resultOf { dingtalkReceiver.restart() }
-                .onError { msg, t -> Logger.w("MuseApp", "DingtalkReceiver 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "DingtalkReceiver startup failed", t) }
             // v2.0.1: QQ 机器人 WebSocket Gateway 接收(免公网)
             resultOf { qqReceiver.restart() }
-                .onError { msg, t -> Logger.w("MuseApp", "QqReceiver 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "QqReceiver startup failed", t) }
             // v2.0.1: 飞书长连接接收(免公网)
             resultOf { feishuReceiver.restart() }
-                .onError { msg, t -> Logger.w("MuseApp", "FeishuReceiver 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "FeishuReceiver startup failed", t) }
             // v1.104 P3: WorkManager 兜底 — App 被杀后由系统每 15 分钟拉起一次执行到期定时任务
             // KEEP 策略:已存在则保留旧 schedule(避免重复注册)
             // 不设 setExpedited / 网络约束:符合"省电"目标,无网时 executeTask 内部已记录 failed
@@ -647,36 +647,36 @@ class MuseApp : Application(), ImageLoaderFactory {
                     ExistingPeriodicWorkPolicy.KEEP,
                     request,
                 )
-            }.onError { msg, t -> Logger.w("MuseApp", "ScheduledTaskWorker 注册失败", t) }
+            }.onError { msg, t -> Logger.w("MuseApp", "ScheduledTaskWorker registration failed", t) }
             // v2.6.9: 主动消息重建版 — 牵挂账本驱动，不再按固定 tick 轮询。
             // 账上有事时 20 分钟复查一次，没事就 1 小时一次；没话说时整轮都是本地操作。
             registerProactiveDismissReceiver()
             resultOf { proactiveScheduler.start() }
-                .onError { msg, t -> Logger.w("MuseApp", "ProactiveScheduler 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "ProactiveScheduler startup failed", t) }
             // 模型能力目录:先注入现有目录(缓存/内置)保证立即可用,再静默刷新一次;
             // 刷新成功后重新注入(拉取失败绝不动现有缓存)。
             appScope.launch {
                 io.zer0.ai.registry.ModelRegistry.installCatalog(modelCatalogRepository.current())
                 resultOf { modelCatalogRepository.refresh() }
                     .onSuccess { io.zer0.ai.registry.ModelRegistry.installCatalog(modelCatalogRepository.current()) }
-                    .onError { msg, t -> Logger.w("MuseApp", "模型目录刷新失败", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Model catalog refresh failed", t) }
                 // B14-4: 本地模型目录（ModelCatalogStore）远端层。
                 // 默认关闭：remoteUrl 为空时 refreshRemote 立即返回、不发任何请求；
                 // 失败静默回退到已有缓存/内置目录（仅记日志）。
                 resultOf { modelCatalogStore.refreshRemote() }
                     .onSuccess { r ->
-                        if (r.updated) Logger.i("MuseApp", "本地模型目录远端层: ${r.message}")
+                        if (r.updated) Logger.i("MuseApp", "Local model catalog remote layer: ${r.message}")
                     }
-                    .onError { msg, t -> Logger.w("MuseApp", "本地模型目录远端层刷新失败", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Local model catalog remote layer refresh failed", t) }
             }
             // 旧朋友圈调度已下线：进程内 Runner 已删，periodic Worker 当初用 KEEP 注册，
             // 光删代码不会取消已排队的任务，升级上来的设备必须显式 cancel 一次。
             resultOf { WorkManager.getInstance(this).cancelUniqueWork(LEGACY_MOMENT_WORK_NAME) }
-                .onError { msg, t -> Logger.w("MuseApp", "取消旧朋友圈 Worker 失败: ${t?.message ?: msg}", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "Cancelling the legacy Moments worker failed: ${t?.message ?: msg}", t) }
             // P3: 小手机后台自动发朋友圈 — 每 3 小时唤醒一次,四道判定(安静时段/90 分钟防抖/概率/有无角色)
             // 全在 :miniphone 模块内;KEEP 策略:已存在则保留旧排期,开关关掉时 Worker 每轮空转退出
             resultOf { MiniPhoneMomentScheduler.start(this) }
-                .onError { msg, t -> Logger.w("MuseApp", "MiniPhoneMomentScheduler 注册失败: ${t?.message ?: msg}", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "MiniPhoneMomentScheduler registration failed: ${t?.message ?: msg}", t) }
             // v1.134 P0-1: 主动消息 WorkManager 兜底 — App 被杀后由系统每 15 分钟拉起一次检查
             // KEEP 策略:已存在则保留旧 schedule(避免重复注册);与 ScheduledTaskWorker 兜底对齐
             // P2-2: Worker 路径带冷启动防打扰(长时间未触发时仅更新 lastTriggeredAt,不立即发送)
@@ -698,7 +698,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                     ExistingPeriodicWorkPolicy.KEEP,
                     request,
                 )
-            }.onError { msg, t -> Logger.w("MuseApp", "ProactiveWorker 注册失败", t) }
+            }.onError { msg, t -> Logger.w("MuseApp", "ProactiveWorker registration failed", t) }
             // v1.0.84: 每日总结 — 09:00 / 12:00 / 21:00 / 00:00 四个独立时点。
             // WorkManager 负责进程被杀后的兜底，进程内触发器负责进程存活时准点投递。
             // B-10: scheduleNext 需读配置时段(DataStore),放入 appScope 异步执行
@@ -708,19 +708,19 @@ class MuseApp : Application(), ImageLoaderFactory {
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Logger.w("MuseApp", "DailySummaryWorker 调度失败: ${e.message}", e)
+                    Logger.w("MuseApp", "DailySummaryWorker scheduling failed: ${e.message}", e)
                 }
             }
             resultOf {
                 io.zer0.muse.schedule.DailySummaryWorker.startInProcess(this, appScope)
-            }.onError { msg, t -> Logger.w("MuseApp", "DailySummary 进程内调度失败", t) }
+            }.onError { msg, t -> Logger.w("MuseApp", "DailySummary in-process scheduling failed", t) }
             // v1.98: 云备份自动定时上传(每 10 分钟检查是否到期)
             resultOf { cloudBackupScheduler.start() }
-                .onError { msg, t -> Logger.w("MuseApp", "CloudBackupScheduler 启动失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "CloudBackupScheduler startup failed", t) }
             // v1.132: 云备份 WorkManager 兜底 — App 被杀后由系统每 15 分钟拉起一次检查到期备份
             // KEEP 策略:已存在则保留旧 schedule(避免重复注册);与 ScheduledTaskWorker 兜底对齐
             resultOf { cloudBackupScheduler.registerWorkManagerFallback(this) }
-                .onError { msg, t -> Logger.w("MuseApp", "CloudBackupWorker 注册失败", t) }
+                .onError { msg, t -> Logger.w("MuseApp", "CloudBackupWorker registration failed", t) }
             // v1.134 P1-1: 自动本地备份 Worker — 每日 1 次 WAL checkpoint + 复制 muse.db 到 backups/
             // 接入原 v1.107 孤儿组件 AutoBackupHelper,App 被杀后由 WorkManager 拉起
             resultOf {
@@ -734,7 +734,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                     ExistingPeriodicWorkPolicy.KEEP,
                     request,
                 )
-            }.onError { msg, t -> Logger.w("MuseApp", "AutoBackupWorker 注册失败", t) }
+            }.onError { msg, t -> Logger.w("MuseApp", "AutoBackupWorker registration failed", t) }
             // v1.134 P1-2: 统计缓存刷新 Worker — 每日 1 次全量刷新 stats_cache 表
             // 接入原 v1.107 孤儿组件 StatsCacheManager,避免统计页每次打开都全表 GROUP BY
             resultOf {
@@ -748,7 +748,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                     ExistingPeriodicWorkPolicy.KEEP,
                     request,
                 )
-            }.onError { msg, t -> Logger.w("MuseApp", "StatsCacheWorker 注册失败", t) }
+            }.onError { msg, t -> Logger.w("MuseApp", "StatsCacheWorker registration failed", t) }
             // R-SVC-05: 仅生成任务期间且 keepAwake 开启时持锁;低电量未充电时不主动保活
             appScope.launch {
                 combine(
@@ -785,12 +785,12 @@ class MuseApp : Application(), ImageLoaderFactory {
             // 任何异常都不会影响应用启动
             appScope.launch {
                 resultOf { updateNotifier.checkAndNotify(this@MuseApp, forceCheck = false) }
-                    .onError { msg, t -> Logger.w("MuseApp", "UpdateNotifier 启动检查失败: ${t?.message ?: msg}", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "UpdateNotifier startup check failed: ${t?.message ?: msg}", t) }
             }
             // P2-4: 启动时清理 30 天前的审计日志(fire-and-forget,失败不影响应用启动)
             appScope.launch {
                 resultOf { auditLogger.cleanupOldLogs() }
-                    .onError { msg, t -> Logger.w("MuseApp", "审计日志清理失败: ${t?.message ?: msg}", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Audit log cleanup failed: ${t?.message ?: msg}", t) }
             }
             // 启动时重排提醒闹钟：设备重启 / 进程被杀后 AlarmManager 里的闹钟会丢失，
             // ReminderStore 里却仍有「未触发」条目。冷启动补一次重排，未来提醒重新排期、
@@ -800,16 +800,16 @@ class MuseApp : Application(), ImageLoaderFactory {
                     .onSuccess { s ->
                         Logger.i(
                             "MuseApp",
-                            "启动重排提醒: 成功=${s.rescheduled}, 补发=${s.catchUpNotified}, 失败=${s.failed}",
+                            "Startup reminder rescheduling: succeeded=${s.rescheduled}, catch-up notified=${s.catchUpNotified}, failed=${s.failed}",
                         )
                     }
-                    .onError { msg, t -> Logger.w("MuseApp", "启动重排提醒失败: ${t?.message ?: msg}", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Startup reminder rescheduling failed: ${t?.message ?: msg}", t) }
             }
             // v1.x: 启动时清理超过 24 小时的工具输出文件(fire-and-forget,失败不影响应用启动)。
             // 超出上下文窗口的完整结果保存在 filesDir/tool_outputs/ 并由 read_file 分页读取。
             appScope.launch {
                 resultOf { io.zer0.muse.tools.cleanupOldToolOutputs(this@MuseApp) }
-                    .onError { msg, t -> Logger.w("MuseApp", "工具输出文件清理失败: ${t?.message ?: msg}", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "Tool output file cleanup failed: ${t?.message ?: msg}", t) }
             }
             // v2.6.7 fix (AUDIT F23): 清理过期的 workflow 断点日志。
             // WorkflowJournal.cleanup 实现完整但全仓零调用 —— 每次带 runId 的
@@ -820,7 +820,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                         .get<io.zer0.muse.tools.WorkflowJournal>()
                         .cleanup()
                 }.onError { msg, t ->
-                    Logger.w("MuseApp", "工作流断点日志清理失败: ${t?.message ?: msg}", t)
+                    Logger.w("MuseApp", "Workflow breakpoint log cleanup failed: ${t?.message ?: msg}", t)
                 }
             }
             // v1.0.47: 预热 system prompt 静态快照 — 异步触发一次 buildStaticSnapshot(default 助手),
@@ -840,13 +840,13 @@ class MuseApp : Application(), ImageLoaderFactory {
                         memoryEnabled = true,
                     )
                 }.onError { msg, t ->
-                    Logger.w("MuseApp", "system prompt 预热失败: ${t?.message ?: msg}", t)
+                    Logger.w("MuseApp", "System prompt warmup failed: ${t?.message ?: msg}", t)
                 }.onSuccess {
-                    Logger.d("MuseApp", "system prompt 预热完成 (${it.length} chars)")
+                    Logger.d("MuseApp", "system prompt warmup done (${it.length} chars)")
                 }
                 // P1-1: AppLifecycleHook.onAppCreate(延迟执行,避免阻塞启动)
                 resultOf { hookRegistry.executeNoResult(io.zer0.muse.hook.AppLifecycleHook::class) { it.onAppCreate() } }
-                    .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppCreate 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MuseApp", "AppLifecycleHook.onAppCreate failed: $msg", t) }
             }
         } // initializeRuntime
 
@@ -866,7 +866,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 if (initError != null) {
                     Logger.e(
                         "MuseApp",
-                        "initializeRuntime 后台初始化失败 — 标记 Safe Mode 并继续启动: ${initError.message}",
+                        "initializeRuntime background initialization failed — marking Safe Mode and continuing startup: ${initError.message}",
                         initError,
                     )
                     MuseCrashHandler.markSafeMode(this@MuseApp)
@@ -876,7 +876,7 @@ class MuseApp : Application(), ImageLoaderFactory {
         } else {
             Logger.w(
                 "MuseApp",
-                "检测到未完成的备份恢复: restoreId=${incompleteRestore.restoreId}, " +
+                "Incomplete backup restore detected: restoreId=${incompleteRestore.restoreId}, " +
                     "phase=${incompleteRestore.phase}, completedStores=${incompleteRestore.completedStores}",
             )
             appScope.launch {
@@ -891,7 +891,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 if (!acquired) {
                     // 闸门被长期占用时不能把应用永久卡在闪屏：记录后照常启动，
                     // 本次回滚留到下次启动再试。
-                    Logger.e("MuseApp", "启动恢复等待写入闸门超时，跳过回滚并继续启动")
+                    Logger.e("MuseApp", "Startup restore write-gate wait timed out, skipping rollback and continuing startup")
                     _startupReady.value = true
                     return@launch
                 }
@@ -905,9 +905,9 @@ class MuseApp : Application(), ImageLoaderFactory {
                         this@MuseApp.initializeRuntime()
                     }.exceptionOrNull()
                     if (rollbackError != null) {
-                        Logger.e("MuseApp", "启动恢复回滚失败，放弃该恢复点继续启动", rollbackError)
+                        Logger.e("MuseApp", "Startup restore rollback failed, abandoning this restore point and continuing startup", rollbackError)
                         resultOf { backupService.abandonIncompleteRestore(rollbackError) }
-                            .onError { msg, t -> Logger.w("MuseApp", "标记恢复点失效失败: ${t?.message ?: msg}", t) }
+                            .onError { msg, t -> Logger.w("MuseApp", "Marking restore point invalid failed: ${t?.message ?: msg}", t) }
                     }
                 } finally {
                     io.zer0.common.ProcessWriteGate.end()
@@ -948,7 +948,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                     val currentMode = settings.themeModeFlow.first()
                     if (currentMode != desiredMode && (desiredMode == "light" || desiredMode == "dark")) {
                         settings.saveThemeMode(desiredMode)
-                        Logger.i("MuseApp", "主题定时切换: → $desiredMode ($currentMinute 分)")
+                        Logger.i("MuseApp", "Scheduled theme switch: → $desiredMode ($currentMinute min)")
                     }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -983,7 +983,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 .penaltyLog()
                 .build(),
         )
-        Logger.d("MuseApp", "StrictMode 已启用(debug): detectDiskReads/detectDiskWrites/detectNetwork + penaltyLog")
+        Logger.d("MuseApp", "StrictMode enabled (debug): detectDiskReads/detectDiskWrites/detectNetwork + penaltyLog")
     }
 
     /**
@@ -1005,7 +1005,7 @@ class MuseApp : Application(), ImageLoaderFactory {
                 IntentFilter(io.zer0.muse.proactive.ProactiveDismissProtocol.ACTION_DISMISS),
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
-        }.onError { msg, t -> Logger.w("MuseApp", "主动消息通知动作接收器注册失败: $msg", t) }
+        }.onError { msg, t -> Logger.w("MuseApp", "Proactive message notification action receiver registration failed: $msg", t) }
     }
 
     /**
@@ -1111,7 +1111,7 @@ class MuseApp : Application(), ImageLoaderFactory {
         }
         val count = quickNoteStore.migrateToRoom(quickNoteDao)
         prefs.edit().putBoolean(KEY_QUICK_NOTES_MIGRATED, true).apply()
-        Logger.i("MuseApp", "快速记录迁移完成: $count 条记录已导入 Room")
+        Logger.i("MuseApp", "Quick note migration complete: $count records imported into Room")
     }
 
     /**

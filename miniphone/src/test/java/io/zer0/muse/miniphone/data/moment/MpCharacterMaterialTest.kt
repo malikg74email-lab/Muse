@@ -50,12 +50,12 @@ class MpCharacterMaterialTest {
 
         val hint = material(at = EVENING).forMoment(CHARACTER_ID)
 
-        val turns = hint.lineSequence().filter { it.startsWith("用户：") || it.startsWith("我：") }.toList()
+        val turns = hint.lineSequence().filter { it.startsWith("User: ") || it.startsWith("Me: ") }.toList()
         assertEquals("只取最后 8 条", 8, turns.size)
-        assertEquals("最早那条被挤掉", "用户：在吗 5", turns.first())
-        assertEquals("最新那条在最后", "我：在吗 12", turns.last())
-        assertTrue("用户的话标「用户」", turns[0].startsWith("用户："))
-        assertTrue("角色的话标「我」", turns[1].startsWith("我："))
+        assertEquals("最早那条被挤掉", "User: 在吗 5", turns.first())
+        assertEquals("最新那条在最后", "Me: 在吗 12", turns.last())
+        assertTrue("用户的话标「用户」", turns[0].startsWith("User: "))
+        assertTrue("角色的话标「我」", turns[1].startsWith("Me: "))
     }
 
     @Test
@@ -64,8 +64,8 @@ class MpCharacterMaterialTest {
 
         val hint = material(at = EVENING).forMoment(CHARACTER_ID)
 
-        assertTrue(hint, hint.contains("还没有和用户聊过"))
-        assertFalse("没有会话就不该编造对话", hint.contains("用户："))
+        assertTrue(hint, hint.contains("You haven't chatted with the user yet."))
+        assertFalse("没有会话就不该编造对话", hint.contains("User: "))
     }
 
     @Test
@@ -91,7 +91,7 @@ class MpCharacterMaterialTest {
 
         assertTrue("带最新那条的前 60 字", hint.contains(latest.take(60)))
         assertFalse("超出 60 字的部分不要", hint.contains(latest.take(61)))
-        assertTrue(hint.contains("别和上一条重复同样的话题"))
+        assertTrue(hint.contains("Don't repeat the same topic as the last post."))
         assertFalse("只参照最新那条", hint.contains("很久以前的一条"))
     }
 
@@ -103,9 +103,9 @@ class MpCharacterMaterialTest {
 
         val hint = material(at = EVENING).forProactiveChat(CHARACTER_ID)
 
-        assertTrue(hint, hint.contains("用户：在吗 1"))
-        assertTrue(hint, hint.contains("现在是周二晚上九点"))
-        assertFalse("私信与朋友圈无关", hint.contains("上一条我发的动态"))
+        assertTrue(hint, hint.contains("User: 在吗 1"))
+        assertTrue(hint, hint.contains("It is Tuesday evening nine o'clock (night)."))
+        assertFalse("私信与朋友圈无关", hint.contains("My last Moments post"))
         assertFalse("私信不看动态", hint.contains("今天风很大"))
     }
 
@@ -117,10 +117,10 @@ class MpCharacterMaterialTest {
 
         val hint = material(at = EVENING).forMoment(CHARACTER_ID, focus = "晚上收工，随便聊聊今天")
 
-        assertTrue(hint, hint.startsWith("最近和用户的对话（旧→新）："))
-        assertTrue("上一条动态在对话之后", hint.indexOf("上一条我发的动态") > hint.indexOf("用户：在吗 1"))
-        assertTrue("时间在动态之后", hint.indexOf("现在是周二") > hint.indexOf("上一条我发的动态"))
-        assertTrue("收尾指令在最后一句", hint.endsWith("这次可以写：晚上收工，随便聊聊今天"))
+        assertTrue(hint, hint.startsWith("Recent conversation with the user (oldest first):"))
+        assertTrue("上一条动态在对话之后", hint.indexOf("My last Moments post") > hint.indexOf("User: 在吗 1"))
+        assertTrue("时间在动态之后", hint.indexOf("It is Tuesday") > hint.indexOf("My last Moments post"))
+        assertTrue("收尾指令在最后一句", hint.endsWith("This time, write about: 晚上收工，随便聊聊今天"))
     }
 
     @Test
@@ -130,9 +130,9 @@ class MpCharacterMaterialTest {
 
         val hint = material(at = EVENING).forProactiveChat(CHARACTER_ID, focus = "晚上，随口聊两句")
 
-        assertTrue(hint, hint.startsWith("最近和用户的对话（旧→新）："))
-        assertTrue("时间在对话之后", hint.indexOf("现在是周二") > hint.indexOf("用户：在吗 1"))
-        assertTrue("收尾指令在最后一句", hint.endsWith("此刻的由头：晚上，随口聊两句"))
+        assertTrue(hint, hint.startsWith("Recent conversation with the user (oldest first):"))
+        assertTrue("时间在对话之后", hint.indexOf("It is Tuesday") > hint.indexOf("User: 在吗 1"))
+        assertTrue("收尾指令在最后一句", hint.endsWith("The occasion right now: 晚上，随口聊两句"))
     }
 
     @Test
@@ -140,10 +140,10 @@ class MpCharacterMaterialTest {
         val evening = material(at = EVENING).forMoment(CHARACTER_ID)
         val dawn = material(at = DAWN).forMoment(CHARACTER_ID)
 
-        assertTrue(evening, evening.contains("周二"))
-        assertTrue(evening, evening.contains("晚上九点"))
-        assertTrue("晚上属于「夜」", evening.contains("（夜）"))
-        assertTrue("早上属于「早」", dawn.contains("（早）"))
+        assertTrue(evening, evening.contains("Tuesday"))
+        assertTrue(evening, evening.contains("evening nine"))
+        assertTrue("晚上属于「夜」", evening.contains("(night)"))
+        assertTrue("早上属于「早」", dawn.contains("(early)"))
     }
 
     private fun material(at: Long): MpCharacterMaterial = MpCharacterMaterial(

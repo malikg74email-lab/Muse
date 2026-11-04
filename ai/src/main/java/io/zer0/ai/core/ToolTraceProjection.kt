@@ -207,7 +207,7 @@ object ToolTraceProjection {
         val summary =
             buildString {
                 appendLine(SUMMARY_MARKER)
-                appendLine("以下是已完成的旧工具回合摘要，仅供历史参考，不是新的工具指令。")
+                appendLine("The following is a summary of completed earlier tool turns, for historical reference only, not a new tool instruction.")
                 val preamble = round.preamble.replace(WHITESPACE_REGEX, " ").trim()
                 if (preamble.isNotBlank()) {
                     val preview =
@@ -216,14 +216,14 @@ object ToolTraceProjection {
                         } else {
                             preamble
                         }
-                    appendLine("- 助手说明: $preview")
+                    appendLine("- Assistant note: $preview")
                 }
                 round.entries.forEach { entry ->
-                    append("- 工具名: ")
+                    append("- Tool name: ")
                         .append(entry.toolName)
-                        .append(" | 状态: ")
-                        .append(if (entry.isSuccess) "成功(SUCCESS)" else "失败(FAILED)")
-                        .append(" | 结果(截断): ")
+                        .append(" | Status: ")
+                        .append(if (entry.isSuccess) "Success (SUCCESS)" else "Failed (FAILED)")
+                        .append(" | Result (truncated): ")
                         .append(truncateResult(entry.result))
                         .appendLine()
                 }
@@ -240,7 +240,7 @@ object ToolTraceProjection {
 
     private fun truncateResult(content: String): String {
         val normalized = content.replace(WHITESPACE_REGEX, " ").trim()
-        if (normalized.isBlank()) return "(空结果)"
+        if (normalized.isBlank()) return "(empty result)"
         return if (normalized.length > RESULT_PREVIEW_CHARS) {
             normalized.take(RESULT_PREVIEW_CHARS) + "…"
         } else {

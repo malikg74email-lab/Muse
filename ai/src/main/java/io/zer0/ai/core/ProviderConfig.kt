@@ -94,7 +94,7 @@ data class ProviderConfig(
             else -> ""
         }
         return "ProviderConfig(id=$id, displayName=$displayName, type=$type, baseUrl=$baseUrl, " +
-            "apiKey=$maskedKey, models=${models.size}个, specific=$specific, enabled=$enabled, " +
+            "apiKey=<redacted>, models=${models.size}, specific=$specific, enabled=$enabled, " +
             "builtIn=$builtIn, category=$category, oauthConfig=${
                 if (oauthConfig != null) "OAuthConfig(clientId=${oauthConfig.clientId})" else "null"
             })"
@@ -120,7 +120,7 @@ data class ProviderConfig(
         if (resolved.isNotEmpty() && !resolved.startsWith("https://", ignoreCase = true)) {
             io.zer0.common.Logger.w(
                 "ProviderConfig",
-                "baseUrl 非 https(id=$id, type=$type),apiKey 可能明文传输: $resolved",
+                "baseUrl is not https (id=$id, type=$type), the apiKey may be transmitted in plaintext: $resolved",
             )
         }
         return resolved

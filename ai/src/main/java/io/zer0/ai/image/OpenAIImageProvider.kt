@@ -114,7 +114,7 @@ class OpenAIImageProvider(
             var resp = execWithRetry(initialRequest)
             // T1.2: 429 限流时切到下一个 key 重试一次(仅多 key 场景)
             if (resp.code == 429 && keyRotation.switchToNextKey()) {
-                Logger.i(TAG, "openai image 429, 切换到下一个 key 重试")
+                Logger.i(TAG, "openai image 429, switching to the next key and retrying")
                 resp.close()
                 val retryKey = keyRotation.effectiveApiKey()
                 val retryRequest = if (hasReference) {
@@ -193,7 +193,7 @@ class OpenAIImageProvider(
 
     override suspend fun poll(taskId: String): ImagePollResult {
         // OpenAI 图片生成同步返回,不支持异步任务
-        error("OpenAI 图片生成不支持异步任务: $taskId")
+        error("OpenAI image generation does not support asynchronous tasks: $taskId")
     }
 
     /**

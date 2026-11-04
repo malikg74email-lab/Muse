@@ -137,7 +137,7 @@ internal fun shouldSendTools(model: Model, config: ProviderConfig, tools: List<T
     if (!sends) {
         Logger.w(
             "ChatService",
-            "工具未发送: 模型 ${model.id} 被判定不支持 function calling | " +
+            "Tools not sent: model ${model.id} was judged not to support function calling | " +
                 "abilities=${model.abilities}, userEdited=${model.userEdited}, " +
                 "verification=${model.verification}, " +
                 "discardedTools=${tools.size}, provider=${config.id}",
@@ -300,7 +300,7 @@ class ChatService(
         if (effectiveMaxTokens != regularMaxTokens || ModelOutputPolicy.wasClamped(maxTokens, enhancedModel)) {
             Logger.w(
                 "ChatService",
-                "输出预算已按模型能力收紧: provider=${config.id}, model=${enhancedModel.id}, " +
+                "Output budget tightened to model capability: provider=${config.id}, model=${enhancedModel.id}, " +
                     "requested=$maxTokens, inputTokens≈$estimatedInputTokens, " +
                     "modelLimit=${enhancedModel.maxOutputTokens}, contextWindow=${enhancedModel.contextWindow}, " +
                     "effective=$effectiveMaxTokens",

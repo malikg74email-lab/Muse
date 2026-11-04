@@ -12,10 +12,10 @@ enum class MiniPhoneTab(
     val id: String,
     val title: String,
 ) {
-    MESSAGES("messages", "消息"),
-    CONTACTS("contacts", "通讯录"),
-    DISCOVER("discover", "发现"),
-    ME("me", "我"),
+    MESSAGES("messages", "Messages"),
+    CONTACTS("contacts", "Contacts"),
+    DISCOVER("discover", "Discover"),
+    ME("me", "Me"),
 }
 
 /**

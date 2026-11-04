@@ -80,21 +80,21 @@ class MiniPhoneShellUiTest {
         compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertDoesNotExist()
 
         compose.onNodeWithTag(MiniPhoneTags.tab(MiniPhoneTab.MESSAGES)).performClick()
-        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("消息")
+        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("Messages")
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_THREADS).assertExists()
 
         compose.onNodeWithTag(MiniPhoneTags.tab(MiniPhoneTab.CONTACTS)).performClick()
-        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("通讯录")
+        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("Contacts")
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_CONTACTS).assertExists()
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_THREADS).assertDoesNotExist()
 
         compose.onNodeWithTag(MiniPhoneTags.tab(MiniPhoneTab.DISCOVER)).performClick()
-        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("发现")
+        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("Discover")
         compose.onNodeWithTag(MiniPhoneTags.MOMENTS_ENTRY).assertExists()
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_CONTACTS).assertDoesNotExist()
 
         compose.onNodeWithTag(MiniPhoneTags.tab(MiniPhoneTab.ME)).performClick()
-        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("我")
+        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("Me")
         compose.onNodeWithTag(MiniPhoneTags.MOMENTS_ENTRY).assertDoesNotExist()
         compose.onNodeWithText(MeProfile.nickname).assertExists()
     }
@@ -112,7 +112,7 @@ class MiniPhoneShellUiTest {
         }
 
         compose.onNodeWithTag(MiniPhoneTags.tab(MiniPhoneTab.ME)).performClick()
-        compose.onNodeWithText("自动发朋友圈").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Automatic Moments posts").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(MiniPhoneTags.AUTO_MOMENT_SWITCH).performScrollTo().performClick()
 
         // 点一下就是「关掉」:状态在 ViewModel 里,这里只验回调传的是 false
@@ -132,9 +132,9 @@ class MiniPhoneShellUiTest {
         }
 
         compose.onNodeWithTag(MiniPhoneTags.tab(MiniPhoneTab.ME)).performClick()
-        compose.onNodeWithText("角色主动私信").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Characters message first").performScrollTo().assertIsDisplayed()
         // 默认关:说明文案要把「只在白天、默认关闭」说清楚
-        compose.onNodeWithText("角色会偶尔主动找你说话，只在 08:00–22:00 之间，默认关闭").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Characters will occasionally start a conversation with you, only between 08:00–22:00; off by default").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(MiniPhoneTags.CHAT_PROACTIVE_SWITCH).performScrollTo().performClick()
 
         // 点一下就是「打开」:状态在 ViewModel 里,这里只验回调传的是 true
@@ -146,8 +146,8 @@ class MiniPhoneShellUiTest {
         openMessages(ShellUiState())
 
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_THREADS).assertIsDisplayed()
-        compose.onNodeWithText("还没有聊天").assertIsDisplayed()
-        compose.onNodeWithText("去通讯录找个角色开始吧").assertIsDisplayed()
+        compose.onNodeWithText("No chats yet").assertIsDisplayed()
+        compose.onNodeWithText("Go to Contacts and find a character to start").assertIsDisplayed()
         compose.onNodeWithTag(MiniPhoneTags.thread("t1")).assertDoesNotExist()
     }
 
@@ -159,7 +159,7 @@ class MiniPhoneShellUiTest {
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_THREADS_ACTION).performClick()
 
         // 点一下就是「切到通讯录」:消息页连同它的空态一起退场
-        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("通讯录")
+        compose.onNodeWithTag(MiniPhoneTags.PAGE_TITLE).assertTextEquals("Contacts")
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_CONTACTS).assertExists()
         compose.onNodeWithTag(MiniPhoneTags.EMPTY_THREADS).assertDoesNotExist()
     }
@@ -369,7 +369,7 @@ class MiniPhoneShellUiTest {
 
         compose.onNodeWithTag(MiniPhoneTags.tab(MiniPhoneTab.ME)).performClick()
         compose.onNodeWithTag(MiniPhoneTags.VERSION_LABEL).performScrollTo()
-            .assertTextEquals("小手机数据 v${MINI_PHONE_DB_VERSION} / 应用 2.6.12")
+            .assertTextEquals("Mini-phone data v${MINI_PHONE_DB_VERSION} / App 2.6.12")
 
         compose.onNodeWithTag(MiniPhoneTags.MY_MOMENTS_ROW).performScrollTo().performClick()
 
@@ -402,10 +402,10 @@ class MiniPhoneShellUiTest {
 
     @Test
     fun versionLabelDropsTheHostPartWhenTheHostReportsNothing() {
-        assertEquals("小手机数据 v$MINI_PHONE_DB_VERSION", miniPhoneVersionLabel(MINI_PHONE_DB_VERSION, ""))
-        assertEquals("小手机数据 v$MINI_PHONE_DB_VERSION", miniPhoneVersionLabel(MINI_PHONE_DB_VERSION, "  "))
+        assertEquals("Mini-phone data v$MINI_PHONE_DB_VERSION", miniPhoneVersionLabel(MINI_PHONE_DB_VERSION, ""))
+        assertEquals("Mini-phone data v$MINI_PHONE_DB_VERSION", miniPhoneVersionLabel(MINI_PHONE_DB_VERSION, "  "))
         assertEquals(
-            "小手机数据 v$MINI_PHONE_DB_VERSION / 应用 2.6.12",
+            "Mini-phone data v$MINI_PHONE_DB_VERSION / App 2.6.12",
             miniPhoneVersionLabel(MINI_PHONE_DB_VERSION, "2.6.12"),
         )
     }

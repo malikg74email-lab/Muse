@@ -91,7 +91,7 @@ object ProviderPayloadNormalizer {
                 }
             }
         if (changed) {
-            Logger.w(TAG, "stripReasoningFromNonAssistant: 清除了非 assistant 消息上误带的推理/签名字段")
+            Logger.w(TAG, "stripReasoningFromNonAssistant: cleared reasoning/signature fields mistakenly attached to non-assistant messages")
         }
         return if (changed) result else messages
     }
@@ -131,7 +131,7 @@ object ProviderPayloadNormalizer {
                 changed = true
                 Logger.w(
                     TAG,
-                    "stripCrossModelReasoning: 历史思考块来自模型 ${msg.modelId},与当前模型 ${model.id} 不一致,已剥离",
+                    "stripCrossModelReasoning: historical thinking blocks came from model ${msg.modelId}, which does not match the current model ${model.id}; stripped",
                 )
                 msg.copy(reasoning = null, thinkingSignature = null, thinkingEncryptedContent = null)
             }
@@ -225,7 +225,7 @@ object ProviderPayloadNormalizer {
         if (parentToolCallIds.isEmpty()) {
             // 没有任何 ASSISTANT tool_calls,所有 TOOL 消息都是孤儿
             val removed = messages.count { it.role == MessageRole.TOOL }
-            Logger.w(TAG, "stripOrphanToolMessages: 无 ASSISTANT tool_calls,删除 $removed 条孤儿 TOOL 消息")
+            Logger.w(TAG, "stripOrphanToolMessages: no ASSISTANT tool_calls, removed $removed orphan TOOL messages")
             return messages.filter { it.role != MessageRole.TOOL }
         }
 
@@ -240,7 +240,7 @@ object ProviderPayloadNormalizer {
                     removed++
                     Logger.w(
                         TAG,
-                        "stripOrphanToolMessages: 删除孤儿 TOOL 消息 toolCallId=${msg.toolCallId}",
+                        "stripOrphanToolMessages: removed orphan TOOL message toolCallId=${msg.toolCallId}",
                     )
                 }
                 matched

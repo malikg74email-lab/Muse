@@ -26,11 +26,11 @@ class MpProactiveChatWorker(
 
     override suspend fun doWork(): Result {
         val runner = resultOf { GlobalContext.get().get<MpProactiveChatRunner>() }
-            .onError { msg, t -> Logger.w(TAG, "主动私信失败 | reason=koin_missing | ${t?.message ?: msg}", t) }
+            .onError { msg, t -> Logger.w(TAG, "Proactive message failed | reason=koin_missing | ${t?.message ?: msg}", t) }
             .getOrNull()
         if (runner == null) return Result.success()
         resultOf { runner.run() }
-            .onError { msg, t -> Logger.w(TAG, "主动私信失败 | reason=runner_error | ${t?.message ?: msg}", t) }
+            .onError { msg, t -> Logger.w(TAG, "Proactive message failed | reason=runner_error | ${t?.message ?: msg}", t) }
         return Result.success()
     }
 

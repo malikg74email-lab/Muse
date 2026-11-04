@@ -72,7 +72,7 @@ class ChatNewMessagesPillTest {
 
     @Test
     fun pillLabelReadsAsASentence() {
-        assertEquals("3 条新消息", newMessagePillLabel(3))
-        assertEquals("1 条新消息", newMessagePillLabel(1))
+        assertEquals("3 new messages", newMessagePillLabel(3))
+        assertEquals("1 new messages", newMessagePillLabel(1))
     }
 }

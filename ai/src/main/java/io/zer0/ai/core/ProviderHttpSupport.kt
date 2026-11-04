@@ -98,8 +98,8 @@ abstract class ProviderHttpSupport(
             val hex = offending.code.toString(16).uppercase().padStart(4, '0')
             throw ProviderException(
                 ProviderError.InvalidRequest(
-                    displayMessage = "API Key 含非法字符(第 $position 位:'$offending',U+$hex)。" +
-                        "密钥只能是 ASCII 可见字符,请检查是否夹带了中文或空格(常见于连同标题一起粘贴)。",
+                    displayMessage = "API Key contains an illegal character (position $position: '$offending', U+$hex)." +
+                        "Keys may only contain visible ASCII characters; check whether Chinese characters or spaces were mixed in (common when pasting together with a title).",
                 ),
             )
         }
@@ -212,7 +212,7 @@ abstract class ProviderHttpSupport(
         if (isLiteralInternal) {
             io.zer0.common.Logger.w(
                 "ProviderHttpSupport",
-                "baseUrl 指向内网地址(host=$host),若非本地 LLM 请检查配置: $baseUrl",
+                "baseUrl points to an internal-network address (host=$host); if this is not a local LLM, check the configuration: $baseUrl",
             )
         }
     }
@@ -409,7 +409,7 @@ abstract class ProviderHttpSupport(
             runCatching {
                 sharedHttpClient.connectionPool.evictAll()
             }.onFailure {
-                io.zer0.common.Logger.w("ProviderHttpSupport", "evictIdleConnections 失败", it)
+                io.zer0.common.Logger.w("ProviderHttpSupport", "evictIdleConnections failed", it)
             }
         }
     }

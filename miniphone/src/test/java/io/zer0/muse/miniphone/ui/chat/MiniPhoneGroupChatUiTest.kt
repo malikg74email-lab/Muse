@@ -194,7 +194,7 @@ class MiniPhoneGroupChatUiTest {
         compose.waitForIdle()
 
         compose.onNodeWithTag(MiniPhoneChatTags.MEMBER_REMOVE_DIALOG).assertIsDisplayed()
-        compose.onNodeWithText("移出后他之前说过的话留在群里。").assertExists()
+        compose.onNodeWithText("What they said before will stay in the group after they are removed.").assertExists()
         assertEquals("确认之前不移出", null, removed)
 
         compose.onNodeWithTag(MiniPhoneChatTags.MEMBER_REMOVE_CONFIRM).performClick()
@@ -224,7 +224,7 @@ class MiniPhoneGroupChatUiTest {
         compose.onNodeWithTag(MiniPhoneChatTags.GROUP_DISBAND_DIALOG).assertExists()
         assertTrue(
             "文案要写明不可恢复",
-            compose.onAllNodesWithText("整个群和里面的全部消息都会从这台手机上删掉,无法恢复。").fetchSemanticsNodes().isNotEmpty(),
+            compose.onAllNodesWithText("The whole group and all its messages will be deleted from this phone and cannot be recovered.").fetchSemanticsNodes().isNotEmpty(),
         )
         assertFalse("确认之前不解散", disbanded)
 

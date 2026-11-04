@@ -59,14 +59,14 @@ class ProviderPluginRegistry(
                                 validate(plugin)
                                 // 直接写入 map,绕过 register() 的落盘逻辑(文件已存在,无需重复写)
                                 plugins[plugin.id] = plugin
-                                Logger.i(TAG, "已加载持久化插件: ${plugin.id} (${plugin.displayName})")
+                                Logger.i(TAG, "Persisted plugin loaded: ${plugin.id} (${plugin.displayName})")
                             }.onFailure { e ->
-                                Logger.e(TAG, "加载插件文件失败: ${file.absolutePath}", e)
+                                Logger.e(TAG, "Failed to load plugin file: ${file.absolutePath}", e)
                             }
                         }
                 }
             }.onFailure { e ->
-                Logger.e(TAG, "扫描插件目录失败: ${dir.absolutePath}", e)
+                Logger.e(TAG, "Failed to scan plugin directory: ${dir.absolutePath}", e)
             }
         }
     }
@@ -78,7 +78,7 @@ class ProviderPluginRegistry(
     fun register(plugin: ProviderPlugin) {
         plugins[plugin.id] = plugin
         persist(plugin)
-        Logger.i(TAG, "插件已注册: ${plugin.id} (${plugin.displayName})")
+        Logger.i(TAG, "Plugin registered: ${plugin.id} (${plugin.displayName})")
     }
 
     /**
@@ -89,7 +89,7 @@ class ProviderPluginRegistry(
         val removed = plugins.remove(pluginId)
         if (removed != null) {
             removePersistedFile(pluginId)
-            Logger.i(TAG, "插件已注销: $pluginId")
+            Logger.i(TAG, "Plugin unregistered: $pluginId")
         }
     }
 
@@ -115,9 +115,9 @@ class ProviderPluginRegistry(
     suspend fun loadFromFile(file: File): Result<ProviderPlugin> = withContext(Dispatchers.IO) {
         // P2-28: JSON 直读无大小上限会 OOM — 先挡超大文件
         if (file.length() > MAX_PROVIDER_JSON_BYTES) {
-            Logger.w(TAG, "Provider 插件 JSON 超过大小上限(${file.length()} > $MAX_PROVIDER_JSON_BYTES): ${file.absolutePath}")
+            Logger.w(TAG, "Provider plugin JSON exceeds the size limit (${file.length()} > $MAX_PROVIDER_JSON_BYTES): ${file.absolutePath}")
             return@withContext Result.failure(
-                IllegalArgumentException("Provider 插件 JSON 超过大小上限(${MAX_PROVIDER_JSON_BYTES / 1024}KB)"),
+                IllegalArgumentException("Provider plugin JSON exceeds the size limit (${MAX_PROVIDER_JSON_BYTES / 1024}KB)"),
             )
         }
         val r = resultOf {
@@ -127,7 +127,7 @@ class ProviderPluginRegistry(
             register(plugin)
             plugin
         }
-        r.onError { _, t -> Logger.e(TAG, "加载插件失败: ${file.absolutePath}", t) }
+        r.onError { _, t -> Logger.e(TAG, "Failed to load plugin: ${file.absolutePath}", t) }
         when (r) {
             is io.zer0.common.Result.Success -> Result.success(r.data)
             is io.zer0.common.Result.Error -> Result.failure(r.throwable ?: IllegalStateException(r.message))
@@ -168,19 +168,19 @@ class ProviderPluginRegistry(
 
     /** 校验插件字段完整性,不合法时抛 [IllegalArgumentException]。 */
     private fun validate(plugin: ProviderPlugin) {
-        require(plugin.id.isNotBlank()) { "插件 id 不能为空" }
-        require(plugin.displayName.isNotBlank()) { "插件 displayName 不能为空" }
-        require(plugin.baseUrl.isNotBlank()) { "插件 baseUrl 不能为空" }
+        require(plugin.id.isNotBlank()) { "Plugin id must not be empty" }
+        require(plugin.displayName.isNotBlank()) { "Plugin displayName must not be empty" }
+        require(plugin.baseUrl.isNotBlank()) { "Plugin baseUrl must not be empty" }
         // 文件名安全性:id 直接用作文件名,禁止路径分隔符与空字符
         require(!plugin.id.contains('/') && !plugin.id.contains('\\') && !plugin.id.contains('\u0000')) {
-            "插件 id 不能包含路径分隔符: ${plugin.id}"
+            "Plugin id must not contain a path separator: ${plugin.id}"
         }
         if (plugin.apiKeyPattern.isNotBlank()) {
             // 提前校验正则合法性,避免用户填入 apiKey 时才发现 pattern 无法编译
             try {
                 Regex(plugin.apiKeyPattern)
             } catch (e: Exception) {
-                throw IllegalArgumentException("插件 apiKeyPattern 不是合法正则: ${plugin.apiKeyPattern}", e)
+                throw IllegalArgumentException("Plugin apiKeyPattern is not a valid regex: ${plugin.apiKeyPattern}", e)
             }
         }
     }
@@ -203,7 +203,7 @@ class ProviderPluginRegistry(
             val file = File(dir, "${plugin.id}.json")
             file.writeText(json.encodeToString(ProviderPlugin.serializer(), plugin))
         }.onFailure { e ->
-            Logger.e(TAG, "持久化插件失败: ${plugin.id}", e)
+            Logger.e(TAG, "Failed to persist plugin: ${plugin.id}", e)
         }
     }
 
@@ -214,7 +214,7 @@ class ProviderPluginRegistry(
             val file = File(dir, "$pluginId.json")
             if (file.exists()) file.delete()
         }.onFailure { e ->
-            Logger.e(TAG, "删除插件文件失败: $pluginId", e)
+            Logger.e(TAG, "Failed to delete plugin file: $pluginId", e)
         }
     }
 

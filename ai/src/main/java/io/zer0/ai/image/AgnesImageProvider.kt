@@ -115,7 +115,7 @@ class AgnesImageProvider(
             var resp = initialResp
             // T1.2: 429 限流时切到下一个 key 重试一次(仅多 key 场景)
             if (resp.code == 429 && keyRotation.switchToNextKey()) {
-                Logger.i(TAG, "agnes image 429, 切换到下一个 key 重试")
+                Logger.i(TAG, "agnes image 429, switching to the next key and retrying")
                 resp.close()
                 resp = exec(buildHttpRequest(keyRotation.effectiveApiKey()))
             }
@@ -163,7 +163,7 @@ class AgnesImageProvider(
 
     override suspend fun poll(taskId: String): ImagePollResult {
         // Agnes 同步返回,不会走到此分支;兜底返回 FAILED。
-        error("Agnes 图片生成不支持异步任务: $taskId")
+        error("Agnes image generation does not support asynchronous tasks: $taskId")
     }
 
     /**

@@ -119,7 +119,7 @@ class GeminiProvider(
                     client = httpClient,
                 )
             }.onError { msg, t ->
-                Logger.w(TAG, "VertexAiAuthToken 初始化失败: $msg", t)
+                Logger.w(TAG, "VertexAiAuthToken initialization failed: $msg", t)
             }.getOrNull()
         } else {
             null
@@ -254,7 +254,7 @@ class GeminiProvider(
                                 modelId = request.model.id,
                                 forceThinkingLevel = true,
                             )
-                            Logger.i(TAG, "流式请求被拒(不接受 thinking budget)，改用 thinking level 重发")
+                            Logger.i(TAG, "Streaming request rejected (thinking budget not accepted), resending with thinking level")
                             generation.incrementAndGet()
                             eventSource.cancel()
                             call.cancel()
@@ -275,7 +275,7 @@ class GeminiProvider(
                             call.cancel()
                             Logger.i(
                                 TAG,
-                                "streamChat onOpen 429 限流,已切换到下一个 key,立即重试 " +
+                                "streamChat onOpen 429 rate limited, switched to the next key, retrying immediately " +
                                     "(${attempt.get()}/$MAX_RETRIES)",
                             )
                             scope.launch {
@@ -449,7 +449,7 @@ class GeminiProvider(
                         generation.incrementAndGet()
                         Logger.i(
                             TAG,
-                            "streamChat onFailure 429 限流,已切换到下一个 key,立即重试 " +
+                            "streamChat onFailure 429 rate limited, switched to the next key, retrying immediately " +
                                 "(${attempt.get()}/$MAX_RETRIES)",
                         )
                         scope.launch {
@@ -472,7 +472,7 @@ class GeminiProvider(
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
-                                trySend(ChatStreamEvent.Error(e.message ?: "Vertex AI 鉴权失败"))
+                                trySend(ChatStreamEvent.Error(e.message ?: "Vertex AI authentication failed"))
                                 close()
                                 return@launch
                             }
@@ -575,7 +575,7 @@ class GeminiProvider(
                     // v1.0.1 (P0): 429 切换 key 重试(多 key 场景);buildUrl 内部用 effectiveApiKey(),
                     //   递归调用 completeText 会用新 key 重新构建 URL(?key= 参数更新)
                     if (code == 429 && keySwitchDepth < MAX_KEY_SWITCHES && switchToNextKey()) {
-                        Logger.i(TAG, "completeText 429 限流,已切换到下一个 key,重试 ($keySwitchDepth/$MAX_KEY_SWITCHES)")
+                        Logger.i(TAG, "completeText 429 rate limited, switched to the next key, retry ($keySwitchDepth/$MAX_KEY_SWITCHES)")
                         return@withContext completeTextImpl(request, keySwitchDepth + 1)
                     }
                     // v1.0.1: 401/403 鉴权失败时标记当前 key 失败(多 key 场景)
@@ -639,7 +639,7 @@ class GeminiProvider(
             } else if (isKnownGeminiError(t)) {
                 // 已记录的 HTTP/业务错误,不重复 log
             } else {
-                Logger.e(TAG, "completeText 异常", t)
+                Logger.e(TAG, "completeText exception", t)
             }
             throw t
         } finally {
@@ -779,7 +779,7 @@ class GeminiProvider(
         Logger.i(TAG, "listModels(vertex): GET .../publishers/google/models")
         listClient.newCall(httpRequest).execute().use { resp ->
             if (!resp.isSuccessful) {
-                Logger.w(TAG, "listModels(vertex) 失败: HTTP ${resp.code}(静默回退空列表)")
+                Logger.w(TAG, "listModels(vertex) failed: HTTP ${resp.code} (silently falling back to an empty list)")
                 return emptyList()
             }
             val raw = resp.body.string()
@@ -801,7 +801,7 @@ class GeminiProvider(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        Logger.w(TAG, "listModels(vertex) 异常,静默回退空列表: ${e.message}")
+        Logger.w(TAG, "listModels(vertex) exception, silently falling back to an empty list: ${e.message}")
         emptyList()
     }
 
@@ -865,11 +865,11 @@ class GeminiProvider(
                             // E-P2: 与 OpenAI/Anthropic 对齐 — 最多 4 张,单张 base64 ≤2MB
                             val validImages = msg.imageBase64List.filter { it.isNotEmpty() }
                             if (validImages.size > MAX_VISION_IMAGES) {
-                                Logger.w("GeminiProvider", "图片数量 ${validImages.size} 超过上限 $MAX_VISION_IMAGES,丢弃多余的")
+                                Logger.w("GeminiProvider", "Image count ${validImages.size} exceeds the limit $MAX_VISION_IMAGES, discarding the excess")
                             }
                             validImages.take(MAX_VISION_IMAGES).forEach { b64 ->
                                 if (b64.length > MAX_IMAGE_BASE64_LEN) {
-                                    Logger.w("GeminiProvider", "图片 base64 长度 ${b64.length} 超过 $MAX_IMAGE_BASE64_LEN,丢弃")
+                                    Logger.w("GeminiProvider", "Image base64 length ${b64.length} exceeds $MAX_IMAGE_BASE64_LEN, discarding")
                                     return@forEach
                                 }
                                 add(
@@ -1206,10 +1206,10 @@ class GeminiProvider(
         val specific = config.resolvedSpecific()
         // V-GEM1: Vertex AI 不走 Files API,直接拒绝(调用方应走 GCS 或 inlineData)
         require(specific !is ProviderSpecificConfig.Gemini || !specific.useVertexAI) {
-            "Files API 仅 generativelanguage API 支持,Vertex AI 请使用 GCS uri"
+            "The Files API is only supported by the generativelanguage API; for Vertex AI use a GCS uri"
         }
-        require(bytes.isNotEmpty()) { "上传数据为空" }
-        require(mimeType.isNotBlank()) { "mimeType 不能为空" }
+        require(bytes.isNotEmpty()) { "Uploaded data is empty" }
+        require(mimeType.isNotBlank()) { "mimeType must not be empty" }
 
         val base = config.resolvedBaseUrl().trimEnd('/').toHttpUrl().run {
             // generativelanguage API 默认 baseUrl 形如 https://generativelanguage.googleapis.com/v1beta
@@ -1240,22 +1240,22 @@ class GeminiProvider(
         val fileName: String = httpClient.newCall(uploadReq).execute().use { resp ->
             if (!resp.isSuccessful) {
                 val errText = ProviderHttpSupport.readBodyCapped(resp)
-                throw ProviderException(ProviderError.from(code = resp.code, body = "上传文件失败: $errText"))
+                throw ProviderException(ProviderError.from(code = resp.code, body = "Upload file failed: $errText"))
             }
             val raw = resp.body.string()
             val parsed = AppJson.decodeFromString<GeminiFileUploadResponse>(raw)
             val f = parsed.file ?: throw ProviderException(
-                ProviderError.InvalidRequest(displayMessage = "上传响应缺少 file 字段: $raw"),
+                ProviderError.InvalidRequest(displayMessage = "Upload response is missing the file field: $raw"),
             )
             if (f.uri.isBlank() || f.name.isBlank()) {
                 throw ProviderException(
-                    ProviderError.InvalidRequest(displayMessage = "上传响应 file.uri/file.name 为空: $raw"),
+                    ProviderError.InvalidRequest(displayMessage = "Upload response file.uri/file.name is empty: $raw"),
                 )
             }
             // 上传成功但服务端已报错(如 mime 不支持),直接抛
             f.error?.let { e ->
                 throw ProviderException(
-                    ProviderError.Unknown(displayMessage = "上传文件被拒绝: ${e.message ?: "未知错误"}"),
+                    ProviderError.Unknown(displayMessage = "Upload file was rejected: ${e.message ?: "Unknown error"}"),
                 )
             }
             f.name
@@ -1276,7 +1276,7 @@ class GeminiProvider(
             val fileUri = httpClient.newCall(pollReq).execute().use { resp ->
                 if (!resp.isSuccessful) {
                     val errText = ProviderHttpSupport.readBodyCapped(resp)
-                    throw ProviderException(ProviderError.from(code = resp.code, body = "查询文件状态失败: $errText"))
+                    throw ProviderException(ProviderError.from(code = resp.code, body = "Query file status failed: $errText"))
                 }
                 val raw = resp.body.string()
                 val f = AppJson.decodeFromString<GeminiFileResource>(raw)
@@ -1284,8 +1284,8 @@ class GeminiProvider(
                 when (f.state) {
                     "ACTIVE" -> return@use f.uri // 上传完成,返回可用 uri
                     "FAILED" -> {
-                        val errMsg = f.error?.message ?: "服务端处理失败"
-                        throw ProviderException(ProviderError.ServerError(httpCode = 500, displayMessage = "文件处理失败: $errMsg"))
+                        val errMsg = f.error?.message ?: "Server-side processing failed"
+                        throw ProviderException(ProviderError.ServerError(httpCode = 500, displayMessage = "File processing failed: $errMsg"))
                     }
                     else -> null // PROCESSING 等中间态,继续轮询
                 }
@@ -1293,7 +1293,7 @@ class GeminiProvider(
             if (fileUri != null) return@withContext fileUri
             delay(FILE_POLL_INTERVAL_MS)
         }
-        throw ProviderException(ProviderError.Unknown(displayMessage = "文件处理超时(60s),最后状态: $lastState"))
+        throw ProviderException(ProviderError.Unknown(displayMessage = "File processing timed out (60s), last status: $lastState"))
     }
 
     /** V-GEM1: uploadFile 的 metadata 子结构(仅含 name 字段,服务端忽略其他)。 */
@@ -1330,8 +1330,8 @@ class GeminiProvider(
         if (!hasEmittedContent.get()) {
             Logger.w(
                 TAG,
-                "B-42: Gemini 流式 emptyContentButFinished(仅 reasoning 无 content," +
-                    " finishReason=$reason),发 StreamInterrupted 触发非流式回退",
+                "B-42: Gemini streaming emptyContentButFinished (reasoning only, no content," +
+                    " finishReason=$reason), emitting StreamInterrupted to trigger the non-streaming fallback",
             )
             emit(ChatStreamEvent.StreamInterrupted(ErrorCode.STREAM_INTERRUPTED.toMessage("gemini")))
         } else {

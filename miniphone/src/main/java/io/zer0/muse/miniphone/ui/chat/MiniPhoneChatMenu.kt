@@ -128,14 +128,14 @@ internal fun ChatDeleteConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Uni
                 horizontalArrangement = Arrangement.End,
             ) {
                 DialogAction(
-                    label = "取消",
+                    label = "Cancel",
                     color = colors.textSecondary,
                     tag = MiniPhoneChatTags.DELETE_CANCEL,
                     onClick = onDismiss,
                 )
                 Spacer(Modifier.width(8.dp))
                 DialogAction(
-                    label = "删除",
+                    label = "Delete",
                     color = colors.unreadDot,
                     tag = MiniPhoneChatTags.DELETE_CONFIRM,
                     onClick = onConfirm,
@@ -168,5 +168,5 @@ private val MenuGap = 6.dp
 private val DialogWidth = 280.dp
 private val DialogActionHeight = 36.dp
 
-private const val DELETE_TITLE: String = "删除这条消息?"
-private const val DELETE_HINT: String = "只从这台手机的聊天记录里删掉,会话本身不受影响。"
+private const val DELETE_TITLE: String = "Delete this message?"
+private const val DELETE_HINT: String = "It will only be deleted from this phone's chat history; the conversation itself is not affected."

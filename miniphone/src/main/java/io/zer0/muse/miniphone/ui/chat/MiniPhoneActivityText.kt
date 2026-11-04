@@ -18,10 +18,10 @@ internal object MiniPhoneActivityText {
         MpActivityKind.OTHER -> OTHER
     }
 
-    private const val SEARCHING: String = "对方正在翻找…"
-    private const val REMEMBERING: String = "对方想起了点什么…"
-    private const val CALENDAR: String = "对方在看日程…"
-    private const val WEATHER: String = "对方看了眼窗外…"
-    private const val NOTES: String = "对方翻着笔记…"
-    private const val OTHER: String = "对方正在忙别的…"
+    private const val SEARCHING: String = "They're looking for something…"
+    private const val REMEMBERING: String = "They remembered something…"
+    private const val CALENDAR: String = "They're checking the schedule…"
+    private const val WEATHER: String = "They glanced out the window…"
+    private const val NOTES: String = "They're leafing through notes…"
+    private const val OTHER: String = "They're busy with something else…"
 }

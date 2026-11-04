@@ -76,7 +76,7 @@ object ModelCapabilityQuery {
             } else {
                 io.zer0.common.Logger.d(
                     TAG,
-                    "visionInput 降级为 UNKNOWN(非内置供应商不锁死) | model=$modelId | provider=${providerId ?: "?"}",
+                    "visionInput degraded to UNKNOWN (non-built-in providers are not locked down) | model=$modelId | provider=${providerId ?: "?"}",
                 )
                 triState(registryKnown, "image" in inputModalities)
             }

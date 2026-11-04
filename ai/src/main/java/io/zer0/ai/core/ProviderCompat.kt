@@ -162,12 +162,12 @@ object ProviderCompatRules {
             if (entries.size < 2) continue
             val formats = entries.map { thinkingFormatOfCatalog(it.second) }
             val distinct = formats.filterNotNull().toSet()
-            val detail = entries.joinToString(" | ") { "${it.first}=${it.second ?: "<未声明>"}" }
+            val detail = entries.joinToString(" | ") { "${it.first}=${it.second ?: "<undeclared>"}" }
             when {
                 distinct.size >= 2 ->
-                    Logger.w(TAG, "目录声明冲突:$modelId $detail —— 同名模型取值不同,查询会静默取先出现者")
+                    Logger.w(TAG, "Catalog declaration conflict: $modelId $detail — different values for models with the same name; lookups silently use the first one that appears")
                 distinct.size == 1 && formats.any { it == null } ->
-                    Logger.w(TAG, "目录单边声明:$modelId $detail —— 未声明的供应商借用了别人的声明,而非回落硬编码表")
+                    Logger.w(TAG, "Catalog one-sided declaration: $modelId $detail — an undeclared provider borrowed another provider's declaration instead of falling back to the hardcoded table")
                 else -> Unit
             }
         }
@@ -654,7 +654,7 @@ object ProviderCompatRules {
             noScheme.substringBefore(':')
         } catch (t: Throwable) {
             if (t is kotlin.coroutines.cancellation.CancellationException) throw t
-            Logger.w(TAG, "extract host 失败(baseUrl=$baseUrl): ${t.message}")
+            Logger.w(TAG, "extract host failed (baseUrl=$baseUrl): ${t.message}")
             ""
         }
     }

@@ -50,27 +50,27 @@ class ToolCallContinuationCandidateTest {
 
     @Test
     fun `no candidate when nothing is waiting`() {
-        assertNull("空表不应有候选", pendingArgsCandidate(emptyMap()))
-        assertNull("已带参数的调用不再是候选", pendingArgsCandidate(mapOf(0 to namedWithArgs())))
-        assertNull("只有无名调用时不归位（名字还没到）", pendingArgsCandidate(mapOf(1 to anonymousWithArgs("""{"a":1}"""))))
+        assertNull("An empty table should have no candidate", pendingArgsCandidate(emptyMap()))
+        assertNull("A call that already has arguments is no longer a candidate", pendingArgsCandidate(mapOf(0 to namedWithArgs())))
+        assertNull("With only an unnamed call, do not re-home (the name has not arrived yet)", pendingArgsCandidate(mapOf(1 to anonymousWithArgs("""{"a":1}"""))))
     }
 
     @Test
     fun `two waiting calls are ambiguous and never guessed`() {
         val map = mapOf(0 to namedPending(), 1 to namedPending())
-        assertNull("并行调用都在等参数时必须放弃归位", pendingArgsCandidate(map))
+        assertNull("When parallel calls are all waiting for arguments, re-homing must be abandoned", pendingArgsCandidate(map))
     }
 
     @Test
     fun `candidate disappears once delta was emitted`() {
         val emitted = namedPending().apply { hasEmitted = true }
-        assertNull("已发出 ToolCallDelta 后参数已定型，不能再追加", pendingArgsCandidate(mapOf(0 to emitted)))
+        assertNull("After a ToolCallDelta has been emitted the arguments are final and cannot be appended to", pendingArgsCandidate(mapOf(0 to emitted)))
     }
 
     @Test
     fun `blank function name is a continuation rather than a new call`() {
         assertEquals(
-            "只有非空 id 或函数名才是新工具调用；name=\"\" 是中转站续片",
+            "Only a non-empty id or function name is a new tool call; name=\"\" is a relay-station continuation fragment",
             false,
             isNewToolCall(id = null, name = ""),
         )
@@ -89,7 +89,7 @@ class ToolCallContinuationCandidateTest {
             args.append("""{"category":"second""")
         }
         assertEquals(
-            "续片索引被中转站改写时，应沿用最近一个仍未闭合的已命名调用",
+            "When the continuation index is rewritten by a relay station, reuse the most recent still-open named call",
             1,
             continuationTarget(
                 accMap = mapOf(0 to first, 1 to second),

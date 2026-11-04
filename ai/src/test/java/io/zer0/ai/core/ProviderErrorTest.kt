@@ -67,7 +67,7 @@ class ProviderErrorTest {
         // 提示文案引导用户去调参数，而真正要做的是充值。
         val byCode = ProviderError.from(402, "insufficient_quota")
         assertEquals(ProviderError.InsufficientQuota::class, byCode::class)
-        assertFalse("余额不足不可重试", byCode.isRetryable)
+        assertFalse("Insufficient balance must not be retryable", byCode.isRetryable)
 
         // 非 402 但 body 明说额度不足，也要识别
         val byBody = ProviderError.from(400, "{\"error\":{\"type\":\"insufficient_quota\"}}")
