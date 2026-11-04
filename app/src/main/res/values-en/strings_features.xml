@@ -76,7 +76,7 @@
     <string name="groupchat_create_btn">Create</string>
 
     <!-- ===== ui/account ===== -->
-    <string name="account_default_user">Muse User</string>
+    <string name="account_default_user">Malik</string>
     <string name="account_loading">Please wait…</string>
     <!-- v2.x: Edit profile page (no login/register UI, local avatar + name only) -->
     <string name="account_edit_profile">Edit Profile</string>

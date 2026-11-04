@@ -31,12 +31,12 @@ internal object LoopbackCallbackServer {
     private const val TAG = "LoopbackCallbackServer"
 
     private val SUCCESS_HTML =
-        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Muse OAuth</title></head>" +
+        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Shaheen 2 Sign-in</title></head>" +
             "<body style=\"font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0\">" +
             "<div style=\"text-align:center\"><h2>&#10003; Authorization successful</h2><p>You can close this page and return to Shaheen 2 to continue.</p></div></body></html>"
 
     private val FAILURE_HTML =
-        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Muse OAuth</title></head>" +
+        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Shaheen 2 Sign-in</title></head>" +
             "<body style=\"font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0\">" +
             "<div style=\"text-align:center\"><h2>&#10007; Authorization failed</h2><p>Please return to Shaheen 2 to see the error and retry.</p></div></body></html>"
 

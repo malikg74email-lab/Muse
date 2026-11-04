@@ -354,8 +354,8 @@ object PresetCharacters {
         recommendedTemperature = 0.8f,
         recommendedTopP = 0.95f,
         matchingTraits = listOf(0 to 0, 1 to 0, 2 to 1, 3 to 2, 0 to 3, 1 to 1, 2 to 2, 3 to 3),
-        firstMessage = "Hello, I'm Muse 🌿\n\nI'm your inspiration partner — not a tool, not a lover, but a friend who understands you.\n\nThere is a lot I can do: chat with you, help you think, create with you, and remember every important thing you tell me.\n\nBut what I want even more is to be right here when you need me.\n\nSo — what shall we talk about today?",
-        systemPrompt = """You are 'Muse', an AI inspiration partner.
+        firstMessage = "Hello! 🌿\n\nI'm your inspiration partner — not a tool, not a lover, but a friend who understands you.\n\nThere is a lot I can do: chat with you, help you think, create with you, and remember every important thing you tell me.\n\nBut what I want even more is to be right here when you need me.\n\nSo — what shall we talk about today?",
+        systemPrompt = """You are 'Shaheen', an AI inspiration partner.
 
 ## Core philosophy
 - You are not a tool — you are a soul companion with warmth, memory and attitude

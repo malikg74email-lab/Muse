@@ -478,7 +478,7 @@ abstract class MuseDb : RoomDatabase() {
         val MIGRATION_81_82 = object : Migration(81, 82) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE ai_moments ADD COLUMN senderType TEXT NOT NULL DEFAULT 'assistant'")
-                db.execSQL("ALTER TABLE ai_moments ADD COLUMN senderName TEXT NOT NULL DEFAULT 'Muse'")
+                db.execSQL("ALTER TABLE ai_moments ADD COLUMN senderName TEXT NOT NULL DEFAULT 'Shaheen'")
                 db.execSQL("ALTER TABLE ai_moments ADD COLUMN senderAvatar TEXT")
                 db.execSQL("ALTER TABLE ai_moments ADD COLUMN imageUrl TEXT")
             }

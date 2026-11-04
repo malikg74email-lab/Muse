@@ -158,7 +158,7 @@ object CharacterSharer {
                 textSize = 22f
                 textAlign = Paint.Align.CENTER
             }
-            canvas.drawText("Made with Muse · museai.ltd", cx, h - 52f, markPaint)
+            canvas.drawText("Made with Shaheen 2", cx, h - 52f, markPaint)
 
             // ── 保存 ──
             val file = File(context.cacheDir, "character_card_${System.currentTimeMillis()}.png")
