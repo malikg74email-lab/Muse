@@ -71,7 +71,7 @@ function parseHex(value: string): [number, number, number] {
   const hex = value.trim().replace(/^#/, "");
   const expand = hex.length === 3 ? hex.replace(/./g, (char) => char + char) : hex;
   if (!/^[0-9a-fA-F]{6}$/.test(expand)) {
-    throw new Error(`tokens.json: 无法解析的颜色值 ${value}（期望 #RRGGBB 或 #RGB）`);
+    throw new Error(`tokens.json: Unable to parse color value ${value} (expected #RRGGBB or #RGB)`);
   }
   return [
     Number.parseInt(expand.slice(0, 2), 16),
@@ -107,20 +107,20 @@ function expandWebAlpha(tokens: Tokens): Tokens {
     if (!isGroup(families)) continue;
     const palette = web[mode];
     if (!isGroup(palette)) {
-      throw new Error(`tokens.json: colors.web.alpha.${mode} 需要同名的基色组 colors.web.${mode}`);
+      throw new Error(`tokens.json: colors.web.alpha.${mode} requires a base color group with the same name, colors.web.${mode}`);
     }
     const expanded: Record<string, TokenValue> = { ...palette };
     for (const [family, steps] of Object.entries(families)) {
       const base = palette[family];
       if (typeof base !== "string") {
-        throw new Error(`tokens.json: colors.web.alpha.${mode}.${family} 缺少同名基色 colors.web.${mode}.${family}`);
+        throw new Error(`tokens.json: colors.web.alpha.${mode}.${family} is missing the base color with the same name, colors.web.${mode}.${family}`);
       }
       if (!Array.isArray(steps)) {
-        throw new Error(`tokens.json: colors.web.alpha.${mode}.${family} 必须是 alpha 百分比数组`);
+        throw new Error(`tokens.json: colors.web.alpha.${mode}.${family} must be an array of alpha percentages`);
       }
       for (const step of steps) {
         if (typeof step !== "number") {
-          throw new Error(`tokens.json: colors.web.alpha.${mode}.${family} 含非数字项 ${String(step)}`);
+          throw new Error(`tokens.json: colors.web.alpha.${mode}.${family} contains a non-numeric item, ${String(step)}`);
         }
         expanded[`${family}A${step}`] = rgba(base, step / 100);
       }
@@ -166,7 +166,7 @@ function collect(node: TokenGroup, path: readonly string[], out: string[]): void
 export function tokenVariables(tokens: Tokens): readonly string[] {
   const lines: string[] = [];
   collect(expandWebAlpha(tokens), [], lines);
-  if (lines.length === 0) throw new Error("tokens.json: 未生成任何令牌变量，检查文件结构");
+  if (lines.length === 0) throw new Error("tokens.json: No token variables were generated; check the file structure");
   return lines;
 }
 

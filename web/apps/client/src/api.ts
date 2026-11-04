@@ -491,7 +491,7 @@ export async function hostPinLogin(pin: string): Promise<void> {
   });
   const body: unknown = await response.json();
   if (!response.ok) {
-    const message = body && typeof body === "object" && "message" in body && typeof body.message === "string" ? body.message : "Host PIN 登录失败";
+    const message = body && typeof body === "object" && "message" in body && typeof body.message === "string" ? body.message : "Host PIN sign-in failed";
     throw new Error(message);
   }
 }
@@ -578,7 +578,7 @@ export class HostConnection {
 
   send(command: HostCommand): void {
     if (this.closed || this.socket.readyState !== WebSocket.OPEN) {
-      throw new Error("Muse Host 正在重新连接");
+      throw new Error("Muse Host is reconnecting");
     }
     const enriched = command.type === "state.sync" && command.cursor === undefined
       ? { ...command, protocolVersion: 1, cursor: this.lastCursor }
@@ -631,7 +631,7 @@ export async function connectHost(): Promise<HostConnection> {
           if (!settled) {
             settled = true;
             candidate.close();
-            reject(new Error("无法连接 Muse Host WebSocket"));
+            reject(new Error("Unable to connect to the Muse Host WebSocket"));
           }
         };
         candidate.addEventListener("open", () => {
@@ -649,7 +649,7 @@ export async function connectHost(): Promise<HostConnection> {
       await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
     }
   }
-  throw new Error("无法连接 Muse Host WebSocket");
+  throw new Error("Unable to connect to the Muse Host WebSocket");
 }
 
 export interface StreamChatInput {

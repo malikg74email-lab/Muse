@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Muse",
   "short_name": "Muse",
-  "description": "持续认识你的 AI",
+  "description": "The AI that keeps getting to know you",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -11,7 +11,7 @@
   "categories": ["productivity", "lifestyle", "social"],
   "background_color": "#f4eee4",
   "theme_color": "#2a7a55",
-  "lang": "zh-CN",
+  "lang": "en",
   "dir": "ltr",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

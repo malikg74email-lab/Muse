@@ -102,15 +102,15 @@ const bubble = (overrides) =>
 try {
   // ── 1. 时间分隔：按天插，同分钟不重复打断 ─────────────────────────
   const sameDay = [
-    message("u1", "user", { createdAt: NOW - 5 * MINUTE, content: "早" }),
-    message("a1", "assistant", { createdAt: NOW - 4 * MINUTE, content: "嗨" }),
-    message("u2", "user", { createdAt: NOW - 3 * MINUTE, content: "在吗" }),
+    message("u1", "user", { createdAt: NOW - 5 * MINUTE, content: "Morning" }),
+    message("a1", "assistant", { createdAt: NOW - 4 * MINUTE, content: "Hi" }),
+    message("u2", "user", { createdAt: NOW - 3 * MINUTE, content: "Are you there?" }),
   ];
   const items = mod.buildStreamItems(sameDay, NOW);
   const dividers = items.filter((item) => item.kind === "divider");
-  assert(dividers.length === 1, "同一天内的连续消息只有一条时间分隔（顶部那条）");
-  assert(dividers[0]?.label.startsWith("今天 "), `今天的分隔条走「今天 HH:mm」：${String(dividers[0]?.label)}`);
-  assert(items.filter((item) => item.kind === "message").length === 3, "三条消息都进入清单");
+  assert(dividers.length === 1, "Consecutive messages on the same day have only one time divider (the one at the top)");
+  assert(dividers[0]?.label.startsWith("Today "), `Today's divider uses "Today HH:mm": ${String(dividers[0]?.label)}`);
+  assert(items.filter((item) => item.kind === "message").length === 3, "All three messages enter the list");
 
   const crossed = [
     message("d1", "user", { createdAt: NOW - 2 * DAY }),
@@ -119,9 +119,9 @@ try {
   ];
   const crossedItems = mod.buildStreamItems(crossed, NOW);
   const crossedLabels = crossedItems.filter((item) => item.kind === "divider").map((item) => item.label);
-  assert(crossedLabels.length === 3, `跨天各插一条分隔条：${crossedLabels.join(" | ")}`);
-  assert(crossedLabels[1]?.startsWith("昨天 "), `昨天走相对风格：${String(crossedLabels[1])}`);
-  assert(/^10月28日 \d{2}:\d{2}$/.test(String(crossedLabels[0])), `更早按现有风格带日期：${String(crossedLabels[0])}`);
+  assert(crossedLabels.length === 3, `One divider is inserted for each day crossed: ${crossedLabels.join(" | ")}`);
+  assert(crossedLabels[1]?.startsWith("Yesterday "), `Yesterday uses the relative style: ${String(crossedLabels[1])}`);
+  assert(/^Oct 28 \d{2}:\d{2}$/.test(String(crossedLabels[0])), `Older ones use the existing style with a date: ${String(crossedLabels[0])}`);
 
   // 同一分钟内的连续消息（只隔几十秒）不能被分隔条反复打断
   const sameMinute = [40, 20, 5].map((secondsAgo, index) =>
@@ -130,7 +130,7 @@ try {
   const sameMinuteItems = mod.buildStreamItems(sameMinute, NOW);
   assert(
     sameMinuteItems.filter((item) => item.kind === "divider").length === 1,
-    "同一分钟内的连续消息不被分隔条重复打断：只剩顶部一条",
+    "Consecutive messages within the same minute are not repeatedly broken up by dividers: only the top one remains",
   );
 
   // 退化数据：时间戳乱序回到同一天时，不会连着插两条文案相同的分隔
@@ -145,112 +145,112 @@ try {
     .map((item) => item.label);
   assert(
     shuffledLabels.every((label, index) => index === 0 || label !== shuffledLabels[index - 1]),
-    `乱序时间戳不会连着插两条同文案分隔：${shuffledLabels.join(" | ")}`,
+    `Out-of-order timestamps don't insert two dividers with the same text back to back: ${shuffledLabels.join(" | ")}`,
   );
 
   const broken = [message("b1", "user", { createdAt: 0 }), message("b2", "assistant", { createdAt: -1 })];
   const brokenItems = mod.buildStreamItems(broken, NOW);
-  assert(brokenItems.every((item) => item.kind === "message"), "时间戳非法时不产生分隔条，消息照常渲染");
+  assert(brokenItems.every((item) => item.kind === "message"), "Invalid timestamps produce no divider and messages render as usual");
 
   const dup = [message("same", "user"), message("same", "assistant")];
   const dupKeys = mod.buildStreamItems(dup, NOW).filter((item) => item.kind === "message").map((item) => item.key);
-  assert(new Set(dupKeys).size === 2, `重复 id 的 key 会去重：${dupKeys.join(", ")}`);
+  assert(new Set(dupKeys).size === 2, `Keys for duplicate ids are deduplicated: ${dupKeys.join(", ")}`);
 
   // ── 2. 工具调用：默认折叠的块，标题行带工具名与状态 ───────────────
   const call = message("t1", "assistant", { content: '{"path":"a.txt"}', toolName: "read_file", toolCallId: "call-1" });
   const status = mod.toolStatusOf(call, { isStreaming: true, isLast: true, approvalToolCallIds: new Set(["call-1"]) });
-  assert(status === "awaiting", "toolCallId 命中待审批时状态是「待确认」");
+  assert(status === "awaiting", "When the toolCallId matches a pending approval, the status is \"Needs approval\"");
   const running = mod.toolStatusOf(call, { isStreaming: true, isLast: true, approvalToolCallIds: new Set() });
-  assert(running === "running", "生成中且是最后一条时状态是「执行中」");
-  const done = mod.toolStatusOf(message("t2", "tool", { toolName: "read_file", toolCallId: "call-1", content: "结果" }), {
+  assert(running === "running", "While generating and on the last message, the status is \"Running\"");
+  const done = mod.toolStatusOf(message("t2", "tool", { toolName: "read_file", toolCallId: "call-1", content: "Result" }), {
     isStreaming: false,
     isLast: false,
     approvalToolCallIds: new Set(),
   });
-  assert(done === "done", "role=tool 的结果消息状态是「已完成」");
+  assert(done === "done", "A role=tool result message has status \"Done\"");
 
   const toolHtml = render(bubble({ message: call, toolStatus: "running" }));
-  assert(toolHtml.includes("<details"), "工具调用块是 details 折叠元素");
-  assert(!toolHtml.includes("<details open"), "工具调用块默认折叠");
-  assert(toolHtml.includes("read_file") && toolHtml.includes("执行中"), "标题行同时给出工具名与状态");
+  assert(toolHtml.includes("<details"), "The tool call block is a details collapsible element");
+  assert(!toolHtml.includes("<details open"), "The tool call block is collapsed by default");
+  assert(toolHtml.includes("read_file") && toolHtml.includes("Running"), "The title row shows both the tool name and the status");
 
   // ── 3. 思考过程：同款折叠，与工具块共用组件 ──────────────────────
-  const thinkingHtml = render(bubble({ message: message("r1", "assistant", { content: "答案", reasoning: "先想一步" }) }));
-  assert(thinkingHtml.includes("思考过程") && thinkingHtml.includes("先想一步"), "思考过程渲染成折叠块");
+  const thinkingHtml = render(bubble({ message: message("r1", "assistant", { content: "The answer", reasoning: "Think one step first" }) }));
+  assert(thinkingHtml.includes("Reasoning") && thinkingHtml.includes("Think one step first"), "Reasoning renders as a collapsible block");
   assert(
     (thinkingHtml.match(/class="host-details"/g) ?? []).length === 1,
-    "思考块与工具块走同一个折叠组件（host-details）",
+    "The reasoning block and tool block use the same collapsible component (host-details)",
   );
 
   // ── 4. 操作菜单：只给正文非空的非空菜单，项数随能力位与角色变 ────
   const menuLabels = (html) => [...html.matchAll(/<span>([^<]+)<\/span>/g)].map((match) => match[1]);
   const legacyMenu = render(
-    bubble({ message: message("c1", "user", { content: "复制我" }), onCopy: () => undefined, actionsOpen: true }),
+    bubble({ message: message("c1", "user", { content: "Copy me" }), onCopy: () => undefined, actionsOpen: true }),
   );
-  assert(legacyMenu.includes('aria-label="复制这条消息"'), "老 Host（无 message_write）只给复制");
-  assert(legacyMenu.includes("is-open"), "展开状态写在气泡上，样式层据此亮出操作条");
-  assert((legacyMenu.match(/host-bubble-tools/g) ?? []).length === 1, "列只能有一个操作条");
+  assert(legacyMenu.includes("aria-label=\"Copy this message\""), "Legacy Host (no message_write) only offers Copy");
+  assert(legacyMenu.includes("is-open"), "The open state is written on the bubble and the style layer reveals the action bar from it");
+  assert((legacyMenu.match(/host-bubble-tools/g) ?? []).length === 1, "There can be only one action bar in the list");
   assert(
-    menuLabels(legacyMenu).filter((label) => ["复制", "引用", "收藏", "删除", "多选"].includes(label)).join(",") === "复制",
-    `菜单项只有复制：${menuLabels(legacyMenu).join(",")}`,
+    menuLabels(legacyMenu).filter((label) => ["Copy", "Quote", "Favorite", "Delete", "Select"].includes(label)).join(",") === "Copy",
+    `The only menu item is Copy: ${menuLabels(legacyMenu).join(",")}`,
   );
   const withoutCopy = render(bubble({ message: message("c2", "assistant", { content: "   " }), onCopy: () => undefined }));
-  assert(!withoutCopy.includes("host-bubble-tools"), "没展开菜单时不渲染操作条");
+  assert(!withoutCopy.includes("host-bubble-tools"), "The action bar is not rendered when the menu is not open");
   const emptyMenu = render(bubble({ message: message("c3", "user", { content: "   " }), capabilities: FULL, actionsOpen: true }));
-  assert(!emptyMenu.includes('aria-label="复制这条消息"'), "空正文不给出复制项（其余写操作不受影响）");
+  assert(!emptyMenu.includes("aria-label=\"Copy this message\""), "Empty body gets no Copy item (other write actions are unaffected)");
 
   // ── 4b. 菜单矩阵：能力位 × 角色 × 收藏态 ────────────────────────
   const idsOf = (items) => items.map((item) => item.id).join(",");
   assert(
     idsOf(mod.actionsForMessage({ role: "user", hasContent: true, favorited: false, capabilities: LEGACY })) === "copy",
-    "老 Host：菜单只有复制",
+    "Legacy Host: the menu only has Copy",
   );
   assert(
     idsOf(mod.actionsForMessage({ role: "user", hasContent: true, favorited: false, capabilities: FULL })) ===
       "copy,quote,favorite,select,delete",
-    "新 Host：复制 / 引用 / 收藏 / 多选 / 删除",
+    "New Host: Copy / Quote / Favorite / Select / Delete",
   );
   assert(
     idsOf(mod.actionsForMessage({ role: "assistant", hasContent: true, favorited: true, capabilities: FULL })) ===
       "copy,quote,unfavorite,select,delete",
-    "已收藏时菜单项变成「取消收藏」",
+    "When already favorited, the menu item becomes \"Unfavorite\"",
   );
   const writeOnly = { ...FULL, multiSelect: false };
   assert(
     !idsOf(mod.actionsForMessage({ role: "user", hasContent: true, favorited: false, capabilities: writeOnly })).includes("select"),
-    "缺 message_multi_select 不出现多选入口",
+    "Without message_multi_select there is no Select entry",
   );
   const selectOnly = { ...FULL, messageWrite: false };
   assert(
     idsOf(mod.actionsForMessage({ role: "user", hasContent: true, favorited: false, capabilities: selectOnly })) === "copy,select",
-    "缺 message_write 时只留复制（多选入口仍在，批量动作由操作条自己把关）",
+    "Without message_write only Copy remains (the Select entry stays; bulk actions are gated by the action bar itself)",
   );
   for (const role of ["tool", "system"]) {
     assert(
       idsOf(mod.actionsForMessage({ role, hasContent: true, favorited: false, capabilities: FULL })) === "copy",
-      `${role} 消息只给复制`,
+      `${role} messages only get Copy`,
     );
   }
   const favoriteMenu = render(
     bubble({
-      message: message("c4", "user", { content: "收藏我" }),
+      message: message("c4", "user", { content: "Favorite me" }),
       capabilities: FULL,
       favorited: true,
       actionsOpen: true,
     }),
   );
-  assert(favoriteMenu.includes("取消收藏") && !favoriteMenu.includes(">收藏<"), "已收藏时渲染「取消收藏」而不是「收藏」");
-  assert(favoriteMenu.includes("引用") && favoriteMenu.includes("多选") && favoriteMenu.includes("删除"), "五项菜单都出现在展开的操作条里");
-  assert(favoriteMenu.includes("is-danger"), "删除项带破坏性样式标记");
+  assert(favoriteMenu.includes("Unfavorite") && !favoriteMenu.includes(">Favorite<"), "When favorited it renders \"Unfavorite\" instead of \"Favorite\"");
+  assert(favoriteMenu.includes("Quote") && favoriteMenu.includes("Select") && favoriteMenu.includes("Delete"), "All five menu items appear in the open action bar");
+  assert(favoriteMenu.includes("is-danger"), "The Delete item carries the destructive style marker");
   const toolMenu = render(
     bubble({
-      message: message("c5", "tool", { content: "工具结果", toolName: "read_file" }),
+      message: message("c5", "tool", { content: "Tool result", toolName: "read_file" }),
       capabilities: FULL,
       actionsOpen: true,
     }),
   );
-  assert(toolMenu.includes("host-tool is-open") && menuLabels(toolMenu).includes("复制"), "tool 消息展开后也只有复制");
-  assert(!toolMenu.includes("引用"), "tool 消息不给引用");
+  assert(toolMenu.includes("host-tool is-open") && menuLabels(toolMenu).includes("Copy"), "A tool message, when open, also only has Copy");
+  assert(!toolMenu.includes("Quote"), "A tool message gets no Quote");
 
   // ── 5. 媒体地址归一：新 Host 相对路径 + 老数据四种形态 ────────────
   const images = mod.resolveMessageImages([
@@ -260,28 +260,28 @@ try {
     "file:///data/user/0/io.zer0.muse/files/images/x.bin",
     "/api/media/tok-1",
   ]);
-  assert(images[0]?.kind === "src" && images[0].src === "https://example.com/a.png", "http 地址直接用");
-  assert(images[1]?.kind === "src" && images[1].src.startsWith("data:"), "data URI 直接用");
-  assert(images[2]?.kind === "src" && images[2].src.startsWith("data:image/png;base64,"), "裸 base64 补齐 data 前缀");
-  assert(images[3]?.kind === "unavailable", "file:// 本地路径判定为拿不到");
-  assert(images[4]?.kind === "src" && images[4].src === "/api/media/tok-1", "新 Host 的 /api/media/<token> 直接当同源 src");
-  assert(mod.resolveVoiceUrl("/api/media/voice-1") === "/api/media/voice-1", "语音地址接受同源 /api/media 路径");
-  assert(mod.resolveVoiceUrl("file:///data/voice.m4a") === undefined, "语音的 file:// 引用判定为取不到");
+  assert(images[0]?.kind === "src" && images[0].src === "https://example.com/a.png", "http URLs are used as-is");
+  assert(images[1]?.kind === "src" && images[1].src.startsWith("data:"), "data URIs are used as-is");
+  assert(images[2]?.kind === "src" && images[2].src.startsWith("data:image/png;base64,"), "Bare base64 gets the data prefix added");
+  assert(images[3]?.kind === "unavailable", "file:// local paths are judged unavailable");
+  assert(images[4]?.kind === "src" && images[4].src === "/api/media/tok-1", "The new Host's /api/media/<token> is used directly as a same-origin src");
+  assert(mod.resolveVoiceUrl("/api/media/voice-1") === "/api/media/voice-1", "Voice URLs accept same-origin /api/media paths");
+  assert(mod.resolveVoiceUrl("file:///data/voice.m4a") === undefined, "A voice file:// reference is judged unavailable");
 
   // ── 6. 图片消息：单图/多图、点击全屏、加载失败占位、media 能力位 ──
   const imageHtml = render(
-    bubble({ message: message("i1", "assistant", { content: "看图", imageUrls: ["/api/media/tok-1"] }), capabilities: FULL }),
+    bubble({ message: message("i1", "assistant", { content: "Look at the picture", imageUrls: ["/api/media/tok-1"] }), capabilities: FULL }),
   );
-  assert(imageHtml.includes('src="/api/media/tok-1"'), "imageUrls 直接渲染同源相对路径");
-  assert(imageHtml.includes('aria-label="查看大图"') && imageHtml.includes('class="quiet host-bubble-image"'), "图片可点击进全屏查看");
-  assert(!imageHtml.includes("is-grid"), "单图不套多图网格");
+  assert(imageHtml.includes('src="/api/media/tok-1"'), "imageUrls render same-origin relative paths directly");
+  assert(imageHtml.includes("aria-label=\"View larger\"") && imageHtml.includes('class="quiet host-bubble-image"'), "The image can be clicked to view full-screen");
+  assert(!imageHtml.includes("is-grid"), "A single image does not use the multi-image grid");
   const multiImageHtml = render(
     bubble({
       message: message("i2", "assistant", { imageUrls: ["/api/media/a", "/api/media/b"] }),
       capabilities: FULL,
     }),
   );
-  assert(multiImageHtml.includes("host-bubble-images is-grid"), "多图走两列格子");
+  assert(multiImageHtml.includes("host-bubble-images is-grid"), "Multiple images use a two-column grid");
 
   const fileImageHtml = render(
     bubble({
@@ -289,7 +289,7 @@ try {
       capabilities: FULL,
     }),
   );
-  assert(fileImageHtml.includes("host-bubble-image-missing") && !fileImageHtml.includes("<img"), "取不到的图片给占位而不是破图");
+  assert(fileImageHtml.includes("host-bubble-image-missing") && !fileImageHtml.includes("<img"), "An unavailable image gets a placeholder instead of a broken image");
 
   const noMediaHtml = render(
     bubble({
@@ -297,12 +297,12 @@ try {
       capabilities: mod.readCapabilities(["chat", "streaming"]),
     }),
   );
-  assert(!noMediaHtml.includes("host-bubble-image"), "缺 media 能力位时不渲染图片");
-  assert(!noMediaHtml.includes("host-voice"), "缺 media 能力位时不渲染语音");
+  assert(!noMediaHtml.includes("host-bubble-image"), "Without the media capability, images are not rendered");
+  assert(!noMediaHtml.includes("host-voice"), "Without the media capability, voice is not rendered");
 
   const lightboxHtml = render(mod.createElement(mod.ImageLightbox, { src: "/api/media/tok-1", onClose: () => undefined }));
-  assert(lightboxHtml.includes('role="dialog"') && lightboxHtml.includes('aria-modal="true"'), "全屏查看是有对话框语义的浮层");
-  assert(lightboxHtml.includes('src="/api/media/tok-1"') && lightboxHtml.includes('aria-label="关闭预览"'), "浮层给出图片与关闭入口");
+  assert(lightboxHtml.includes('role="dialog"') && lightboxHtml.includes('aria-modal="true"'), "Full-screen view is an overlay with dialog semantics");
+  assert(lightboxHtml.includes('src="/api/media/tok-1"') && lightboxHtml.includes("aria-label=\"Close preview\""), "The overlay provides the image and a close entry");
 
   // ── 7. 语音消息：可播放 vs 只有时长 ─────────────────────────────
   const voiceHtml = render(
@@ -311,38 +311,38 @@ try {
       capabilities: FULL,
     }),
   );
-  assert(voiceHtml.includes("<audio") && voiceHtml.includes('src="/api/media/voice-1"'), "有 voiceUrl 时渲染 audio");
-  assert(voiceHtml.includes('aria-label="播放语音"'), "语音条给播放入口");
-  assert(voiceHtml.includes("12″"), "语音条显示 durationMs 换算的时长");
-  assert(mod.formatVoiceDuration(12_000) === "12″" && mod.formatVoiceDuration(90_000) === "1′30″", "时长格式化：秒 / 分秒");
+  assert(voiceHtml.includes("<audio") && voiceHtml.includes('src="/api/media/voice-1"'), "With a voiceUrl, an audio element is rendered");
+  assert(voiceHtml.includes("aria-label=\"Play voice message\""), "The voice bar provides a play entry");
+  assert(voiceHtml.includes("12″"), "The voice bar shows the duration converted from durationMs");
+  assert(mod.formatVoiceDuration(12_000) === "12″" && mod.formatVoiceDuration(90_000) === "1′30″", "Duration formatting: seconds / minutes and seconds");
 
   const staticVoiceHtml = render(
     bubble({ message: message("v2", "assistant", { voiceDurationMs: 7_000 }), capabilities: FULL }),
   );
-  assert(!staticVoiceHtml.includes("<audio"), "没有 voiceUrl 时不挂 audio");
-  assert(staticVoiceHtml.includes("host-voice is-static") && staticVoiceHtml.includes("语音 · 7″"), "只有时长时降级成静态条");
+  assert(!staticVoiceHtml.includes("<audio"), "Without a voiceUrl, no audio element is attached");
+  assert(staticVoiceHtml.includes("host-voice is-static") && staticVoiceHtml.includes("Voice · 7″"), "With only a duration, it degrades to a static bar");
 
   // ── 8. 消息状态：发送中 / 失败 + 重试 / 能力位关闭 ────────────────
   const sendingHtml = render(
-    bubble({ message: message("st1", "user", { content: "在吗", status: "sending" }), capabilities: FULL }),
+    bubble({ message: message("st1", "user", { content: "Are you there?", status: "sending" }), capabilities: FULL }),
   );
-  assert(sendingHtml.includes("发送中…") && sendingHtml.includes("host-msg-status"), "status=sending 显示轻量发送中");
+  assert(sendingHtml.includes("Sending…") && sendingHtml.includes("host-msg-status"), "status=sending shows a lightweight sending indicator");
 
   const failedHtml = render(
     bubble({
-      message: message("st2", "user", { content: "在吗", status: "failed", errorText: "手机没有网络" }),
+      message: message("st2", "user", { content: "Are you there?", status: "failed", errorText: "手机没有网络" }),
       capabilities: FULL,
       onRetry: () => undefined,
     }),
   );
-  assert(failedHtml.includes("手机没有网络"), "failed 时在气泡内展示 errorText");
-  assert(failedHtml.includes("host-retry") && failedHtml.includes(">重试<"), "failed 时给出「重试」按钮");
-  assert(failedHtml.includes('role="alert"'), "失败行是 alert 语义");
+  assert(failedHtml.includes("手机没有网络"), "When failed, errorText is shown inside the bubble");
+  assert(failedHtml.includes("host-retry") && failedHtml.includes(">Retry<"), "When failed, a \"Retry\" button is offered");
+  assert(failedHtml.includes('role="alert"'), "The failure row has alert semantics");
 
   const failedNoText = render(
     bubble({ message: message("st3", "user", { status: "failed" }), capabilities: FULL, onRetry: () => undefined }),
   );
-  assert(failedNoText.includes("发送失败"), "errorText 缺失时回退到「发送失败」");
+  assert(failedNoText.includes("Couldn't send"), "When errorText is missing, it falls back to \"Couldn't send\"");
 
   const noStatusCapability = render(
     bubble({
@@ -353,10 +353,10 @@ try {
   );
   assert(
     !noStatusCapability.includes("host-msg-failed") && !noStatusCapability.includes("host-retry"),
-    "缺 message_status 能力位时不显示状态与重试",
+    "Without the message_status capability, status and retry are not shown",
   );
-  const sentHtml = render(bubble({ message: message("st5", "user", { content: "已发", status: "sent" }), capabilities: FULL }));
-  assert(!sentHtml.includes("host-msg-status"), "status=sent 不额外占位");
+  const sentHtml = render(bubble({ message: message("st5", "user", { content: "Sent", status: "sent" }), capabilities: FULL }));
+  assert(!sentHtml.includes("host-msg-status"), "status=sent takes no extra space");
 
   // ── 9. 工具调用明细：toolCalls[] 优先，缺字段回退旧推断 ───────────
   const detailedCalls = [
@@ -364,63 +364,63 @@ try {
     { callId: "c2", name: "shell_exec", success: false, durationMs: 300 },
   ];
   const callsHtml = render(
-    bubble({ message: message("tc1", "assistant", { content: "查一下", toolCalls: detailedCalls }), capabilities: FULL }),
+    bubble({ message: message("tc1", "assistant", { content: "Check this", toolCalls: detailedCalls }), capabilities: FULL }),
   );
-  assert((callsHtml.match(/class="host-details"/g) ?? []).length === 2, "每个工具调用渲染一块折叠");
-  assert(callsHtml.includes("read_file") && callsHtml.includes("shell_exec"), "每块标题用调用自己的名字");
-  assert(callsHtml.includes("成功 · 1.2s") && callsHtml.includes("失败 · 0.3s"), "标题行给出成功与否与耗时");
-  assert(callsHtml.includes("参数") && callsHtml.includes("hello"), "展开区显示参数与结果预览");
-  assert(!callsHtml.includes("<details open"), "工具明细默认折叠");
+  assert((callsHtml.match(/class="host-details"/g) ?? []).length === 2, "Each tool call renders one collapsible block");
+  assert(callsHtml.includes("read_file") && callsHtml.includes("shell_exec"), "Each block's title uses the call's own name");
+  assert(callsHtml.includes("Success · 1.2s") && callsHtml.includes("Failed · 0.3s"), "The title row shows success or failure and the duration");
+  assert(callsHtml.includes("Arguments") && callsHtml.includes("hello"), "The expanded area shows arguments and a result preview");
+  assert(!callsHtml.includes("<details open"), "Tool details are collapsed by default");
 
   const callsWithoutCapability = render(
     bubble({
-      message: message("tc2", "assistant", { content: "查一下", toolCalls: detailedCalls }),
+      message: message("tc2", "assistant", { content: "Check this", toolCalls: detailedCalls }),
       capabilities: mod.readCapabilities(["chat"]),
     }),
   );
-  assert(!callsWithoutCapability.includes("read_file"), "缺 tool_call_details 时不渲染明细块");
+  assert(!callsWithoutCapability.includes("read_file"), "Without tool_call_details, detail blocks are not rendered");
   const legacyToolHtml = render(
     bubble({
-      message: message("tc3", "assistant", { content: "查一下", toolName: "read_file", toolCallId: "c9" }),
+      message: message("tc3", "assistant", { content: "Check this", toolName: "read_file", toolCallId: "c9" }),
       capabilities: mod.readCapabilities(["chat"]),
       toolStatus: "requested",
     }),
   );
-  assert(legacyToolHtml.includes("工具调用 · read_file"), "toolCalls 为空时回退到 toolName 推断块");
+  assert(legacyToolHtml.includes("Tool call · read_file"), "When toolCalls is empty, it falls back to the block inferred from toolName");
 
   // ── 10. 能力协商：老 Host 不退化成全隐藏 ─────────────────────────
-  assert(LEGACY.known === false && LEGACY.media === true, "未下发 capabilityFlags 时按老行为兜底（不隐藏媒体）");
-  assert(FULL.known === true && FULL.media && FULL.toolCallDetails && FULL.messageStatus, "三项能力位都能被识别");
-  assert(mod.readCapabilities(["media"]).messageStatus === false, "缺位即关闭");
+  assert(LEGACY.known === false && LEGACY.media === true, "When capabilityFlags are not sent, it falls back to legacy behaviour (media is not hidden)");
+  assert(FULL.known === true && FULL.media && FULL.toolCallDetails && FULL.messageStatus, "All three capabilities are recognised");
+  assert(mod.readCapabilities(["media"]).messageStatus === false, "A missing capability turns the feature off");
   const legacyImageHtml = render(
     bubble({ message: message("lg1", "assistant", { imageUrls: ["/api/media/tok-1"] }), capabilities: LEGACY }),
   );
-  assert(legacyImageHtml.includes('src="/api/media/tok-1"'), "老 Host 下仍渲染能取到的媒体地址");
+  assert(legacyImageHtml.includes('src="/api/media/tok-1"'), "Under a legacy Host, reachable media URLs are still rendered");
 
   // ── 10b. 引用：气泡内的引用块 + 输入区上的草稿条 ──────────────────
   const quotedHtml = render(
     bubble(
       {
-        message: message("q1", "user", { content: "这是我的回答", quotedContent: "PROTO-被引用的原文" }),
+        message: message("q1", "user", { content: "This is my answer", quotedContent: "PROTO-quoted original text" }),
         capabilities: FULL,
       },
     ),
   );
-  assert(quotedHtml.includes("host-quote") && quotedHtml.includes("PROTO-被引用的原文"), "quotedContent 渲染成气泡内的引用块");
-  const noQuoteHtml = render(bubble({ message: message("q2", "user", { content: "没有引用" }), capabilities: FULL }));
-  assert(!noQuoteHtml.includes("host-quote"), "Host 不下发 quotedContent 时不显示引用块（降级）");
-  assert(mod.quoteExcerpt("  第一行\n\n第二行  ") === "第一行 第二行", "引用摘要压平换行与多余空白");
-  assert(mod.quoteExcerpt("x".repeat(120), 20) === `${"x".repeat(20)}…`, "引用摘要超长截断并加省略号");
+  assert(quotedHtml.includes("host-quote") && quotedHtml.includes("PROTO-quoted original text"), "quotedContent renders as a quote block inside the bubble");
+  const noQuoteHtml = render(bubble({ message: message("q2", "user", { content: "No quote" }), capabilities: FULL }));
+  assert(!noQuoteHtml.includes("host-quote"), "When the Host does not send quotedContent, no quote block is shown (degraded)");
+  assert(mod.quoteExcerpt("  First line\n\nSecond line  ") === "First line Second line", "The quote excerpt flattens newlines and extra whitespace");
+  assert(mod.quoteExcerpt("x".repeat(120), 20) === `${"x".repeat(20)}…`, "An over-long quote excerpt is truncated with an ellipsis");
 
   // ── 10c. 多选与批量：纯逻辑 + 接线 ──────────────────────────────
-  assert(mod.selectionCopyText([{ content: "a" }, { content: "  " }, { content: "b" }]) === "a\n\nb", "多选复制只拼有正文的消息");
+  assert(mod.selectionCopyText([{ content: "a" }, { content: "  " }, { content: "b" }]) === "a\n\nb", "Multi-select copy only joins messages that have body text");
   assert(
     mod.deleteConfirmKey(1) === "message.deleteConfirmOne",
-    `单条删除用单条词条：${mod.deleteConfirmKey(1)}`,
+    `A single deletion uses the single-message entry: ${mod.deleteConfirmKey(1)}`,
   );
   assert(
     mod.deleteConfirmKey(3) === "message.deleteConfirmMany",
-    `批量删除用批量词条：${mod.deleteConfirmKey(3)}`,
+    `A bulk deletion uses the bulk entry: ${mod.deleteConfirmKey(3)}`,
   );
 
   // ── 11. 接线与样式：宿主把能力位、重试、全屏都接上 ────────────────
@@ -443,95 +443,95 @@ try {
     "host-lightbox",
     "host-msg-error",
   ]) {
-    assert(css.includes(`.${selector}`), `样式里定义了 .${selector}`);
+    assert(css.includes(`.${selector}`), `The stylesheet defines .${selector}`);
   }
   const chatSource = readFileSync(join(ROOT, "src", "host", "HostChat.tsx"), "utf8");
   assert(
     chatSource.includes("<MessageErrorBoundary") && chatSource.includes("buildStreamItems"),
-    "消息清单逐条包在错误隔离里，分隔条来自 buildStreamItems",
+    "Each message in the list is wrapped in error isolation, and dividers come from buildStreamItems",
   );
   assert(
     chatSource.includes('className="host-day-sep"') && chatSource.includes('role="separator"'),
-    "分隔条以 separator 语义进入消息流",
+    "Dividers enter the message stream with separator semantics",
   );
-  assert(chatSource.includes("copyTextToClipboard"), "复制走带兜底的剪贴板工具（局域网 http 无 Clipboard API）");
+  assert(chatSource.includes("copyTextToClipboard"), "Copy goes through the clipboard helper with a fallback (LAN http has no Clipboard API)");
   assert(
     chatSource.includes("readCapabilities") && chatSource.includes("capabilities={capabilities}"),
-    "能力位由快照读出并传给每条消息",
+    "Capabilities are read from the snapshot and passed to every message",
   );
   assert(
     chatSource.includes('type: "chat.retry", messageId'),
-    "重试发 chat.retry 并带上这条消息的 messageId",
+    "Retry sends chat.retry with this message's messageId",
   );
-  assert(chatSource.includes("<ImageLightbox"), "全屏查看挂在这个聊天页上");
+  assert(chatSource.includes("<ImageLightbox"), "Full-screen view is mounted on this chat page");
   const imagesSource = readFileSync(join(ROOT, "src", "host", "MessageImages.tsx"), "utf8");
-  assert(imagesSource.includes("onError"), "图片加载失败会切到占位（不是留一个破图）");
+  assert(imagesSource.includes("onError"), "A failed image load switches to a placeholder (instead of leaving a broken image)");
 
   // ── 11b. 多选 / 写操作 / 引用在聊天壳里的接线 ────────────────────
   assert(
     chatSource.includes("host-selection-bar") &&
       chatSource.includes('t("chat.selectedCount", { count: formatNumber(selectedIds.length, locale) })'),
-    "多选时底部固定操作条 + 顶栏显示已选条数（数字按当前语言分组）",
+    "In multi-select, a fixed action bar sits at the bottom and the top bar shows the selected count (numbers grouped for the current language)",
   );
-  assert(chatSource.includes('t("chat.selectAll")') && chatSource.includes('t("chat.exitSelection")'), "顶栏操作条有全选与退出",
+  assert(chatSource.includes('t("chat.selectAll")') && chatSource.includes('t("chat.exitSelection")'), "The top action bar has Select all and Exit",
   );
   assert(
     chatSource.includes('className={selectedIds.includes(item.message.id) ? "host-select is-on" : "host-select"}') &&
       chatSource.includes('role="checkbox"'),
-    "多选时每条消息左侧渲染勾选框",
+    "In multi-select, a checkbox is rendered to the left of each message",
   );
   assert(
     chatSource.includes("deleteConfirmKey(ids.length)") && chatSource.includes("window.confirm"),
-    "删除前先弹二次确认（文案带「只删本机记录，无法恢复」）",
+    "Deletion first shows a confirmation (wording: only the local record is removed; this can't be undone)",
   );
   assert(
     chatSource.includes('{ type: "message.delete", messageIds: [...ids] }') &&
       chatSource.includes("setRemovedIds((current) => current.filter((id) => !ids.includes(id)))"),
-    "删除走 message.delete，Host 拒绝时把隐藏的消息放回去",
+    "Deletion goes through message.delete; if the Host refuses, hidden messages are put back",
   );
   assert(
     chatSource.includes("event.skippedMessageIds") && chatSource.includes('t("chat.deleteSkipped", { count: skipped.length })'),
-    "回执里被跳过的消息会恢复显示（不只依赖 error）",
+    "Messages skipped in the receipt are shown again (not relying only on error)",
   );
   assert(
     chatSource.includes('sendOptimistic({ type: "message.favorite", messageId, favored: next }') &&
       chatSource.includes("delete restored[messageId]"),
-    "收藏先本地翻转，Host 拒绝时撤销乐观值",
+    "Favorite flips locally first; if the Host refuses, the optimistic value is reverted",
   );
   assert(
     chatSource.includes("quoteExcerpt(message.content)") && chatSource.includes("host-quote-draft") &&
       chatSource.includes("setQuoteDraft(undefined)"),
-    "引用草稿条可取消",
+    "The quote draft bar can be cancelled",
   );
   assert(
     chatSource.includes("quotedMessageId: quoted.messageId"),
-    "发送时随 chat.send 带上被引用消息的 id（字段名 quotedMessageId）",
+    "Sending carries the quoted message's id with chat.send (field name quotedMessageId)",
   );
   assert(
     !/\{ messageId: quoted\.messageId \}/.test(chatSource),
-    "chat.send 不再使用旧的 messageId 字段名",
+    "chat.send no longer uses the old messageId field name",
   );
   const apiSource = readFileSync(join(ROOT, "src", "api.ts"), "utf8");
   assert(
     /readonly quotedMessageId\?: string;/.test(apiSource),
-    "HostCommand 声明了 quotedMessageId",
+    "HostCommand declares quotedMessageId",
   );
   assert(
     chatSource.includes('capabilities.messageWrite && (') && chatSource.includes("host-selection-danger"),
-    "批量操作条里的删除/收藏也按 message_write 能力位把关",
+    "Delete/Favorite in the bulk action bar are also gated by the message_write capability",
   );
   assert(
     chatSource.includes("favorited={isFavorited(item.message.id, item.message.favorite)}"),
-    "收藏态由 Host 字段 + 本地乐观覆盖共同决定",
+    "Favorite state is decided by the Host field plus the local optimistic override",
   );
   const bubbleSource = readFileSync(join(ROOT, "src", "host", "MessageBubble.tsx"), "utf8");
   assert(
     bubbleSource.includes("actionsForMessage(") && bubbleSource.includes("onAction?.(message.id, action.id)"),
-    "气泡不自己判菜单项，交给 actionsForMessage 并把选择上报",
+    "The bubble does not decide menu items itself; it delegates to actionsForMessage and reports the choice",
   );
 
-  if (failures > 0) throw new Error(`聊天渲染断言未通过（${failures} 条）`);
-  console.log("\n聊天渲染断言全部通过（时间分隔 / 折叠块 / 菜单矩阵 / 引用 / 多选 / 图片 / 语音 / 状态 / 能力协商）。");
+  if (failures > 0) throw new Error(`Chat render assertions failed (${failures} failures)`);
+  console.log("\nAll chat render assertions passed (day dividers / collapsible blocks / menu matrix / quotes / multi-select / images / voice / status / capability negotiation).");
 } finally {
   await rm(TEMP, { force: true });
 }

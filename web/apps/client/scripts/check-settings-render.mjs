@@ -164,33 +164,33 @@ const renderSettings = await render();
 try {
   const html = renderSettings({ snapshot, loading: false });
 
-  assert(html.includes(groupTitle), "分组标题来自协议 groupTitle");
-  assert(html.includes(linkTitle) && html.includes(linkDesc), "条目标题/说明来自协议 title/desc");
-  assert(html.includes(switchTitle) && html.includes(bareTitle), "每条条目的标题都来自协议字段");
-  assert(!html.includes("settings_screen_provider"), "资源名不会漏进界面");
-  assert(!html.includes("settings_screen_group_models"), "分组资源名不会漏进界面");
-  assert(!html.includes("settings_screen_pii_guard"), "开关条目的资源名不会漏进界面");
+  assert(html.includes(groupTitle), "Group title comes from the protocol groupTitle");
+  assert(html.includes(linkTitle) && html.includes(linkDesc), "Entry title/description come from the protocol title/desc");
+  assert(html.includes(switchTitle) && html.includes(bareTitle), "Every entry's title comes from a protocol field");
+  assert(!html.includes("settings_screen_provider"), "Resource names do not leak into the UI");
+  assert(!html.includes("settings_screen_group_models"), "Group resource names do not leak into the UI");
+  assert(!html.includes("settings_screen_pii_guard"), "Switch entries' resource names do not leak into the UI");
 
-  assert((html.match(/role="switch"/g) ?? []).length === 1, "kind=switch 渲染成开关");
-  assert(html.includes('aria-checked="true"'), "开关初值取 checked");
-  assert((html.match(/muse-listrow-chevron/g) ?? []).length === 2, "link/action 渲染右箭头");
-  assert((html.match(/class="muse-settings-icon"/g) ?? []).length === 3, "每行左侧都有 iconKey 图标");
-  assert(html.includes('class="muse-listrow-title">' + bareTitle), "无说明的条目只渲染标题");
-  assert(!html.includes(">undefined<"), "可选文案缺失时不会渲染出 undefined");
-  assert(html.includes("muse-section-label"), "分组标题用 SectionLabel");
+  assert((html.match(/role="switch"/g) ?? []).length === 1, "kind=switch renders as a switch");
+  assert(html.includes('aria-checked="true"'), "Switch initial value comes from checked");
+  assert((html.match(/muse-listrow-chevron/g) ?? []).length === 2, "link/action render a right chevron");
+  assert((html.match(/class="muse-settings-icon"/g) ?? []).length === 3, "Every row has an iconKey icon on the left");
+  assert(html.includes('class="muse-listrow-title">' + bareTitle), "Entries without a description render only the title");
+  assert(!html.includes(">undefined<"), "Missing optional text does not render as undefined");
+  assert(html.includes("muse-section-label"), "Group titles use SectionLabel");
 
   const loading = renderSettings({ loading: true });
   // 骨架延迟 300ms：刚进页时只给一个可被读屏播报的空白占位，不闪骨架
   assert(
     loading.includes('role="status"') && !loading.includes("muse-skeleton"),
-    "加载中先给安静的占位（骨架延迟 300ms 才出）",
+    "While loading, a quiet placeholder is shown first (skeleton only appears after a 300ms delay)",
   );
 
   const failed = renderSettings({ loading: false, error: "PROTO-ERROR-读取失败" });
-  assert(failed.includes("PROTO-ERROR-读取失败") && failed.includes(">重试<"), "失败显示可重试错误条");
+  assert(failed.includes("PROTO-ERROR-读取失败") && failed.includes(">Retry<"), "Failure shows a retryable error bar");
 
-  if (failures > 0) throw new Error(`设置渲染断言未通过（${failures} 条）`);
-  console.log("\n设置渲染断言全部通过（界面文本只读协议字段）。");
+  if (failures > 0) throw new Error(`Settings render assertions failed (${failures})`);
+  console.log("\nAll settings render assertions passed (UI text reads only protocol fields).");
 } finally {
   await rm(TEMP, { force: true });
 }

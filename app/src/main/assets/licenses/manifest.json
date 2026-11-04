@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generatedAt": "2026-09-27",
-  "appName": "Muse",
+  "appName": "Shaheen 2",
   "appVersion": "2.1.0",
   "licenseTexts": {
     "apache-2.0": "licenses/apache-2.0.txt",
@@ -36,7 +36,7 @@
       "licenseId": "apache-2.0",
       "copyright": "Copyright 2016-2024 JetBrains s.r.o.",
       "url": "https://github.com/Kotlin/kotlinx.coroutines",
-      "notes": "仅测试。"
+      "notes": "Test only."
     },
     {
       "groupId": "org.jetbrains.kotlinx",
@@ -277,7 +277,7 @@
       "licenseId": "apache-2.0",
       "copyright": "Copyright 2013-2024 Square, Inc.",
       "url": "https://square.github.io/okhttp/",
-      "notes": "仅测试:OkHttp 测试服务器。"
+      "notes": "Test only: OkHttp test server."
     },
     {
       "groupId": "org.jsoup",
@@ -318,7 +318,7 @@
       "licenseId": "ml-kit-terms",
       "copyright": "Copyright Google LLC.",
       "url": "https://developers.google.com/ml-kit/terms",
-      "notes": "受 ML Kit Terms of Service 约束（POM 声明）。此前误记为 Apache-2.0，已更正。"
+      "notes": "Subject to the ML Kit Terms of Service (as declared in the POM). Previously recorded as Apache-2.0 in error; now corrected."
     },
     {
       "groupId": "com.google.mlkit",
@@ -327,7 +327,7 @@
       "licenseId": "ml-kit-terms",
       "copyright": "Copyright Google LLC.",
       "url": "https://developers.google.com/ml-kit/terms",
-      "notes": "受 ML Kit Terms of Service 约束（POM 声明）。此前误记为 Apache-2.0，已更正。"
+      "notes": "Subject to the ML Kit Terms of Service (as declared in the POM). Previously recorded as Apache-2.0 in error; now corrected."
     },
     {
       "groupId": "com.google.zxing",
@@ -488,7 +488,7 @@
       "licenseId": "mit",
       "copyright": "Copyright 2010 Xtreme Labs, Pivotal Labs and the Robolectric contributors.",
       "url": "https://robolectric.org/",
-      "notes": "仅测试:单元测试的 Android 运行时。"
+      "notes": "Test only: Android runtime for unit tests."
     },
     {
       "groupId": "io.mockk",
@@ -497,7 +497,7 @@
       "licenseId": "apache-2.0",
       "copyright": "Copyright the MockK contributors.",
       "url": "https://mockk.io/",
-      "notes": "仅测试。"
+      "notes": "Test only."
     },
     {
       "groupId": "app.cash.turbine",
@@ -506,7 +506,7 @@
       "licenseId": "apache-2.0",
       "copyright": "Copyright 2020 Square, Inc.",
       "url": "https://github.com/cashapp/turbine",
-      "notes": "仅测试:Flow 测试工具。"
+      "notes": "Test only: Flow testing utilities."
     },
     {
       "groupId": "androidx.room",
@@ -515,7 +515,7 @@
       "licenseId": "apache-2.0",
       "copyright": "Copyright The Android Open Source Project",
       "url": "https://developer.android.com/jetpack/androidx/releases/room",
-      "notes": "仅测试。"
+      "notes": "Test only."
     },
     {
       "groupId": "com.squareup.leakcanary",
@@ -524,7 +524,7 @@
       "licenseId": "apache-2.0",
       "copyright": "Copyright 2015-2024 Square, Inc.",
       "url": "https://square.github.io/leakcanary/",
-      "notes": "仅 debug 构建:内存泄漏检测。"
+      "notes": "Debug builds only: memory leak detection."
     },
     {
       "groupId": "junit",
@@ -533,7 +533,7 @@
       "licenseId": "epl-1.0",
       "copyright": "Copyright JUnit contributors.",
       "url": "https://junit.org/junit4/",
-      "notes": "EPL-1.0 与 Apache-2.0 兼容,允许闭源商业使用,需保留声明。"
+      "notes": "EPL-1.0 is compatible with Apache-2.0; closed-source commercial use is permitted; the attribution notice must be retained."
     },
     {
       "groupId": "com.github.junrar",
@@ -542,7 +542,7 @@
       "licenseId": "unrar",
       "copyright": "Copyright (c) 2004-2024 Junrar contributors",
       "url": "https://github.com/junrar/junrar",
-      "notes": "仅用于解压 RAR 档案，不实现 RAR 压缩。"
+      "notes": "Used only to extract RAR archives; does not implement RAR compression."
     }
   ]
 }

@@ -1,325 +1,325 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# Muse 用户使用指南
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Shaheen 2 User Guide
 
-当用户问"怎么用""使用方法""说明书""帮助文档""新手指南""怎么设置""功能介绍""教程""这是什么功能""怎么操作"时参考本文档。回答时用通俗语言,避免技术术语,必要时举例说明。所有功能入口均基于真实代码,查不到的不要编造。
-
----
-
-## 一、Muse 是什么
-
-Muse 是一个 Android 端的 AI 助手应用,核心定位是"陪伴型 LLM 客户端 + Agent 平台"。
-
-和普通 AI 聊天网页版最大的区别:
-
-- 它有记忆。Muse 能把对话中提到的事实提炼、编译成摘要,下次对话时自动注入,所以它"记得"你之前说过的事。
-- 它能动手。不只是聊天,它可以读写应用沙盒内的文件、联网搜索、设闹钟、发短信、查日历、打开应用、读剪贴板等。
-- 它可以有多个人格。你能创建多个助手,每个有独立的系统提示词、模型、工具、记忆。
-- 它是私有的。所有数据存在你手机本地,不上传第三方服务器(调用你自己配置的模型供应商除外)。
-- 它能主动找你。配好主动消息后,助手会像微信好友一样定时给你发消息。
+Reference this doc when users ask "how to use", "user guide", "help", "getting started", "tutorial", "what is this feature", "how to operate". Answer in plain language, avoid technical jargon, and give examples when necessary. All feature entries are based on real code; do not fabricate entries that cannot be found.
 
 ---
 
-## 二、开始使用
+## 1. What is Shaheen 2
 
-### 首次打开
+Shaheen 2 is an Android AI assistant app. Its core positioning is a "companion LLM client + Agent platform".
 
-Muse 首次启动(且本地没有任何模型供应商时)会全屏显示引导页,共两步:
+The biggest differences from a typical AI chat web app:
 
-1. 第一步 功能介绍:左右滑动看 5 页功能卡片(聊天、助手、隐私、联网搜索、工具),底部有"下一步"和"跳过"。
-2. 第二步 个性化称呼:填写两个输入框
-   - 助手名字(你想叫助手什么,比如"小缪""JARVIS")
-   - 用户称呼(你想让助手怎么叫你,比如"小明""老板")
-   - 这两个称呼会写入用户画像,影响对话中 AI 的自称和对你的称呼。可以都留空跳过。
-   - 底部两个按钮:"开始使用"(直接进入主界面)或"添加模型供应商"(去配置 API)。
-
-### 添加模型供应商
-
-引导页点"添加模型供应商",或之后进入 设置 → 模型与服务 → 供应商,可以:
-
-- 手动添加:填 API Key、Base URL、模型 ID。
-- 从预设添加:选常见供应商(OpenAI / Anthropic / Google / DeepSeek 等)。
-- 扫码导入:扫描二维码快速导入供应商配置。
-- 导入第三方客户端配置:支持导入 CherryStudio 和 Chatbox 导出的 JSON(自动嗅探格式,只导入供应商和模型,不导入对话历史)。
-
-配好至少一个供应商后,回到主界面就可以开始对话了。
+- It has memory. Shaheen 2 can extract and compile facts mentioned in conversations into summaries, and inject them automatically in the next conversation, so it "remembers" what you said before.
+- It can take action. Beyond chatting, it can read and write files in the app sandbox, search the web, set alarms, send SMS, query the calendar, open apps, read the clipboard, etc.
+- It can have multiple personas. You can create multiple assistants, each with its own system prompt, model, tools, and memory.
+- It is private. All data is stored locally on your phone and is not uploaded to third-party servers (except when calling the model provider you configured yourself).
+- It can reach out to you. Once proactive messaging is configured, the assistant will send you messages on a schedule, like a WeChat friend.
 
 ---
 
-## 三、和助手对话
+## 2. Getting Started
 
-### 基本操作
+### First Launch
 
-- 发送消息:在底部输入框打字,点发送按钮发送。
-- 停止回复:助手正在回复时,发送按钮会变成停止按钮,点一下即可中断。
-- 长消息折叠:回复太长会自动折叠并显示渐变遮罩,点击可展开全文。
-- 消息内容支持 Markdown 渲染、代码高亮、数学公式、表格。
-- 助手回复里的富媒体:SVG/HTML/图表代码块会渲染成可视化内容(图表支持柱状图、折线图、饼图)。
-- 产物卡片:回复中包含代码、文档、JSON 等可复用内容时,会生成可点击的产物卡片,方便单独查看或复制。
+When Shaheen 2 launches for the first time (and no model provider is configured locally), a full-screen onboarding page is shown, in two steps:
 
-### 深度思考
+1. Step 1 Feature introduction: swipe left and right through 5 feature cards (Chat, Assistant, Privacy, Web Search, Tools). The bottom has "Next" and "Skip".
+2. Step 2 Personalized naming: fill in two input fields
+   - Assistant name (what you want to call the assistant, e.g. "Xiao Miao" or "JARVIS")
+   - User nickname (what you want the assistant to call you, e.g. "Xiao Ming" or "Boss")
+   - These two names are written into the user profile and affect how the AI refers to itself and to you in conversations. Both can be left empty to skip.
+   - Two buttons at the bottom: "Start Using" (enter the main UI directly) or "Add Model Provider" (go configure the API).
 
-输入栏左侧的 + 号菜单里有"深度思考"开关。开启后该次对话会用高强度推理(8000 tokens 思考预算),适合复杂问题。注意:这个开关只对当前这次对话生效,不持久化,切换会话或重启 app 后恢复助手默认设置。
+### Adding a Model Provider
 
-### 联网搜索
+Tap "Add Model Provider" on the onboarding page, or later go to Settings → Models & Services → Providers. You can:
 
-输入栏 + 号菜单里还有"联网搜索"开关。开启后每次提问会先搜网络结果作为上下文。默认用 Bing(抓 cn.bing.com,不需要 API Key),也支持 SearXNG(自托管)和 Tavily(需 Key),在 设置 → 模型与服务 → Web 搜索 或 设置 → 聊天 → 默认搜索引擎 切换。
+- Add manually: fill in API Key, Base URL, and Model ID.
+- Add from presets: pick a common provider (OpenAI / Anthropic / Google / DeepSeek, etc.).
+- Import via QR code: scan a QR code to quickly import a provider configuration.
+- Import third-party client config: supports importing JSON exported by CherryStudio and Chatbox (format is auto-sniffed; only providers and models are imported, not conversation history).
 
-### 消息长按菜单
-
-长按(或点击)任一条消息会弹出操作菜单:
-
-- 复制:复制消息全文到剪贴板。
-- 重新生成:让助手重新回答这一条(针对助手消息)。
-- 删除:删掉这条消息(误发内容可这样撤回,会弹确认框)。
-- 编辑:编辑用户消息内容后重新发送。
-- 引用:引用这条消息的内容回复(消息顶部会显示引用块)。
-- 翻译:把消息翻译成目标语言(点"翻译"后还会弹出语言子菜单选择目标语言)。
-- 朗读:用 TTS 语音朗读这条消息(仅助手消息有此选项)。
-- 收藏:把这条消息加入收藏。
-- 分享:把消息内容分享到其他应用。
-
-最后一条助手消息还会额外显示快捷"复制"和"重新生成"按钮,不用进菜单也能操作。
+After configuring at least one provider, return to the main UI to start chatting.
 
 ---
 
-## 四、助手管理
+## 3. Chatting with the Assistant
 
-### 多助手
+### Basic Operations
 
-Muse 支持创建多个助手,每个都是独立的个体,有自己的名字、头像、系统提示词、模型、工具、记忆和对话历史。默认会自带一个"默认助手"。
+- Send a message: type in the input box at the bottom and tap the send button.
+- Stop a reply: while the assistant is replying, the send button becomes a stop button; tap it to interrupt.
+- Long message collapse: overly long replies are auto-collapsed with a gradient overlay; tap to expand the full text.
+- Message content supports Markdown rendering, code highlighting, math formulas, and tables.
+- Rich media in assistant replies: SVG / HTML / chart code blocks are rendered into visual content (charts support bar, line, and pie charts).
+- Artifact cards: when a reply contains reusable content such as code, documents, or JSON, a clickable artifact card is generated for easy viewing or copying.
 
-入口:设置 → 助手。在这里可以新建、切换、删除助手。
+### Deep Thinking
 
-### 助手详情 5 个子页
+In the "+" menu on the left of the input bar, there is a "Deep Thinking" toggle. When enabled, that conversation uses high-intensity reasoning (an 8000-token thinking budget), suitable for complex problems. Note: this toggle only applies to the current conversation, is not persisted, and reverts to the assistant's default setting after switching sessions or restarting the app.
 
-进入 设置 → 助手 → 选择某个助手,会看到 5 个子页:
+### Web Search
 
-1. 基础(Basic):名字、排序、emoji 头像或图片头像、聊天背景图与透明度。
-2. 提示词(Prompt):系统提示词(角色设定)、消息模板(支持 {{变量}} 占位符)、预设消息(开聊前注入的固定上下文)。
-3. 扩展(Extensions):启用的本地工具、MCP 服务器、Skill、Lorebook、快捷消息、Prompt 注入、自定义请求头/请求体。
-4. 记忆(Memory):是否注入长期记忆、是否用全局记忆、是否注入最近会话摘要、是否启用时间提醒。
-5. 高级(Advanced):模型 ID、温度、top-p、最大 token、上下文消息条数、推理等级、是否流式输出。
+The "+" menu in the input bar also has a "Web Search" toggle. When enabled, each question first searches the web for results as context. By default it uses Bing (scraping cn.bing.com, no API Key needed). SearXNG (self-hosted) and Tavily (requires Key) are also supported, switchable in Settings → Models & Services → Web Search or Settings → Chat → Default Search Engine.
 
-每个助手独立配置,互不影响。切换助手后,看到的是对应助手的对话和设置。
+### Message Long-Press Menu
 
----
+Long-press (or tap) any message to bring up the action menu:
 
-## 五、记忆系统
+- Copy: copy the full message text to the clipboard.
+- Regenerate: ask the assistant to answer this message again (for assistant messages).
+- Delete: delete this message (useful for retracting a mis-sent message; a confirmation dialog appears).
+- Edit: edit the user message content and resend.
+- Quote: reply quoting this message's content (a quote block is shown at the top of the message).
+- Translate: translate the message into a target language (tapping "Translate" brings up a language submenu to pick the target language).
+- Read aloud: read this message aloud with TTS (only available for assistant messages).
+- Favorite: add this message to favorites.
+- Share: share the message content to other apps.
 
-Muse 的记忆是多层级的:
-
-### 长期记忆
-
-对话过程中,系统会从历史消息里提炼 Fact(事实),存入数据库,再编译成 markdown 摘要。下次对话时,这份摘要会注入到系统提示词里,所以助手"记得"你之前说过的事。
-
-关键点(必须对用户坦诚):
-
-- 长期记忆以"编译后的摘要"形式注入,不是逐条 fact。助手看到的是摘要文本。
-- 提炼发生在 daily pipeline 时点(通常需要等几小时),不是实时的。你刚说的事实可能还没被记住。
-- 记忆开关在助手详情 → 记忆子页(默认开启)。
-- 摘要长度(token 预算)可在 设置 → 记忆 调整。
-
-### Pinned Memories(固定记忆)
-
-把"必须记住"的关键信息固定下来,不依赖 daily pipeline,每次对话都注入。
-
-- 对话中直接说"记住:我不喝咖啡",助手会用 pin_memory 工具帮你钉住。
-- 也可以在 设置 → 助手 → 记忆页 手动添加。
-- 固定记忆存在本地文件,有大小和条目数上限保护。
-
-入口:设置 → 记忆,或 设置 → 助手 → 记忆子页。
+The last assistant message also shows quick "Copy" and "Regenerate" buttons, so you can operate without opening the menu.
 
 ---
 
-## 六、知识库
+## 4. Assistant Management
 
-用户可以把文档导入知识库,助手通过 knowledge_search 工具按标题和内容全文检索。
+### Multiple Assistants
 
-- 支持格式:txt / md / csv / json。
-- 入口:设置 → 知识库。
-- 导入后,助手在回答时会自动检索相关文档作为参考。
-- 注意:知识库里 fileType="devdoc" 的条目是内部开发文档(本文档即是),只供 LLM 查询,不在知识库 UI 列表显示。
+Shaheen 2 supports creating multiple assistants, each an independent individual with its own name, avatar, system prompt, model, tools, memory, and conversation history. A "Default Assistant" is included by default.
 
----
+Entry: Settings → Assistant. Here you can create, switch, and delete assistants.
 
-## 七、定时任务
+### Five Sub-Pages of Assistant Details
 
-让助手按 cron 表达式定时执行任务,即使你不打开 app。
+Go to Settings → Assistant → select an assistant, and you will see 5 sub-pages:
 
-- 入口:设置 → 定时任务。
-- 用标准 cron 表达式(分 时 日 月 周)配置触发时间。
-- 到点后助手会生成消息并弹通知。
-- 可以启用/禁用/删除已有任务。
+1. Basic: name, sort order, emoji avatar or image avatar, chat background image and opacity.
+2. Prompt: system prompt (role setting), message template (supports {{variable}} placeholders), preset messages (fixed context injected before the chat starts).
+3. Extensions: enabled local tools, MCP servers, Skills, Lorebook, quick messages, Prompt injection, custom request headers / request body.
+4. Memory: whether to inject long-term memory, whether to use global memory, whether to inject recent session summaries, whether to enable time reminders.
+5. Advanced: model ID, temperature, top-p, max tokens, context message count, reasoning level, whether to stream output.
 
----
-
-## 八、主动消息
-
-助手会像微信好友一样,按设定间隔主动给你发消息并弹通知。
-
-- 入口:设置 → 聊天 → 主动消息。
-- 配置:开关 + 发送间隔(1 / 2 / 4 / 8 / 12 / 24 小时)。
-- 到点后用默认助手 + 第一个会话的上下文生成消息,插入会话并弹高优先级通知(标题"X 来消息了")。
-- 风格:像真人发微信,短纯文本,不带前缀。
-
-没收到主动消息的常见原因:开关没开 / 还没到间隔 / 默认助手或会话为空 / 通知权限没授。
+Each assistant is configured independently and does not affect others. After switching assistants, you see the corresponding assistant's conversations and settings.
 
 ---
 
-## 九、群聊(多 Agent 协作)
+## 5. Memory System
 
-让多个助手在一个群里协作讨论。
+Shaheen 2's memory is multi-layered:
 
-- 入口:设置 → Agent。
-- 创建群聊,选择参与的助手。
-- 群聊里每个助手按自己的人格和专长发言,可以读到其他成员的消息。
-- 助手如果觉得当前话题不需要自己发言,可以跳过本轮。
-- 适合需要不同视角的场景(比如让一个擅长写作的和一个擅长分析的助手讨论同一件事)。
+### Long-Term Memory
 
----
+During a conversation, the system extracts Facts from historical messages, stores them in the database, and compiles them into a markdown summary. In the next conversation, this summary is injected into the system prompt, so the assistant "remembers" what you said before.
 
-## 十、独立翻译页
+Key points (must be honest with users):
 
-Muse 有一个独立的全屏翻译页面(iOS 风格)。
+- Long-term memory is injected as a "compiled summary", not as individual facts. What the assistant sees is the summary text.
+- Extraction happens at the daily pipeline time (usually you have to wait a few hours), not in real time. A fact you just mentioned may not have been remembered yet.
+- The memory toggle is in Assistant Details → Memory sub-page (on by default).
+- The summary length (token budget) can be adjusted in Settings → Memory.
 
-- 入口:设置 → 工具 → AI 翻译。
-- 布局:顶部选目标语言,中间输入框(带粘贴/清空按钮),下方显示翻译结果(可选中复制),右下角悬浮按钮开始翻译或取消。
-- 翻译中会显示进度条。
-- 也可以在消息长按菜单里选"翻译"翻译单条消息(会弹语言子菜单)。
+### Pinned Memories
 
----
+Pin "must-remember" key information so it does not depend on the daily pipeline and is injected in every conversation.
 
-## 十一、主题与个性化
+- In a conversation, simply say "Remember: I don't drink coffee", and the assistant will pin it for you using the pin_memory tool.
+- You can also add it manually in Settings → Assistant → Memory page.
+- Pinned memories are stored in a local file, with size and entry-count limits for protection.
 
-### 主题
-
-入口:设置 → 外观。
-
-主题系统有三层优先级(从高到低):
-
-1. 动态色(Material You):Android 12+ 跟随系统壁纸取色(默认关闭,需手动开)。
-2. 自定义主题:基于种子色用 HCT 算法生成完整配色(见下文)。
-3. 预设主题:6 套手工调校的配色(warm_paper 暖纸 / sakura 樱花 / ocean 海洋 / spring 春天 / autumn 秋日 / amoled 纯黑)。
-
-主题模式(系统跟随 / 浅色 / 深色)和字号档位(小 / 中 / 大 / 超大)也在这里调。
-
-### 自定义主题
-
-在 设置 → 外观 可以创建自定义主题:
-
-- 选 1~3 个种子色(primary 必填,secondary / tertiary 可选)。
-- 系统用 Material Color Utilities 的 HCT 色彩空间自动派生完整配色(和 Android 12+ 壁纸动态色同款算法)。
-- 你只需选种子色,不用理解 50 多个颜色字段。
-
-### 用户画像
-
-入口:设置 → 模型与服务 → 用户画像。
-
-可填写:助手名字、用户称呼、年龄、城市、MBTI、职业、兴趣。这些信息会注入系统提示词,让助手更了解你、用你喜欢的称呼和你说话。
+Entry: Settings → Memory, or Settings → Assistant → Memory sub-page.
 
 ---
 
-## 十二、备份与导入
+## 6. Knowledge Base
 
-### 备份
+Users can import documents into the knowledge base, and the assistant retrieves them by title and content via the knowledge_search tool.
 
-入口:设置 → 备份(或 设置 → 数据与备份)。
-
-- 本地备份:导出 / 导入应用数据到本地文件。
-- 云备份:支持 S3 和 WebDAV,可查询余额。
-- 备份内容包括会话、消息、助手、设置等。
-
-### 导入第三方客户端配置
-
-在供应商设置里可以导入 CherryStudio 和 Chatbox 导出的 JSON:
-
-- 自动嗅探格式,不用手动选来源。
-- 只导入供应商和模型(API Key、Base URL、模型列表)。
-- 不导入对话历史(格式不兼容)。
-- 不导入助手、快捷消息等高级配置。
-- id 冲突时跳过,不覆盖已有配置。
+- Supported formats: txt / md / csv / json.
+- Entry: Settings → Knowledge Base.
+- After import, the assistant automatically retrieves relevant documents as reference when answering.
+- Note: entries with fileType="devdoc" in the knowledge base are internal development documents (this document is one), only for LLM queries and not shown in the knowledge base UI list.
 
 ---
 
-## 十三、Web 服务器
+## 7. Scheduled Tasks
 
-Muse 内嵌一个 Ktor 服务器,支持局域网内远程调用 app 能力。
+Let the assistant execute tasks on a cron schedule, even if you do not open the app.
 
-- 入口:设置 → Web 服务器(或 设置 → 数据与备份 → Web 服务器)。
-- 启用后,同一局域网的设备可以通过 HTTP + JWT 远程调用。
-- 配合 mDNS 服务发现,自动在局域网广播。
-- 适合在电脑上调用手机端助手能力的场景。
-
----
-
-## 十四、实用技巧
-
-### 让助手记住信息
-
-对话中直接说"记住:我的生日是 5 月 3 号",助手会用 pin_memory 工具固定下来,下次对话也能记得。不依赖 daily pipeline,立即生效。
-
-如果只是随口提到,可能要等几小时 daily pipeline 跑完才被记住。重要信息建议显式说"记住"。
-
-### 用深度思考处理复杂问题
-
-遇到需要推理的问题(数学、逻辑、方案对比),在输入栏 + 号菜单开"深度思考",助手会花更多思考预算深入分析。普通闲聊不用开,会更慢。
-
-### 翻译技巧
-
-短句翻译直接在消息长按菜单选"翻译"。整段文本翻译去 设置 → 工具 → AI 翻译,有独立全屏页面,支持粘贴、清空、复制结果。
-
-### 表情包与富媒体
-
-助手可以输出 SVG 图形、HTML 片段、图表(柱状/折线/饼图)。需要可视化数据时直接说"画个图表"或"用图展示"。
-
-### 自定义主题
-
-觉得预设主题不满意,去 设置 → 外观 创建自定义主题,选一个喜欢的种子色,系统自动派生完整配色。
-
-### 让助手用你喜欢的称呼
-
-去 设置 → 模型与服务 → 用户画像 填"用户称呼"(比如"老板")和"助手名字"(比如"小缪"),对话中助手就会这样自称和称呼你。
-
-### 多助手分工
-
-创建多个助手各司其职(一个专门翻译、一个专门写代码、一个专门聊天),在 设置 → 助手 切换。还可以建群聊让它们协作。
-
-### 省流量
-
-闲聊不用开联网搜索;只有需要实时信息(新闻、天气、股价)时再开。深度思考也一样,按需开启。
+- Entry: Settings → Scheduled Tasks.
+- Configure the trigger time with a standard cron expression (minute hour day month weekday).
+- At the scheduled time, the assistant generates a message and pops a notification.
+- Existing tasks can be enabled / disabled / deleted.
 
 ---
 
-## 十五、常见问题
+## 8. Proactive Messaging
 
-### 助手不记得我之前说的话?
+The assistant will proactively send you messages on a set interval and pop notifications, like a WeChat friend.
 
-检查助手详情 → 记忆子页的记忆开关是否开启。长期记忆是编译后的摘要,不是逐条 fact,而且 daily pipeline 要等几小时才跑。重要信息建议说"记住:XXX"用 pin_memory 固定,或去 设置 → 助手 → 记忆页手动添加。
+- Entry: Settings → Chat → Proactive Messages.
+- Configuration: toggle + send interval (1 / 2 / 4 / 8 / 12 / 24 hours).
+- At the scheduled time, a message is generated using the default assistant + the first session's context, inserted into the session, and a high-priority notification is shown (title "X has a new message").
+- Style: like a real person sending a WeChat message, short plain text, with no prefix.
 
-### 联网搜索没结果?
+Common reasons for not receiving proactive messages: the toggle is off / the interval has not been reached / the default assistant or session is empty / notification permission is not granted.
 
-检查 设置 → 模型与服务 → Web 搜索 里的搜索引擎配置。默认 Bing 不需要 Key,但如果网络受限可能抓不到。可以换 SearXNG(自托管)或 Tavily(需 Key)。另外确认输入栏 + 号菜单的"联网搜索"开关是开的。
+---
 
-### 翻译失败?
+## 9. Group Chat (Multi-Agent Collaboration)
 
-独立翻译页需要配置过模型供应商才能用。检查 设置 → 模型与服务 里至少有一个可用供应商。消息长按菜单的"翻译"同理。如果模型本身不支持,换一个支持的模型。
+Let multiple assistants collaborate and discuss in one group.
 
-### 主题不应用?
+- Entry: Settings → Agent.
+- Create a group chat and select the participating assistants.
+- In the group chat, each assistant speaks according to its own persona and expertise, and can read other members' messages.
+- If an assistant feels the current topic does not need its input, it can skip this round.
+- Suitable for scenarios that need different perspectives (e.g. having one assistant good at writing and one good at analysis discuss the same thing).
 
-检查 设置 → 外观 的主题选择。如果开了动态色(Android 12+),系统壁纸变化才会影响配色。自定义主题需要先创建再选中。主题模式(系统跟随/浅色/深色)单独控制明暗。
+---
 
-### 主动消息没收到?
+## 10. Standalone Translate Page
 
-检查 设置 → 聊天 → 主动消息 开关是否开启、间隔是否到了、通知权限是否授予。还需要至少有一个会话和默认助手存在,否则没有上下文生成消息。
+Shaheen 2 has a standalone full-screen translate page (iOS style).
 
-### 引导页怎么重新看?
+- Entry: Settings → Tools → AI Translate.
+- Layout: select the target language at the top, input box in the middle (with paste / clear buttons), translation result shown below (selectable for copying), floating button at the bottom right to start or cancel translation.
+- A progress bar is shown during translation.
+- You can also select "Translate" in the message long-press menu to translate a single message (a language submenu will pop up).
 
-引导页只在首次启动(且没有供应商时)显示。想重新看可以去 设置 → 关于 → 重新显示引导。修改称呼则去 设置 → 模型与服务 → 用户画像。
+---
 
-### 深度思考开了但没变化?
+## 11. Themes and Personalization
 
-深度思考需要当前模型支持 reasoning。有些模型不支持高强度推理。另外深度思考只对当次对话生效,不会持久化,下次对话恢复助手默认设置。
+### Theme
 
-### 怎么导入其他 app 的配置?
+Entry: Settings → Appearance.
 
-在供应商设置里导入 CherryStudio 或 Chatbox 导出的 JSON,自动嗅探格式,只导入供应商和模型。对话历史和高级配置不导入。
+The theme system has three layers of priority (from high to low):
+
+1. Dynamic color (Material You): Android 12+ follows the system wallpaper to pick colors (off by default, needs to be turned on manually).
+2. Custom theme: generates a full color scheme from a seed color using the HCT algorithm (see below).
+3. Preset theme: 6 hand-tuned color schemes (warm_paper, sakura, ocean, spring, autumn, amoled).
+
+Theme mode (Follow system / Light / Dark) and font size tier (Small / Medium / Large / Extra large) are also adjusted here.
+
+### Custom Theme
+
+In Settings → Appearance you can create a custom theme:
+
+- Pick 1~3 seed colors (primary is required, secondary / tertiary are optional).
+- The system auto-derives a full color scheme using Material Color Utilities' HCT color space (the same algorithm as Android 12+ wallpaper dynamic color).
+- You only need to pick the seed color; you do not need to understand the 50+ color fields.
+
+### User Profile
+
+Entry: Settings → Models & Services → User Profile.
+
+You can fill in: assistant name, user nickname, age, city, MBTI, occupation, interests. This information is injected into the system prompt so the assistant knows you better and addresses you the way you like.
+
+---
+
+## 12. Backup and Import
+
+### Backup
+
+Entry: Settings → Backup (or Settings → Data & Backup).
+
+- Local backup: export / import app data to a local file.
+- Cloud backup: supports S3 and WebDAV, with balance query.
+- Backup contents include sessions, messages, assistants, settings, etc.
+
+### Importing Third-Party Client Configurations
+
+In the provider settings, you can import JSON exported by CherryStudio and Chatbox:
+
+- Format is auto-sniffed; you do not need to select the source manually.
+- Only providers and models are imported (API Key, Base URL, model list).
+- Conversation history is not imported (incompatible format).
+- Advanced configurations such as assistants and quick messages are not imported.
+- On id conflict, the entry is skipped and existing configurations are not overwritten.
+
+---
+
+## 13. Web Server
+
+Shaheen 2 embeds a Ktor server that supports remote invocation of app capabilities within the local network.
+
+- Entry: Settings → Web Server (or Settings → Data & Backup → Web Server).
+- Once enabled, devices on the same local network can invoke it remotely via HTTP + JWT.
+- Combined with mDNS service discovery, it auto-broadcasts on the local network.
+- Suitable for scenarios where you invoke phone-side assistant capabilities from a computer.
+
+---
+
+## 14. Practical Tips
+
+### Let the Assistant Remember Information
+
+In a conversation, simply say "Remember: my birthday is May 3", and the assistant will pin it using the pin_memory tool, so it remembers it in the next conversation too. It does not depend on the daily pipeline and takes effect immediately.
+
+If you only mention something in passing, it may take a few hours for the daily pipeline to run before it is remembered. For important information, explicitly say "Remember".
+
+### Use Deep Thinking for Complex Problems
+
+When you encounter a problem that needs reasoning (math, logic, plan comparison), turn on "Deep Thinking" in the input bar's "+" menu, and the assistant will spend more thinking budget to analyze deeply. For casual chat, do not turn it on; it will be slower.
+
+### Translation Tips
+
+For short sentence translation, use "Translate" in the message long-press menu. For translating a whole paragraph of text, go to Settings → Tools → AI Translate, which has a standalone full-screen page that supports paste, clear, and copy result.
+
+### Stickers and Rich Media
+
+The assistant can output SVG graphics, HTML snippets, and charts (bar / line / pie). When you need to visualize data, just say "draw a chart" or "show it with a chart".
+
+### Custom Theme
+
+If you are not satisfied with the preset themes, go to Settings → Appearance to create a custom theme, pick a seed color you like, and the system will auto-derive a full color scheme.
+
+### Let the Assistant Use Your Preferred Nickname
+
+Go to Settings → Models & Services → User Profile, fill in "User nickname" (e.g. "Boss") and "Assistant name" (e.g. "Xiao Miao"), and the assistant will refer to itself and to you that way in conversations.
+
+### Division of Labor Among Multiple Assistants
+
+Create multiple assistants, each with its own role (one for translation, one for coding, one for chatting), and switch between them in Settings → Assistant. You can also create a group chat to let them collaborate.
+
+### Save Data
+
+For casual chat, do not turn on Web Search; only turn it on when you need real-time information (news, weather, stock prices). The same applies to Deep Thinking; enable it on demand.
+
+---
+
+## 15. FAQ
+
+### The assistant does not remember what I said before?
+
+Check whether the memory toggle in Assistant Details → Memory sub-page is on. Long-term memory is a compiled summary, not individual facts, and the daily pipeline takes a few hours to run. For important information, it is recommended to say "Remember: XXX" to pin it with pin_memory, or add it manually in Settings → Assistant → Memory page.
+
+### Web search returns no results?
+
+Check the search engine configuration in Settings → Models & Services → Web Search. The default Bing does not need a Key, but if the network is restricted, scraping may fail. You can switch to SearXNG (self-hosted) or Tavily (requires Key). Also confirm that the "Web Search" toggle in the input bar's "+" menu is on.
+
+### Translation fails?
+
+The standalone translate page requires a configured model provider to work. Check that there is at least one available provider in Settings → Models & Services. The same applies to "Translate" in the message long-press menu. If the model itself does not support it, switch to a model that does.
+
+### The theme is not applied?
+
+Check the theme selection in Settings → Appearance. If dynamic color (Android 12+) is on, the color scheme only changes when the system wallpaper changes. A custom theme must be created first and then selected. Theme mode (Follow system / Light / Dark) controls light/dark separately.
+
+### No proactive messages received?
+
+Check whether the toggle in Settings → Chat → Proactive Messages is on, whether the interval has been reached, and whether notification permission is granted. You also need at least one session and a default assistant, otherwise there is no context to generate a message.
+
+### How to view the onboarding page again?
+
+The onboarding page is only shown on first launch (when there is no provider). To view it again, go to Settings → About → Show onboarding again. To change your nickname, go to Settings → Models & Services → User Profile.
+
+### Deep Thinking is on but nothing changes?
+
+Deep Thinking requires the current model to support reasoning. Some models do not support high-intensity reasoning. Also, Deep Thinking only applies to the current conversation, is not persisted, and reverts to the assistant's default setting in the next conversation.
+
+### How to import configurations from other apps?
+
+In the provider settings, import JSON exported by CherryStudio or Chatbox. The format is auto-sniffed, and only providers and models are imported. Conversation history and advanced configurations are not imported.

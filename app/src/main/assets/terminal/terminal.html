@@ -39,7 +39,7 @@
     try { fit.fit(); } catch (e) {}
     postSize();
     window.addEventListener("resize", function () { refit(); });
-    // 尺寸校准:内联像素尺寸钉死+多次重试(fit 在加载早期可能测到 0 高度 → rows=1)
+    // Size calibration: pin the inline pixel size + retry multiple times (fit may measure 0 height early in loading -> rows=1)
     function refit() {
       var el = document.getElementById("term");
       if (el) {
@@ -76,7 +76,7 @@
     }
     function clearTerm() { term.clear(); }
     window.MuseTerm = { writeB64: writeB64, clearTerm: clearTerm, refit: refit };
-    // 调试探针:供宿主回读内部状态
+    // Debug probe: lets the host read back internal state
     window.__t = term;
 
     if (window.MuseBridge && window.MuseBridge.onReady) {

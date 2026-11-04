@@ -154,7 +154,7 @@ button.quiet:hover { color: var(--accent-strong); background: var(--accent-soft)
 .composer { width: min(960px, 100%); justify-self: center; padding: 12px clamp(20px, 6vw, 82px) max(20px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, var(--muse-color-web-light-bg-a82) 20%); }
 .provider-row { display: flex; gap: 7px; margin: 0 0 8px; }
 .provider-row select, .provider-row input { flex: 0 1 150px; min-height: 34px; padding: 0 10px; border-radius: var(--radius-xs); font-size: var(--muse-type-web-caption); }
-.provider-row input[aria-label="模型"] { flex: 0 1 132px; }
+.provider-row input[aria-label="Model"] { flex: 0 1 132px; }
 .provider-row input[aria-label="API Key"] { flex: 1 1 190px; }
 .send-row { display: flex; align-items: flex-end; gap: 8px; padding: 7px; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--muse-color-web-light-surface-raised-a88); box-shadow: var(--shadow-sm); }
 .send-row textarea { min-height: 49px; max-height: 180px; flex: 1; padding: 9px 10px; border: 0; border-radius: var(--radius-md); background: transparent; line-height: 1.5; }

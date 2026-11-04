@@ -1,108 +1,108 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# 联网搜索指南 完整版
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Web Search Guide Complete Edition
 
-> 触发场景: 用户问"联网搜索怎么开""怎么配置搜索引擎""搜索结果不准""搜索超时""web_search 和 web_fetch 什么区别""Bing/Tavily/SearXNG 怎么选""要不要 API key"时,参考本文档据实回答。
-> 本文档基于源码 WebSearchService.kt / SkillExecutor.kt 的真实实现,禁止编造不存在的 provider 或参数。
+> Trigger scenario: when the user asks "how do I turn on web search" "how do I configure a search engine" "search results are inaccurate" "search timed out" "what is the difference between web_search and web_fetch" "how do I choose between Bing/Tavily/SearXNG" "do I need an API key", refer to this document and answer truthfully.
+> This document is based on the real implementation in the source files WebSearchService.kt / SkillExecutor.kt; do not fabricate providers or parameters that do not exist.
 
-## 一、概述
+## 1. Overview
 
-Muse 的联网搜索由两个工具承载:
-- **web_search**: 关键词搜索,返回标题 + URL + 摘要列表(给 LLM 挑选)
-- **web_fetch**: 抓取指定 URL 的网页正文(读全文)
+Shaheen 2's web search is carried by two tools:
+- **web_search**: keyword search, returns a list of titles + URLs + snippets (for the LLM to choose from)
+- **web_fetch**: fetches the body text of a given URL web page (to read the full text)
 
-搜索由三种 provider 实现,按用户配置切换:Bing(默认,免 key)/ SearXNG(自托管,免 key)/ Tavily(需 API key)。
+The search is implemented by three providers, switched according to the user's configuration: Bing (default, no key) / SearXNG (self-hosted, no key) / Tavily (API key required).
 
-在聊天中输入栏"+"号菜单开启"联网搜索"后,LLM 自主决定何时调用这两个工具;不开这个开关,LLM 也可以按需调用(工具始终在 schema 里),开关只是让模型"更倾向搜索"的提示。
+After turning on "Web Search" in the "+" menu of the chat input bar, the LLM decides on its own when to invoke these two tools; even without turning this switch on, the LLM can also invoke them as needed (the tools are always in the schema); the switch is only a hint that makes the model "more inclined to search".
 
-## 二、三种 Provider 详解
+## 2. Detailed Explanation of the Three Providers
 
-### 1. BingProvider(默认)
+### 1. BingProvider (Default)
 
-| 项 | 值 |
+| Item | Value |
 |---|---|
-| URL | `https://cn.bing.com/search?q={编码后的query}&count={maxResults*2}` |
-| 实现 | HTML 抓取 + 正则解析 |
-| API key | 不需要 |
-| 解析 | 匹配 `<li class="b_algo">` 块;块内 `<h2><a href="URL">title</a></h2>` 取标题和链接;摘要优先 `<p class="b_lineclamp...">`,回退 `<div class="b_caption">` 内的 `<p>` |
+| URL | `https://cn.bing.com/search?q={encoded query}&count={maxResults*2}` |
+| Implementation | HTML fetching + regex parsing |
+| API key | Not required |
+| Parsing | Match `<li class="b_algo">` blocks; inside a block, `<h2><a href="URL">title</a></h2>` takes the title and link; the snippet prefers `<p class="b_lineclamp...">`, falling back to the `<p>` inside `<div class="b_caption">` |
 | User-Agent | `Mozilla/5.0 (Linux; Android 12) muse/1.0` |
-| 特点 | 零配置开箱即用;解析依赖 Bing 页面结构,页面改版可能失效(此时回退空结果,不会崩溃) |
+| Characteristics | Zero configuration, works out of the box; parsing depends on Bing's page structure, and a page redesign may break it (in that case it falls back to an empty result and will not crash) |
 
-### 2. SearXNGProvider(自托管)
+### 2. SearXNGProvider (Self-Hosted)
 
-| 项 | 值 |
+| Item | Value |
 |---|---|
-| URL | `{endpoint}/search?q={query}&format=json&categories=general&language=zh-CN` |
-| 默认 endpoint | `https://searx.be`(公共实例,可能不稳定) |
-| 实现 | JSON 解析 `results` 数组,取 `title` / `url` / `content` |
-| API key | 不需要(自托管实例;公共实例可能限流) |
-| 配置 | 设置 → 模型与服务 → Web 搜索,填自建实例 endpoint |
-| 特点 | 隐私友好、可自控;需自己部署实例才稳定 |
+| URL | `{endpoint}/search?q={query}&format=json&categories=general&language=en` |
+| Default endpoint | `https://searx.be` (public instance, may be unstable) |
+| Implementation | JSON parsing of the `results` array, taking `title` / `url` / `content` |
+| API key | Not required (self-hosted instance; public instances may rate-limit) |
+| Configuration | Settings → Models & Services → Web Search, fill in the endpoint of your self-built instance |
+| Characteristics | Privacy-friendly, self-controllable; only stable if you deploy your own instance |
 
-### 3. TavilyProvider(API)
+### 3. TavilyProvider (API)
 
-| 项 | 值 |
+| Item | Value |
 |---|---|
-| URL | `POST {endpoint}/search`,默认 `https://api.tavily.com` |
+| URL | `POST {endpoint}/search`, default `https://api.tavily.com` |
 | Body | `{ api_key, query, max_results, search_depth="basic" }` |
-| API key | **必需**,无 key 返回空列表 |
-| 配置 | 设置 → 模型与服务 → Web 搜索,填 API key |
-| 特点 | 结果质量高、稳定;但需要去 tavily.com 申请 key(免费额度) |
+| API key | **Required**; without a key it returns an empty list |
+| Configuration | Settings → Models & Services → Web Search, fill in the API key |
+| Characteristics | High-quality, stable results; but you need to go to tavily.com to apply for a key (free quota) |
 
-## 三、Provider 切换与配置
+## 3. Provider Switching and Configuration
 
-### 配置入口
-1. **设置 → 模型与服务 → Web 搜索**: 配置 provider / apiKey / endpoint(高级配置)
-2. **设置 → 聊天 → 默认搜索引擎**: 快速切换 auto / searxng / tavily / bing
+### Configuration Entry Points
+1. **Settings → Models & Services → Web Search**: configure provider / apiKey / endpoint (advanced configuration)
+2. **Settings → Chat → Default Search Engine**: quickly switch auto / searxng / tavily / bing
 
-### 分发机制
-- `CompositeWebSearchService` 根据 `WebSearchConfig.providerName` 构造对应 delegate
-- 支持名: `"SearXNG"` / `"Tavily"` / `"Bing"`(默认 `"Bing"`)
-- 运行时切换 provider 会重建 delegate(synchronized 同步,切换即时生效)
+### Distribution Mechanism
+- `CompositeWebSearchService` constructs the corresponding delegate according to `WebSearchConfig.providerName`
+- Supported names: `"SearXNG"` / `"Tavily"` / `"Bing"` (default `"Bing"`)
+- Switching the provider at runtime rebuilds the delegate (synchronized; the switch takes effect immediately)
 
-## 四、web_fetch 实现细节(抓网页正文)
+## 4. web_fetch Implementation Details (Fetching Web Page Body Text)
 
-- 用 OkHttpClient(named("chat")) 发 GET,User-Agent: `Mozilla/5.0 (Android LLM client)`
-- **抓取上限 20 万字符**(take(200_000))
-- **返回上限 5 万字符**(take(50_000))
-- htmlToText 处理链: 先移除 script/style/noscript 块 → 再去所有 HTML 标签 → 最后 Html.fromHtml 处理实体(&amp; &lt; 等)
-- 不用 Jsoup(避免 APK 体积增加)
-- 折叠连续空白
+- Uses OkHttpClient(named("chat")) to issue a GET, User-Agent: `Mozilla/5.0 (Android LLM client)`
+- **Fetch limit 200,000 characters** (take(200_000))
+- **Return limit 50,000 characters** (take(50_000))
+- htmlToText processing chain: first remove script/style/noscript blocks → then remove all HTML tags → finally use Html.fromHtml to process entities (&amp; &lt;, etc.)
+- Does not use Jsoup (to avoid increasing the APK size)
+- Collapses consecutive whitespace
 
-## 五、超时与网络参数
+## 5. Timeout and Network Parameters
 
-| 客户端 | connectTimeout | readTimeout | writeTimeout | 用途 |
+| Client | connectTimeout | readTimeout | writeTimeout | Purpose |
 |---|---|---|---|---|
-| named("chat") | 30s | 120s | 30s | web_fetch / 一般 LLM 请求 |
-| named("webSearch") | 8s | 15s | - | web_search 专用 |
+| named("chat") | 30s | 120s | 30s | web_fetch / general LLM requests |
+| named("webSearch") | 8s | 15s | - | Dedicated to web_search |
 
-web_search 用 8s 连接 + 15s 读,搜索慢的公共实例容易超时(表现为返回空结果),此时建议换 provider 或自建 SearXNG。
+web_search uses an 8s connection + 15s read; slow public search instances time out easily (shown as returning an empty result); in that case it is recommended to switch the provider or self-host SearXNG.
 
-## 六、用户常见问题 Q&A
+## 6. Common User Questions Q&A
 
-1. **"怎么开联网搜索"**: 聊天输入栏 + 号菜单 → 开启"联网搜索"。之后问需要实时信息的问题(新闻/价格/政策/版本)时,LLM 会自动调用 web_search。
-2. **"搜索结果不准/搜不到"**: ①确认用的是 Bing(默认)且网络正常;②Bing 页面改版可能影响解析,等更新;③可切换到 Tavily(需 key)或自建 SearXNG 更稳定;④搜索词尽量具体(中文关键词,避免口语整句)。
-3. **"要不要 API key"**: Bing 和自托管 SearXNG 不需要;Tavily 需要。
-4. **"web_search 和 web_fetch 什么区别"**: web_search 返回标题/URL/摘要列表(定位用);web_fetch 抓指定 URL 全文(精读用)。正确姿势是"先搜后读":web_search 找到候选 URL → web_fetch 读内容。
-5. **"搜索结果是不是实时"**: 是,每次调用都是实时请求搜索引擎,不是缓存。
-6. **"搜索会不会泄露我的隐私"**: 搜索请求走系统网络配置;Bing 查询会发给微软,介意隐私可用自托管 SearXNG。
-7. **"为什么搜出来英文结果"**: Bing 走 cn 域名,大部分中文 query 有中文结果;SearXNG 默认 language=zh-CN。Tavily 结果偏英文为主。
-8. **"搜索超时怎么办"**: 检查网络/代理;公共 SearXNG 实例不稳定建议换;Tavily 确认 key 有效且额度未超。
+1. **"How do I turn on web search"**: Chat input bar + menu → turn on "Web Search". After that, when you ask questions that need real-time information (news/prices/policies/versions), the LLM will automatically invoke web_search.
+2. **"Search results are inaccurate / cannot be found"**: ① Confirm you are using Bing (default) and the network is normal; ② A Bing page redesign may affect parsing, wait for an update; ③ You can switch to Tavily (key required) or self-hosted SearXNG for greater stability; ④ Make search terms as specific as possible (keywords in the language of the question — English or Roman Urdu — avoid whole colloquial sentences).
+3. **"Do I need an API key"**: Bing and self-hosted SearXNG do not need one; Tavily does.
+4. **"What is the difference between web_search and web_fetch"**: web_search returns a list of titles/URLs/snippets (for locating); web_fetch fetches the full text of a given URL (for close reading). The correct approach is "search first, then read": web_search finds candidate URLs → web_fetch reads the content.
+5. **"Are search results real-time"**: Yes, every invocation is a real-time request to the search engine, not a cache.
+6. **"Will searching leak my privacy"**: The search request goes through the system network configuration; Bing queries are sent to Microsoft; if you care about privacy, you can use self-hosted SearXNG.
+7. **"Why are the results in English"**: Results follow the language of the query — ask in English or Roman Urdu and the results come back in that language. Bing uses the cn domain; the SearXNG provider's preset sends `language=en` (a preset code value, see §2), so SearXNG results lean English even for non-English queries; Tavily results are mainly in English.
+8. **"What should I do about a search timeout"**: Check the network/proxy; public SearXNG instances are unstable, switching is recommended; for Tavily, confirm the key is valid and the quota has not been exceeded.
 
-## 七、LLM 调用要点
+## 7. Key Points for LLM Invocation
 
-- **何时用 web_search**: 用户问实时信息(新闻/价格/政策/天气/最新版本/人物近况)、需要外部验证的事实、用户明确要求"查一下/搜一下"时。
-- **何时用 web_fetch**: web_search 返回的候选 URL 中,标题/摘要不足以回答时;用户给了具体网址要求读内容时。
-- **参数**: query 用精炼关键词(不是整句口语);max_results 默认 5,最多 10。
-- **边界**: 单次搜索最多返回 10 条;网页正文超 5 万字符截断;抓取失败(超时/404/反爬)时如实说明,不要编造内容。
-- **先后顺序**: 先 web_search 定位 → 再 web_fetch 精读,不要跳过搜索直接猜 URL。
-- **失败降级**: 搜索返回空/超时,不要编造结果;告诉用户"当前搜索渠道不可用",建议检查网络或换 provider。
+- **When to use web_search**: when the user asks for real-time information (news/prices/policies/weather/latest versions/recent status of a person), facts that need external verification, or the user explicitly asks to "look it up / search for it".
+- **When to use web_fetch**: when, among the candidate URLs returned by web_search, the title/snippet is insufficient to answer; or when the user gives a specific URL and asks to read its content.
+- **Parameters**: use refined keywords in the user's language for the query (not whole colloquial sentences); max_results defaults to 5, maximum 10.
+- **Boundaries**: a single search returns at most 10 results; web page body text over 50,000 characters is truncated; when fetching fails (timeout/404/anti-scraping), state it truthfully and do not fabricate content.
+- **Order**: first use web_search to locate → then web_fetch to read closely; do not skip the search and guess a URL directly.
+- **Failure fallback**: if a search returns empty / times out, do not fabricate results; tell the user "the current search channel is unavailable", and suggest checking the network or switching provider.
 
-## 八、故障排查表
+## 8. Troubleshooting Table
 
-| 症状 | 可能原因 | 排查 |
+| Symptom | Possible Cause | Troubleshooting |
 |---|---|---|
-| web_search 一直空结果 | Bing 解析失效 / 网络不通 / 代理拦截 | 开 debug 日志看 WebSearchService;试切换 provider |
-| 切换 provider 不生效 | 配置保存失败 | 确认设置页保存成功;CompositeWebSearchService 是运行时重建,无需重启 |
-| web_fetch 抓不到正文 | 目标站反爬 / JS 渲染(内容动态加载) | 静态 HTML 可抓;JS 渲染页面抓不到是预期;告知用户 |
-| Tavily 空结果 | key 无效 / 额度超 / endpoint 填错 | 检查 key;Tavily 控制台看用量 |
-| 搜索慢 | 公共 SearXNG 实例拥塞 | 自建实例;或换 Bing(默认,较快) |
+| web_search always returns empty results | Bing parsing failure / network unreachable / proxy blocking | Turn on debug logs and look at WebSearchService; try switching provider |
+| Switching provider has no effect | Configuration save failed | Confirm the Settings page saved successfully; CompositeWebSearchService is rebuilt at runtime, no restart needed |
+| web_fetch cannot fetch body text | Target site anti-scraping / JS rendering (content loaded dynamically) | Static HTML can be fetched; being unable to fetch JS-rendered pages is expected; inform the user |
+| Tavily empty results | Key invalid / quota exceeded / endpoint filled in incorrectly | Check the key; check usage in the Tavily console |
+| Search is slow | Public SearXNG instance congestion | Self-host an instance; or switch to Bing (default, faster) |

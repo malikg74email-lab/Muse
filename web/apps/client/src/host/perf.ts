@@ -13,5 +13,5 @@ export function perfFlag(search: string): boolean {
 
 export function formatPerfLine(messages: number, elapsedMs: number): string {
   const ms = Number.isFinite(elapsedMs) ? elapsedMs.toFixed(1) : "?";
-  return `[muse perf] 快照渲染 ${messages} 条消息 / ${ms}ms`;
+  return `[muse perf] Snapshot rendered ${messages} messages / ${ms}ms`;
 }

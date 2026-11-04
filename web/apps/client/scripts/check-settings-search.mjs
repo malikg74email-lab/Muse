@@ -98,52 +98,52 @@ const titles = (query) => results(query).map((hit) => hit.title);
 try {
   // ── 1. 索引：只放可进入的条目与可归属的值 ────────────────────────
   const rows = mod.buildSettingsSearchRows(SNAPSHOT);
-  assert(rows.length === 4, `索引 4 行（2 个可进入条目 + 2 个可归属值）：实际 ${rows.length}`);
-  assert(!rows.some((row) => row.title === "小手机"), "enabled=false 的条目不进索引");
-  assert(!rows.some((row) => row.title === "隐私保护"), "开关条目不进索引（它就在分类页上，没有去处）");
-  assert(!rows.some((row) => row.title === "未知条目"), "未知 kind 的条目不进索引");
-  assert(!rows.some((row) => row.title.includes("Unmapped")), "归不到子页的值不进索引");
+  assert(rows.length === 4, `Index has 4 rows (2 navigable entries + 2 attributable values): actual ${rows.length}`);
+  assert(!rows.some((row) => row.title === "小手机"), "Entries with enabled=false are not indexed");
+  assert(!rows.some((row) => row.title === "隐私保护"), "Switch entries are not indexed (they live on the category page, with nowhere to go)");
+  assert(!rows.some((row) => row.title === "未知条目"), "Entries with an unknown kind are not indexed");
+  assert(!rows.some((row) => row.title.includes("Unmapped")), "Values that cannot be attributed to a subpage are not indexed");
 
   // ── 2. 过滤：条目名 / 分类名 / 值标题都能命中 ───────────────────
-  assert(titles("外观").includes("外观"), "按条目名命中");
-  assert(titles("聊天分类").includes("聊天"), "按分类名命中");
-  assert(titles("theme").includes("Theme Mode"), "按值行标题命中（键派生的词）");
-  assert(titles("THEME").includes("Theme Mode"), "大小写不敏感");
-  assert(titles("  theme  ").includes("Theme Mode"), "关键词两端空白被忽略");
-  assert(titles("外观").includes("Theme Mode"), "值也能通过「所属子页标题」命中");
-  assert(results("隐私").length === 0, "只有开关条目匹配时结果为空（开关不在索引里）");
-  assert(results("不存在的词").length === 0, "无匹配返回空数组");
-  assert(results("").length === 0, "空关键词不返回任何行（不刷 48 条）");
+  assert(titles("外观").includes("外观"), "Hit by entry name");
+  assert(titles("聊天分类").includes("聊天"), "Hit by category name");
+  assert(titles("theme").includes("Theme Mode"), "Hit by value row title (key-derived words)");
+  assert(titles("THEME").includes("Theme Mode"), "Case-insensitive");
+  assert(titles("  theme  ").includes("Theme Mode"), "Whitespace at both ends of the keyword is ignored");
+  assert(titles("外观").includes("Theme Mode"), "Values can also be hit via their owning subpage title");
+  assert(results("隐私").length === 0, "When only a switch entry matches, the result is empty (switches are not in the index)");
+  assert(results("不存在的词").length === 0, "No match returns an empty array");
+  assert(results("").length === 0, "An empty keyword returns no rows (does not flood with 48 rows)");
 
   // ── 3. 排序：标题命中优先于只命中面包屑的 ──────────────────────
   const appearanceHits = results("外观");
-  assert(appearanceHits[0]?.title === "外观", `标题命中排最前：${appearanceHits.map((hit) => hit.title).join(",")}`);
-  assert(appearanceHits.length === 2, "「外观」同时命中条目与它下面的值行");
+  assert(appearanceHits[0]?.title === "外观", `Title hit ranks first: ${appearanceHits.map((hit) => hit.title).join(",")}`);
+  assert(appearanceHits.length === 2, "The appearance query hits both the entry and the value row below it");
 
   // ── 4. 面包屑：分类 › 条目 ─────────────────────────────────────
   const entryHit = results("外观").find((hit) => hit.title === "外观");
   assert(
     entryHit !== undefined && mod.breadcrumbText(entryHit) === "外观分类 › 外观",
-    `条目面包屑：${entryHit === undefined ? "" : mod.breadcrumbText(entryHit)}`,
+    `Entry breadcrumb: ${entryHit === undefined ? "" : mod.breadcrumbText(entryHit)}`,
   );
   const valueHit = results("theme").find((hit) => hit.title === "Theme Mode");
   assert(
     valueHit !== undefined && mod.breadcrumbText(valueHit) === "外观 › Theme Mode",
-    `值行面包屑：${valueHit === undefined ? "" : mod.breadcrumbText(valueHit)}`,
+    `Value row breadcrumb: ${valueHit === undefined ? "" : mod.breadcrumbText(valueHit)}`,
   );
 
   // ── 5. 直达目标 ───────────────────────────────────────────────
   assert(
     entryHit?.target.kind === "entry" && entryHit.target.entryId === "appearance",
-    "条目结果指向对应子页的条目 id",
+    "Entry results point to the corresponding subpage entry id",
   );
   assert(
     valueHit?.target.kind === "value" &&
       valueHit.target.valueKey === "appearance.themeMode" &&
       valueHit.target.pageId === "appearance",
-    "值结果带上所属子页与要高亮的 key",
+    "Value results carry their owning subpage and the key to highlight",
   );
-  assert(mod.settingsPageTitle(SNAPSHOT, { id: "chat", entryIds: ["chat"], keyTokens: [] }) === "聊天", "子页标题取自目录条目");
+  assert(mod.settingsPageTitle(SNAPSHOT, { id: "chat", entryIds: ["chat"], keyTokens: [] }) === "聊天", "Subpage title comes from the catalog entry");
 
   // ── 6. 渲染：结果行 / 空态 / 提示 ─────────────────────────────
   const searchView = (query) =>
@@ -157,31 +157,31 @@ try {
       }),
     );
   const hitHtml = searchView("theme");
-  assert(hitHtml.includes("Theme Mode") && hitHtml.includes("外观 › Theme Mode"), "结果行同时给出标题与面包屑");
-  assert(hitHtml.includes('role="listbox"') && hitHtml.includes('role="option"'), "结果列表有 listbox/option 语义");
-  assert(hitHtml.includes('aria-label="退出搜索"'), "搜索态有关闭入口");
+  assert(hitHtml.includes("Theme Mode") && hitHtml.includes("外观 › Theme Mode"), "Result rows show both the title and the breadcrumb");
+  assert(hitHtml.includes('role="listbox"') && hitHtml.includes('role="option"'), "Result list has listbox/option semantics");
+  assert(hitHtml.includes("aria-label=\"Exit search\""), "Search state has a close entry point");
   const idle = searchView("");
-  assert(idle.includes("输入关键词") && !idle.includes('role="option"'), "空关键词时给提示，不列结果");
+  assert(idle.includes("Type to search categories, items and settings") && !idle.includes('role="option"'), "With an empty keyword, a hint is shown and no results are listed");
   const empty = searchView("不存在的词");
-  assert(empty.includes("没有找到匹配") && empty.includes("清空搜索"), "无匹配时给提示与「清空搜索」");
-  assert(empty.includes('role="status"'), "空态有 status 语义");
+  assert(empty.includes("No settings match") && empty.includes("Clear search"), "With no match, a hint and 'Clear search' are shown");
+  assert(empty.includes('role="status"'), "Empty state has status semantics");
   const withResult = searchView("外观");
-  assert((withResult.match(/role="option"/g) ?? []).length === 2, "渲染出的结果条数与过滤结果一致");
+  assert((withResult.match(/role="option"/g) ?? []).length === 2, "The number of rendered results matches the filtered results");
 
   // ── 7. 接线：快捷键与高亮 ─────────────────────────────────────
   const hostSettings = readFileSync(join(ROOT, "src", "host", "HostSettings.tsx"), "utf8");
-  assert(hostSettings.includes('event.key === "/"') && hostSettings.includes("metaKey"), "支持 / 与 Cmd/Ctrl+K 打开搜索");
-  assert(hostSettings.includes('event.key.toLowerCase() === "k"'), "Cmd/Ctrl+K 的判断在");
-  assert(hostSettings.includes("event.preventDefault()"), "快捷键会阻止默认行为");
-  assert(hostSettings.includes('aria-label={t("settings.search")}'), "分类页顶部有搜索入口");
-  assert(hostSettings.includes("host-settings-search"), "搜索入口是吸顶容器");
-  assert(hostSettings.includes("<SettingsSearch"), "全屏搜索态挂在这里");
-  assert(hostSettings.includes("focusKey: target.valueKey"), "值结果直达时把 focusKey 传给子页");
+  assert(hostSettings.includes('event.key === "/"') && hostSettings.includes("metaKey"), "Supports / and Cmd/Ctrl+K to open search");
+  assert(hostSettings.includes('event.key.toLowerCase() === "k"'), "The Cmd/Ctrl+K check is present");
+  assert(hostSettings.includes("event.preventDefault()"), "The shortcut prevents the default behaviour");
+  assert(hostSettings.includes('aria-label={t("settings.search")}'), "The category page has a search entry at the top");
+  assert(hostSettings.includes("host-settings-search"), "The search entry is a sticky container");
+  assert(hostSettings.includes("<SettingsSearch"), "The full-screen search state is mounted here");
+  assert(hostSettings.includes("focusKey: target.valueKey"), "A direct value result passes focusKey to the subpage");
 
   const searchSource = readFileSync(join(ROOT, "src", "host", "SettingsSearch.tsx"), "utf8");
-  assert(/event\.key (===|!==) "Escape"/.test(searchSource), "搜索态 Esc 关闭");
-  assert(searchSource.includes('event.key === "ArrowDown"') && searchSource.includes('event.key === "ArrowUp"'), "上下键移动选中");
-  assert(searchSource.includes('event.key !== "Enter"') && searchSource.includes("onPick(hit)"), "Enter 进入选中项");
+  assert(/event\.key (===|!==) "Escape"/.test(searchSource), "Search state closes with Esc");
+  assert(searchSource.includes('event.key === "ArrowDown"') && searchSource.includes('event.key === "ArrowUp"'), "Up/Down keys move the selection");
+  assert(searchSource.includes('event.key !== "Enter"') && searchSource.includes("onPick(hit)"), "Enter opens the selected item");
 
   const valuePageHtml = render(
     mod.createElement(mod.SettingsValuePage, {
@@ -197,18 +197,18 @@ try {
       onWrite: () => undefined,
     }),
   );
-  assert(valuePageHtml.includes("host-setting-highlight"), "直达时高亮目标行");
-  assert((valuePageHtml.match(/host-setting-highlight/g) ?? []).length === 1, "只高亮一行");
-  assert(/host-setting-highlight[\s\S]{0,400}Show Tool Calls/.test(valuePageHtml), "高亮的是结果指向的那一行");
+  assert(valuePageHtml.includes("host-setting-highlight"), "Direct navigation highlights the target row");
+  assert((valuePageHtml.match(/host-setting-highlight/g) ?? []).length === 1, "Only one row is highlighted");
+  assert(/host-setting-highlight[\s\S]{0,400}Show Tool Calls/.test(valuePageHtml), "The highlighted row is the one the result points to");
 
   const css = readFileSync(join(ROOT, "src", "styles.css"), "utf8");
   for (const selector of ["host-settings-search", "host-search-trigger", "host-search-result", "host-search-empty", "host-setting-highlight"]) {
-    assert(css.includes(`.${selector}`), `样式里定义了 .${selector}`);
+    assert(css.includes(`.${selector}`), `Styles define .${selector}`);
   }
-  assert(/\.host-settings-search\s*\{[^}]*position:\s*sticky/.test(css), "搜索入口是吸顶的");
+  assert(/\.host-settings-search\s*\{[^}]*position:\s*sticky/.test(css), "The search entry is sticky");
 
-  if (failures > 0) throw new Error(`设置搜索断言未通过（${failures} 条）`);
-  console.log("\n设置搜索断言全部通过（过滤 / 面包屑 / 直达 / 空态 / 快捷键）。");
+  if (failures > 0) throw new Error(`Settings search assertions failed (${failures})`);
+  console.log("\nAll settings search assertions passed (filtering / breadcrumbs / direct navigation / empty state / shortcuts).");
 } finally {
   await rm(TEMP, { force: true });
 }

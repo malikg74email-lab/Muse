@@ -880,7 +880,7 @@ private fun TrendCard(messagesPerDay: Map<LocalDate, Int>, modifier: Modifier = 
                     labelPositions.forEach { pos ->
                         val (date, _) = trendData[pos]
                         val label = if (windowDays == 7) {
-                            date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.CHINESE)
+                            date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.ENGLISH)
                         } else {
                             "${date.monthValue}/${date.dayOfMonth}"
                         }

@@ -11,13 +11,13 @@ export const LOCALES: readonly Locale[] = ["zh", "en", "ja", "ko", "ru"];
  * 注意这和「词条缺失时的回落」不是一回事：缺词条按 translate() 回落到 en，
  * 因为那时已经明确选了某种语言，只是那一句还没翻译。
  */
-export const FALLBACK_LOCALE: Locale = "zh";
+export const FALLBACK_LOCALE: Locale = "en";
 
 /**
  * 没套 Provider 时的基准语言（组件单测、HostChat 拿到设置之前）：zh 是词条基准，
  * 断言按它写。真实界面一律由 Provider 按解析后的语言接管，不走这个值。
  */
-export const DEFAULT_LOCALE: Locale = "zh";
+export const DEFAULT_LOCALE: Locale = "en";
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && (LOCALES as readonly string[]).includes(value);

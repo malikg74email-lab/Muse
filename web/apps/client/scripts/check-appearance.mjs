@@ -117,73 +117,73 @@ try {
 
   const system = makeTarget({ "--muse-color-scheme-light-surface": "#FAFAF8", "--muse-color-scheme-dark-surface": "#000000" });
   mod.applyAppearance(system, "system", "medium", false);
-  assert(system.dataset.theme === "system", "system 模式写 data-theme=system（交给媒体查询）");
-  assert(system.dataset.fontScale === "medium", "字号档位写成 data-font-scale");
+  assert(system.dataset.theme === "system", "system mode writes data-theme=system (delegated to the media query)");
+  assert(system.dataset.fontScale === "medium", "font size tier is written as data-font-scale");
 
   const forcedDark = makeTarget({ "--muse-color-scheme-light-surface": "#FAFAF8", "--muse-color-scheme-dark-surface": "#000000" });
   mod.applyAppearance(forcedDark, "dark", "medium", false);
-  assert(forcedDark.dataset.theme === "dark", "dark 强制深色（即使系统是浅色）");
+  assert(forcedDark.dataset.theme === "dark", "dark forces dark (even if the system is light)");
 
   const forcedLight = makeTarget();
   mod.applyAppearance(forcedLight, "light", "medium", true);
-  assert(forcedLight.dataset.theme === "light", "light 强制浅色（即使系统是深色）");
+  assert(forcedLight.dataset.theme === "light", "light forces light (even if the system is dark)");
 
-  assert(mod.resolveScheme("system", true) === "dark", "system + 系统深色 → dark");
-  assert(mod.resolveScheme("system", false) === "light", "system + 系统浅色 → light");
-  assert(mod.resolveScheme("light", true) === "light", "强制浅色不受系统影响");
-  assert(mod.resolveScheme("dark", false) === "dark", "强制深色不受系统影响");
+  assert(mod.resolveScheme("system", true) === "dark", "system + system dark → dark");
+  assert(mod.resolveScheme("system", false) === "light", "system + system light → light");
+  assert(mod.resolveScheme("light", true) === "light", "forced light is not affected by the system");
+  assert(mod.resolveScheme("dark", false) === "dark", "forced dark is not affected by the system");
 
-  assert(JSON.stringify(mod.THEME_MODES) === '["system","light","dark"]', "主题三档就是 system/light/dark");
-  assert(mod.readThemeMode("DARK") === "dark" && mod.readThemeMode(" system ") === "system", "主题值大小写与空白都容忍");
-  assert(mod.readThemeMode("blue") === undefined, "不认识的主题值当作没给");
+  assert(JSON.stringify(mod.THEME_MODES) === '["system","light","dark"]', "the three theme tiers are exactly system/light/dark");
+  assert(mod.readThemeMode("DARK") === "dark" && mod.readThemeMode(" system ") === "system", "theme values tolerate both case and whitespace");
+  assert(mod.readThemeMode("blue") === undefined, "an unrecognized theme value is treated as not provided");
 
   // CSS：深色两处声明（媒体查询 + 属性）且互相一致
   const mediaDark = declarations(ruleBody(mediaBlock(PRIMITIVES, "prefers-color-scheme: dark"), ':root:not([data-theme="light"])'));
   const attrDark = declarations(ruleBody(PRIMITIVES, ':root[data-theme="dark"]'));
-  assert(Object.keys(attrDark).length > 10, `属性深色块有 ${Object.keys(attrDark).length} 条声明`);
+  assert(Object.keys(attrDark).length > 10, `the attribute dark block has ${Object.keys(attrDark).length} declarations`);
   assert(
     JSON.stringify(mediaDark) === JSON.stringify(attrDark),
-    "媒体查询与属性两处暗色声明逐条一致（防止漂移）",
+    "the dark declarations in the media query and the attribute match item by item (to prevent drift)",
   );
-  assert(/var\(--muse-color-scheme-dark-surface\)/.test(attrDark["--ui-surface"] ?? ""), "强制深色指向 dark scheme 令牌");
-  assert(PRIMITIVES.includes(':root:not([data-theme="light"])'), "系统深色时若强制浅色，媒体查询会被跳过");
-  assert(CSS.includes(':root[data-theme="dark"] .host-scope { color-scheme: dark; }'), "host 作用域跟随强制深色");
-  assert(CSS.includes(':root[data-theme="light"] .host-scope { color-scheme: light; }'), "host 作用域跟随强制浅色");
+  assert(/var\(--muse-color-scheme-dark-surface\)/.test(attrDark["--ui-surface"] ?? ""), "forced dark points to the dark scheme token");
+  assert(PRIMITIVES.includes(':root:not([data-theme="light"])'), "when the system is dark but light is forced, the media query is skipped");
+  assert(CSS.includes(':root[data-theme="dark"] .host-scope { color-scheme: dark; }'), "host scope follows forced dark");
+  assert(CSS.includes(':root[data-theme="light"] .host-scope { color-scheme: light; }'), "host scope follows forced light");
 
   // ── 2. theme-color 更新 ──────────────────────────────────────
-  assert(system.meta.content === "#FAFAF8", `system（系统浅色）theme-color 取浅色 surface：${system.meta.content}`);
-  assert(makeTarget && mod.themeColorFor("dark", (name) => (name.endsWith("dark-surface") ? "#000000" : "#FAFAF8")) === "#000000", "themeColorFor 按 scheme 取令牌");
+  assert(system.meta.content === "#FAFAF8", `system (system light) theme-color takes the light surface: ${system.meta.content}`);
+  assert(makeTarget && mod.themeColorFor("dark", (name) => (name.endsWith("dark-surface") ? "#000000" : "#FAFAF8")) === "#000000", "themeColorFor takes the token by scheme");
   const darkMeta = makeTarget({ "--muse-color-scheme-dark-surface": "#000000", "--muse-color-scheme-light-surface": "#FAFAF8" });
   mod.applyAppearance(darkMeta, "dark", "medium", false);
-  assert(darkMeta.meta.content === "#000000", "切换深色后 theme-color 跟着变成深色 surface");
+  assert(darkMeta.meta.content === "#000000", "after switching to dark, theme-color changes to the dark surface accordingly");
   const noTokens = makeTarget();
   mod.applyAppearance(noTokens, "dark", "medium", false);
-  assert(noTokens.meta.content === "initial", "读不到令牌时不动 meta（不留空串）");
+  assert(noTokens.meta.content === "initial", "when the token cannot be read, meta is left untouched (no empty string left behind)");
 
   // ── 3. 四档字号映射 ─────────────────────────────────────────
-  assert(JSON.stringify(mod.FONT_SCALES) === '["small","medium","large","xlarge"]', "四档就是 small/medium/large/xlarge");
-  assert(mod.FONT_SCALE_FACTOR.small === 0.9 && mod.FONT_SCALE_FACTOR.medium === 1, "小档 0.9、中档 1.0");
-  assert(mod.FONT_SCALE_FACTOR.large === 1.1 && mod.FONT_SCALE_FACTOR.xlarge === 1.2, "大档 1.1、特大 1.2");
-  assert(mod.readFontScale("xlarge") === "xlarge" && mod.readFontScale("LARGE") === "large", "字号档位名大小写容忍");
-  assert(mod.readFontScale("1") === "medium", "数字 1 归一成 medium");
-  assert(mod.readFontScale(0.9) === "small" && mod.readFontScale("1.2") === "xlarge", "数字倍率归一到最近的档");
-  assert(mod.readFontScale("huge") === undefined && mod.readFontScale(0) === undefined, "不认识的倍率当作没给");
+  assert(JSON.stringify(mod.FONT_SCALES) === '["small","medium","large","xlarge"]', "the four tiers are exactly small/medium/large/xlarge");
+  assert(mod.FONT_SCALE_FACTOR.small === 0.9 && mod.FONT_SCALE_FACTOR.medium === 1, "small tier 0.9, medium tier 1.0");
+  assert(mod.FONT_SCALE_FACTOR.large === 1.1 && mod.FONT_SCALE_FACTOR.xlarge === 1.2, "large tier 1.1, xlarge 1.2");
+  assert(mod.readFontScale("xlarge") === "xlarge" && mod.readFontScale("LARGE") === "large", "font size tier names tolerate case");
+  assert(mod.readFontScale("1") === "medium", "the number 1 normalizes to medium");
+  assert(mod.readFontScale(0.9) === "small" && mod.readFontScale("1.2") === "xlarge", "a numeric factor normalizes to the nearest tier");
+  assert(mod.readFontScale("huge") === undefined && mod.readFontScale(0) === undefined, "an unrecognized factor is treated as not provided");
 
   for (const scale of ["small", "medium", "large", "xlarge"]) {
-    assert(CSS.includes(`:root[data-font-scale="${scale}"]`), `CSS 为 ${scale} 提供了 data-font-scale 选择器`);
+    assert(CSS.includes(`:root[data-font-scale="${scale}"]`), `CSS provides a data-font-scale selector for ${scale}`);
   }
   const largeRule = declarations(ruleBody(CSS, ':root[data-font-scale="large"]'));
-  assert(largeRule["--text-scale"] === "1.1", "large 档把 --text-scale 设成 1.1");
-  assert(largeRule["--host-bubble-boost"] === "1.08", "large 档顺带把气泡放宽 8%");
+  assert(largeRule["--text-scale"] === "1.1", "the large tier sets --text-scale to 1.1");
+  assert(largeRule["--host-bubble-boost"] === "1.08", "the large tier also widens bubbles by 8%");
   const xlargeRule = declarations(ruleBody(CSS, ':root[data-font-scale="xlarge"]'));
-  assert(xlargeRule["--host-bubble-boost"] === "1.16", "xlarge 档放宽 16%（0.7 × 1.16 ≈ 0.81 仍不出屏）");
+  assert(xlargeRule["--host-bubble-boost"] === "1.16", "the xlarge tier widens by 16% (0.7 × 1.16 ≈ 0.81 still does not overflow the screen)");
 
   // 排版令牌真的乘了倍率，间距令牌没被整体缩放
-  assert(/calc\(\$\{value\}px \* var\(--text-scale, 1\)\)/.test(TOKEN_CSS), "字号 / 行高令牌乘 --text-scale");
-  assert(/key !== "fontSize" && key !== "lineHeight"/.test(TOKEN_CSS), "只缩放 fontSize / lineHeight，不动间距");
-  assert(/max-width: calc\(100% \* var\(--muse-component-bubble-max-width-ratio\) \* var\(--host-bubble-boost\)\)/.test(CSS), "气泡最大宽随字号放宽");
-  assert(/--host-page: calc\(var\(--muse-space-screen\) \* var\(--text-scale\)\)/.test(CSS), "页边距随字号按比例调整");
-  assert(/padding: calc\(var\(--muse-component-bubble-inner-padding-y\) \* var\(--text-scale\)\)/.test(CSS), "气泡内边距随字号按比例调整（不贴边）");
+  assert(/calc\(\$\{value\}px \* var\(--text-scale, 1\)\)/.test(TOKEN_CSS), "font size / line height tokens are multiplied by --text-scale");
+  assert(/key !== "fontSize" && key !== "lineHeight"/.test(TOKEN_CSS), "only fontSize / lineHeight are scaled, spacing is untouched");
+  assert(/max-width: calc\(100% \* var\(--muse-component-bubble-max-width-ratio\) \* var\(--host-bubble-boost\)\)/.test(CSS), "bubble max width widens with font size");
+  assert(/--host-page: calc\(var\(--muse-space-screen\) \* var\(--text-scale\)\)/.test(CSS), "page margins adjust proportionally with font size");
+  assert(/padding: calc\(var\(--muse-component-bubble-inner-padding-y\) \* var\(--text-scale\)\)/.test(CSS), "bubble inner padding adjusts proportionally with font size (does not stick to the edge)");
 
   // ── 4. 从设置值读外观 + 失败回滚 ─────────────────────────────
   const darkSnapshot = settingsWith([
@@ -191,22 +191,22 @@ try {
     { key: "appearance.fontSizeScale", type: "enum", value: "xlarge" },
   ]);
   const read0 = mod.readAppearance(darkSnapshot);
-  assert(read0.mode === "dark" && read0.scale === "xlarge", "从 values 读到主题与字号（键带前缀也能认）");
+  assert(read0.mode === "dark" && read0.scale === "xlarge", "theme and font size are read from values (keys with a prefix are also recognized)");
 
   const legacy = settingsWith(undefined, { language: "zh", themeMode: "light", fontSizeScale: "1.1", themeId: "default" });
   const readLegacy = mod.readAppearance(legacy);
-  assert(readLegacy.mode === "light" && readLegacy.scale === "large", "老 Host 只给 display 时也能读出来");
+  assert(readLegacy.mode === "light" && readLegacy.scale === "large", "an old Host that only provides display can still be read");
 
   const empty = mod.readAppearance({ loading: false });
-  assert(empty.mode === "system" && empty.scale === "medium", "没有设置时退回 system + medium");
+  assert(empty.mode === "system" && empty.scale === "medium", "when there are no settings, falls back to system + medium");
 
   // 乐观切换：values 一变主题就变；回滚后恢复
   const optimistic = mod.applySettingValue(darkSnapshot.snapshot, "appearance.themeMode", "light");
-  assert(mod.readAppearance({ ...darkSnapshot, snapshot: optimistic }).mode === "light", "乐观写入后主题立刻变浅色");
+  assert(mod.readAppearance({ ...darkSnapshot, snapshot: optimistic }).mode === "light", "after an optimistic write, the theme immediately becomes light");
   const rolledBack = mod.applySettingValue(optimistic, "appearance.themeMode", "dark");
-  assert(mod.readAppearance({ ...darkSnapshot, snapshot: rolledBack }).mode === "dark", "回滚后主题恢复深色");
-  assert(CHAT.includes("useAppearance(settings)"), "聊天壳把设置值接到外观上");
-  assert(/requestSettings\(\)/.test(CHAT), "连上就取一次设置（不等打开设置页）");
+  assert(mod.readAppearance({ ...darkSnapshot, snapshot: rolledBack }).mode === "dark", "after rollback, the theme returns to dark");
+  assert(CHAT.includes("useAppearance(settings)"), "the chat shell connects setting values to the appearance");
+  assert(/requestSettings\(\)/.test(CHAT), "settings are fetched once on connect (without waiting for the settings page to open)");
 
   // ── 5. 自绘元素跟着 scheme 走（只用令牌） ────────────────────
   const tokenDriven = [
@@ -217,15 +217,15 @@ try {
   ];
   for (const [selector, needle] of tokenDriven) {
     const body = ruleBody(CSS, `${selector} {`);
-    assert(body.length > 0 && body.includes(needle), `${selector} 走令牌（${needle}）`);
+    assert(body.length > 0 && body.includes(needle), `${selector} uses a token (${needle})`);
   }
   assert(
     /\.muse-skeleton \{[\s\S]{0,400}?var\(--ui-surface-variant\)/.test(PRIMITIVES),
-    "骨架用令牌底色，深色下自动变",
+    "the skeleton uses a token background color and changes automatically in dark mode",
   );
 
-  if (failures > 0) throw new Error(`外观断言未通过（${failures} 条）`);
-  console.log("\n外观断言全部通过（三态主题 / 四档字号 / theme-color / 回滚 / 联动）。");
+  if (failures > 0) throw new Error(`Appearance assertions failed (${failures} items)`);
+  console.log("\nAll appearance assertions passed (three-state theme / four font size tiers / theme-color / rollback / linkage).");
 } finally {
   await rm(TEMP, { force: true });
 }

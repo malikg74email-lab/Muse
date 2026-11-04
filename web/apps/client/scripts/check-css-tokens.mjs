@@ -41,7 +41,7 @@ const HOST_ONLY_FILES = ["src/styles.css"];
 const PX_WHITELIST = [
   {
     id: "zero",
-    reason: "0 长度：没有可缩放的量，tokens.json 也不存 0 档",
+    reason: "Zero length: there is no scalable amount, and tokens.json does not store a 0 tier either",
     allows: (value) => value === 0,
   },
 ];
@@ -50,43 +50,43 @@ const DECLARATION_WHITELIST = [
   {
     id: "drawer-desktop-max-width",
     reason:
-      "桌面抽屉宽度上限 330px：App 里是手机全屏侧滑（无宽度上限），Web 在桌面上必须封顶；MusePaddings 没有对应的宽度档位，不为此新建令牌",
+      "Desktop drawer width cap 330px: in the App it is a full-screen mobile slide-over (no width cap), on Web desktop it must be capped; MusePaddings has no corresponding width tier, so no new token is created for this",
     matches: (declaration) => /width:\s*min\(\s*84vw\s*,\s*330px\s*\)/.test(declaration),
   },
   {
     id: "toast-desktop-max-width",
     reason:
-      "toast 在桌面端的宽度上限 520px：App 的 toast 宽度随内容自适应，MusePaddings 没有对应档位；移动端实际生效的是 92vw",
+      "Toast width cap on desktop 520px: the App's toast width adapts to its content, MusePaddings has no corresponding tier; on mobile the value actually in effect is 92vw",
     matches: (declaration) => /max-width:\s*min\(\s*92vw\s*,\s*520px\s*\)/.test(declaration),
   },
   {
     id: "host-breakpoint-tablet",
     reason:
-      "平板档断点 600px：媒体查询里不允许用自定义属性（var() 在 @media 前置条件里无效），且断点是布局切换阈值，不是可缩放的设计尺寸",
+      "Tablet tier breakpoint 600px: custom properties are not allowed in media queries (var() is invalid in an @media precondition), and a breakpoint is a layout switching threshold, not a scalable design size",
     matches: (declaration) => /^@media \(min-width: 600px\) \{/.test(declaration),
   },
   {
     id: "host-breakpoint-desktop",
     reason:
-      "桌面档断点 1024px：同上，媒体查询前置条件不能引用 var()，断点是布局阈值而非设计尺寸",
+      "Desktop tier breakpoint 1024px: same as above, a media query precondition cannot reference var(), and a breakpoint is a layout threshold rather than a design size",
     matches: (declaration) => /^@media \(min-width: 1024px\) \{/.test(declaration),
   },
   {
     id: "host-content-max-tablet",
     reason:
-      "平板档单栏内容最大宽 640px：tokens 里没有「内容栏宽」档位（MusePaddings 只有间距与组件尺寸），且只在 600–1023 生效，改一处即可",
+      "Tablet tier single-column content max width 640px: there is no content column width tier in tokens (MusePaddings only has spacing and component sizes), and it only takes effect at 600-1023, so changing it in one place is enough",
     matches: (declaration) => /--host-content-max:\s*640px/.test(declaration),
   },
   {
     id: "host-content-max-desktop",
     reason:
-      "桌面档内容最大宽 720px：16px 正文约 80 字符/行的阅读上限，同一变量的桌面档取值",
+      "Desktop tier content max width 720px: the reading limit for 16px body text at about 80 characters per line, the desktop tier value of the same variable",
     matches: (declaration) => /--host-content-max:\s*720px/.test(declaration),
   },
   {
     id: "host-sidebar-width",
     reason:
-      "桌面档左栏宽 300px（要求 280–320，取中值）：App 是手机全屏侧滑，没有竖向栏宽档位，tokens 不为此新建",
+      "Desktop tier left column width 300px (required 280-320, taking the middle value): the App is a full-screen mobile slide-over, there is no vertical column width tier, and tokens do not create a new one for this",
     matches: (declaration) => /--host-sidebar-w:\s*300px/.test(declaration),
   },
 ];
@@ -111,7 +111,7 @@ async function tokenNames() {
   const names = new Set(
     module.tokenVariables(tokens).map((declaration) => declaration.trim().split(":")[0]),
   );
-  if (names.size === 0) throw new Error("token-css.ts 没有生成任何令牌变量");
+  if (names.size === 0) throw new Error("token-css.ts did not generate any token variables");
   return names;
 }
 
@@ -123,9 +123,9 @@ function blankComments(source) {
 function checkHexAndRgba(file, lines) {
   lines.forEach((line, index) => {
     const hex = line.match(/#[0-9a-fA-F]{3,8}\b/);
-    if (hex) fail(file, index + 1, `裸颜色 ${hex[0]}（改用 --muse-* 令牌）`, line.trim());
+    if (hex) fail(file, index + 1, `Bare color ${hex[0]} (use a --muse-* token instead)`, line.trim());
     const func = line.match(/\b(rgba?|hsla?)\s*\(/);
-    if (func) fail(file, index + 1, `裸颜色函数 ${func[1]}()（改用 --muse-* 令牌）`, line.trim());
+    if (func) fail(file, index + 1, `Bare color function ${func[1]}() (use a --muse-* token instead)`, line.trim());
   });
 }
 
@@ -141,7 +141,7 @@ function checkPx(file, lines, startIndex) {
       fail(
         file,
         index + 1,
-        `裸 px 长度 ${match[0]}（改用 --muse-* 令牌，或在 PX_WHITELIST 里写明理由）`,
+        `Bare px length ${match[0]} (use a --muse-* token instead, or state the reason in PX_WHITELIST)`,
         declaration,
       );
       break;
@@ -153,7 +153,7 @@ function checkMuseVariables(file, lines, declared) {
   lines.forEach((line, index) => {
     for (const match of line.matchAll(/var\(\s*(--muse-[a-z0-9-]+)/g)) {
       if (declared.has(match[1])) continue;
-      fail(file, index + 1, `引用了不存在的令牌 ${match[1]}`, line.trim());
+      fail(file, index + 1, `Referenced a token that does not exist ${match[1]}`, line.trim());
     }
   });
 }
@@ -178,7 +178,7 @@ try {
     // 作用域分隔标记本身是注释，必须在原始行里找。
     const markerIndex = rawLines.findIndex((line) => line.includes(HOST_REGION_MARKER));
     if (markerIndex < 0) {
-      fail(display, 1, `找不到 Host 作用域分隔注释「${HOST_REGION_MARKER}」，无法界定裸 px 的检查范围`, "");
+      fail(display, 1, `Cannot find the Host scope separator comment ${HOST_REGION_MARKER}, unable to determine the scope for bare px checks`, "");
       continue;
     }
     checkPx(display, lines, markerIndex);
@@ -187,14 +187,14 @@ try {
   await rm(TEMP, { force: true });
 }
 
-console.log(`令牌变量 ${declared.size} 个；检查文件 ${[...FULLY_CHECKED_FILES, ...HOST_ONLY_FILES].join(", ")}`);
+console.log(`Token variables: ${declared.size}; checked files: ${[...FULLY_CHECKED_FILES, ...HOST_ONLY_FILES].join(", ")}`);
 
 if (failures.length > 0) {
   for (const item of failures) {
     console.error(`✗ ${item.file}:${item.line} ${item.reason}`);
     if (item.content) console.error(`    ${item.content}`);
   }
-  throw new Error(`页面样式令牌校验未通过（${failures.length} 处）`);
+  throw new Error(`Page style token validation failed (${failures.length} places)`);
 }
 
-console.log("页面样式令牌校验通过：无裸颜色、Host 作用域无裸 px、无未定义令牌。");
+console.log("Page style token validation passed: no bare colors, no bare px in the Host scope, no undefined tokens.");
