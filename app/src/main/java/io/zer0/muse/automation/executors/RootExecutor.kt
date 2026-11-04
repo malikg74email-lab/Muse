@@ -145,7 +145,7 @@ class RootExecutor(
     /** 卸载 App(root 下 pm uninstall)。 */
     suspend fun uninstallApp(packageName: String): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "uninstallApp $IP $packageName")
+            Logger.w(TAG, "uninstallApp refused: illegal package name $packageName")
             return false
         }
         return exec("pm uninstall $packageName").isSuccess
@@ -154,7 +154,7 @@ class RootExecutor(
     /** 授予运行时权限(root 下 pm grant)。 */
     suspend fun grantPermission(packageName: String, permission: String): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "grantPermission $IP $packageName")
+            Logger.w(TAG, "grantPermission refused: illegal package name $packageName")
             return false
         }
         // permission 格式如 android.permission.SEND_SMS,只允许字母/数字/点/下划线
@@ -168,7 +168,7 @@ class RootExecutor(
     /** 强制停止 App。 */
     suspend fun forceStop(packageName: String): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "forceStop $IP $packageName")
+            Logger.w(TAG, "forceStop refused: illegal package name $packageName")
             return false
         }
         return exec("am force-stop $packageName").isSuccess
@@ -255,7 +255,7 @@ class RootExecutor(
      */
     suspend fun amStart(packageName: String, className: String? = null, extras: String? = null): Boolean {
         if (!validatePackageName(packageName)) {
-            Logger.w(TAG, "amStart $IP $packageName")
+            Logger.w(TAG, "amStart refused: illegal package name $packageName")
             return false
         }
         // v2.0.1: 组件名与 extras 必须先白名单校验,再拼进 root shell 命令,防命令注入。
