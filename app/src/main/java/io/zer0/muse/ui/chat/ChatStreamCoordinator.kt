@@ -254,10 +254,10 @@ class ChatStreamCoordinator(
                     }
                 Logger.d(
                     tag,
-                    "updateAssistant 跳过 detached assistant: id=${id.toString().take(8)}, " +
+                    "updateAssistant skipping detached assistant: id=${id.toString().take(8)}, " +
                         "displayedSession=$displayedSession, " +
                         "contentLength=${content.length}, hasImage=${!imageBase64List.isNullOrEmpty() || !imageUrls.isNullOrEmpty()}, " +
-                        "后台生成仍由目标会话落库",
+                        "Background generation is still persisted by the target session",
                 )
             }
             return
@@ -451,7 +451,7 @@ class ChatStreamCoordinator(
             return
         }
         if (ProcessWriteGate.restoring) {
-            Logger.w(tag, "备份恢复进行中，跳过流式助手快照写入")
+            Logger.w(tag, "Backup restore in progress; skipping streaming assistant snapshot write")
             return
         }
         // v1.80 (L-CVM4): 用 NonCancellable 包裹持久化,确保 ViewModel 销毁/协程取消时仍能落盘
@@ -462,7 +462,7 @@ class ChatStreamCoordinator(
             } catch (e: Exception) {
                 Logger.e(tag, "persistCurrentAssistant failed", e)
                 // v1.65: 助手持久化失败给用户反馈
-                addError(ChatErrorType.UNKNOWN, "助手状态保存失败: ${e.message ?: "未知错误"}")
+                addError(ChatErrorType.UNKNOWN, "Failed to save assistant state: ${e.message ?: "Unknown error"}")
             }
         }
     }
@@ -501,10 +501,10 @@ class ChatStreamCoordinator(
             return
         }
         if (ProcessWriteGate.restoring) {
-            Logger.w(tag, "备份恢复进行中，跳过中断助手快照写入")
+            Logger.w(tag, "Backup restore in progress; skipping interrupted assistant snapshot write")
             return
         }
-        val interruptedMsg = partial.copy(content = partial.content + "\n\n[已中断]", durationMs = durationMs)
+        val interruptedMsg = partial.copy(content = partial.content + "\n\n[Interrupted]", durationMs = durationMs)
         // v1.0.74 fix: 此前 partialMsg != null(切页/生成闭包场景)一律不更新 UI,
         // 导致用户停止生成后当次会话内看不到 [已中断] 标记、"继续生成"按钮不出现。
         // 改为:消息仍在当前会话列表就更新 UI(正常停止场景),不在则跳过(切页防污染)。
@@ -641,7 +641,7 @@ class ChatStreamCoordinator(
                     true,
                     io.zer0.muse.notification.MuseNotificationTarget.Session(sessionId),
                 )
-            }.onFailure { Logger.w("ChatVM", "启动进度通知失败: ${it.message}") }
+            }.onFailure { Logger.w("ChatVM", "Failed to start progress notification: ${it.message}") }
             // v1.133: RAG 检索引用列表,流式结束后附加到 assistant 消息
             pendingRagCitations = emptyList()
             // Phase 8.2: 取 Assistant 配置(找不到则用默认助手)
@@ -719,7 +719,7 @@ class ChatStreamCoordinator(
             if (rawHistory.size < messagesExceptPlaceholder.size) {
                 Logger.w(
                     "ChatViewModel",
-                    "清理孤儿 tool_call: ${messagesExceptPlaceholder.size - rawHistory.size} 条 assistant 消息被丢弃",
+                    "Cleaning orphan tool_calls: ${messagesExceptPlaceholder.size - rawHistory.size} assistant messages discarded",
                 )
             }
             // 会话检查点合并：把"已压缩边界之前"的助手侧内容替换为检查点摘要。
@@ -921,15 +921,15 @@ class ChatStreamCoordinator(
                         conversationHistory[idx].role == MessageRole.USER &&
                             conversationHistory[idx].imageBase64List.isNotEmpty()
                     }
-                Logger.i("ChatVM", "视觉辅助[条件满足]: userImageIndexes=${userImageIndexes.size}")
+                Logger.i("ChatVM", "Vision assist [conditions met]: userImageIndexes=${userImageIndexes.size}")
                 if (userImageIndexes.isNotEmpty()) {
                     val lastIdx = userImageIndexes.last()
                     val lastUserMsg = conversationHistory[lastIdx]
                     val imageCount = lastUserMsg.imageBase64List.size
                     Logger.i(
                         "ChatVM",
-                        "视觉辅助[触发]: model=${effectiveModelLocal.id} supportsVision=false " +
-                            "图片数=$imageCount 历史待清理=${userImageIndexes.size - 1}",
+                        "Vision assist [triggered]: model=${effectiveModelLocal.id} supportsVision=false " +
+                            "imageCount=$imageCount historyToClean=${userImageIndexes.size - 1}",
                     )
                     MuseToast.show(appContext.getString(R.string.vision_analysis_starting))
                     val prepareResult =
@@ -981,11 +981,11 @@ class ChatStreamCoordinator(
                             imageBase64List = prepareResult.images,
                         )
                     if (prepareResult.success) {
-                        Logger.i("ChatVM", "视觉辅助[成功]: 已注入 ${prepareResult.descriptionCount} 条视觉描述")
+                        Logger.i("ChatVM", "Vision assist [success]: injected ${prepareResult.descriptionCount} visual descriptions")
                         MuseToast.show(appContext.getString(R.string.vision_analysis_done, prepareResult.descriptionCount))
                     } else {
                         val failDetail = prepareResult.text.take(200)
-                        Logger.w("ChatVM", "视觉辅助[失败]: prepare 降级,详情=$failDetail")
+                        Logger.w("ChatVM", "Vision assist [failed]: prepare degraded, detail=$failDetail")
                         MuseToast.show(appContext.getString(R.string.err_chat_vision_fallback))
                     }
 
@@ -1000,18 +1000,18 @@ class ChatStreamCoordinator(
                             conversationHistory[idx] = histMsg.copy(imageBase64List = emptyList())
                             Logger.d(
                                 "ChatVM",
-                                "视觉辅助: 已清空历史消息 #$idx 的 ${histMsg.imageBase64List.size} 张图片" +
-                                    "(避免直达纯文本模型)",
+                                "Vision assist: cleared ${histMsg.imageBase64List.size} images from history message #$idx" +
+                                    "(to avoid reaching a text-only model directly)",
                             )
                         }
                     }
                 } else {
-                    Logger.i("ChatVM", "视觉辅助[跳过]: userImageIndexes 为空,未找到带图片的 USER 消息")
+                    Logger.i("ChatVM", "Vision assist [skipped]: userImageIndexes is empty; no USER message with images found")
                 }
             } else {
                 Logger.i(
                     "ChatVM",
-                    "视觉辅助[跳过]: effectiveModel 为空或模型支持视觉,不触发视觉辅助 " +
+                    "Vision assist [skipped]: effectiveModel is empty or the model supports vision; not triggering " +
                         "effectiveModel=${effectiveModel?.id} supportsVisionInput=$modelSupportsVision",
                 )
             }
@@ -1251,8 +1251,8 @@ class ChatStreamCoordinator(
                     //   模型会按此概率主动调用,100% 时每次合适回复都会尝试发)。
                     val stickerProbHint =
                         if (sk.id == "send_sticker") {
-                            " 用户设置的表情包发送概率为 ${settings.stickerSendProbabilityCache}%(在设置中调整)。" +
-                                "概率 ≥ 50% 时请在合适的回复中主动调用本工具发送表情包;概率 = 100% 时每次回复都应尝试发送。"
+                            " The user has set the sticker send probability to ${settings.stickerSendProbabilityCache}% (adjustable in Settings)." +
+                                "When the probability is ≥ 50%, proactively call this tool to send a sticker in suitable replies; at 100%, try to send one in every reply."
                         } else {
                             ""
                         }

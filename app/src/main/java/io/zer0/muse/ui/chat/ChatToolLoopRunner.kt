@@ -380,7 +380,7 @@ internal class ChatToolLoopRunner(
                     for (item in steering) {
                         val msg = UIMessage(role = MessageRole.USER, content = item.text)
                         runCatching { host.sessionRepository.appendMessage(sessionId, msg) }
-                            .onFailure { Logger.w("ChatVM", "插话消息落盘失败: ${it.message}") }
+                            .onFailure { Logger.w("ChatVM", "Failed to persist interjection message: ${it.message}") }
                         host.accessor.updateMessages { list -> list + msg }
                     }
                     host.messageController.rebuildConversationTree()
@@ -611,7 +611,7 @@ internal class ChatToolLoopRunner(
                         } catch (error: Exception) {
                             listOf(
                                 ChatStreamEvent.Error(
-                                    message = error.message ?: "非流式请求失败",
+                                    message = error.message ?: "Non-streaming request failed",
                                     throwable = error,
                                 ),
                             )
@@ -789,7 +789,7 @@ internal class ChatToolLoopRunner(
                                         retryWithoutToolChoice = true
                                         Logger.w(
                                             "ChatVM",
-                                            "thinking mode 不支持 tool_choice=required,关闭本轮思考后重试一次",
+                                            "thinking mode does not support tool_choice=required; disabling thinking for this round and retrying once",
                                         )
                                     }
                                     !shouldRetry
@@ -912,7 +912,7 @@ internal class ChatToolLoopRunner(
                                                         true,
                                                         MuseNotificationTarget.Session(sessionId),
                                                     )
-                                                }.onFailure { Logger.w("ChatVM", "更新进度通知失败: ${it.message}") }
+                                                }.onFailure { Logger.w("ChatVM", "Failed to update progress notification: ${it.message}") }
                                             }
                                             if (experiments.debugMode && params.builder.length - lastLoggedCharCount >= 100) {
                                                 lastLoggedCharCount = params.builder.length
@@ -1110,7 +1110,7 @@ internal class ChatToolLoopRunner(
                                     }
                                 }
                                 if (retryWithoutToolChoice) {
-                                    Logger.i("ChatVM", "tool_choice 兼容重试已切换为 utility 模式")
+                                    Logger.i("ChatVM", "tool_choice compatibility retry switched to utility mode")
                                 }
                             } while (retryWithoutToolChoice)
                         } finally {
@@ -1213,12 +1213,12 @@ internal class ChatToolLoopRunner(
                             val newRetryCount = params.retryCount + 1
                             Logger.w(
                                 "ChatVM",
-                                "StreamInterrupted 网络中断,等待网络恢复(最多 ${NETWORK_RECOVERY_TIMEOUT_MS}ms)" +
-                                    "(第 $newRetryCount/$MAX_STREAM_RETRIES 次,round=${params.round}): $streamError",
+                                "StreamInterrupted network lost, waiting for recovery (up to ${NETWORK_RECOVERY_TIMEOUT_MS}ms)" +
+                                    "(attempt $newRetryCount/$MAX_STREAM_RETRIES, round=${params.round}): $streamError",
                             )
                             val recovered = host.waitForNetworkRecovery(NETWORK_RECOVERY_TIMEOUT_MS)
                             if (recovered) {
-                                Logger.i("ChatVM", "网络已恢复,preservePartialContent=true 重试")
+                                Logger.i("ChatVM", "Network recovered; retrying with preservePartialContent=true")
                                 // 重置自适应切片状态(上一轮的速率样本不适用于续传)
                                 pendingBuilder.clear()
                                 chunkIntervals.clear()
@@ -1240,7 +1240,7 @@ internal class ChatToolLoopRunner(
                                     ),
                                 )
                             } else {
-                                Logger.w("ChatVM", "网络未恢复,降级为手动重试")
+                                Logger.w("ChatVM", "Network not recovered; degrading to manual retry")
                             }
                         }
                         if (!streamInterrupted &&
@@ -1257,8 +1257,8 @@ internal class ChatToolLoopRunner(
                                 }
                             Logger.w(
                                 "ChatVM",
-                                "stream 错误($retryType),${delayMs}ms 后重试 " +
-                                    "(第 $newRetryCount/$MAX_STREAM_RETRIES 次,round=${params.round}): $streamError",
+                                "stream error ($retryType), retrying in ${delayMs}ms " +
+                                    "(attempt $newRetryCount/$MAX_STREAM_RETRIES, round=${params.round}): $streamError",
                             )
                             kotlinx.coroutines.delay(delayMs)
                             lastUiUpdateChars = 0
@@ -1297,7 +1297,7 @@ internal class ChatToolLoopRunner(
                         if (overflowHistory != null) {
                             Logger.w(
                                 "ChatVM",
-                                "context overflow,压缩后重发 | round=${params.round} | " +
+                                "context overflow, compressing and resending | round=${params.round} | " +
                                     "messages ${params.history.size} -> ${overflowHistory.size} | error=$streamError",
                             )
                             // 压缩后的历史回写给整轮循环：否则下一个工具轮又拿原历史撞窗口，
@@ -1383,14 +1383,14 @@ internal class ChatToolLoopRunner(
                     if (toolCallsTruncated) {
                         Logger.w(
                             "ChatVM",
-                            "finish_reason=length 截断，本轮 ${toolCallAccumulator.size} 个工具调用不执行，回填参数截断错误 | round=$round",
+                            "finish_reason=length truncation: ${toolCallAccumulator.size} tool calls in this round will not run; backfilling argument-truncation error | round=$round",
                         )
                     }
                     // 注意：标记传递链是 runner → StreamRoundResult.Success → 编排器；runner 侧无单测覆盖
                     // （依赖整个 ChatViewModel 宿主），改这里须连带跑 ToolOrchestratorRunLoopTest。
                     val hasToolCalls = toolCallAccumulator.isNotEmpty()
                     if (usesToolModel && !hasToolCalls && roundModel != effectiveModel) {
-                        Logger.i("ChatVM", "工具轮产出最终答复(round=$round), 用主模型补一轮 | model=${effectiveModel?.id}")
+                        Logger.i("ChatVM", "Tool round produced the final answer (round=$round); running one more round with the main model | model=${effectiveModel?.id}")
                         val toolModelContent = params.builder.toString()
                         val toolModelReasoning = params.reasoningBuilder.toString()
                         // 清空本轮累积,补轮从零开始;自适应切片/节流/去重/首 token 状态一并复位
@@ -1419,7 +1419,7 @@ internal class ChatToolLoopRunner(
                         val replayed = streamRound(params.copy(forceMainModel = true))
                         // 补轮失败:整体回填 toolModel 答复(整段替换,避免与补轮的部分内容拼接)
                         if (replayed is StreamRoundResult.Error) {
-                            Logger.w("ChatVM", "主模型补轮失败, 保留 toolModel 答复: ${replayed.message}")
+                            Logger.w("ChatVM", "Main-model extra round failed; keeping the toolModel answer: ${replayed.message}")
                             params.builder.setLength(0)
                             params.builder.append(toolModelContent)
                             params.reasoningBuilder.setLength(0)

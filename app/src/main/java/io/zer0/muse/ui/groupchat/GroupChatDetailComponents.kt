@@ -1895,7 +1895,7 @@ internal fun readImageBytes(context: android.content.Context, uri: Uri): ByteArr
     val stream = context.contentResolver.openInputStream(uri)
     if (stream != null) return stream.use { it.readBytes() }
     val fd = context.contentResolver.openFileDescriptor(uri, "r")
-        ?: throw IllegalStateException("无法读取图片")
+        ?: throw IllegalStateException("Unable to read image")
     return fd.use { java.io.FileInputStream(it.fileDescriptor).use { fis -> fis.readBytes() } }
 }
 
@@ -1916,7 +1916,7 @@ internal fun encodeBitmapToBase64(bitmap: Bitmap): String {
     } while (quality >= 20)
 
     if (base64.length > maxBase64Length) {
-        throw IllegalStateException("图片过大,请选择较小图片")
+        throw IllegalStateException("Image too large; please choose a smaller image")
     }
     return base64
 }
@@ -1982,9 +1982,9 @@ private fun CameraLivePreviewBox(modifier: Modifier, onTap: () -> Unit) {
                         }
                         provider.unbindAll()
                         provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview)
-                    }.onFailure { e -> Logger.w("GroupChatToolSheet", "相机预览绑定失败", e) }
+                    }.onFailure { e -> Logger.w("GroupChatToolSheet", "Camera preview binding failed", e) }
                 }, ContextCompat.getMainExecutor(ctx))
-            }.onFailure { e -> Logger.w("GroupChatToolSheet", "相机预览初始化失败", e) }
+            }.onFailure { e -> Logger.w("GroupChatToolSheet", "Camera preview initialization failed", e) }
             previewView
         },
         onRelease = {
@@ -2017,5 +2017,5 @@ private fun queryRecentGalleryImages(context: Context, maxCount: Int): List<Uri>
             }
         }
         uris
-    }.onFailure { e -> Logger.w("GroupChatToolSheet", "查询相册失败", e) }.getOrDefault(emptyList())
+    }.onFailure { e -> Logger.w("GroupChatToolSheet", "Failed to query gallery", e) }.getOrDefault(emptyList())
 }

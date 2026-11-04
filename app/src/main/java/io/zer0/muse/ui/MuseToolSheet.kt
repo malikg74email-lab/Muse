@@ -264,7 +264,7 @@ internal fun MuseToolSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "已选 ${selectedGalleryImages.size} 张",
+                    text = "${selectedGalleryImages.size} selected",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -639,11 +639,11 @@ private fun CameraLivePreviewBox(modifier: Modifier, onTap: () -> Unit) {
                             preview,
                         )
                     }.onFailure { e ->
-                        Logger.w("MuseToolSheet", "相机预览绑定失败", e)
+                        Logger.w("MuseToolSheet", "Camera preview binding failed", e)
                     }
                 }, ContextCompat.getMainExecutor(ctx))
             }.onFailure { e ->
-                Logger.w("MuseToolSheet", "相机预览初始化失败", e)
+                Logger.w("MuseToolSheet", "Camera preview initialization failed", e)
             }
             previewView
         },
@@ -779,5 +779,5 @@ private fun queryRecentGalleryImages(context: Context, maxCount: Int): List<Uri>
             }
         }
         uris
-    }.onFailure { e -> Logger.w("MuseToolSheet", "查询相册失败", e) }.getOrDefault(emptyList())
+    }.onFailure { e -> Logger.w("MuseToolSheet", "Failed to query gallery", e) }.getOrDefault(emptyList())
 }

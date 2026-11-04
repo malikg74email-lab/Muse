@@ -368,7 +368,7 @@ class MemoryViewModel(
         val main = resultOf { factStore.getBySpace(spaceId) }.getOrNull() ?: emptyList()
         val scoped = subAssistantStores().flatMap { (id, store) ->
             resultOf { store.getBySpace(spaceId) }
-                .onError { msg, t -> Logger.w("MemoryViewModel", "读取子助手记忆分库失败($id): $msg", t) }
+                .onError { msg, t -> Logger.w("MemoryViewModel", "Failed to read sub-assistant memory store ($id): $msg", t) }
                 .getOrNull() ?: emptyList()
         }
         return (main + scoped).distinctBy { it.scope to it.id }
@@ -379,7 +379,7 @@ class MemoryViewModel(
         val main = resultOf { factStore.searchFullTextBySpace(query, spaceId) }.getOrNull() ?: emptyList()
         val scoped = subAssistantStores().flatMap { (id, store) ->
             resultOf { store.searchFullTextBySpace(query, spaceId) }
-                .onError { msg, t -> Logger.w("MemoryViewModel", "搜索子助手记忆分库失败($id): $msg", t) }
+                .onError { msg, t -> Logger.w("MemoryViewModel", "Failed to search sub-assistant memory store ($id): $msg", t) }
                 .getOrNull() ?: emptyList()
         }
         return (main + scoped).distinctBy { it.scope to it.id }
@@ -456,7 +456,7 @@ class MemoryViewModel(
                 _organizeStage.value = "compile"
                 val compileOk = withContext(Dispatchers.IO) {
                     resultOf { memoryTicker.forceCompileNow() }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "整理记忆编译失败: ${t?.message ?: msg}") }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "Memory tidy-up compilation failed: ${t?.message ?: msg}") }
                         .getOrNull() != null
                 }
                 if (!compileOk) {
@@ -474,7 +474,7 @@ class MemoryViewModel(
                         }
                         total
                     }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "整理记忆去重失败: ${t?.message ?: msg}") }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "Memory tidy-up dedup failed: ${t?.message ?: msg}") }
                         .getOrNull()
                 }
                 if (merged == null) {
@@ -484,7 +484,7 @@ class MemoryViewModel(
                     // 失败静默跳过,不影响规则去重结果。
                     val llmMerged = withContext(Dispatchers.IO) {
                         resultOf { llmMergeDuplicates() }
-                            .onError { msg, t -> Logger.w("MemoryViewModel", "整理:LLM 整合失败: ${t?.message ?: msg}") }
+                            .onError { msg, t -> Logger.w("MemoryViewModel", "Tidy-up: LLM consolidation failed: ${t?.message ?: msg}") }
                             .getOrNull() ?: 0
                     }
                     _organizeStage.value = "complete"
@@ -549,7 +549,7 @@ class MemoryViewModel(
                 val texts = targets.map { it.content }
                 val merged = withContext(Dispatchers.IO) {
                     resultOf { consolidator.synthesize(texts) }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "手动合并生成失败: ${t?.message ?: msg}") }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "Manual merge draft generation failed: ${t?.message ?: msg}") }
                         .getOrNull()
                 }
                 if (merged.isNullOrBlank()) {
@@ -590,7 +590,7 @@ class MemoryViewModel(
                     resultOf {
                         storeForScope(scope).mergeFacts(ids, editedText, scope = scope, spaceId = spaceId)
                     }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "手动合并落库失败: ${t?.message ?: msg}") }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "Manual merge save failed: ${t?.message ?: msg}") }
                         .getOrNull()
                 }
                 if (newId == null) {
@@ -795,7 +795,7 @@ class MemoryViewModel(
     fun selectSpace(spaceId: String) {
         viewModelScope.launch {
             resultOf { settings.saveCurrentSpaceId(spaceId) }
-                .onError { msg, t -> Logger.w("MemoryViewModel", "saveCurrentSpaceId 失败: $msg", t) }
+                .onError { msg, t -> Logger.w("MemoryViewModel", "saveCurrentSpaceId failed: $msg", t) }
         }
     }
 
@@ -811,7 +811,7 @@ class MemoryViewModel(
             val success = withContext(Dispatchers.IO) {
                 // v1.78 (H6): 包装 suspend 调用必须用 resultOf,避免吞 CancellationException
                 resultOf { memoryTicker.forceCompileNow() }
-                    .onError { msg, t -> Logger.w("MemoryViewModel", "forceCompileNow 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MemoryViewModel", "forceCompileNow failed: $msg", t) }
                     .isSuccess
             }
             // v1.0.72: 编译完成后立即执行 LLM 合并去重(重复记忆合并成一条,
@@ -844,7 +844,7 @@ class MemoryViewModel(
             merged += resultOf {
                 consolidator.consolidate(storeForScope(target), target, spaceId)
             }
-                .onError { msg, t -> Logger.w("MemoryViewModel", "LLM 合并重复记忆失败($target): $msg", t) }
+                .onError { msg, t -> Logger.w("MemoryViewModel", "LLM merge of duplicate memories failed ($target): $msg", t) }
                 .getOrNull() ?: 0
         }
         return merged
@@ -880,7 +880,7 @@ class MemoryViewModel(
                     }
                     total
                 }
-                    .onError { msg, t -> Logger.w("MemoryViewModel", "记忆去重失败: ${t?.message ?: msg}") }
+                    .onError { msg, t -> Logger.w("MemoryViewModel", "Memory dedup failed: ${t?.message ?: msg}") }
                     .getOrNull()
             }
             dedupInFlight = false
@@ -946,22 +946,22 @@ class MemoryViewModel(
                 val compileFacts = withContext(Dispatchers.IO) {
                     // v1.78 (H6): 包装 suspend 调用必须用 resultOf,避免吞 CancellationException
                     resultOf { memoryCompiler.readSection(MemoryCompiler.Section.FACTS, sectionScope, spaceId) }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(FACTS) 失败: $msg", t) }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(FACTS) failed: $msg", t) }
                         .getOrNull() ?: ""
                 }
                 val compileToday = withContext(Dispatchers.IO) {
                     resultOf { memoryCompiler.readSection(MemoryCompiler.Section.TODAY, sectionScope, spaceId) }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(TODAY) 失败: $msg", t) }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(TODAY) failed: $msg", t) }
                         .getOrNull() ?: ""
                 }
                 val compileWeek = withContext(Dispatchers.IO) {
                     resultOf { memoryCompiler.readSection(MemoryCompiler.Section.WEEK, sectionScope, spaceId) }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(WEEK) 失败: $msg", t) }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(WEEK) failed: $msg", t) }
                         .getOrNull() ?: ""
                 }
                 val compileLongterm = withContext(Dispatchers.IO) {
                     resultOf { memoryCompiler.readSection(MemoryCompiler.Section.LONGTERM, sectionScope, spaceId) }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(LONGTERM) 失败: $msg", t) }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "readSection(LONGTERM) failed: $msg", t) }
                         .getOrNull() ?: ""
                 }
                 // v0.51: 读取裁剪后的 compiledMarkdown(供"AI 对你的理解"卡片折叠展示)。
@@ -970,13 +970,13 @@ class MemoryViewModel(
                 val compiledMarkdown = withContext(Dispatchers.IO) {
                     resultOf {
                         memoryTicker.readCompiledMemoryMarkdown(
-                            locale = "zh-CN",
+                            locale = settings.getLanguageSync().let { if (it == "system" || it.isBlank()) "en" else it },
                             scope = sectionScope,
                             spaceId = spaceId,
                             assistantId = if (sectionScope == "main") "default" else sectionScope,
                         )
                     }
-                        .onError { msg, t -> Logger.w("MemoryViewModel", "readCompiledMemoryMarkdown 失败: $msg", t) }
+                        .onError { msg, t -> Logger.w("MemoryViewModel", "readCompiledMemoryMarkdown failed: $msg", t) }
                         .getOrNull() ?: ""
                 }
                 // P2-32: 读取当前 scope/space 的矛盾记忆清单(每日反思落库)
@@ -985,7 +985,7 @@ class MemoryViewModel(
                         emptyList<io.zer0.memory.reflection.MemoryContradictionStore.ContradictionPair>()
                     } else {
                         resultOf { contradictionStore.list(sectionScope, spaceId) }
-                            .onError { msg, t -> Logger.w("MemoryViewModel", "读矛盾清单失败: $msg", t) }
+                            .onError { msg, t -> Logger.w("MemoryViewModel", "Failed to read contradiction list: $msg", t) }
                             .getOrNull() ?: emptyList()
                     }
                 }
@@ -1173,7 +1173,7 @@ class MemoryViewModel(
                     } else {
                         storeForScope(scope).searchFullTextScoped(query, scope, spaceId)
                     }
-                }.onError { msg, t -> Logger.w("MemoryViewModel", "searchFullTextScoped 失败: $msg", t) }
+                }.onError { msg, t -> Logger.w("MemoryViewModel", "searchFullTextScoped failed: $msg", t) }
                     .getOrNull() ?: emptyList()
             }
             // F-7: 搜索结果同样应用重要程度/时间范围筛选,与列表口径一致
@@ -1242,12 +1242,12 @@ class MemoryViewModel(
                             )
                         }
                     }.onError { msg, _ ->
-                        Logger.w("MemoryVM", "批量删除事实失败: $msg")
+                        Logger.w("MemoryVM", "Batch delete of facts failed: $msg")
                     }
                 }
                 purgeTargets.forEach { target ->
                     resultOf { memoryCompiler.purgeTombstonedFacts(target) }
-                        .onError { msg, t -> Logger.w("MemoryVM", "purgeTombstonedFacts 失败: $msg", t) }
+                        .onError { msg, t -> Logger.w("MemoryVM", "purgeTombstonedFacts failed: $msg", t) }
                 }
             }
             loadAll(silent = true)
@@ -1276,7 +1276,7 @@ class MemoryViewModel(
                                     spaceId = requestedSpaceId,
                                 )
                                 resultOf { memoryCompiler.purgeTombstonedFacts(target) }
-                                    .onError { msg, t -> Logger.w("MemoryVM", "purgeTombstonedFacts 失败: $msg", t) }
+                                    .onError { msg, t -> Logger.w("MemoryVM", "purgeTombstonedFacts failed: $msg", t) }
                             }
                         }
                 }
@@ -1341,7 +1341,7 @@ class MemoryViewModel(
                 // v1.78 (H3): 必须重抛协程取消信号,否则会破坏协程取消语义
                 throw e
             } catch (t: Throwable) {
-                Logger.w("MemoryViewModel", "toggleFactPinned 异常: ${t.message}", t)
+                Logger.w("MemoryViewModel", "toggleFactPinned error: ${t.message}", t)
                 val msg = if (pinned) R.string.memory_pin_failed else R.string.memory_unpin_failed
                 MuseToast.show(getApplication<Application>().getString(msg))
             }
@@ -1358,14 +1358,14 @@ class MemoryViewModel(
         val pinnedAssistantId = scope?.takeIf { it.isNotBlank() && it != "main" } ?: "default"
         // 先写 PinnedMemoryStore(add 成功)再 setPinned
         val addResult = resultOf { pinnedMemoryStore.add(content, assistantId = pinnedAssistantId) }
-            .onError { msg, t -> Logger.w("MemoryViewModel", "PinnedMemoryStore.add 失败: $msg", t) }
+            .onError { msg, t -> Logger.w("MemoryViewModel", "PinnedMemoryStore.add failed: $msg", t) }
         if (addResult.isError) {
             // add 失败,未写入任一来源,直接提示,不清后置状态
             MuseToast.show(getApplication<Application>().getString(R.string.memory_pin_failed))
             return
         }
         val setResult = resultOf { storeForFact(id, scope).setPinned(id, pinned = true) }
-            .onError { msg, t -> Logger.w("MemoryViewModel", "toggleFactPinned.setPinned 失败: $msg", t) }
+            .onError { msg, t -> Logger.w("MemoryViewModel", "toggleFactPinned.setPinned failed: $msg", t) }
         if (setResult.isError) {
             // 回滚已成功的 add,保持两边一致
             resultOf {
@@ -1375,7 +1375,7 @@ class MemoryViewModel(
                     includeGlobal = false,
                 )
             }
-                .onError { m2, t2 -> Logger.w("MemoryViewModel", "PinnedMemoryStore 置顶回滚失败: $m2", t2) }
+                .onError { m2, t2 -> Logger.w("MemoryViewModel", "PinnedMemoryStore pin rollback failed: $m2", t2) }
             MuseToast.show(getApplication<Application>().getString(R.string.memory_pin_failed))
         }
     }
@@ -1394,13 +1394,13 @@ class MemoryViewModel(
                 includeGlobal = pinnedAssistantId == "default",
             )
         }
-            .onError { msg, t -> Logger.w("MemoryViewModel", "PinnedMemoryStore.removeByContentFlexible 失败: $msg", t) }
+            .onError { msg, t -> Logger.w("MemoryViewModel", "PinnedMemoryStore.removeByContentFlexible failed: $msg", t) }
         if (removeResult.isError) {
             MuseToast.show(getApplication<Application>().getString(R.string.memory_unpin_failed))
             return
         }
         val setResult = resultOf { storeForFact(id, scope).setPinned(id, pinned = false) }
-            .onError { msg, t -> Logger.w("MemoryViewModel", "toggleFactPinned.setPinned 失败: $msg", t) }
+            .onError { msg, t -> Logger.w("MemoryViewModel", "toggleFactPinned.setPinned failed: $msg", t) }
         if (setResult.isError) {
             MuseToast.show(getApplication<Application>().getString(R.string.memory_unpin_failed))
         }
@@ -1576,7 +1576,7 @@ class MemoryViewModel(
             val scope = _selectedScope.value ?: "main"
             withContext(Dispatchers.IO) {
                 resultOf { store.removePair(scope, _selectedSpaceId.value, pair) }
-                    .onError { msg, t -> Logger.w("MemoryViewModel", "清除矛盾清单失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MemoryViewModel", "Failed to clear contradiction list: $msg", t) }
             }
             loadAll(silent = true)
         }
@@ -1784,7 +1784,7 @@ class MemoryViewModel(
                 GroupChatMemoryUiItem(
                     id = m.id,
                     groupChatId = m.groupChatId,
-                    groupChatName = groupChatNameById[m.groupChatId] ?: "群聊",
+                    groupChatName = groupChatNameById[m.groupChatId] ?: "Group chat",
                     assistantName = assistantNameById[m.assistantId] ?: m.assistantId.take(8),
                     summary = m.summary,
                     createdAt = m.createdAt,
@@ -1808,7 +1808,7 @@ class MemoryViewModel(
             withContext(Dispatchers.IO) {
                 resultOf { groupChatMemoryRepository.deleteById(id) }
                     .onError { msg, t ->
-                        Logger.w("MemoryViewModel", "删除群聊记忆失败: $msg", t)
+                        Logger.w("MemoryViewModel", "Failed to delete group chat memory: $msg", t)
                         MuseToast.show(getApplication<Application>().getString(R.string.memory_delete_group_chat_failed, msg))
                     }
             }
@@ -1825,7 +1825,7 @@ class MemoryViewModel(
             withContext(Dispatchers.IO) {
                 resultOf { groupChatMemoryRepository.deleteAll() }
                     .onError { msg, t ->
-                        Logger.w("MemoryViewModel", "清空群聊记忆失败: $msg", t)
+                        Logger.w("MemoryViewModel", "Failed to clear group chat memory: $msg", t)
                         MuseToast.show(getApplication<Application>().getString(R.string.memory_clear_group_chat_failed, msg))
                     }
             }

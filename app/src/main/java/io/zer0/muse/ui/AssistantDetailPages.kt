@@ -1602,7 +1602,7 @@ fun AssistantMemoryPage(assistantId: String, onBack: () -> Unit) {
     ) {
         value =
             resultOf { pinnedMemoryStore.getForAssistant(assistantId, includeGlobal = includeGlobalPinned) }
-                .onError { message, error -> Logger.w("AssistantMemoryPage", "读取置顶记忆失败: $message", error) }
+                .onError { message, error -> Logger.w("AssistantMemoryPage", "Failed to read pinned memory: $message", error) }
                 .getOrNull()
                 .orEmpty()
     }
@@ -1614,7 +1614,7 @@ fun AssistantMemoryPage(assistantId: String, onBack: () -> Unit) {
     val facts by produceState<List<FactStore.Fact>>(initialValue = emptyList(), refreshKey, memoryScope, spaceId) {
         value =
             resultOf { memoryStore.getByScopeAndSpace(memoryScope, spaceId) }
-                .onError { message, error -> Logger.w("AssistantMemoryPage", "读取助手记忆失败: $message", error) }
+                .onError { message, error -> Logger.w("AssistantMemoryPage", "Failed to read assistant memory: $message", error) }
                 .getOrNull()
                 .orEmpty()
     }
@@ -1782,7 +1782,7 @@ fun AssistantMemoryPage(assistantId: String, onBack: () -> Unit) {
                                                         )
                                                     }
                                                         .onError { message, error ->
-                                                            Logger.w("AssistantMemoryPage", "删除助手记忆失败: $message", error)
+                                                            Logger.w("AssistantMemoryPage", "Failed to delete assistant memory: $message", error)
                                                         }
                                                         .getOrNull() == true
                                                 if (deleted) expandedFactIds.remove(fact.id)

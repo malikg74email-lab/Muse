@@ -446,7 +446,7 @@ private fun shareCrashLog(context: Context) {
  * 旧设备 fallback:手动删除核心目录后杀进程。
  */
 private fun clearApplicationData(context: Context) {
-    Logger.w("SafeModeScreen", "clearApplicationData — 用户主动清除全部数据")
+    Logger.w("SafeModeScreen", "clearApplicationData — user chose to clear all data")
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
     if (am != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
         @Suppress("DEPRECATION")
@@ -481,15 +481,15 @@ private fun manualClearData(context: Context) {
 private fun copyCrashInfo(context: Context, crashTime: String?, crashTrace: String?) {
     val text = buildString {
         if (!crashTime.isNullOrBlank()) {
-            appendLine("崩溃时间: $crashTime")
+            appendLine("Crash time: $crashTime")
             appendLine()
         }
         if (!crashTrace.isNullOrBlank()) {
-            appendLine("崩溃堆栈:")
+            appendLine("Crash stack:")
             append(crashTrace)
         }
         if (isEmpty()) {
-            append("(无崩溃信息)")
+            append("(No crash information)")
         }
     }
     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

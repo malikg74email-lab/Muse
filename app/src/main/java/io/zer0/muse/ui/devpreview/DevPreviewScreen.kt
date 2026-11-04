@@ -58,7 +58,7 @@ fun DevPreviewScreen() {
             .padding(vertical = MusePaddings.sectionGap),
     ) {
         Text(
-            text = "MOOD / 思考卡 预览（开发用）",
+            text = "MOOD / Thinking card preview (for development)",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
             modifier = Modifier.padding(horizontal = MusePaddings.screen, vertical = 8.dp),
@@ -101,11 +101,11 @@ fun DevPreviewScreen() {
 /** 预览用样本：带 MOOD 四段 + 思考正文。 */
 private fun sampleMessage(): UIMessage = UIMessage(
     role = MessageRole.ASSISTANT,
-    content = "我把设置页按用户意图重排成 11 组了，一级入口从 34 个增到 48 个。\n\n" +
-        "顺手修了两个以前根本进不去的设置页。",
-    reasoning = "先确认现有层级和真实字段数量对不对得上。" +
-        "发现一级只有 7 组、可见入口 34 个，但落库字段有 275 个，" +
-        "说明界面层级是代码模块结构的投影，不是用户意图的投影。",
+    content = "I reorganized the settings page into 11 groups by user intent, and top-level entries grew from 34 to 48.\n\n" +
+        "Also fixed two settings pages that were completely unreachable before.",
+    reasoning = "First check whether the existing hierarchy matches the real field counts." +
+        "Found only 7 top-level groups and 34 visible entries, but 275 persisted fields," +
+        "which means the UI hierarchy projects the code module structure, not user intent.",
     mood = SAMPLE_MOOD,
     modelId = "preview",
 )
@@ -114,7 +114,7 @@ private fun sampleMessage(): UIMessage = UIMessage(
 private fun sampleToolMessage(): UIMessage = UIMessage(
     role = MessageRole.ASSISTANT,
     content = "",
-    reasoning = "先读一遍现有设置页的分组，再决定怎么并。",
+    reasoning = "Read through the existing settings page grouping first, then decide how to merge.",
     modelId = "preview",
     toolCallInfo = io.zer0.ai.core.ToolCallInfo(
         toolName = "update_settings",
@@ -125,14 +125,14 @@ private fun sampleToolMessage(): UIMessage = UIMessage(
     ),
 )
 
-private const val SAMPLE_MOOD = "Vibe: 这一版改完，聊天页终于不像一堆卡片堆着了\n" +
+private const val SAMPLE_MOOD = "Vibe: With this version done, the chat page finally no longer looks like a pile of cards\n" +
     "Sparks:\n" +
-    "  - 四段 mood 拆开之后，Sparks 那三条才有地方站\n" +
-    "  - 思考卡和工具卡应该像一条流水，而不是两块积木\n" +
-    "  - 摘要行用「思考了一阵」比截取前 40 字更像人话\n" +
+    "  - Once the four MOOD sections are split, the three Sparks entries have room to stand\n" +
+    "  - The thinking card and tool cards should flow like a stream, not sit like two blocks\n" +
+    "  - A summary line like Thought for a while reads more human than truncating the first 40 characters\n" +
     "Reflections:\n" +
-    "  - 折叠标题带操作数，用户能一眼看出这一步干了多少事\n" +
-    "  - 计划卡保持独立是对的，它是干活时最该盯的东西\n" +
+    "  - Collapsed titles carry operation counts, so users see at a glance how much each step did\n" +
+    "  - Keeping the plan card separate is right; it is the thing to watch while working\n" +
     "Will:\n" +
-    "  - 想把这套排版稳定下来\n" +
-    "  - 不想再加新卡片了"
+    "  - Want to stabilize this layout\n" +
+    "  - Do not want to add new cards anymore"

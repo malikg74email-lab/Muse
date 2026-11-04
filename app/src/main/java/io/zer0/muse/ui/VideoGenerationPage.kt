@@ -238,7 +238,7 @@ fun VideoGenerationPage(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = "当前供应商没有支持视频输出的模型。请在「设置→模型与服务」中为模型开启「视频输出」能力。",
+                            text = "The current provider has no model with video output support. Please enable the Video output capability for a model in Settings → Models & services.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(MusePaddings.cardInner),

@@ -1923,7 +1923,7 @@ fun ChatScreen(
                                         } else {
                                             // SYSTEM 路径:检查系统语音识别服务是否可用,可用则长按松开后弹 Intent
                                             if (!SpeechInput.isAvailable(context)) {
-                                                Logger.w("ChatScreen", "系统语音服务不可用")
+                                                Logger.w("ChatScreen", "System speech service unavailable")
                                                 // U-17: 服务未就绪单独提示,与"权限缺失"区分
                                                 MuseToast.show(context.getString(R.string.chat_voice_not_ready))
                                                 false
@@ -1953,7 +1953,7 @@ fun ChatScreen(
                                                         )
                                                     }.onError { msg, _ ->
                                                         // v1.98: 移除弹窗提示,静默处理
-                                                        Logger.w("ChatScreen", "启动语音识别失败: $msg")
+                                                        Logger.w("ChatScreen", "Failed to start speech recognition: $msg")
                                                     }
                                                 }
                                             }

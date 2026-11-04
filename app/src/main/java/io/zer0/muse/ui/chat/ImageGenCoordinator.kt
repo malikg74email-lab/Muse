@@ -176,7 +176,7 @@ class ImageGenCoordinator(
                     return@launch
                 }
                 accessor.update { it.copy(pendingImages = current + keyFrames) }
-                Logger.i(tag, "pickVideo: 已提取 ${keyFrames.size} 张关键帧加入 pendingImages")
+                Logger.i(tag, "pickVideo: extracted ${keyFrames.size} key frames into pendingImages")
             } catch (t: Exception) {
                 Logger.e(tag, "pickVideo failed", t)
                 reportError(context.getString(R.string.err_image_gen_video_failed, t.message ?: ""))
@@ -282,7 +282,7 @@ class ImageGenCoordinator(
             isStreaming: Boolean,
         ) -> Unit,
     ) {
-        val userMsg = UIMessage(role = MessageRole.USER, content = "[绘图] $prompt")
+        val userMsg = UIMessage(role = MessageRole.USER, content = "[Image] $prompt")
         val assistantMsg = UIMessage(role = MessageRole.ASSISTANT, content = "")
         accessor.updateMessages { it + userMsg + assistantMsg }
         accessor.update {
@@ -300,7 +300,7 @@ class ImageGenCoordinator(
         // 状态更新(isGeneratingImage)以当前任务为准, 旧任务 finally 不得覆盖新任务
         val mediaTaskId = kotlin.uuid.Uuid.random().toString()
         currentMediaTaskId = mediaTaskId
-        Logger.i(tag, "绘图任务开始 mediaTask=$mediaTaskId | prompt=${prompt.take(60)}")
+        Logger.i(tag, "Image generation task started mediaTask=$mediaTaskId | prompt=${prompt.take(60)}")
         imageJob = accessor.coroutineScope.launch(AppDispatchers.io) {
             try {
                 val imageGenConfig = settings.imageGenConfigFlow.first()
@@ -348,7 +348,7 @@ class ImageGenCoordinator(
                 }
                 val model = resolveImageCapableModel(config, requestedModel)
                 if (requestedModel != null && model != null && requestedModel.id != model.id) {
-                    Logger.w(tag, "图片模型 ${requestedModel.id} 不支持图片输出,改用 ${model.id}")
+                    Logger.w(tag, "Image model ${requestedModel.id} does not support image output; using ${model.id} instead")
                 }
 
                 if (config == null) {
@@ -530,7 +530,7 @@ class ImageGenCoordinator(
         ) -> Unit,
     ) {
         val drawMessages = listOf(
-            UIMessage(role = MessageRole.USER, content = "请生成一张图片: $prompt"),
+            UIMessage(role = MessageRole.USER, content = "Please generate an image: $prompt"),
         )
         val flow = chatService.streamChat(
             messages = drawMessages,

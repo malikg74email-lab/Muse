@@ -77,7 +77,7 @@ class SessionMemoryCache(
         // 注:removeEldestEntry 触发时 eldest 尚未真正移除,故 cache.size 含被驱逐条目,
         // 驱逐后实际大小为 size - 1。
         evictListener = { sessionId, messages ->
-            Logger.d(TAG, "LRU 驱逐会话: id=$sessionId, 消息数=${messages.size}, 驱逐后缓存大小=${cache.size - 1}")
+            Logger.d(TAG, "LRU evicting session: id=$sessionId, messages=${messages.size}, cache size after eviction=${cache.size - 1}")
         }
     }
 

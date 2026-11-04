@@ -17,8 +17,8 @@ internal object UserMessageTimeContext {
         val currentTimestamp = formatTimestamp(current.createdAt, zoneId)
         val previous = userMessages.getOrNull(userMessages.lastIndex - 1)
         return if (previous == null) {
-            "用户消息时间锚点（设备时区 ${zoneId.id}）：当前用户消息发送于 $currentTimestamp；" +
-                "没有可比较的上一条用户消息，不要根据助手思考、工具执行或 API 调用耗时推算消息间隔。"
+            "User message time anchor (device time zone  ${zoneId.id}): the current user message was sent at  $currentTimestamp；" +
+                "There is no previous user message to compare with. Do not infer the interval between messages from assistant thinking, tool execution or API call time."
         } else {
             val previousTimestamp = formatTimestamp(previous.createdAt, zoneId)
             val elapsedMs = if (current.createdAt >= previous.createdAt) {
@@ -27,9 +27,9 @@ internal object UserMessageTimeContext {
                 previous.createdAt - current.createdAt
             }
             val elapsed = formatElapsed(elapsedMs)
-            "用户消息时间锚点（设备时区 ${zoneId.id}）：上一条用户消息发送于 $previousTimestamp；" +
-                "当前用户消息发送于 $currentTimestamp；两条用户消息间隔：$elapsed。" +
-                "回答消息间隔问题时必须使用该间隔，不能用助手思考、工具执行或 API 请求耗时替代。"
+            "User message time anchor (device time zone  ${zoneId.id}): the previous user message was sent at  $previousTimestamp；" +
+                "the current user message was sent at  $currentTimestamp; interval between the two user messages: $elapsed。" +
+                "When answering questions about the interval between messages, you must use this interval; do not substitute assistant thinking time, tool execution time or API request time."
         }
     }
 
@@ -37,17 +37,17 @@ internal object UserMessageTimeContext {
         Instant.ofEpochMilli(timestamp).atZone(zoneId).format(timestampFormatter)
 
     private fun formatElapsed(elapsedMs: Long): String {
-        if (elapsedMs < 1_000L) return "$elapsedMs 毫秒"
+        if (elapsedMs < 1_000L) return "$elapsedMs  ms"
         val totalSeconds = elapsedMs / 1_000L
         val days = totalSeconds / 86_400L
         val hours = totalSeconds % 86_400L / 3_600L
         val minutes = totalSeconds % 3_600L / 60L
         val seconds = totalSeconds % 60L
         return buildList {
-            if (days > 0) add("$days 天")
-            if (hours > 0) add("$hours 小时")
-            if (minutes > 0) add("$minutes 分")
-            if (seconds > 0) add("$seconds 秒")
-        }.joinToString(" ").ifBlank { "0 秒" }
+            if (days > 0) add("$days  days")
+            if (hours > 0) add("$hours  hours")
+            if (minutes > 0) add("$minutes  min")
+            if (seconds > 0) add("$seconds  sec")
+        }.joinToString(" ").ifBlank { "0 sec" }
     }
 }

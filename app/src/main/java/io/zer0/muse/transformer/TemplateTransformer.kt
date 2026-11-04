@@ -98,7 +98,7 @@ class TemplateTransformer(
             //           现补充 camelCase 别名 userName / assistantName,与 snake_case 等价,兼容用户手写习惯。
             // v1.97 兜底:user_nickname 为空时给默认值"你",避免 {{user_name}} 字面量留在 prompt 中。
             // v1.109 修复: assistant_name 为空时给默认值"Muse"(品牌名),避免 {{char}} 渲染为空串。
-            val userNickname = (context.extra("user_nickname") as? String) ?: "你"
+            val userNickname = (context.extra("user_nickname") as? String) ?: "You"
             put("user", userNickname)
             put("user_name", userNickname)
             put("nickname", userNickname)
@@ -133,7 +133,7 @@ class TemplateTransformer(
             val rendered = withContext(Dispatchers.Default) {
                 runCatching { engine.render(msg.content, vars) }.getOrElse {
                     // 渲染失败:保留原文,Logger 记录(避免阻塞对话)
-                    Logger.w("TemplateTransformer", "模板渲染失败: ${it.message}")
+                    Logger.w("TemplateTransformer", "Template rendering failed:  ${it.message}")
                     msg.content
                 }
             }
@@ -156,7 +156,7 @@ class TemplateTransformer(
             val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
             if (level in 0..100) level.toString() else "unknown"
         }.getOrElse {
-            Logger.w("TemplateTransformer", "读取电池电量失败: ${it.message}")
+            Logger.w("TemplateTransformer", "Failed to read battery level:  ${it.message}")
             "unknown"
         }
     }

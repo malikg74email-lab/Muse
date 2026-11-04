@@ -261,7 +261,7 @@ class ChatTaskCardCoordinator(
                         taskCardId = taskCardId,
                         stepId = step.id,
                         status = TaskStepStatus.FAILED,
-                        result = "[需手动] 高危工具 ${step.title} 不自动重试，请重新发起以再次确认",
+                        result = "[Manual action needed] High-risk tool ${step.title} is not retried automatically; please start again to confirm",
                         startedAt = startedAt,
                         finishedAt = System.currentTimeMillis(),
                         autoExpand = true,
@@ -279,7 +279,7 @@ class ChatTaskCardCoordinator(
                             }
                         ) {
                             is io.zer0.common.Result.Success -> r.data
-                            is io.zer0.common.Result.Error -> "重试执行异常: ${r.message}"
+                            is io.zer0.common.Result.Error -> "Retry execution error: ${r.message}"
                         }
                     }
                 } catch (ce: CancellationException) {
@@ -289,7 +289,7 @@ class ChatTaskCardCoordinator(
                             taskCardId = taskCardId,
                             stepId = step.id,
                             status = TaskStepStatus.CANCELLED,
-                            result = "[取消] 重试 ${step.title} 已取消",
+                            result = "[Cancelled] Retry of ${step.title} was cancelled",
                             startedAt = startedAt,
                             finishedAt = System.currentTimeMillis(),
                             autoExpand = false,
@@ -301,7 +301,7 @@ class ChatTaskCardCoordinator(
 
                 val timedOut = retryResult == null
                 val toolResult = retryResult
-                    ?: "[超时] 重试 ${step.title} 超过 ${retryTimeoutMs / 1000} 秒未响应,已终止"
+                    ?: "[Timeout] Retry of ${step.title} timed out after ${retryTimeoutMs / 1000} seconds with no response; terminated"
                 val isSuccess = !timedOut && isToolResultSuccess(toolResult)
                 writeRetriedStep(
                     taskCardId = taskCardId,

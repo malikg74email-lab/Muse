@@ -239,7 +239,7 @@ fun ChatListScreen(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Logger.w("ChatListScreen", "前台每日总结生成失败: ${e.message}", e)
+                    Logger.w("ChatListScreen", "Failed to generate foreground daily summary: ${e.message}", e)
                 }
             }
         }
@@ -253,10 +253,10 @@ fun ChatListScreen(
                     org.koin.core.context.GlobalContext.get()
                         .get<io.zer0.muse.data.todo.SessionTodoRepository>()
                 openTodoSessionCount = repo.countSessionsWithOpenItems()
-            }.onFailure { Logger.w("ChatListScreen", "读取未完成待办数失败: ${it.message}") }
+            }.onFailure { Logger.w("ChatListScreen", "Failed to read unfinished to-do count: ${it.message}") }
             // 必须先拿到局部 facts 再生成,不能在同一协程里读取刚刚 set 的 Compose 状态。
             val facts = runCatching { factDao.getAll("main").take(100) }.getOrElse {
-                Logger.w("ChatListScreen", "读取问候语记忆失败: ${it.message}")
+                Logger.w("ChatListScreen", "Failed to read greeting memories: ${it.message}")
                 emptyList()
             }
             greetingFacts = facts
@@ -278,7 +278,7 @@ fun ChatListScreen(
                         settings.saveGreetingHintCache("$today|$hint")
                     }
                 }
-            }.onFailure { e -> Logger.w("ChatListScreen", "问候语生成失败: ${e.message}") }
+            }.onFailure { e -> Logger.w("ChatListScreen", "Failed to generate greeting: ${e.message}") }
             // v1.x: 问候语个性化提醒通知 — 有近期事项且今天未通知过时,发一条通知让用户知道助手在关注他(每天最多一次)。
             runCatching {
                 // 同一 LaunchedEffect 内状态更新尚未回流,使用局部结果保证首次加载也能通知。
@@ -297,7 +297,7 @@ fun ChatListScreen(
                         settings.saveLastGreetingNotifyDate(today)
                     }
                 }
-            }.onFailure { e -> Logger.w("ChatListScreen", "问候语提醒通知失败: ${e.message}") }
+            }.onFailure { e -> Logger.w("ChatListScreen", "Greeting reminder notification failed: ${e.message}") }
         }
 
         // 当天是否已有会话：用于剔除「今天还没聊什么」这类与实际记录矛盾的问候语。
@@ -2252,6 +2252,10 @@ private fun ChatListEditAction(label: String, enabled: Boolean, onClick: () -> U
  */
 private fun looksLikeEmptyDayHint(text: String): Boolean {
     val markers = listOf(
+        "haven't chatted yet today",
+        "whenever something comes to mind",
+        "No new conversations yet today",
+        // Legacy Chinese hints (summaries persisted by older versions).
         "今天还没聊",
         "今天还没有",
         "今天还没有新的对话",

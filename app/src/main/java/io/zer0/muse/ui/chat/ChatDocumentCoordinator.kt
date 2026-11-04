@@ -189,8 +189,8 @@ class ChatDocumentCoordinator(
             if (sid.isNullOrBlank()) return
             GlobalContext.get().get<SessionAttachmentService>()
                 .indexSessionAttachment(sessionId = sid, name = fileName, content = text)
-            Logger.i(tag, "会话附件已提交索引 | sessionId=$sid | name=$fileName")
-        }.onFailure { Logger.w(tag, "会话附件索引接入失败(不影响文档发送)", it) }
+            Logger.i(tag, "Session attachment committed to index | sessionId=$sid | name=$fileName")
+        }.onFailure { Logger.w(tag, "Failed to hook session attachment into the index (does not affect document sending)", it) }
     }
 
     /**

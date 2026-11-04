@@ -1,6 +1,7 @@
 package io.zer0.muse.ui.chat
 
 import io.zer0.ai.core.MessageRole
+import io.zer0.muse.chat.InternalPromptMarkers
 import io.zer0.muse.data.SettingsRepository
 import io.zer0.muse.data.audit.AuditLogger
 import io.zer0.muse.data.session.SessionRepository
@@ -71,13 +72,13 @@ class ChatExportCoordinator(
         if (tpl.includeTimestamp) {
             val now = java.text.SimpleDateFormat(MuseDateFormats.DATE_TIME_FULL, java.util.Locale.getDefault())
                 .format(java.util.Date())
-            meta.add("导出时间: $now")
+            meta.add("Exported at: $now")
         }
         if (tpl.includeModelName) {
             val model = state.providers.firstOrNull { it.id == state.activeProviderId }
                 ?.models?.firstOrNull { it.id == state.selectedModelId }
-            val modelName = model?.name ?: model?.id ?: "未知模型"
-            meta.add("模型: $modelName")
+            val modelName = model?.name ?: model?.id ?: "Unknown model"
+            meta.add("Model: $modelName")
         }
         meta.forEach { sb.append("> ").append(it).append("  \n") }
         if (meta.isNotEmpty()) sb.append("\n")
@@ -86,20 +87,20 @@ class ChatExportCoordinator(
 
         var totalChars = 0
         allMessages.forEach { msg ->
-            val role = if (msg.role == MessageRole.USER) "用户" else "助手"
+            val role = if (msg.role == MessageRole.USER) InternalPromptMarkers.ROLE_USER else InternalPromptMarkers.ROLE_ASSISTANT
             sb.append("**").append(role).append("**: ").append(msg.content).append("\n\n")
             totalChars += msg.content.length
             if (tpl.includeMoodBlock && !msg.mood.isNullOrBlank()) {
                 sb.append("<mood>\n").append(msg.mood).append("\n</mood>\n\n")
             }
             if (tpl.includeReasoning && !msg.reasoning.isNullOrBlank()) {
-                sb.append("### 思考过程\n\n").append(msg.reasoning).append("\n\n")
+                sb.append("### ${InternalPromptMarkers.THINKING_HEADER}\n\n").append(msg.reasoning).append("\n\n")
             }
         }
 
         if (tpl.includeTokenCount) {
             val estTokens = totalChars / 3
-            sb.append("> 估算 Token: ~").append(estTokens).append("  \n\n")
+            sb.append("> Estimated tokens: ~").append(estTokens).append("  \n\n")
         }
 
         val output = when (tpl.format) {
@@ -172,7 +173,7 @@ class ChatExportCoordinator(
 
         val allMessages = loadAllMessages(state)
         allMessages.forEach { msg ->
-            val role = if (msg.role == MessageRole.USER) "用户" else "助手"
+            val role = if (msg.role == MessageRole.USER) InternalPromptMarkers.ROLE_USER else InternalPromptMarkers.ROLE_ASSISTANT
             sb.append("[$role]\n").append(msg.content).append("\n\n")
         }
         val output = sb.toString()
@@ -240,10 +241,10 @@ class ChatExportCoordinator(
         return output
     }
 
-    /** 解析当前会话标题(空标题回退为 "muse 对话")。 */
+    /** 解析当前会话标题(空标题回退为 "Shaheen 2 conversation")。 */
     private fun resolveTitle(state: io.zer0.muse.ui.ChatUiState): String {
         val sessionId = resolveSessionId(state)
-        return state.sessions.find { it.id == sessionId }?.title?.takeIf { it.isNotBlank() } ?: "muse 对话"
+        return state.sessions.find { it.id == sessionId }?.title?.takeIf { it.isNotBlank() } ?: "Shaheen 2 conversation"
     }
 
     private suspend fun loadAllMessages(state: io.zer0.muse.ui.ChatUiState): List<io.zer0.ai.core.UIMessage> {

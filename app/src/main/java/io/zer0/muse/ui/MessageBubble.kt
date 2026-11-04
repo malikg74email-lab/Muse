@@ -1866,7 +1866,7 @@ internal fun MessageBubble(
             val truncatedMarker = stringResource(R.string.err_reply_truncated)
             val willContinueShow = isLastAssistant && onContinue != null &&
                 (
-                    msg.content.contains("[已中断]") ||
+                    msg.content.contains("[Interrupted]") || msg.content.contains("[已中断]") ||
                         (truncatedMarker.isNotBlank() && msg.content.contains(truncatedMarker))
                     )
             val hasContent = msg.content.isNotEmpty()

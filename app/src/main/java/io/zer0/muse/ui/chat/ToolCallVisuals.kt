@@ -60,8 +60,8 @@ internal object ToolCallVisuals {
         val text = result.trimStart()
         return when {
             // I18N: 兜底只在 res==null(预览/纯函数)时触达,生产路径始终走资源
-            text.startsWith("[超时]") -> res?.getString(R.string.tool_terminal_timeout) ?: ""
-            text.startsWith("[中断]") -> res?.getString(R.string.tool_terminal_interrupted) ?: ""
+            text.startsWith("[Timeout]") || text.startsWith("[超时]") -> res?.getString(R.string.tool_terminal_timeout) ?: ""
+            text.startsWith("[Interrupted]") || text.startsWith("[中断]") -> res?.getString(R.string.tool_terminal_interrupted) ?: ""
             else -> null
         }
     }
@@ -230,83 +230,83 @@ internal object ToolCallVisuals {
     // ── 动词 ─────────────────────────────────────────────────────────────
 
     private val successVerb: Map<String, String> = mapOf(
-        "web_search" to "搜索了网页",
-        "search_memory" to "检索了记忆",
-        "pin_memory" to "置顶了记忆",
-        "unpin_memory" to "取消置顶记忆",
-        "read_file" to "读取了文件",
-        "write_file" to "写入了文件",
-        "list_files" to "列出了文件",
-        "workspace_write" to "写入了工作区",
-        "execute_code" to "执行了代码",
-        "execute_javascript" to "执行了脚本",
-        "execute_shell" to "执行了命令",
-        "run_command" to "运行了命令",
-        "open_url" to "打开了网页",
-        "generate_image" to "生成了图片",
-        "generate_video" to "生成了视频",
-        "get_current_time" to "查询了时间",
-        "calendar_today" to "查看了日历",
-        "add_calendar_event" to "添加了日历事件",
-        "schedule_reminder" to "设置了提醒",
-        "cancel_reminder" to "取消了提醒",
-        "list_reminders" to "列出了提醒",
-        "set_alarm" to "设置了闹钟",
-        "set_timer" to "启动了计时器",
-        "get_device_info" to "读取了设备信息",
-        "get_battery_info" to "读取了电量",
-        "get_storage_info" to "读取了存储",
-        "get_memory_info" to "读取了内存",
-        "get_cpu_info" to "读取了 CPU",
-        "get_network_info" to "读取了网络",
-        "list_installed_apps" to "列出了应用",
-        "open_app" to "打开了应用",
-        "make_phone_call" to "拨打电话",
-        "send_sms" to "发送了短信",
-        "get_contacts_list" to "读取了联系人",
-        "add_contact" to "添加了联系人",
-        "get_location" to "获取了位置",
-        "open_maps" to "打开了地图",
-        "share_text" to "分享了文本",
-        "send_email" to "发送了邮件",
-        "get_recent_notifications" to "读取了通知",
-        "clipboard_read" to "读取了剪贴板",
-        "clipboard_write" to "写入了剪贴板",
-        "quick_note_add" to "新建了便签",
-        "quick_note_list" to "列出了便签",
-        "quick_note_get" to "读取了便签",
-        "quick_note_update" to "更新了便签",
-        "quick_note_delete" to "删除了便签",
-        "quick_note_pin" to "置顶了便签",
-        "resource_add" to "添加了资源",
-        "resource_list" to "列出了资源",
-        "resource_search" to "检索了资源",
-        "resource_get" to "读取了资源",
-        "resource_delete" to "删除了资源",
-        "delegate_agent" to "委派了子助手",
-        "subagent_task" to "启动了子任务",
-        "subagent_run" to "运行了子任务",
-        "subagent_close" to "关闭了子任务",
-        "notify" to "发送了通知",
-        "proactive_message_wish" to "记下了主动消息",
-        "show_card" to "展示了卡片",
-        "current_status" to "查询了状态",
-        "calculator" to "计算",
-        "translate" to "翻译",
-        "speak_text" to "朗读了文本",
-        "get_weather" to "查询了天气",
-        "todo_write" to "更新了待办",
-        "ping_host" to "Ping 了主机",
-        "dns_lookup" to "DNS 查询",
-        "get_public_ip" to "查询了公网 IP",
-        "download" to "下载了文件",
-        "json_pretty" to "格式化了 JSON",
-        "hash_text" to "计算了哈希",
-        "generate_password" to "生成了密码",
-        "record_experience" to "记录了经历",
-        "recall_experience" to "回想了经历",
-        "take_photo" to "拍了照片",
-        "cover_generation" to "生成了封面",
+        "web_search" to "Searched the web",
+        "search_memory" to "Searched memory",
+        "pin_memory" to "Pinned a memory",
+        "unpin_memory" to "Unpinned a memory",
+        "read_file" to "Read a file",
+        "write_file" to "Wrote a file",
+        "list_files" to "Listed files",
+        "workspace_write" to "Wrote to the workspace",
+        "execute_code" to "Executed code",
+        "execute_javascript" to "Executed a script",
+        "execute_shell" to "Executed a command",
+        "run_command" to "Ran a command",
+        "open_url" to "Opened a web page",
+        "generate_image" to "Generated an image",
+        "generate_video" to "Generated a video",
+        "get_current_time" to "Checked the time",
+        "calendar_today" to "Viewed the calendar",
+        "add_calendar_event" to "Added a calendar event",
+        "schedule_reminder" to "Set a reminder",
+        "cancel_reminder" to "Cancelled a reminder",
+        "list_reminders" to "Listed reminders",
+        "set_alarm" to "Set an alarm",
+        "set_timer" to "Started a timer",
+        "get_device_info" to "Read device info",
+        "get_battery_info" to "Read battery level",
+        "get_storage_info" to "Read storage info",
+        "get_memory_info" to "Read memory info",
+        "get_cpu_info" to "Read CPU info",
+        "get_network_info" to "Read network info",
+        "list_installed_apps" to "Listed apps",
+        "open_app" to "Opened an app",
+        "make_phone_call" to "Made a phone call",
+        "send_sms" to "Sent a text message",
+        "get_contacts_list" to "Read contacts",
+        "add_contact" to "Added a contact",
+        "get_location" to "Got the location",
+        "open_maps" to "Opened maps",
+        "share_text" to "Shared text",
+        "send_email" to "Sent an email",
+        "get_recent_notifications" to "Read notifications",
+        "clipboard_read" to "Read the clipboard",
+        "clipboard_write" to "Wrote to the clipboard",
+        "quick_note_add" to "Created a note",
+        "quick_note_list" to "Listed notes",
+        "quick_note_get" to "Read a note",
+        "quick_note_update" to "Updated a note",
+        "quick_note_delete" to "Deleted a note",
+        "quick_note_pin" to "Pinned a note",
+        "resource_add" to "Added a resource",
+        "resource_list" to "Listed resources",
+        "resource_search" to "Searched resources",
+        "resource_get" to "Read a resource",
+        "resource_delete" to "Deleted a resource",
+        "delegate_agent" to "Delegated to a sub-assistant",
+        "subagent_task" to "Started a subtask",
+        "subagent_run" to "Ran a subtask",
+        "subagent_close" to "Closed a subtask",
+        "notify" to "Sent a notification",
+        "proactive_message_wish" to "Noted a proactive message",
+        "show_card" to "Showed a card",
+        "current_status" to "Checked the status",
+        "calculator" to "Calculated",
+        "translate" to "Translated",
+        "speak_text" to "Read text aloud",
+        "get_weather" to "Checked the weather",
+        "todo_write" to "Updated the to-do list",
+        "ping_host" to "Pinged a host",
+        "dns_lookup" to "Did a DNS lookup",
+        "get_public_ip" to "Checked the public IP",
+        "download" to "Downloaded a file",
+        "json_pretty" to "Formatted JSON",
+        "hash_text" to "Computed a hash",
+        "generate_password" to "Generated a password",
+        "record_experience" to "Recorded an experience",
+        "recall_experience" to "Recalled an experience",
+        "take_photo" to "Took a photo",
+        "cover_generation" to "Generated a cover",
     )
 
     // I18N-01: 动词资源 ID(生产路径优先；successVerb 为 res==null 兜底的存量文案,新增工具只登记资源;es/ko/ja/pt/ru 翻译分批补齐)。
@@ -401,15 +401,15 @@ internal object ToolCallVisuals {
     )
 
     private fun prefixVerb(toolName: String): String? = when {
-        toolName.startsWith("browser_") -> "操作了浏览器"
-        toolName.startsWith("workspace_") -> "操作了工作区"
-        toolName.startsWith("scheduled_task_") -> "管理了定时任务"
-        toolName.startsWith("quick_note_") -> "管理了便签"
-        toolName.startsWith("resource_") -> "管理了资源"
-        toolName.startsWith("subagent_") -> "管理了子任务"
-        toolName.startsWith("channel_") -> "管理了频道"
-        toolName.startsWith("clipboard_") -> "操作了剪贴板"
-        toolName.startsWith("mcp_") -> "调用了 MCP 工具"
+        toolName.startsWith("browser_") -> "Used the browser"
+        toolName.startsWith("workspace_") -> "Used the workspace"
+        toolName.startsWith("scheduled_task_") -> "Managed scheduled tasks"
+        toolName.startsWith("quick_note_") -> "Managed notes"
+        toolName.startsWith("resource_") -> "Managed resources"
+        toolName.startsWith("subagent_") -> "Managed subtasks"
+        toolName.startsWith("channel_") -> "Managed channels"
+        toolName.startsWith("clipboard_") -> "Used the clipboard"
+        toolName.startsWith("mcp_") -> "Called an MCP tool"
         else -> null
     }
 
@@ -427,7 +427,7 @@ internal object ToolCallVisuals {
         else -> null
     }
 
-    private fun defaultVerb(isSuccess: Boolean) = if (isSuccess) "调用了工具" else "工具调用失败"
+    private fun defaultVerb(isSuccess: Boolean) = if (isSuccess) "Called a tool" else "Tool call failed"
 
     // ── 目标对象(从参数或结果里抠出关键词) ───────────────────────────────
 
@@ -527,43 +527,43 @@ internal object ToolCallVisuals {
     // ── 中文标签 ─────────────────────────────────────────────────────────
 
     private val labels: Map<String, String> = mapOf(
-        "web_search" to "网页搜索",
-        "search_memory" to "记忆检索",
-        "read_file" to "读取文件",
-        "write_file" to "写入文件",
-        "list_files" to "列出文件",
-        "execute_code" to "代码执行",
-        "execute_javascript" to "脚本执行",
-        "execute_shell" to "Shell 命令",
-        "open_url" to "打开网页",
-        "generate_image" to "图像生成",
-        "generate_video" to "视频生成",
-        "get_current_time" to "当前时间",
-        "calendar_today" to "查看日历",
-        "schedule_reminder" to "提醒",
-        "set_alarm" to "闹钟",
-        "set_timer" to "计时器",
-        "get_device_info" to "设备信息",
-        "list_installed_apps" to "应用列表",
-        "open_app" to "打开应用",
-        "make_phone_call" to "拨打电话",
-        "send_sms" to "发送短信",
-        "get_location" to "获取位置",
-        "clipboard_read" to "读取剪贴板",
-        "clipboard_write" to "写入剪贴板",
-        "quick_note_add" to "新建便签",
-        "quick_note_list" to "便签列表",
-        "delegate_agent" to "委派子助手",
-        "subagent_task" to "子任务",
-        "notify" to "发送通知",
-        "calculator" to "计算器",
-        "translate" to "翻译",
-        "speak_text" to "语音朗读",
-        "get_weather" to "天气查询",
+        "web_search" to "Web search",
+        "search_memory" to "Memory search",
+        "read_file" to "Read file",
+        "write_file" to "Write file",
+        "list_files" to "List files",
+        "execute_code" to "Code execution",
+        "execute_javascript" to "Script execution",
+        "execute_shell" to "Shell command",
+        "open_url" to "Open web page",
+        "generate_image" to "Image generation",
+        "generate_video" to "Video generation",
+        "get_current_time" to "Current time",
+        "calendar_today" to "View calendar",
+        "schedule_reminder" to "Reminder",
+        "set_alarm" to "Alarm",
+        "set_timer" to "Timer",
+        "get_device_info" to "Device info",
+        "list_installed_apps" to "App list",
+        "open_app" to "Open app",
+        "make_phone_call" to "Phone call",
+        "send_sms" to "Send text message",
+        "get_location" to "Get location",
+        "clipboard_read" to "Read clipboard",
+        "clipboard_write" to "Write clipboard",
+        "quick_note_add" to "New note",
+        "quick_note_list" to "Note list",
+        "delegate_agent" to "Delegate to sub-assistant",
+        "subagent_task" to "Subtask",
+        "notify" to "Send notification",
+        "calculator" to "Calculator",
+        "translate" to "Translation",
+        "speak_text" to "Text-to-speech",
+        "get_weather" to "Weather lookup",
         "ping_host" to "Ping",
-        "dns_lookup" to "DNS 查询",
-        "mcp_tool" to "MCP 工具",
-        "show_card" to "展示卡片",
+        "dns_lookup" to "DNS lookup",
+        "mcp_tool" to "MCP tool",
+        "show_card" to "Show card",
     )
 
     // I18N-01: 标签资源 ID(生产路径优先;labels 为 res==null 兜底的存量文案,新增工具只登记资源)。

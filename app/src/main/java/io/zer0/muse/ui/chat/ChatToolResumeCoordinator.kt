@@ -54,7 +54,7 @@ internal class ChatToolResumeCoordinator(
             val pendings =
                 resultOf { PendingToolCallStore.getForChat(chatId) }
                     .onError { msg, t ->
-                        Logger.e("ChatVM", "resumePendingToolCalls getForChat 失败: $msg", t)
+                        Logger.e("ChatVM", "resumePendingToolCalls getForChat failed: $msg", t)
                         host.addError(
                             ChatErrorType.UNKNOWN,
                             host.appContext.getString(R.string.err_chat_resume_read_failed, t?.message ?: msg),
@@ -74,12 +74,12 @@ internal class ChatToolResumeCoordinator(
                 host.stateStore.state.update { it.copy(pendingToolCallCount = pendings.size) }
                 host.addError(
                     ChatErrorType.TOOL_ERROR,
-                    "有 ${approvalPending.size} 个工具调用在进程终止前等待审批，已阻止自动恢复；请丢弃后重新发起请求。",
+                    "${approvalPending.size} tool calls were awaiting approval when the process was terminated; auto-resume blocked. Please discard them and send the request again.",
                     true,
                 )
                 Logger.w(
                     "ChatVM",
-                    "拒绝自动恢复审批挂起工具: count=${approvalPending.size}, sessionId=$chatId",
+                    "Refusing to auto-resume approval-pending tools: count=${approvalPending.size}, sessionId=$chatId",
                 )
                 return@launch
             }
@@ -141,14 +141,14 @@ internal class ChatToolResumeCoordinator(
                 val recheck = host.recheckApprovalForResume(chatId, pending)
                 if (recheck is ToolApprovalState.Denied) {
                     resultOf { PendingToolCallStore.remove(pending.toolCallId) }
-                        .onError { msg, t -> Logger.w("ChatVM", "恢复时丢弃被拒工具失败: $msg", t) }
-                    Logger.w("ChatVM", "恢复时工具被拒绝并丢弃: tool=${pending.toolName}, sessionId=$chatId")
+                        .onError { msg, t -> Logger.w("ChatVM", "Failed to discard rejected tool during resume: $msg", t) }
+                    Logger.w("ChatVM", "Tool rejected and discarded during resume: tool=${pending.toolName}, sessionId=$chatId")
                     continue
                 }
                 if (recheck is ToolApprovalState.Answered) {
                     resultOf { PendingToolCallStore.remove(pending.toolCallId) }
-                        .onError { msg, t -> Logger.w("ChatVM", "恢复时丢弃已答工具失败: $msg", t) }
-                    Logger.w("ChatVM", "恢复时工具收到自定义答案,丢弃: tool=${pending.toolName}, sessionId=$chatId")
+                        .onError { msg, t -> Logger.w("ChatVM", "Failed to discard answered tool during resume: $msg", t) }
+                    Logger.w("ChatVM", "Tool received a custom answer during resume; discarding: tool=${pending.toolName}, sessionId=$chatId")
                     continue
                 }
                 val toolResult =
@@ -195,7 +195,7 @@ internal class ChatToolResumeCoordinator(
                 // 持久化到 DB(供下次启动时 LLM 仍能看到工具结果)
                 resultOf { host.sessionRepository.upsertMessage(chatId, toolMsg) }
                     .onError { msg, t ->
-                        Logger.e("ChatVM", "resumePendingToolCalls upsertMessage 失败: $msg", t)
+                        Logger.e("ChatVM", "resumePendingToolCalls upsertMessage failed: $msg", t)
                         host.addError(
                             ChatErrorType.UNKNOWN,
                             host.appContext.getString(R.string.err_chat_tool_result_save_failed, t?.message ?: msg),
@@ -218,7 +218,7 @@ internal class ChatToolResumeCoordinator(
                 }
                 // 从 pending store 移除(已执行完成)
                 resultOf { PendingToolCallStore.remove(pending.toolCallId) }
-                    .onError { msg, t -> Logger.w("ChatVM", "resumePendingToolCalls remove 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("ChatVM", "resumePendingToolCalls remove failed: $msg", t) }
             }
 
             // 清空 pending 计数(Banner 隐藏)+ 清空工具恢复进度文本

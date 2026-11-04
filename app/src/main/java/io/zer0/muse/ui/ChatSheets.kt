@@ -236,7 +236,7 @@ internal fun ChatSheetHost(
                     speechLauncher.launch(SpeechInput.createIntent(context.getString(R.string.speech_speak_prompt)))
                 }.onError { msg, _ ->
                     // v1.98: 移除弹窗提示,静默处理
-                    Logger.w("ChatScreen", "启动语音识别失败: $msg")
+                    Logger.w("ChatScreen", "Failed to start speech recognition: $msg")
                 }
             },
             onDismiss = { sheetState.asrTipDialogShown = false },

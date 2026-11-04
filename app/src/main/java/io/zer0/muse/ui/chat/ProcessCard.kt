@@ -148,11 +148,11 @@ private fun resolveSummaryText(progressText: String?, runningStep: TaskStep?, do
     when {
         progressText != null -> progressText
         runningStep != null ->
-            runningStep.title.ifBlank { runningStep.progressText.orEmpty() }.ifBlank { "执行中" }
-        totalSteps > 0 && doneSteps == totalSteps -> "已完成 $totalSteps 步"
-        totalSteps > 0 -> "已进行 $doneSteps / $totalSteps 步"
-        isActive -> "思考中"
-        else -> "已完成"
+            runningStep.title.ifBlank { runningStep.progressText.orEmpty() }.ifBlank { "Running" }
+        totalSteps > 0 && doneSteps == totalSteps -> "Completed $totalSteps steps"
+        totalSteps > 0 -> "In progress: $doneSteps / $totalSteps steps"
+        isActive -> "Thinking"
+        else -> "Completed"
     }
 
 /** 摘要行需要的全部信息，打成一个包，避免参数列表膨胀。 */
@@ -306,7 +306,7 @@ private fun ProcessStepRow(step: TaskStep, depth: Int) {
                     .background(statusColor),
             )
             Text(
-                text = step.title.ifBlank { step.toolName.ifBlank { "步骤" } },
+                text = step.title.ifBlank { step.toolName.ifBlank { "Step" } },
                 style = MaterialTheme.typography.labelMedium,
                 color = scheme.onSurface,
                 maxLines = 1,
@@ -322,7 +322,7 @@ private fun ProcessStepRow(step: TaskStep, depth: Int) {
             }
             if (step.status == TaskStepStatus.RUNNING) {
                 Text(
-                    text = "进行中",
+                    text = "In progress",
                     style = MaterialTheme.typography.labelSmall,
                     color = scheme.primary,
                 )

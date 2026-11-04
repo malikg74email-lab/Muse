@@ -141,7 +141,7 @@ private fun extractTitle(html: String): String? {
 private suspend fun fetchLinkPreview(url: String): LinkPreviewData = withContext(Dispatchers.IO) {
     // SSRF 防护:进入即校验原始 URL,拒绝内网/非公网/非 http(s) 目标。
     if (SsrfGuard.isBlocked(url)) {
-        Logger.w(TAG, "fetchLinkPreview 拒绝内网/非公网地址: $url")
+        Logger.w(TAG, "fetchLinkPreview rejected intranet/non-public address: $url")
         return@withContext LinkPreviewData(url = url, isFailed = true)
     }
     val result = withTimeoutOrNull(FETCH_TIMEOUT_MS) {
@@ -149,7 +149,7 @@ private suspend fun fetchLinkPreview(url: String): LinkPreviewData = withContext
             val finalUrl = followRedirect(url)
             // 重定向落地地址再次校验(防 302/307 跳转到内网)
             if (SsrfGuard.isBlocked(finalUrl)) {
-                Logger.w(TAG, "fetchLinkPreview 拒绝重定向到内网: $finalUrl")
+                Logger.w(TAG, "fetchLinkPreview rejected redirect to intranet: $finalUrl")
                 return@resultOf LinkPreviewData(url = finalUrl, isFailed = true)
             }
             val html = fetchHtml(finalUrl)
@@ -186,7 +186,7 @@ private suspend fun fetchLinkPreview(url: String): LinkPreviewData = withContext
 
 /** og:image 会被 Coil 二次抓取,同样拒绝内网/非公网图片地址。 */
 private fun sanitizeImageUrl(imageUrl: String): String = if (imageUrl.isNotBlank() && SsrfGuard.isBlocked(imageUrl)) {
-    Logger.w(TAG, "fetchLinkPreview 拒绝内网图片地址: $imageUrl")
+    Logger.w(TAG, "fetchLinkPreview rejected intranet image address: $imageUrl")
     ""
 } else {
     imageUrl

@@ -436,7 +436,7 @@ internal class ChatCompressionCoordinator(
                 // v2.3.2: 会话守卫 — 同 triggerAutoCompress,压缩期间切走会话则丢弃过期结果
                 // (isCompressing 由外层 finally 复位,这里直接返回即可)
                 if (host.displayedSessionId() != sessionId) {
-                    Logger.i("ChatVM", "manualCompress 结果已过期(会话已切换),丢弃: $sessionId")
+                    Logger.i("ChatVM", "manualCompress result is stale (session switched); discarding: $sessionId")
                     return
                 }
                 // v1.117: 修复消息丢失竞态 — 压缩是 suspend LLM 调用,耗时数秒,

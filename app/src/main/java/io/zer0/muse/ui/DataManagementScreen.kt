@@ -205,7 +205,7 @@ fun DataManagementScreen(
                                 .takeIf { it.isNotBlank() } ?: return@forEach
                             runCatching { factDbProvider.getFactStore(assistantId).clearAllWithLinks() }
                                 .onFailure { error ->
-                                    Logger.w("DataManagementScreen", "清理子助手记忆分库失败: $assistantId", error)
+                                    Logger.w("DataManagementScreen", "Failed to clean sub-assistant memory store: $assistantId", error)
                                 }
                         }
                         memoryFileWriter.clearAllDailyFiles()

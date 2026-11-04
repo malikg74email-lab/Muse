@@ -129,7 +129,7 @@ class ChatToolController(
         val store = toolConfigStore ?: return
         accessor.coroutineScope.launch {
             runCatching { store.setPolicy(pending.toolName, policy) }
-                .onFailure { Logger.w("ChatVM", "persistToolPolicy(${pending.toolName}) 失败: ${it.message}") }
+                .onFailure { Logger.w("ChatVM", "persistToolPolicy(${pending.toolName}) failed: ${it.message}") }
         }
     }
 

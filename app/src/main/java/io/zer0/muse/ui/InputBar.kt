@@ -718,11 +718,11 @@ internal fun InputBar(state: MuseInputState = MuseInputState(), callbacks: Input
                         val deepThinkingTitle = if (isDeepThinkingEnabled) {
                             val levelLabel = when (deepThinkingLevel) {
                                 // v1.0.72: 思考等级改中文(低/中/高/极高)
-                                io.zer0.ai.core.ReasoningLevel.LOW -> "低"
-                                io.zer0.ai.core.ReasoningLevel.MEDIUM -> "中"
-                                io.zer0.ai.core.ReasoningLevel.HIGH -> "高"
-                                io.zer0.ai.core.ReasoningLevel.XHIGH -> "极高"
-                                else -> "自动"
+                                io.zer0.ai.core.ReasoningLevel.LOW -> "Low"
+                                io.zer0.ai.core.ReasoningLevel.MEDIUM -> "Medium"
+                                io.zer0.ai.core.ReasoningLevel.HIGH -> "High"
+                                io.zer0.ai.core.ReasoningLevel.XHIGH -> "Very high"
+                                else -> "Auto"
                             }
                             "$deepThinkingLabel · $levelLabel"
                         } else {

@@ -1097,10 +1097,12 @@ internal fun buildSendText(
 /** R-TEST-06: 仅当非流式、最后一条为带 [已中断] 标记的助手消息时才允许续写。 */
 internal fun canContinueGeneration(isStreaming: Boolean, lastMessage: UIMessage?): Boolean = !isStreaming && lastMessage != null &&
     lastMessage.role == MessageRole.ASSISTANT &&
-    lastMessage.content.contains("[已中断]")
+    (lastMessage.content.contains("[Interrupted]") || lastMessage.content.contains("[已中断]"))
 
 /** R-TEST-06: 去掉 [已中断] 尾部标记,保留断点前内容。 */
-internal fun resumeFromInterrupted(content: String): String = content.removeSuffix("\n\n[已中断]").removeSuffix("[已中断]")
+internal fun resumeFromInterrupted(content: String): String = content
+    .removeSuffix("\n\n[Interrupted]").removeSuffix("[Interrupted]")
+    .removeSuffix("\n\n[已中断]").removeSuffix("[已中断]")
 
 /**
  * C-11: 计算 [a] 与 [b] 的最长公共前缀长度(按 Unicode 代码单位)。
@@ -1724,7 +1726,7 @@ class ChatViewModel(
         // 避免下次切回来还看到已经发送过的文字。
         viewModelScope.launch(Dispatchers.IO) {
             runCatching { sessionRepository.saveInputDraft(sessionId, "") }
-                .onFailure { Logger.w("ChatVM", "清空输入草稿失败: ${it.message}") }
+                .onFailure { Logger.w("ChatVM", "Failed to clear input draft: ${it.message}") }
         }
         // v2.6.7: 记录一次真实互动（亲密度 + 最后互动时间）。
         // 之前只有小手机主动私信会调 recordInteraction，用户在正常对话里
@@ -1733,7 +1735,7 @@ class ChatViewModel(
         if (relationshipRepository != null && !assistantId.isNullOrBlank()) {
             viewModelScope.launch(Dispatchers.IO) {
                 runCatching { relationshipRepository.recordInteraction(assistantId) }
-                    .onFailure { Logger.w("ChatVM", "记录关系互动失败: ${it.message}") }
+                    .onFailure { Logger.w("ChatVM", "Failed to record relationship interaction: ${it.message}") }
             }
         }
     }
@@ -1799,7 +1801,7 @@ class ChatViewModel(
                 scrollPersister =
                     ChatMessageController.ScrollPositionPersister { sid, index, offset ->
                         resultOf { settings.saveChatScrollPosition(sid, index, offset) }
-                            .onError { msg, _ -> Logger.w("ChatVM", "saveChatScrollPosition 失败: $msg") }
+                            .onError { msg, _ -> Logger.w("ChatVM", "saveChatScrollPosition failed: $msg") }
                     }
             }
 
@@ -2031,7 +2033,7 @@ class ChatViewModel(
                                 .get<io.zer0.muse.proactive.ProactiveScheduler>()
                                 .onUserSpoke(sid)
                         }.onFailure { e ->
-                            io.zer0.common.Logger.w("ChatViewModel", "主动消息反馈记录失败: ${e.message}")
+                            io.zer0.common.Logger.w("ChatViewModel", "Failed to record proactive message feedback: ${e.message}")
                         }
                     }
                 },
@@ -2502,7 +2504,7 @@ class ChatViewModel(
                 if (resolved.isProviderFallback) {
                     Logger.w(
                         "ChatViewModel",
-                        "ASR 跟随供应商配置失败,回退手动配置: ${resolved.fallbackReason}" +
+                        "ASR failed to follow provider config, falling back to manual config: ${resolved.fallbackReason}" +
                             "(providerId=${cfg.providerId}, modelId=${cfg.modelId})",
                     )
                 }
@@ -2609,7 +2611,7 @@ class ChatViewModel(
                         } catch (e: Exception) {
                             // 单条消息处理失败:回滚乐观更新 + 删除 outbox,继续下一轮。
                             // 不回滚会出现“当前页看得到、重进后消失”的幽灵消息。
-                            Logger.e("ChatVM", "消费发送请求失败(msg=${req.userMessage.content.take(30)}): ${e.message}", e)
+                            Logger.e("ChatVM", "Failed to consume send request (msg=${req.userMessage.content.take(30)}): ${e.message}", e)
                             generationController.rollbackOptimisticSend(req)
                             runCatching { sessionRepository.deleteOutbox(req.outboxId) }
                             _state.update { it.copy(isStreaming = false, isWaitingFirstToken = false) }
@@ -2619,7 +2621,7 @@ class ChatViewModel(
                     throw e
                 } catch (e: Throwable) {
                     // 消费者被非预期异常打断:记录后继续消费(循环重启)
-                    Logger.e("ChatVM", "发送队列消费者异常,重启消费: ${e.message}", e)
+                    Logger.e("ChatVM", "Send queue consumer error, restarting consumption: ${e.message}", e)
                 }
             }
         }
@@ -2680,9 +2682,9 @@ class ChatViewModel(
                         val prefix = task.label?.let { "[$it] " } ?: ""
                         val content =
                             if (task.status == io.zer0.muse.tools.DeferredResultStore.TaskStatus.RESOLVED) {
-                                "${prefix}子 agent 已完成任务:\n${task.result}"
+                                "${prefix}Sub-agent completed the task:\n${task.result}"
                             } else {
-                                "${prefix}子 agent 任务失败: ${task.error}"
+                                "${prefix}Sub-agent task failed: ${task.error}"
                             }
                         UIMessage(role = MessageRole.ASSISTANT, content = content)
                     }
@@ -2692,7 +2694,7 @@ class ChatViewModel(
                     try {
                         sessionRepository.appendMessage(sessionId, msg)
                     } catch (e: Exception) {
-                        Logger.w("ChatVM", "interlude appendMessage 失败", e)
+                        Logger.w("ChatVM", "interlude appendMessage failed", e)
                     }
                 }
                 // A-10: 消费未归属子任务结果并降级注入当前活跃会话。
@@ -2704,17 +2706,17 @@ class ChatViewModel(
                 if (unowned.isNotEmpty()) {
                     Logger.e(
                         "ChatVM",
-                        "A-10: 检测到 ${unowned.size} 个未归属子任务结果(parent_session_id 缺失)," +
-                            "降级注入当前会话 sessionId=$sessionId,请排查 subagent_task 调用是否遗漏 parent_session_id 参数",
+                        "A-10: Detected ${unowned.size} unowned subtask results (parent_session_id missing)," +
+                            "Degrading to injecting into the current session sessionId=$sessionId; check whether the subagent_task call omitted the parent_session_id parameter",
                     )
                     val unownedInterludes =
                         unowned.map { task ->
                             val prefix = task.label?.let { "[$it] " } ?: ""
                             val content =
                                 if (task.status == io.zer0.muse.tools.DeferredResultStore.TaskStatus.RESOLVED) {
-                                    "${prefix}子 agent 已完成任务:\n${task.result}"
+                                    "${prefix}Sub-agent completed the task:\n${task.result}"
                                 } else {
-                                    "${prefix}子 agent 任务失败: ${task.error}"
+                                    "${prefix}Sub-agent task failed: ${task.error}"
                                 }
                             UIMessage(role = MessageRole.ASSISTANT, content = content)
                         }
@@ -2723,7 +2725,7 @@ class ChatViewModel(
                         try {
                             sessionRepository.appendMessage(sessionId, msg)
                         } catch (e: Exception) {
-                            Logger.w("ChatVM", "interlude(unowned) appendMessage 失败", e)
+                            Logger.w("ChatVM", "interlude(unowned) appendMessage failed", e)
                         }
                     }
                 }
@@ -2759,7 +2761,7 @@ class ChatViewModel(
         viewModelScope.launch {
             val pending = resultOf { sessionRepository.getPendingOutbox() }.getOrNull()
             if (pending.isNullOrEmpty()) return@launch
-            Logger.i("ChatVM", "outbox 恢复: ${pending.size} 条未完成消息")
+            Logger.i("ChatVM", "outbox recovery: ${pending.size} unfinished messages")
             for (req in pending) {
                 // 检查用户消息是否已持久化(消费端可能已 appendMessage 但进程在 launchStream 前被杀)
                 val alreadySaved =
@@ -2771,9 +2773,9 @@ class ChatViewModel(
                     resultOf { sessionRepository.hasGenerationCheckpointForUserMessage(req.userMessageId) }
                         .getOrNull() ?: false
                 if (checkpointExists) {
-                    Logger.i("ChatVM", "outbox ${req.id} 已有 generation checkpoint，跳过重复恢复")
+                    Logger.i("ChatVM", "outbox ${req.id} already has a generation checkpoint; skipping duplicate recovery")
                     resultOf { sessionRepository.deleteOutbox(req.id) }
-                        .onError { msg, _ -> Logger.w("ChatVM", "清理 checkpoint 对应 outbox 失败: $msg") }
+                        .onError { msg, _ -> Logger.w("ChatVM", "Failed to clean up the outbox for the checkpoint: $msg") }
                     continue
                 }
                 val images =
@@ -2782,7 +2784,7 @@ class ChatViewModel(
                     }.getOrDefault(emptyList())
                 val userMsgId =
                     runCatching { Uuid.parse(req.userMessageId) }.getOrElse {
-                        Logger.w("ChatVM", "outbox userMessageId 非 UUID,回退随机 id: ${req.userMessageId}")
+                        Logger.w("ChatVM", "outbox userMessageId is not a UUID, falling back to a random id: ${req.userMessageId}")
                         Uuid.random()
                     }
                 val userMessage =
@@ -2798,7 +2800,7 @@ class ChatViewModel(
                         // 复用 outbox 的 userMessageId + createdAt，避免恢复后排序漂移。
                         sessionRepository.appendMessage(req.sessionId, userMessage)
                     }.onError { msg, t ->
-                        Logger.w("ChatVM", "outbox 恢复 appendMessage 失败: $msg", t)
+                        Logger.w("ChatVM", "outbox recovery appendMessage failed: $msg", t)
                     }
                 }
                 // 用户消息已存在时不能直接删除：进程可能死在 appendMessage 与 launchStream 之间。
@@ -2825,7 +2827,7 @@ class ChatViewModel(
                         ),
                     )
                 if (retry.isFailure) {
-                    Logger.w("ChatVM", "outbox 恢复重新入队失败: ${req.id}")
+                    Logger.w("ChatVM", "outbox recovery re-enqueue failed: ${req.id}")
                 }
             }
         }
@@ -2869,7 +2871,7 @@ class ChatViewModel(
             closedSubagentThreads.add(threadId)
             runCatching { subagentThreadStore.close(threadId) }
                 .onFailure { e ->
-                    io.zer0.common.Logger.w("ChatVM", "关闭子 agent 线程失败: ${e.message}")
+                    io.zer0.common.Logger.w("ChatVM", "Failed to close sub-agent thread: ${e.message}")
                 }
             _state.update { st ->
                 st.copy(
@@ -2990,10 +2992,10 @@ class ChatViewModel(
         if (memberIds.size < 2 || topic.isBlank()) return
         val taskId = "committee-" + java.util.UUID.randomUUID().toString()
         val chatName =
-            "委员会 · " +
+            "Committee · " +
                 java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
                     .format(java.util.Date())
-        deferredResultStore.defer(taskId, sessionId, null, "委员会", topic.take(60))
+        deferredResultStore.defer(taskId, sessionId, null, "Committee", topic.take(60))
         viewModelScope.launch {
             try {
                 val committeeChatId = repository.createChat(chatName, memberIds)
@@ -3015,15 +3017,15 @@ class ChatViewModel(
                 val recent = repository.getRecentMessages(committeeChatId, 10)
                 val summary = recent.lastOrNull { it.messageType == "summary" }?.body
                 if (summary != null) {
-                    deferredResultStore.resolve(taskId, "【委员会结论 · $chatName】\n$summary")
+                    deferredResultStore.resolve(taskId, "【Committee conclusion · $chatName】\n$summary")
                 } else {
-                    deferredResultStore.resolve(taskId, "【委员会】讨论已完成(群聊「$chatName」),未生成总结。议题:$topic")
+                    deferredResultStore.resolve(taskId, "【Committee】Discussion finished (group chat 「$chatName」), no summary was generated. Topic: $topic")
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Logger.e("ChatVM", "委员会执行失败", e)
-                deferredResultStore.fail(taskId, e.message ?: "执行失败")
+                Logger.e("ChatVM", "Committee execution failed", e)
+                deferredResultStore.fail(taskId, e.message ?: "Execution failed")
             }
         }
     }
@@ -3104,7 +3106,7 @@ class ChatViewModel(
                 when (firstSeen) {
                     // 等到窗口耗尽仍不可见:不自作主张清掉,让用户自己关。
                     null -> {
-                        Logger.w("ChatVM", "错误 ${ERROR_VISIBLE_WAIT_MS}ms 内未可见,放弃自动消失 id=$errorId")
+                        Logger.w("ChatVM", "Error not visible within ${ERROR_VISIBLE_WAIT_MS}ms, giving up auto-dismiss id=$errorId")
                         return@launch
                     }
                     // 错误已被用户关掉 / 被 clearErrors 清空。
@@ -3439,7 +3441,7 @@ class ChatViewModel(
                 if (customTitlePrompt != null) {
                     "$customTitlePrompt\n\n$preview"
                 } else {
-                    "请用4到8个字概括以下对话的主题,直接输出标题文字,不要加引号或其他标点:\n\n$preview"
+                    "Summarize the topic of the following conversation in 4 to 8 words. Output the title text directly, without quotes or other punctuation:\n\n$preview"
                 }
             resultOf {
                 val completion =
@@ -3663,7 +3665,7 @@ class ChatViewModel(
     /** 设置/取消引用回复目标。 */
     fun setReplyingTo(message: UIMessage?) {
         // v1.0.72: 加日志排查"叉不掉引用"问题(点击 X 后引用块是否收到清除事件)
-        Logger.i("ChatVM", "setReplyingTo: ${if (message == null) "null(清除引用)" else message.id}")
+        Logger.i("ChatVM", "setReplyingTo: ${if (message == null) "null (clear quote)" else message.id}")
         _state.update { it.copy(replyingTo = message, replyQuoteOverride = null) }
     }
 
@@ -3732,7 +3734,7 @@ class ChatViewModel(
                     }
                 }
             if (ready == null) {
-                Logger.w("ChatVM", "等待通知目标会话初始化超时,仍尝试打开: $sessionId")
+                Logger.w("ChatVM", "Timed out waiting for the notification target session to initialize; opening anyway: $sessionId")
             }
             switchSession(sessionId)
         }
@@ -3864,7 +3866,7 @@ class ChatViewModel(
             if (switched) {
                 setTargetMessage(messageId, query)
             } else {
-                Logger.w("ChatVM", "openMessageFromSearch 等待会话切换超时: $sessionId")
+                Logger.w("ChatVM", "openMessageFromSearch timed out waiting for session switch: $sessionId")
             }
         }
     }
@@ -3938,7 +3940,7 @@ class ChatViewModel(
                         updatedAt = System.currentTimeMillis(),
                     ),
                 )
-            }.onError { msg, _ -> Logger.w("ChatVM", "卡片保存工件失败: $msg") }
+            }.onError { msg, _ -> Logger.w("ChatVM", "Failed to save card as artifact: $msg") }
         }
     }
 
@@ -3960,7 +3962,7 @@ class ChatViewModel(
                 // 重复收藏也提示已收藏：用户要的是“这件事成了”，而不是区分首次与重复。
                 MuseToast.show(appContext.getString(R.string.card_favorite_done))
             }.onError { msg, _ ->
-                Logger.w("ChatVM", "卡片收藏失败: $msg")
+                Logger.w("ChatVM", "Failed to favorite card: $msg")
                 MuseToast.show(appContext.getString(R.string.card_favorite_failed, msg))
             }
         }
@@ -4015,7 +4017,7 @@ class ChatViewModel(
         val routeTargetName = route.targetName ?: route.targetId
         val pendingText =
             appContext.getString(R.string.chat_auto_route_prefix, routeTargetName) +
-                "\n\n正在委派给 $routeTargetName ..."
+                "\n\nDelegating to $routeTargetName ..."
         updateAssistant(assistantMessageId, pendingText, "", null, null, null, true)
 
         val result = skillExecutor.delegateAgent(request)
@@ -4489,7 +4491,7 @@ class ChatViewModel(
             deferred.complete(ToolApprovalState.Denied("Generation stopped"))
             viewModelScope.launch {
                 resultOf { PendingToolCallStore.updateState(toolCallId, "ABORTED", "generation_stopped") }
-                    .onError { msg, _ -> Logger.w("ChatVM", "审批取消状态落盘失败: $msg") }
+                    .onError { msg, _ -> Logger.w("ChatVM", "Failed to persist approval-cancellation state: $msg") }
             }
             toolApprovalSessions.remove(toolCallId)
             pendingToolApprovalRecords.remove(toolCallId)
@@ -4516,7 +4518,7 @@ class ChatViewModel(
             toolApprovalResults.remove(toolCallId)?.complete(ToolApprovalState.Denied("Generation stopped"))
             viewModelScope.launch {
                 resultOf { PendingToolCallStore.updateState(toolCallId, "ABORTED", "generation_stopped") }
-                    .onError { msg, _ -> Logger.w("ChatVM", "审批取消状态落盘失败: $msg") }
+                    .onError { msg, _ -> Logger.w("ChatVM", "Failed to persist approval-cancellation state: $msg") }
             }
             toolApprovalSessions.remove(toolCallId)
             pendingToolApprovalRecords.remove(toolCallId)
@@ -4805,7 +4807,7 @@ class ChatViewModel(
     fun discardPendingToolCalls(chatId: String) {
         viewModelScope.launch {
             resultOf { PendingToolCallStore.clearForChat(chatId) }
-                .onError { msg, t -> Logger.w("ChatVM", "discardPendingToolCalls 失败: $msg", t) }
+                .onError { msg, t -> Logger.w("ChatVM", "discardPendingToolCalls failed: $msg", t) }
             _state.update { it.copy(pendingToolCallCount = 0) }
         }
     }
@@ -4866,7 +4868,7 @@ class ChatViewModel(
                     "latestSession=${latest?.sessionTitle ?: "unknown"}",
             )
             runCatching { ChatGenerationService.start(appContext) }
-                .onFailure { Logger.w("ChatViewModel", "前台服务启动失败,切后台可能被回收", it) }
+                .onFailure { Logger.w("ChatViewModel", "Failed to start foreground service; may be reclaimed when backgrounded", it) }
         }
     }
 
@@ -4881,7 +4883,7 @@ class ChatViewModel(
         appForegroundFlow.value = true
         if (chatGenerationManager.activeGenerations.value.isEmpty()) {
             runCatching { notificationManager.updateLiveProgress("", 0, false) }
-                .onFailure { Logger.w("ChatVM", "清理进度通知失败: ${it.message}") }
+                .onFailure { Logger.w("ChatVM", "Failed to clear progress notification: ${it.message}") }
         } else {
             Logger.i(
                 "ChatViewModel",
@@ -4900,7 +4902,7 @@ class ChatViewModel(
             val loaded =
                 runCatching {
                     withContext(Dispatchers.IO) { messageController.loadMessagesPaged(sessionId) }
-                }.onFailure { Logger.w("ChatVM", "前台刷新会话失败: ${it.message}") }.getOrNull() ?: return@launch
+                }.onFailure { Logger.w("ChatVM", "Failed to refresh session in foreground: ${it.message}") }.getOrNull() ?: return@launch
             if (switchGuard.isStale(switchToken) || displayedSessionId() != sessionId) {
                 return@launch
             }
@@ -4978,7 +4980,7 @@ class ChatViewModel(
         if (uiHistory.size < 2) return
         val assistantId = _state.value.currentAssistant?.id ?: "default"
         val scope = if (assistantId == "default") "main" else assistantId
-        val locale = "zh-CN"
+        val locale = settings.getLanguageSync().let { if (it == "system" || it.isBlank()) "en" else it }
         // 在排队前捕获当前空间，不能把后台提取永远写入 default；
         // 之后用户切换空间也不会改变这次 session 的归属。
         viewModelScope.launch(Dispatchers.IO) {
@@ -5109,7 +5111,7 @@ class ChatViewModel(
             // B-1: 会话已删除则跳过媒体消息落盘,防止删后"复活"。
             if (generationController.isSessionWritesSuppressed(sessionId).not()) {
                 runCatching { sessionRepository.upsertMessage(sessionId, msg) }
-                    .onFailure { Logger.e("ChatVM", "媒体消息落盘失败 | session=$sessionId | id=$assistantId", it) }
+                    .onFailure { Logger.e("ChatVM", "Failed to persist media message | session=$sessionId | id=$assistantId", it) }
             }
         }
     }
@@ -5182,9 +5184,9 @@ class ChatViewModel(
             val target = recent.firstOrNull { it.id != current }
             val sessionId = target?.id ?: sessionRepository.createAgentSession(assistantId = targetId)
             if (target != null) {
-                io.zer0.common.Logger.i("ChatVM", "switchAgentAssistant: 命中历史房间 ${target.id}(assistant=$targetId)")
+                io.zer0.common.Logger.i("ChatVM", "switchAgentAssistant: hit existing room ${target.id} (assistant=$targetId)")
             } else {
-                io.zer0.common.Logger.i("ChatVM", "switchAgentAssistant: 新建房间 $sessionId(assistant=$targetId)")
+                io.zer0.common.Logger.i("ChatVM", "switchAgentAssistant: created new room $sessionId (assistant=$targetId)")
             }
             // v1.0.54: 同步"默认 Agent 助手"偏好 — 退出再进入 Agent Tab 时保持该助手
             //   (setAgentMode(true) 按此偏好恢复房间),设置页入口看到的值也一致
@@ -5209,7 +5211,7 @@ class ChatViewModel(
             if (switchGuard.isStale(switchToken)) {
                 // 已被更新的切换取代:释放本次 acquire,丢弃加载结果
                 sessionManager.release(sessionId)
-                Logger.i("ChatVM", "switchAgentAssistant 结果过期,丢弃: $sessionId")
+                Logger.i("ChatVM", "switchAgentAssistant result stale, discarding: $sessionId")
                 return@launch
             }
             val permissionMode =
@@ -5280,7 +5282,7 @@ class ChatViewModel(
             assistantRepository.upsert(
                 AssistantEntity(
                     id = id,
-                    name = name.ifBlank { "新助手" },
+                    name = name.ifBlank { "New assistant" },
                     avatarEmoji = "",
                     // v1.0.51: 新建助手预填默认 prompt(从 assets 加载,带 locale 回落)
                     systemPrompt = assistantRepository.loadDefaultPrompt(),
@@ -5338,7 +5340,7 @@ class ChatViewModel(
                     return@launch
                 }
                 settings.saveDefaultAssistantId(successor.id)
-                Logger.i("ChatVM", "deleteAssistant: 默认助手 $id 将被删除，默认指针切至 ${successor.id}")
+                Logger.i("ChatVM", "deleteAssistant: default assistant $id will be deleted; default pointer moves to ${successor.id}")
             }
             resultOf { assistantRepository.delete(id) }
                 .onError { msg, t ->
@@ -5605,7 +5607,7 @@ class ChatViewModel(
     fun resumeToolExecution() {
         viewModelScope.launch {
             resultOf { settings.updateChatPreferences { it.copy(pauseToolExecution = false) } }
-                .onError { msg, _ -> Logger.w("ChatVM", "resumeToolExecution 失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "resumeToolExecution failed: $msg") }
         }
     }
 
@@ -5958,7 +5960,7 @@ class ChatViewModel(
                     createdAt = createdAt,
                 )
             }
-        }.onError { msg, _ -> Logger.w("ChatVM", "generation checkpoint 写入失败: $msg") }.isSuccess
+        }.onError { msg, _ -> Logger.w("ChatVM", "Failed to write generation checkpoint: $msg") }.isSuccess
         if (checkpointPersisted && pendingOutboxId != null) {
             state.outboxId = null
         }

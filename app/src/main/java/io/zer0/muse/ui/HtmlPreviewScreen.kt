@@ -232,9 +232,9 @@ private fun downloadHtml(context: Context, html: String) {
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: error("MediaStore 插入失败")
+                ?: error("MediaStore insert failed")
             resolver.openOutputStream(uri)?.use { it.write(bytes) }
-                ?: error("无法打开输出流")
+                ?: error("Unable to open output stream")
             values.clear()
             values.put(MediaStore.Downloads.IS_PENDING, 0)
             resolver.update(uri, values, null, null)

@@ -588,7 +588,7 @@ class ChatMiscCoordinator(
                 throw e
             } catch (e: Exception) {
                 // ST-01: 世界书列表加载失败 → 记录错误态,供 LorebookScreen 展示与重试
-                Logger.w(tag, "refreshLorebooks 失败: ${e.message}", e)
+                Logger.w(tag, "refreshLorebooks failed: ${e.message}", e)
                 accessor.update { it.copy(lorebooksError = e.message ?: appContext.getString(R.string.common_load_failed)) }
             }
         }

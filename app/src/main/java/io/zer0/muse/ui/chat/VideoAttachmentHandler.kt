@@ -90,7 +90,7 @@ class VideoAttachmentHandler {
                 // 1. 校验文件大小（>50MB 拒绝）
                 val size = queryFileSize(uri, context)
                 require(size in 1..MAX_VIDEO_SIZE_BYTES) {
-                    "视频过大（${formatBytes(size)}），请压缩到 50MB 以内后重试"
+                    "Video too large (${formatBytes(size)}); please compress it to under 50MB and retry"
                 }
 
                 // 2. 提取元数据
@@ -112,7 +112,7 @@ class VideoAttachmentHandler {
                         retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                             ?.let { bmp -> encodeBitmapToBase64(bmp) }
                     }.onFailure { e ->
-                        Logger.w(TAG, "提取首帧缩略图失败", e)
+                        Logger.w(TAG, "Failed to extract first-frame thumbnail", e)
                     }.getOrNull()
 
                     VideoAttachment(
@@ -164,7 +164,7 @@ class VideoAttachmentHandler {
                     retriever.getFrameAtTime(tsUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                         ?.let { bmp -> encodeBitmapToBase64(bmp) }
                 }.onFailure { e ->
-                    Logger.w(TAG, "提取关键帧失败 ts=$tsUs", e)
+                    Logger.w(TAG, "Failed to extract key frame ts=$tsUs", e)
                 }.getOrNull()
             }
         } catch (e: Exception) {

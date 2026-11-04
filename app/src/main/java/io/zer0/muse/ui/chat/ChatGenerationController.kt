@@ -246,7 +246,7 @@ internal class ChatGenerationController(
     /** 备份恢复替换数据库文件期间，聊天生成不得继续制造新写入。 */
     private fun restoreBlocksChatWrites(operation: String): Boolean {
         if (!ProcessWriteGate.restoring) return false
-        Logger.w("ChatVM", "备份恢复进行中，跳过聊天写入: $operation")
+        Logger.w("ChatVM", "Backup restore in progress; skipping chat write: $operation")
         return true
     }
 
@@ -277,7 +277,7 @@ internal class ChatGenerationController(
         accessor.coroutineScope.launch {
             if (resultOf { settings.getGeneratingSessionId() }.getOrNull() == sid) {
                 resultOf { settings.saveGeneratingSessionId(null) }
-                    .onError { msg, _ -> Logger.w("ChatVM", "saveGeneratingSessionId 清理失败: $msg") }
+                    .onError { msg, _ -> Logger.w("ChatVM", "saveGeneratingSessionId cleanup failed: $msg") }
             }
         }
         onCancelAncillaryJobs()
@@ -300,7 +300,7 @@ internal class ChatGenerationController(
         // 通知:用户停止时取消进度通知
         runCatching {
             notificationManager.updateLiveProgress("", 0, false)
-        }.onFailure { Logger.w("ChatVM", "取消进度通知失败: ${it.message}") }
+        }.onFailure { Logger.w("ChatVM", "Failed to cancel progress notification: ${it.message}") }
     }
 
     /** 发送当前输入。空文本(且无图片)或正在流式时忽略;isDrawMode 走图片生成。 */
@@ -337,7 +337,7 @@ internal class ChatGenerationController(
         // 命中明确违规词时中止发送并提示,不写入会话。
         val safety = io.zer0.muse.privacy.SafetyPolicy.checkInput(text)
         if (!safety.safe) {
-            Logger.w("ChatVM", "输入被安全策略拦截: ${safety.reason}")
+            Logger.w("ChatVM", "Input blocked by safety policy: ${safety.reason}")
             deps.addError(ChatErrorType.UNKNOWN, safety.suggestion ?: "", false)
             return
         }
@@ -566,7 +566,7 @@ internal class ChatGenerationController(
                                 createdAt = System.currentTimeMillis(),
                             ),
                         )
-                    }.onError { _, t -> Logger.w("ChatVM", "outbox 写入失败,本次发送将被阻止", t) }.isSuccess
+                    }.onError { _, t -> Logger.w("ChatVM", "outbox write failed; this send will be blocked", t) }.isSuccess
                 }
             }
         deps.stateStore.messages.value = deps.stateStore.messages.value + userMsg + assistantMsg
@@ -673,7 +673,7 @@ internal class ChatGenerationController(
                 deps.stateStore.messages.value = filtered
                 if (currentGenerating) st else st.copy(isStreaming = false, isWaitingFirstToken = false)
             }
-            Logger.i("ChatVM", "跳过当前会话外的 outbox 请求: ${req.outboxId}")
+            Logger.i("ChatVM", "Skipping outbox request outside the current session: ${req.outboxId}")
             return
         }
         try {
@@ -687,10 +687,10 @@ internal class ChatGenerationController(
         } catch (e: Exception) {
             Logger.e("ChatVM", "appendMessage failed", e)
             if (req.retryCount < 1) {
-                Logger.i("ChatVM", "重试发送 (attempt ${req.retryCount + 1})")
+                Logger.i("ChatVM", "Retrying send (attempt ${req.retryCount + 1})")
                 val retryResult = deps.generationState.sendChannel.trySend(req.copy(retryCount = req.retryCount + 1))
                 if (retryResult.isFailure) {
-                    Logger.w("ChatVM", "重试入队失败(队列已满)")
+                    Logger.w("ChatVM", "Retry enqueue failed (queue full)")
                     deps.addError(
                         ChatErrorType.UNKNOWN,
                         deps.appContext.getString(
@@ -783,7 +783,7 @@ internal class ChatGenerationController(
         // 被 check_hardcoded_cjk 误判为 UI 硬编码文案(该检查只按同一行识别日志调用)
         val userShort = req.userMessage.id.toString().take(8)
         val assistantShort = req.assistantMessageId.toString().take(8)
-        Logger.i("ChatVM", "outbox 恢复: 补回占位消息 user=$userShort, assistant=$assistantShort")
+        Logger.i("ChatVM", "outbox recovery: restored placeholder messages user=$userShort, assistant=$assistantShort")
     }
 
     /**
@@ -803,9 +803,9 @@ internal class ChatGenerationController(
             state.sessionProviderOverrides = state.sessionProviderOverrides - sessionId
             state.sessionModelOverrides = state.sessionModelOverrides - sessionId
             runCatching { deps.settings.saveSessionProviderOverride(sessionId, null) }
-                .onFailure { e -> Logger.w("ChatVM", "清理悬空 Provider 覆盖失败: ${e.message}", e) }
+                .onFailure { e -> Logger.w("ChatVM", "Failed to clean up dangling Provider override: ${e.message}", e) }
             runCatching { deps.settings.saveSessionModelOverride(sessionId, null) }
-                .onFailure { e -> Logger.w("ChatVM", "清理悬空模型覆盖失败: ${e.message}", e) }
+                .onFailure { e -> Logger.w("ChatVM", "Failed to clean up dangling model override: ${e.message}", e) }
             changed = true
         } else if (providerId != null) {
             val modelId = state.sessionModelOverrides[sessionId]
@@ -823,12 +823,12 @@ internal class ChatGenerationController(
             if (binding?.modelMissing == true) {
                 state.sessionModelOverrides = state.sessionModelOverrides - sessionId
                 runCatching { deps.settings.saveSessionModelOverride(sessionId, null) }
-                    .onFailure { e -> Logger.w("ChatVM", "清理悬空模型覆盖失败: ${e.message}", e) }
+                    .onFailure { e -> Logger.w("ChatVM", "Failed to clean up dangling model override: ${e.message}", e) }
                 changed = true
             }
         }
         if (changed) {
-            Logger.i("ChatVM", "已清除会话 $sessionId 的悬空模型/Provider 覆盖")
+            Logger.i("ChatVM", "Cleared dangling model/Provider overrides for session $sessionId")
         }
     }
 
@@ -851,7 +851,7 @@ internal class ChatGenerationController(
             )
         runCatching {
             deps.sessionRepository.saveConfigSnapshotIfAbsent(sessionId, snapshot)
-        }.onFailure { e -> Logger.w("ChatVM", "拍摄会话配置快照失败: ${e.message}", e) }
+        }.onFailure { e -> Logger.w("ChatVM", "Failed to snapshot session config: ${e.message}", e) }
     }
 
     /** 快速更新 token 计数(流式过程中每 200 字符或 1000ms 调用,避免每次重建 system prompt)。 */
@@ -1067,7 +1067,7 @@ internal class ChatGenerationController(
             val relationshipSection =
                 resultOf { deps.systemPromptAssembler.buildRelationshipSection(assistant) }
                     .onError { msg, throwable ->
-                        Logger.w("ChatVM", "buildRelationshipSection 失败: $msg", throwable)
+                        Logger.w("ChatVM", "buildRelationshipSection failed: $msg", throwable)
                     }
                     .getOrNull()
                     .orEmpty()
@@ -1106,7 +1106,7 @@ internal class ChatGenerationController(
                                         assistantId = relevantMemoryAssistantId,
                                     )
                                 }
-                                    .onError { msg, _ -> Logger.w("ChatVM", "buildRelevantMemorySection 失败: $msg") }
+                                    .onError { msg, _ -> Logger.w("ChatVM", "buildRelevantMemorySection failed: $msg") }
                                     .getOrNull() ?: ""
                             if (relevant.isNotBlank()) {
                                 if (isNotEmpty()) append("\n\n---\n\n")
@@ -1131,7 +1131,7 @@ internal class ChatGenerationController(
                                     limit = 8,
                                 )
                             }.onError { msg, throwable ->
-                                Logger.w("ChatVM", "会话原文回溯失败: $msg", throwable)
+                                Logger.w("ChatVM", "Failed to trace back session original text: $msg", throwable)
                             }.getOrNull().orEmpty()
                         val recallSection =
                             ConversationRecallFormatter.build(
@@ -1216,7 +1216,7 @@ internal class ChatGenerationController(
                     val effectiveRagConfig =
                         assistant?.let {
                             runCatching { deps.assistantRepository.mergeRagConfigOverride(it, ragConfig) }
-                                .onFailure { e -> Logger.w("ChatViewModel", "mergeRagConfigOverride 失败: ${e.message}") }
+                                .onFailure { e -> Logger.w("ChatViewModel", "mergeRagConfigOverride failed: ${e.message}") }
                                 .getOrDefault(ragConfig)
                         } ?: ragConfig
                     if (effectiveRagConfig.enabled) {
@@ -1225,7 +1225,7 @@ internal class ChatGenerationController(
                         if (ragQuery != null) {
                             val mentionDocIds =
                                 resultOf { deps.ragService.resolveMentionToDocIds(ragQuery) }
-                                    .onError { msg, t -> Logger.w("ChatViewModel", "@mention 解析失败: $msg", t) }
+                                    .onError { msg, t -> Logger.w("ChatViewModel", "@mention parsing failed: $msg", t) }
                                     .getOrNull()
                             // 助手绑定 KB 时,未显式 @mention 的查询只检索这些 KB;
                             // 显式 mention 优先,可临时定向到用户指定的文档。
@@ -1248,7 +1248,7 @@ internal class ChatGenerationController(
                                             deps.ragService.resolveKnowledgeBaseDocIds(boundKnowledgeBaseIds)
                                         }
                                     }.onError { msg, t ->
-                                        Logger.w("ChatViewModel", "助手绑定知识库展开失败: $msg", t)
+                                        Logger.w("ChatViewModel", "Failed to expand assistant-bound knowledge bases: $msg", t)
                                     }.getOrNull()
                                 } else {
                                     emptyList()
@@ -1330,8 +1330,8 @@ internal class ChatGenerationController(
                         truncatedHistory = compressedHistory
                         Logger.w(
                             "ChatVM",
-                            "pre-send context overflow: 压缩后重估 payload=$payloadTokens/$hardMaxTokens " +
-                                "(${payloadTokens * 100 / hardMaxTokens}%), 继续发送 | sessionId=$sessionId",
+                            "pre-send context overflow: re-estimated after compression payload=$payloadTokens/$hardMaxTokens " +
+                                "(${payloadTokens * 100 / hardMaxTokens}%), continuing to send | sessionId=$sessionId",
                         )
                     } else {
                         contextOverflowBlocked = true
@@ -1395,7 +1395,7 @@ internal class ChatGenerationController(
                 )
             if (result.isFailure) {
                 deps.generationState.outboxRecoveryQueuedIds.remove(req.id)
-                Logger.w("ChatVM", "切回会话时 outbox 入队失败: ${req.id}")
+                Logger.w("ChatVM", "outbox enqueue failed when switching back to session: ${req.id}")
             }
         }
     }
@@ -1516,7 +1516,7 @@ internal class ChatGenerationController(
         // R-UI-02: 生成会话单独持久化,避免与用户查看焦点互相覆盖。
         accessor.coroutineScope.launch {
             resultOf { settings.saveGeneratingSessionId(sessionId) }
-                .onError { msg, _ -> Logger.w("ChatVM", "saveGeneratingSessionId 失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "saveGeneratingSessionId failed: $msg") }
         }
         // 在调度器等待旧代 finally 之前就分配新代身份，旧代收尾从此刻起不能清零新代 UI。
         val generationSerial = ++deps.generationState.streamGenerationSerial
@@ -1603,7 +1603,7 @@ internal class ChatGenerationController(
                     sessionManager.runtime(sessionId)?.markFinished(TurnPhase.FAILED, state.turnId)
                     runCatching {
                         notificationManager.updateLiveProgress("", 0, false)
-                    }.onFailure { Logger.w("ChatVM", "取消进度通知失败: ${it.message}") }
+                    }.onFailure { Logger.w("ChatVM", "Failed to cancel progress notification: ${it.message}") }
                     return@launchGeneration
                 }
                 stageTimer.split("prompt")
@@ -1672,7 +1672,7 @@ internal class ChatGenerationController(
                 withContext(NonCancellable) {
                     runCatching {
                         deps.sessionRepository.deleteGenerationCheckpoints(sessionId, state.streamStartedAt)
-                    }.onFailure { Logger.w("ChatVM", "中断清理 generation checkpoints 失败: ${it.message}") }
+                    }.onFailure { Logger.w("ChatVM", "Failed to clean generation checkpoints on interrupt: ${it.message}") }
                 }
                 if (ConversationRebuildFlagStore.current.shadowEventsEnabled) {
                     withContext(NonCancellable) {
@@ -1728,7 +1728,7 @@ internal class ChatGenerationController(
                 withContext(NonCancellable) {
                     runCatching {
                         deps.sessionRepository.deleteGenerationCheckpoints(sessionId, state.streamStartedAt)
-                    }.onFailure { Logger.w("ChatVM", "异常清理 generation checkpoints 失败: ${it.message}") }
+                    }.onFailure { Logger.w("ChatVM", "Failed to clean generation checkpoints on exception: ${it.message}") }
                 }
                 deps.generationState.nextToolGenerationToken()
                 deps.generationState.toolAssistantId = null
@@ -1741,7 +1741,7 @@ internal class ChatGenerationController(
                 sessionManager.runtime(sessionId)?.markFinished(TurnPhase.FAILED, state.turnId)
                 runCatching {
                     notificationManager.updateLiveProgress("", 0, false)
-                }.onFailure { Logger.w("ChatVM", "取消进度通知失败: ${it.message}") }
+                }.onFailure { Logger.w("ChatVM", "Failed to cancel progress notification: ${it.message}") }
             } finally {
                 // P3-9: 结束阶段计时(含准备/首字/每轮/收尾分段;异常路径同样落日志)
                 //
@@ -1926,7 +1926,7 @@ internal class ChatGenerationController(
                 preview = preview,
                 target = MuseNotificationTarget.Session(sessionId),
             )
-        }.onError { msg, t -> Logger.w("ChatVM", "流式完成通知失败: $msg", t) }
+        }.onError { msg, t -> Logger.w("ChatVM", "Streaming completion notification failed: $msg", t) }
 
         // 通知 memory ticker(后台 rollingSummary + daily check)。
         // 聊天 UI 可能只保留最近一页消息;记忆管线必须从 DB 读取完整会话,
@@ -1969,23 +1969,23 @@ internal class ChatGenerationController(
         // B5-01/B-23: 生成正常结束,按 (sessionId, streamStartedAt) 精确清理本代检查点。
         if (!restoreBlocksChatWrites("finalizeClearCheckpoints")) {
             resultOf { deps.sessionRepository.deleteGenerationCheckpoints(sessionId, streamStartedAt) }
-                .onError { msg, _ -> Logger.w("ChatVM", "generation checkpoints 清理失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "generation checkpoints cleanup failed: $msg") }
         }
         // R-UI-02: 本轮生成结束后清除生成焦点。
         if (!restoreBlocksChatWrites("finalizeClearGenerationFocus") &&
             resultOf { deps.settings.getGeneratingSessionId() }.getOrNull() == sessionId
         ) {
             resultOf { deps.settings.saveGeneratingSessionId(null) }
-                .onError { msg, _ -> Logger.w("ChatVM", "saveGeneratingSessionId 清理失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "saveGeneratingSessionId cleanup failed: $msg") }
         }
         // v2.5.9: 清除本会话登记的技能目录，防会话结束后残留（同 SessionToolLoadRegistry）。
         runCatching { deps.toolRegistry.clearSearchableSkills(sessionId) }
-            .onFailure { Logger.w("ChatVM", "clearSearchableSkills 失败: ${it.message}") }
+            .onFailure { Logger.w("ChatVM", "clearSearchableSkills failed: ${it.message}") }
         // v2.6.7 fix (AUDIT F12): 通知桌面小组件刷新。
         // 旧实现只在添加/配置时发过一次广播，组件预览长期停在那一刻的内容，
         // 因为 Glance 的 provideGlance 不会自己重跑。
         runCatching { io.zer0.muse.widget.MuseWidgetRefresher.refreshAll(deps.appContext) }
-            .onFailure { Logger.w("ChatVM", "刷新桌面小组件失败: ${it.message}") }
+            .onFailure { Logger.w("ChatVM", "Failed to refresh home-screen widgets: ${it.message}") }
     }
 
     companion object {

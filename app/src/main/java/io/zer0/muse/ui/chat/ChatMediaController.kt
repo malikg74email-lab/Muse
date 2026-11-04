@@ -75,8 +75,8 @@ internal class ChatMediaController(
         const val TAG = "ChatMediaController"
 
         /** 进入 SPEAKING 时的看门狗回落原因(写日志,便于事后定位引擎/回调问题)。 */
-        const val REASON_NO_CALLBACK = "超时未收到任何 TTS 状态回调"
-        const val REASON_STILL_SPEAKING = "TTS 长时间未报告结束(结束回调可能丢失)"
+        const val REASON_NO_CALLBACK = "Timed out without any TTS state callback"
+        const val REASON_STILL_SPEAKING = "TTS did not report completion for a long time (completion callback may be lost)"
     }
 
     /** v1.43: 选中产物卡片,打开 ArtifactViewerDialog。 */
@@ -350,7 +350,7 @@ internal class ChatMediaController(
                 extensions++
                 Logger.w(
                     TAG,
-                    "SPEAKING 看门狗超时(${timeoutMs}ms)但 TTS 仍在播报,续期 $extensions 次" +
+                    "SPEAKING watchdog timed out (${timeoutMs}ms) but TTS is still speaking; extending $extensions times" +
                         " | textLength=$textLength | epoch=$epoch",
                 )
                 continue
@@ -358,7 +358,7 @@ internal class ChatMediaController(
             val reason = if (stillSpeaking) REASON_STILL_SPEAKING else REASON_NO_CALLBACK
             Logger.w(
                 TAG,
-                "SPEAKING 看门狗触发,回落 LISTENING | reason=$reason | timeout=${timeoutMs}ms" +
+                "SPEAKING watchdog triggered, falling back to LISTENING | reason=$reason | timeout=${timeoutMs}ms" +
                     " | textLength=$textLength | epoch=$epoch",
             )
             runCatching { ttsManager.stop() }

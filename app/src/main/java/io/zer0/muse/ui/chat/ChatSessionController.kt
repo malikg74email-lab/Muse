@@ -78,26 +78,26 @@ internal class ChatSessionController(
             // v1.x: 会话删除时释放该会话的浏览器实例
             browserManagerRegistry?.let { registry ->
                 resultOf { registry.closeSession(sessionId) }
-                    .onError { msg, _ -> Logger.w("ChatVM", "closeSession browser 失败: $msg") }
+                    .onError { msg, _ -> Logger.w("ChatVM", "closeSession browser failed: $msg") }
             }
             // 实验性:会话附件检索 —— 会话删除时一并清掉该会话的附件索引,避免 chunk 残留
             runCatching {
                 GlobalContext.get().get<SessionAttachmentService>()
                     .dropSessionAttachments(sessionId = sessionId, keepIndex = false)
-            }.onFailure { Logger.w("ChatVM", "清理会话附件索引失败: ${it.message}") }
+            }.onFailure { Logger.w("ChatVM", "Failed to clean session attachment index: ${it.message}") }
             // v1.93+: 从内存 LRU 缓存移除,避免持有已删除会话的消息副本(防止内存泄漏与脏读)
             sessionMemoryCache.remove(sessionId)
             // v2.6.0 (AUD-UI-F13): 清掉该会话的待办快照 —— TodoTool.sessionTodos(单例)里的
             // TodoList 永不释放,长期使用每个用过 todo_write 的会话都留一份,且已删会话
             // 仍可经 getTodos 读到。此处与会话删除同步清理。
             resultOf { io.zer0.muse.tools.TodoTool.clearSession(sessionId) }
-                .onError { msg, _ -> Logger.w("ChatVM", "清理会话待办失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "Failed to clean session to-dos: $msg") }
             // v2.6.7: 库里那一份也要删，否则重建同名会话会读到已删会话的旧待办。
             runCatching {
                 org.koin.core.context.GlobalContext.get()
                     .get<io.zer0.muse.data.todo.SessionTodoRepository>()
                     .delete(sessionId)
-            }.onFailure { Logger.w("ChatVM", "删除待办记录失败: ${it.message}") }
+            }.onFailure { Logger.w("ChatVM", "Failed to delete to-do record: ${it.message}") }
             // v2.6.7 fix (AUDIT F14): 会话态工具注册表也要清。
             // 旧实现只清了 clearSearchableSkills（会话结束时调），
             // 而 clearVisibleTools 与 SessionToolLoadRegistry.clear 全仓零调用 ——
@@ -106,9 +106,9 @@ internal class ChatSessionController(
                 org.koin.core.context.GlobalContext.get()
                     .get<io.zer0.muse.tools.ToolRegistry>()
                     .clearVisibleTools(sessionId)
-            }.onFailure { Logger.w("ChatVM", "清理工具可见集失败: ${it.message}") }
+            }.onFailure { Logger.w("ChatVM", "Failed to clean tool visibility set: ${it.message}") }
             runCatching { io.zer0.muse.tools.SessionToolLoadRegistry.clear(sessionId) }
-                .onFailure { Logger.w("ChatVM", "清理工具装载记录失败: ${it.message}") }
+                .onFailure { Logger.w("ChatVM", "Failed to clean tool load records: ${it.message}") }
             if (accessor.snapshot.currentSessionId == sessionId) {
                 val remaining = sessionRepository.observeSessions().first()
                 val target = remaining.firstOrNull()
@@ -225,7 +225,7 @@ internal class ChatSessionController(
             bridge.refreshContext()
             // R-UI-02: 新建会话后同步持久化查看焦点。
             resultOf { sessionDeps.settings.saveViewedSessionId(id) }
-                .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId 失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId failed: $msg") }
         }
     }
 
@@ -289,7 +289,7 @@ internal class ChatSessionController(
             // R-UI-02: 任务模式下重启上下文后同步持久化查看焦点。
             if (!accessor.snapshot.isAgentMode) {
                 resultOf { sessionDeps.settings.saveViewedSessionId(id) }
-                    .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId 失败: $msg") }
+                    .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId failed: $msg") }
             }
         }
     }
@@ -352,7 +352,7 @@ internal class ChatSessionController(
             sessionDeps.onSend()
             // R-UI-02: 新建会话并发送时同步持久化查看焦点。
             resultOf { sessionDeps.settings.saveViewedSessionId(id) }
-                .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId 失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId failed: $msg") }
         }
     }
 
@@ -388,7 +388,7 @@ internal class ChatSessionController(
                                 val newId = sessionRepository.createAgentSession(preferredAgentId)
                                 Logger.i(
                                     "ChatVM",
-                                    "setAgentMode: 目标助手无历史房间，新建 agent 会话(assistant=$preferredAgentId)",
+                                    "setAgentMode: target assistant has no existing room; creating a new agent session (assistant=$preferredAgentId)",
                                 )
                                 sessionRepository.getSessionById(newId)
                             }
@@ -406,7 +406,7 @@ internal class ChatSessionController(
                     if (switchGuard.isStale(switchToken)) {
                         // 已被更新的切换取代:释放本次 acquire,丢弃加载结果
                         sessionDeps.sessionManager.release(sessionId)
-                        Logger.i("ChatVM", "setAgentMode(true) 结果过期,丢弃: $sessionId")
+                        Logger.i("ChatVM", "setAgentMode(true) result stale, discarding: $sessionId")
                         return@launch
                     }
                     val assistantId = sessionRepository.getAssistantId(sessionId)
@@ -477,7 +477,7 @@ internal class ChatSessionController(
                             if (!switchGuard.isStale(switchToken)) {
                                 io.zer0.muse.tools.TodoTool.syncFromDatabase(sessionId, todoList)
                             }
-                        }.onFailure { Logger.w("ChatVM", "预热 Agent 待办失败: ${it.message}") }
+                        }.onFailure { Logger.w("ChatVM", "Failed to prewarm Agent to-dos: ${it.message}") }
                     }
                     val weakHint = WeakToolUseDetector.getWeakToolHint(model)
                     accessor.update {
@@ -488,12 +488,12 @@ internal class ChatSessionController(
                     throw e
                 } catch (e: Exception) {
                     if (switchGuard.isStale(switchToken)) {
-                        Logger.i("ChatVM", "setAgentMode(true) 过期失败分支,忽略")
+                        Logger.i("ChatVM", "setAgentMode(true) stale failure branch, ignoring")
                         return@launch
                     }
                     // v2.0 修复: 切换失败时不能静默死掉(否则 Agent Tab 永远转圈)。
                     // 回落安全态: 尽力创建兑底会话,保证界面可用且可切回。
-                    Logger.e("ChatVM", "setAgentMode 失败,回落安全状态", e)
+                    Logger.e("ChatVM", "setAgentMode failed, falling back to a safe state", e)
                     val fallbackId = resultOf { sessionRepository.createAgentSession("default") }.getOrNull()
                     val fallbackAssistant =
                         runCatching {
@@ -539,7 +539,7 @@ internal class ChatSessionController(
                     if (switchGuard.isStale(switchToken)) {
                         // 已被更新的切换取代:释放本次 acquire,丢弃加载结果
                         sessionDeps.sessionManager.release(sid)
-                        Logger.i("ChatVM", "setAgentMode(false) 结果过期,丢弃: $sid")
+                        Logger.i("ChatVM", "setAgentMode(false) result stale, discarding: $sid")
                         return@launch
                     }
                     val permissionMode =
@@ -595,7 +595,7 @@ internal class ChatSessionController(
                     }
                     bridge.refreshContext()
                     resultOf { sessionDeps.settings.saveViewedSessionId(sid) }
-                        .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId 失败: $msg") }
+                        .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId failed: $msg") }
                 }
             }
         }
@@ -641,7 +641,7 @@ internal class ChatSessionController(
                 if (!switchGuard.isStale(switchToken)) {
                     io.zer0.muse.tools.TodoTool.syncFromDatabase(sessionId, list)
                 }
-            }.onFailure { Logger.w("ChatVM", "预热会话待办失败: ${it.message}") }
+            }.onFailure { Logger.w("ChatVM", "Failed to prewarm session to-dos: ${it.message}") }
         }
         // v1.93+: 切换前把当前会话消息快照存入 LRU 缓存(有变体分支则不缓存)
         if (currentSession != null && sessionDeps.stateStore.messages.value.isNotEmpty() &&
@@ -669,11 +669,11 @@ internal class ChatSessionController(
             if (switchGuard.isStale(switchToken)) {
                 // 已被更新的切换取代:释放本次 acquire,丢弃加载结果
                 sessionDeps.sessionManager.release(sessionId)
-                Logger.i("ChatVM", "switchSession 结果过期,丢弃: $sessionId")
+                Logger.i("ChatVM", "switchSession result stale, discarding: $sessionId")
                 return@launch
             }
             if (!exists) {
-                Logger.w("ChatVM", "switchSession 目标会话不存在,回退会话列表: $sessionId")
+                Logger.w("ChatVM", "switchSession target session does not exist, falling back to the session list: $sessionId")
                 accessor.update {
                     it.copy(
                         currentSessionId = null,
@@ -694,7 +694,7 @@ internal class ChatSessionController(
                 org.koin.core.context.GlobalContext.get().get<io.zer0.muse.proactive.ProactiveScheduler>()
             }.getOrNull()?.let { proactive ->
                 resultOf { proactive.onSessionOpened(sessionId) }
-                    .onError { msg, _ -> Logger.w("ChatVM", "标记主动消息已读失败: $msg") }
+                    .onError { msg, _ -> Logger.w("ChatVM", "Failed to mark proactive message as read: $msg") }
             }
             val isBackgroundStreaming = sessionDeps.chatGenerationManager.isStreaming(sessionId)
             val cached = if (!isBackgroundStreaming) sessionMemoryCache.get(sessionId) else null
@@ -776,7 +776,7 @@ internal class ChatSessionController(
                 sessionMemoryCache.remove(sessionId)
             }
             resultOf { sessionDeps.settings.saveViewedSessionId(sessionId) }
-                .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId 失败: $msg") }
+                .onError { msg, _ -> Logger.w("ChatVM", "saveViewedSessionId failed: $msg") }
             // v1.0.30: 标记会话切换时间戳,供 onAppForeground 判断是否需强制刷新
             sessionDeps.onSessionSwitched(sessionId)
             // v0.45: 刷新上下文 token 占用
@@ -788,11 +788,11 @@ internal class ChatSessionController(
             // 断点续传:检查本会话是否有未完成的工具调用
             val pendingCount =
                 resultOf { PendingToolCallStore.getForChat(sessionId) }
-                    .onError { msg, t -> Logger.w("ChatVM", "switchSession getForChat 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("ChatVM", "switchSession getForChat failed: $msg", t) }
                     .getOrNull()?.size ?: 0
             if (pendingCount > 0) {
                 accessor.update { it.copy(pendingToolCallCount = pendingCount) }
-                Logger.i("ChatVM", "switchSession 检测到 $pendingCount 个未完成工具调用,会话=$sessionId")
+                Logger.i("ChatVM", "switchSession detected $pendingCount unfinished tool calls, session=$sessionId")
             } else {
                 accessor.update { it.copy(pendingToolCallCount = 0) }
             }
