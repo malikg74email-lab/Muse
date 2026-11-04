@@ -171,7 +171,7 @@ private fun buildHtml(latex: String, textColorHex: String, errorColorHex: String
       });
     } catch (e) {
       // L5 修复: 用 textContent 替代 innerHTML,避免 e.message 被解析为 HTML 造成注入
-      document.getElementById("formula").textContent = '公式错误: ' + e.message;
+      document.getElementById("formula").textContent = 'Formula error: ' + e.message;
     }
   };
 </script>

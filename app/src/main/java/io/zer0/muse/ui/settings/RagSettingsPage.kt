@@ -831,7 +831,7 @@ private suspend fun resolveActiveBackendQuietly(
     } catch (e: Exception) {
         Logger.w(
             "RagSettingsPage",
-            "解析 embedding 后端失败(source=${config.embeddingSource}): ${e.message ?: e::class.java.simpleName}",
+            "Failed to resolve embedding backend (source=${config.embeddingSource}): ${e.message ?: e::class.java.simpleName}",
         )
     }
 }

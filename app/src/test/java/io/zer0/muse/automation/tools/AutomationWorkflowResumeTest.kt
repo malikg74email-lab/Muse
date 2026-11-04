@@ -42,7 +42,7 @@ class AutomationWorkflowResumeTest {
 
             assertFalse(first.isError)
             assertFalse(resumed.isError)
-            assertTrue(resumed.content.contains("已从工作流断点恢复"))
+            assertTrue(resumed.content.contains("Restored from the workflow breakpoint"))
         } finally {
             directory.deleteRecursively()
         }

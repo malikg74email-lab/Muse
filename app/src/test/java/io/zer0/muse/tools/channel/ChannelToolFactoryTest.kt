@@ -59,7 +59,7 @@ class ChannelToolFactoryTest {
 
         // 空 content 不触发发送,返回错误文本(避免空气泡落库)
         reply = null
-        assertEquals("错误: content 不能为空", channelReply.invoke(emptyMap()))
+        assertEquals("Error: content must not be empty", channelReply.invoke(emptyMap()))
         assertNull(reply)
     }
 

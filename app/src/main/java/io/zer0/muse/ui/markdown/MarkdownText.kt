@@ -252,7 +252,7 @@ fun MarkdownText(
             ) {
                 AsyncImage(
                     model = coverFile,
-                    contentDescription = coverFrontmatter?.title ?: "封面",
+                    contentDescription = coverFrontmatter?.title ?: "Cover",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )

@@ -27,6 +27,6 @@ internal fun recordWebhookInbound(source: ChannelInbox.Source, text: String?, ra
     return runCatching {
         ChannelInbox.record(source, text, rawPayload)
     }.onFailure { error ->
-        Logger.e("ChannelWebhookRoutes", "渠道 webhook 入站记录失败", error)
+        Logger.e("ChannelWebhookRoutes", "Failed to record channel webhook inbound event", error)
     }.getOrNull()
 }

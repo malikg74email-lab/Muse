@@ -47,7 +47,7 @@ internal class AndroidHostSettingsStrings(private val baseContext: Context) : Ho
         val context = localizedContext(language)
         val id = context.resources.getIdentifier(resourceName, RESOURCE_TYPE, context.packageName)
         if (id == 0) {
-            Logger.w(TAG, "设置文案资源缺失: $resourceName (language=$language)")
+            Logger.w(TAG, "Settings text resource missing: $resourceName (language=$language)")
             return null
         }
         val text = context.getString(id).takeIf { it.isNotBlank() } ?: return null

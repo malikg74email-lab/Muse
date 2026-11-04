@@ -261,11 +261,11 @@ internal fun ThemeSection(themeMode: String, fontSizeScale: String, settings: Se
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (e: java.io.IOException) {
-            Logger.w("ThemeSection", "主题导入读取失败: ${e.message}")
+            Logger.w("ThemeSection", "Failed to read theme import: ${e.message}")
             MuseToast.show(context.getString(R.string.settings_theme_custom_import_failed))
             return@rememberLauncherForActivityResult
         } catch (e: kotlinx.serialization.SerializationException) {
-            Logger.w("ThemeSection", "主题导入解析失败: ${e.message}")
+            Logger.w("ThemeSection", "Failed to parse theme import: ${e.message}")
             MuseToast.show(context.getString(R.string.settings_theme_custom_import_failed))
             return@rememberLauncherForActivityResult
         }
@@ -1607,14 +1607,14 @@ private data class PresetColorScheme(
 
 /** v1.97: 8 套精选配色(色盲友好,覆盖暖/冷/中性色调)。 */
 private val PRESET_COLOR_SCHEMES = listOf(
-    PresetColorScheme("月桂绿", 0xFF2E7D32.toInt(), 0xFF66BB6A.toInt(), 0xFFA5D6A7.toInt()),
-    PresetColorScheme("深海蓝", 0xFF1565C0.toInt(), 0xFF42A5F5.toInt(), 0xFF90CAF9.toInt()),
-    PresetColorScheme("暮色紫", 0xFF6A1B9A.toInt(), 0xFFAB47BC.toInt(), 0xFFCE93D8.toInt()),
-    PresetColorScheme("赤霞红", 0xFFC62828.toInt(), 0xFFEF5350.toInt(), 0xFFFFCDD2.toInt()),
-    PresetColorScheme("琥珀橙", 0xFFE65100.toInt(), 0xFFFF7043.toInt(), 0xFFFFCC80.toInt()),
-    PresetColorScheme("青瓷青", 0xFF00695C.toInt(), 0xFF26A69A.toInt(), 0xFF80CBC4.toInt()),
-    PresetColorScheme("墨纸灰", 0xFF424242.toInt(), 0xFF757575.toInt(), 0xFFBDBDBD.toInt()),
-    PresetColorScheme("樱花粉", 0xFFAD1457.toInt(), 0xFFEC407A.toInt(), 0xFFF8BBD0.toInt()),
+    PresetColorScheme("Laurel Green", 0xFF2E7D32.toInt(), 0xFF66BB6A.toInt(), 0xFFA5D6A7.toInt()),
+    PresetColorScheme("Deep Sea Blue", 0xFF1565C0.toInt(), 0xFF42A5F5.toInt(), 0xFF90CAF9.toInt()),
+    PresetColorScheme("Dusk Purple", 0xFF6A1B9A.toInt(), 0xFFAB47BC.toInt(), 0xFFCE93D8.toInt()),
+    PresetColorScheme("Rosy Red", 0xFFC62828.toInt(), 0xFFEF5350.toInt(), 0xFFFFCDD2.toInt()),
+    PresetColorScheme("Amber Orange", 0xFFE65100.toInt(), 0xFFFF7043.toInt(), 0xFFFFCC80.toInt()),
+    PresetColorScheme("Celadon", 0xFF00695C.toInt(), 0xFF26A69A.toInt(), 0xFF80CBC4.toInt()),
+    PresetColorScheme("Ink Grey", 0xFF424242.toInt(), 0xFF757575.toInt(), 0xFFBDBDBD.toInt()),
+    PresetColorScheme("Sakura Pink", 0xFFAD1457.toInt(), 0xFFEC407A.toInt(), 0xFFF8BBD0.toInt()),
 )
 
 /**
@@ -1708,10 +1708,10 @@ private suspend fun importFontFile(context: android.content.Context, uri: Uri): 
             }
             target.absolutePath
         } catch (e: java.io.IOException) {
-            Logger.w("ThemeSection", "字体文件复制失败: ${e.message}")
+            Logger.w("ThemeSection", "Failed to copy font file: ${e.message}")
             null
         } catch (e: SecurityException) {
-            Logger.w("ThemeSection", "字体文件读取被拒绝: ${e.message}")
+            Logger.w("ThemeSection", "Font file read was denied: ${e.message}")
             null
         }
     }

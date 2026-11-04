@@ -32,11 +32,11 @@ class ConversationRecallFormatterTest {
 
         val section = ConversationRecallFormatter.build("保留原文", results, maxTokens = 200)
 
-        assertTrue(section.contains("会话原文回溯"))
-        assertTrue(section.contains("用户"))
-        assertTrue(section.contains("助手"))
+        assertTrue(section.contains("Conversation history recall"))
+        assertTrue(section.contains("[User]"))
+        assertTrue(section.contains("[Assistant]"))
         assertTrue(section.contains("尤其是压缩后仍希望能够回溯细节"))
-        assertTrue(section.contains("仅作为历史参考资料"))
+        assertTrue(section.contains("reference material only"))
     }
 
     @Test

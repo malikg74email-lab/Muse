@@ -95,7 +95,7 @@ object QrCodeGenerator {
                 // 调用方使用完后应 recycle(详见 QrCodeDialogs 中 generateQrBitmap 调用点)
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "生成二维码失败: ${e.message}", e)
+            Logger.e(TAG, "Failed to generate QR code: ${e.message}", e)
             null
         }
     }
@@ -109,7 +109,7 @@ object QrCodeGenerator {
     fun parseProviderQr(content: String): ProviderConfig? {
         val trimmed = content.trim()
         if (!trimmed.startsWith(QR_PREFIX)) {
-            Logger.w(TAG, "二维码前缀不匹配,期望 '$QR_PREFIX'")
+            Logger.w(TAG, "QR code prefix mismatch, expected '$QR_PREFIX'")
             return null
         }
         val base64 = trimmed.removePrefix(QR_PREFIX)
@@ -117,7 +117,7 @@ object QrCodeGenerator {
             val json = String(Base64.decode(base64, Base64.DEFAULT), Charsets.UTF_8)
             AppJson.decodeFromString(ProviderConfig.serializer(), json)
         } catch (e: Exception) {
-            Logger.w(TAG, "解析 Provider 二维码失败", e)
+            Logger.w(TAG, "Failed to parse Provider QR code", e)
             null
         }
     }

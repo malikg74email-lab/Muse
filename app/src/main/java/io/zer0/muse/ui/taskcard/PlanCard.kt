@@ -112,8 +112,8 @@ fun PlanCard(plan: AgentPlan, modifier: Modifier = Modifier) {
                         }
                     Text(
                         text = buildString {
-                            append("${plan.completedSteps}/${plan.totalSteps} 步完成")
-                            if (plan.failedSteps > 0) append(" · ${plan.failedSteps} 失败")
+                            append("${plan.completedSteps}/${plan.totalSteps} steps completed")
+                            if (plan.failedSteps > 0) append(" · ${plan.failedSteps} failed")
                             if (nextStepLabel != null) append(" · " + nextStepLabel)
                         },
                         style = MaterialTheme.typography.labelSmall,

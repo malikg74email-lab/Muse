@@ -167,11 +167,11 @@ internal class HostMediaStore(
     }
 
     private fun writeInline(file: File, bytes: ByteArray): Boolean = runCatching {
-        if (!imageDir.isDirectory && !imageDir.mkdirs()) error("图片目录创建失败")
+        if (!imageDir.isDirectory && !imageDir.mkdirs()) error("Failed to create image directory")
         file.writeBytes(bytes)
         true
     }.getOrElse { error ->
-        Logger.w(TAG, "内联媒体落盘失败: ${error.message}")
+        Logger.w(TAG, "Failed to save inline media to disk: ${error.message}")
         false
     }
 

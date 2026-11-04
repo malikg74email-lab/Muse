@@ -186,7 +186,7 @@ class GroupChatViewModel(
         } catch (ce: kotlin.coroutines.cancellation.CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.w(TAG, "群聊 UI 状态流中断($tag): ${e.message}", e)
+            Logger.w(TAG, "Group chat UI state flow interrupted ($tag): ${e.message}", e)
         }
     }
 
@@ -441,7 +441,7 @@ class GroupChatViewModel(
                     )
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "群聊首屏分页加载失败 chatId=$chatId", e)
+                Logger.e(TAG, "Failed to load first page of group chat chatId=$chatId", e)
                 _state.update { it.copy(isLoadingMore = false, hasMoreHistory = false) }
             }
         }
@@ -487,7 +487,7 @@ class GroupChatViewModel(
                     )
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "群聊加载更多历史失败 chatId=$chatId", e)
+                Logger.e(TAG, "Failed to load more group chat history chatId=$chatId", e)
                 _state.update { it.copy(isLoadingMore = false, hasMoreHistory = false) }
             }
         }
@@ -591,7 +591,7 @@ class GroupChatViewModel(
             runCatching {
                 groupChatRepository.addSharedDoc(chatId, title, message.body)
             }.onFailure { t ->
-                Logger.w("GroupChatViewModel", "总结存为共享文档失败", t)
+                Logger.w("GroupChatViewModel", "Failed to save summary as shared document", t)
             }
         }
     }
@@ -622,8 +622,8 @@ class GroupChatViewModel(
         // v1.0.52: text 为空但有图片时,给 body 添加占位文本,
         // 让 LLM 知道用户发了图片(否则空 body 可能被 scheduler/LLM 忽略)
         val effectiveText = when {
-            text.isBlank() && images.isNotEmpty() -> "[图片]"
-            text.isBlank() && fileAttachments.isNotEmpty() -> "[文件]"
+            text.isBlank() && images.isNotEmpty() -> "[Image]"
+            text.isBlank() && fileAttachments.isNotEmpty() -> "[File]"
             else -> text
         }
         // v1.0.21: 乐观 UI 更新 — 立即把用户消息追加到 currentMessages,
@@ -640,7 +640,7 @@ class GroupChatViewModel(
             chatId = chatId,
             senderType = "user",
             senderId = "local_user",
-            senderName = "我",
+            senderName = "Me",
             body = effectiveText,
             imageBase64Json = imageJson,
             fileAttachmentsJson = if (fileAttachments.isNotEmpty()) {
@@ -729,7 +729,7 @@ class GroupChatViewModel(
             try {
                 groupChatRepository.addSharedDoc(chatId, title.trim(), content)
             } catch (e: Exception) {
-                Logger.e(TAG, "添加群共享文档失败", e)
+                Logger.e(TAG, "Failed to add group shared document", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_update_failed)) }
             }
         }
@@ -746,7 +746,7 @@ class GroupChatViewModel(
             try {
                 groupChatRepository.removeSharedDoc(chatId, docId)
             } catch (e: Exception) {
-                Logger.e(TAG, "删除群共享文档失败", e)
+                Logger.e(TAG, "Failed to delete group shared document", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_update_failed)) }
             }
         }
@@ -764,7 +764,7 @@ class GroupChatViewModel(
             try {
                 groupChatRepository.setMemberPrivateContext(chatId, assistantId, contextText)
             } catch (e: Exception) {
-                Logger.e(TAG, "设置成员专属上下文失败", e)
+                Logger.e(TAG, "Failed to set member-specific context", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_update_failed)) }
             }
         }
@@ -814,7 +814,7 @@ class GroupChatViewModel(
                     }
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "删除群聊失败", e)
+                Logger.e(TAG, "Failed to delete group chat", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_delete_failed)) }
             }
         }
@@ -833,10 +833,10 @@ class GroupChatViewModel(
         viewModelScope.launch {
             try {
                 groupChatMemoryRepository?.deleteByGroupChat(chatId)
-                Logger.i(TAG, "已清空群聊记忆: $chatId")
+                Logger.i(TAG, "Group chat memory cleared: $chatId")
             } catch (e: Exception) {
-                Logger.e(TAG, "清空群聊记忆失败", e)
-                _state.update { it.copy(errorMessage = "清空群聊记忆失败") }
+                Logger.e(TAG, "Failed to clear group chat memory", e)
+                _state.update { it.copy(errorMessage = "Failed to clear group chat memory") }
             }
         }
     }
@@ -859,7 +859,7 @@ class GroupChatViewModel(
                 _state.update { it.copy(searchResults = results, isSearching = false) }
             } catch (e: Exception) {
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-                Logger.e(TAG, "群聊搜索失败", e)
+                Logger.e(TAG, "Group chat search failed", e)
                 _state.update { it.copy(searchResults = emptyList(), isSearching = false) }
             }
         }
@@ -877,7 +877,7 @@ class GroupChatViewModel(
                 )
             } catch (e: Exception) {
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-                Logger.e(TAG, "更新助手模型失败", e)
+                Logger.e(TAG, "Failed to update assistant model", e)
             }
         }
     }
@@ -897,7 +897,7 @@ class GroupChatViewModel(
                     state.copy(currentMessages = state.currentMessages.filterNot { it.id == messageId })
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "删除消息失败", e)
+                Logger.e(TAG, "Failed to delete message", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_delete_msg_failed)) }
             }
         }
@@ -963,7 +963,7 @@ class GroupChatViewModel(
                 try {
                     groupChatRepository.deleteMessage(id)
                 } catch (e: Exception) {
-                    Logger.e(TAG, "批量删除消息失败: $id", e)
+                    Logger.e(TAG, "Failed to batch-delete messages: $id", e)
                 }
             }
             _state.update { state ->
@@ -985,7 +985,7 @@ class GroupChatViewModel(
             try {
                 groupChatRepository.togglePin(chatId)
             } catch (e: Exception) {
-                Logger.e(TAG, "切换置顶失败", e)
+                Logger.e(TAG, "Failed to toggle pin", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_operation_failed)) }
             }
         }
@@ -999,7 +999,7 @@ class GroupChatViewModel(
             try {
                 groupChatRepository.toggleArchive(chatId, archived)
             } catch (e: Exception) {
-                Logger.e(TAG, "归档操作失败", e)
+                Logger.e(TAG, "Archive operation failed", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_update_failed)) }
             }
         }
@@ -1024,7 +1024,7 @@ class GroupChatViewModel(
                     selectChat(chatId)
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "创建写作群聊失败", e)
+                Logger.e(TAG, "Failed to create writing group chat", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_create_failed)) }
             }
         }
@@ -1053,7 +1053,7 @@ class GroupChatViewModel(
             try {
                 groupChatRepository.updateChat(chatId, name, description, memberIds, discussionMode, autoMaxRounds, hostId, replyLengthMode, observerIds)
             } catch (e: Exception) {
-                Logger.e(TAG, "更新群聊失败", e)
+                Logger.e(TAG, "Failed to update group chat", e)
                 _state.update { it.copy(errorMessage = appContext.getString(R.string.err_group_chat_update_failed)) }
             }
         }

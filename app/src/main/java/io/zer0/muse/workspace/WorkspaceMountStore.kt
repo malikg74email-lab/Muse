@@ -105,31 +105,31 @@ class WorkspaceMountStore(private val context: Context) {
      */
     suspend fun upsert(mount: WorkspaceMount): MountStoreResult = withContext(Dispatchers.IO) {
         if (mount.id in BUILT_IN_MOUNT_IDS) {
-            return@withContext MountStoreResult.Error("内置挂载不可修改")
+            return@withContext MountStoreResult.Error("Built-in mounts cannot be modified")
         }
         if (!WorkspaceMount.isValidId(mount.id)) {
-            return@withContext MountStoreResult.Error("挂载标识只能是小写字母开头的字母、数字、下划线或连字符")
+            return@withContext MountStoreResult.Error("A mount id must start with a lowercase letter and contain only letters, digits, underscores or hyphens")
         }
         if (mount.provider == MountProvider.LOCAL) {
             val root = mount.rootPath?.let(::File)
             if (root == null || !root.isDirectory) {
-                return@withContext MountStoreResult.Error("目录不存在或不是文件夹")
+                return@withContext MountStoreResult.Error("Directory does not exist or is not a folder")
             }
             if (root.absolutePath == toolOutputsDir.absolutePath) {
-                return@withContext MountStoreResult.Error("工具输出目录已作为内置挂载存在,不需要再挂一次")
+                return@withContext MountStoreResult.Error("The tool output directory already exists as a built-in mount; no need to mount it again")
             }
         } else {
             if (mount.treeUri.isNullOrBlank()) {
-                return@withContext MountStoreResult.Error("缺少目录授权")
+                return@withContext MountStoreResult.Error("Missing directory authorization")
             }
         }
         mutex.withLock {
             val stored = readStored()
             if (stored.any { it.id != mount.id && sameRoot(it, mount) }) {
-                return@withLock MountStoreResult.Error("该目录已经挂载过了")
+                return@withLock MountStoreResult.Error("This directory has already been mounted")
             }
             val next = stored.filter { it.id != mount.id } + mount
-            if (!writeStored(next)) return@withLock MountStoreResult.Error("保存失败")
+            if (!writeStored(next)) return@withLock MountStoreResult.Error("Save failed")
             cache = next
             MountStoreResult.Success(builtInMounts() + next)
         }
@@ -178,7 +178,7 @@ class WorkspaceMountStore(private val context: Context) {
             } else {
                 json.decodeFromString(ListSerializer(WorkspaceMount.serializer()), text)
             }
-        }.onError { message, _ -> Logger.w(TAG, "读取挂载表失败: $message") }
+        }.onError { message, _ -> Logger.w(TAG, "Reading the mount table failed: $message") }
             .getOrNull() ?: return emptyList()
         val cleaned = parsed.filter { it.id !in BUILT_IN_MOUNT_IDS && WorkspaceMount.isValidId(it.id) }
         cache = cleaned
@@ -194,7 +194,7 @@ class WorkspaceMountStore(private val context: Context) {
             storeFile.writeText(payload, Charsets.UTF_8)
             temp.delete()
         }
-    }.onError { message, _ -> Logger.w(TAG, "写入挂载表失败: $message") }.isSuccess
+    }.onError { message, _ -> Logger.w(TAG, "Writing the mount table failed: $message") }.isSuccess
 
     /** 两条挂载是否指向同一个位置。 */
     private fun sameRoot(a: WorkspaceMount, b: WorkspaceMount): Boolean = when {
@@ -217,7 +217,7 @@ class WorkspaceMountStore(private val context: Context) {
         private const val MAIN_DIR_NAME = "workspace"
 
         /** 默认挂载的展示名。 */
-        private const val MAIN_LABEL = "工作区"
+        private const val MAIN_LABEL = "Workspace"
 
         /** 工具长输出的目录名，也是它作为内置挂载的标识。 */
         private const val TOOL_OUTPUTS_DIR_NAME = "tool_outputs"
@@ -226,7 +226,7 @@ class WorkspaceMountStore(private val context: Context) {
         const val TOOL_OUTPUTS_MOUNT_ID: String = TOOL_OUTPUTS_DIR_NAME
 
         /** 工具输出挂载的展示名。 */
-        private const val TOOL_OUTPUTS_LABEL = "工具输出"
+        private const val TOOL_OUTPUTS_LABEL = "Tool outputs"
 
         /** 内置挂载：不落盘、不可删除、不可改名。 */
         private val BUILT_IN_MOUNT_IDS: Set<String> = setOf(WorkspaceMount.MAIN_ID, TOOL_OUTPUTS_MOUNT_ID)

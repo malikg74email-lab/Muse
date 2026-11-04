@@ -297,7 +297,7 @@ fun KnowledgeScreen(
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: java.io.IOException) {
-                Logger.w("KnowledgeScreen", "读取 RAG 配置失败: ${e.message}")
+                Logger.w("KnowledgeScreen", "Failed to read RAG config: ${e.message}")
                 io.zer0.muse.rag.RagConfig()
             }
             if (isTextCandidate && !unsupportedTextCandidate) {
@@ -324,7 +324,7 @@ fun KnowledgeScreen(
                                 if (count == 0) continue
                                 totalChars += count
                                 if (totalChars > maxFileSizeBytes) {
-                                    error("文件过大,超过 ${maxFileSizeBytes / 1024 / 1024}MB 限制")
+                                    error("File too large; exceeds the ${maxFileSizeBytes / 1024 / 1024}MB limit")
                                 }
                                 if (preview.length < MAX_CONTENT_LENGTH) {
                                     preview.append(
@@ -440,7 +440,7 @@ fun KnowledgeScreen(
             createdDocId = docId
             // L-KUI1: 提取常量,截断时记录日志提示
             val truncatedContent = if (content.length > MAX_CONTENT_LENGTH) {
-                Logger.w("KnowledgeScreen", "内容超过 $MAX_CONTENT_LENGTH 字符,已截断(原 ${content.length} 字)")
+                Logger.w("KnowledgeScreen", "Content exceeded $MAX_CONTENT_LENGTH characters; truncated (originally ${content.length} characters)")
                 content.take(MAX_CONTENT_LENGTH)
             } else {
                 content
@@ -617,7 +617,7 @@ fun KnowledgeScreen(
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: java.io.IOException) {
-                    Logger.w("KnowledgeScreen", "读取 RAG 配置失败: ${e.message}")
+                    Logger.w("KnowledgeScreen", "Failed to read RAG config: ${e.message}")
                     io.zer0.muse.rag.RagConfig()
                 }
                 val chunkCount = ragService.reindexDocument(
@@ -660,7 +660,7 @@ fun KnowledgeScreen(
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: java.io.IOException) {
-                    Logger.w("KnowledgeScreen", "读取 RAG 配置失败: ${e.message}")
+                    Logger.w("KnowledgeScreen", "Failed to read RAG config: ${e.message}")
                     io.zer0.muse.rag.RagConfig()
                 }
                 val failures = ragService.repairKnowledgeFtsIndex(ragConfig) { current, total ->
@@ -687,7 +687,7 @@ fun KnowledgeScreen(
                         context.getString(R.string.knowledge_fts_repaired_partial_with_reason, failures.size, reasons)
                     }
                     MuseToast.show(msg)
-                    Logger.w("KnowledgeScreen", "重索引失败 ${failures.size} 篇，原因: $reasons")
+                    Logger.w("KnowledgeScreen", "Reindexing failed for ${failures.size} documents, reason: $reasons")
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -721,7 +721,7 @@ fun KnowledgeScreen(
                 if (item == null) {
                     MuseToast.show(
                         context.getString(
-                            if (failureMsg?.contains("未配置绘图模型") == true) {
+                            if (failureMsg?.contains("No drawing model configured") == true) {
                                 R.string.cover_generate_no_provider
                             } else {
                                 R.string.cover_generate_failed
@@ -1201,7 +1201,7 @@ fun KnowledgeScreen(
                             MuseToast.show(context.getString(R.string.knowledge_move_success))
                         }.onError { message, error ->
                             moveInProgress = false
-                            Logger.w("KnowledgeScreen", "移动文档到文件夹失败: $message", error)
+                            Logger.w("KnowledgeScreen", "Failed to move document to folder: $message", error)
                             MuseToast.show(
                                 context.getString(
                                     R.string.knowledge_move_failed,
@@ -2243,8 +2243,11 @@ private fun parsePdfStructuredContent(content: String, fileType: String): Parsed
     if (fileType.lowercase(Locale.getDefault()) != "pdf" || content.isBlank()) {
         return ParsedPdfContent(body = content)
     }
-    // 仅在 content 以 [文档信息] 或 [目录] 开头时才解析(避免误吞普通正文)
-    if (!content.startsWith("[文档信息]") && !content.startsWith("[目录]")) {
+    // 仅在 content 以 [Document info] 或 [Contents] 开头时才解析(避免误吞普通正文);
+    // 旧版中文标记 [文档信息] / [目录] 一并接受(已导入的存量内容)。
+    if (!content.startsWith("[Document info]") && !content.startsWith("[Contents]") &&
+        !content.startsWith("[文档信息]") && !content.startsWith("[目录]")
+    ) {
         return ParsedPdfContent(body = content)
     }
 
@@ -2255,8 +2258,8 @@ private fun parsePdfStructuredContent(content: String, fileType: String): Parsed
     var section = "meta" // meta / outline / body
     content.lineSequence().forEach { line ->
         when {
-            line == "[文档信息]" -> section = "meta"
-            line == "[目录]" -> section = "outline"
+            line == "[Document info]" || line == "[文档信息]" -> section = "meta"
+            line == "[Contents]" || line == "[目录]" -> section = "outline"
             // 空行作为 section 切换的隐式分隔(DocumentParser 在块之间会输出空行)
             line.isBlank() && section != "body" -> {
                 // 不立即切换:等遇到非 [xxx] 且非空行时再决定

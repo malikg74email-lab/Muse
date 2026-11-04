@@ -701,7 +701,7 @@ private fun buildChartHtml(json: String, errorPrefix: String): String {
                 new Chart(ctx, config);
             } catch(e) {
                 document.getElementById('wrap').style.display = 'none';
-                document.getElementById('err').textContent = $encodedPrefix + e.message + '\n\n原始数据:\n' + raw;
+                document.getElementById('err').textContent = $encodedPrefix + e.message + '\n\nRaw data:\n' + raw;
             }
         </script>
         <script>$HEIGHT_OBSERVER_SCRIPT</script>

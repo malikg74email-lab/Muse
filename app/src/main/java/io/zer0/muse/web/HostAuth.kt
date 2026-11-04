@@ -74,7 +74,7 @@ internal fun hostAuthHeader(call: ApplicationCall, cookieName: String = HOST_AUT
 internal fun verifyHostToken(token: String?, verifier: JWTVerifier, subject: String = HOST_AUTH_SUBJECT): Any? {
     if (token.isNullOrBlank()) return null
     val decoded = runCatching { verifier.verify(token) }.getOrElse { error ->
-        Logger.d(TAG, "JWT 校验未通过: ${error.javaClass.simpleName}")
+        Logger.d(TAG, "JWT validation failed: ${error.javaClass.simpleName}")
         return null
     }
     return if (decoded.getClaim(HOST_AUTH_SUBJECT_CLAIM).asString() == subject) UserIdPrincipal(subject) else null

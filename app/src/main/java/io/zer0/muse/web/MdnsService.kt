@@ -50,21 +50,21 @@ class MdnsService(private val context: Context) {
         val listener = object : NsdManager.RegistrationListener {
             override fun onServiceRegistered(info: NsdServiceInfo) {
                 registeredName = info.serviceName
-                Logger.i(TAG, "mDNS 服务已注册: ${info.serviceName} :${info.port}")
+                Logger.i(TAG, "mDNS service registered: ${info.serviceName} :${info.port}")
             }
 
             override fun onRegistrationFailed(info: NsdServiceInfo, errorCode: Int) {
-                Logger.e(TAG, "mDNS 注册失败: errorCode=$errorCode, service=${info.serviceName}")
+                Logger.e(TAG, "mDNS registration failed: errorCode=$errorCode, service=${info.serviceName}")
                 registrationListener = null
             }
 
             override fun onServiceUnregistered(info: NsdServiceInfo) {
-                Logger.i(TAG, "mDNS 服务已注销: ${info.serviceName}")
+                Logger.i(TAG, "mDNS service unregistered: ${info.serviceName}")
                 registeredName = null
             }
 
             override fun onUnregistrationFailed(info: NsdServiceInfo, errorCode: Int) {
-                Logger.w(TAG, "mDNS 注销失败: errorCode=$errorCode")
+                Logger.w(TAG, "mDNS unregistration failed: errorCode=$errorCode")
             }
         }
 
@@ -72,7 +72,7 @@ class MdnsService(private val context: Context) {
         resultOf {
             nsdManager.registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD, listener)
         }.onError { msg, _ ->
-            Logger.e(TAG, "registerService 异常: $msg")
+            Logger.e(TAG, "registerService error: $msg")
             registrationListener = null
         }
     }

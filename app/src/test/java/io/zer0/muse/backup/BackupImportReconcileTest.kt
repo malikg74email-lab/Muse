@@ -41,7 +41,7 @@ class BackupImportReconcileTest {
         )
         assertTrue(
             "入库数不足应触发回滚",
-            body.contains("备份入库数不一致"),
+            body.contains("Backup stored-count check failed"),
         )
     }
 
@@ -50,7 +50,7 @@ class BackupImportReconcileTest {
         val body = verifyInsertedCountsBody()
         assertTrue(
             "取数失败只记日志,不应阻断导入",
-            body.contains("入库对账取数失败"),
+            body.contains("Stored-count reconciliation fetch failed"),
         )
     }
 }

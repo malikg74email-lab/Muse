@@ -70,13 +70,13 @@ class TermuxChannelTest {
     fun `未安装引导要点`() {
         val text = TermuxChannel.describe(TermuxChannel.Availability.NotInstalled)
         assertTrue(text.contains("Termux"))
-        assertTrue(text.contains("安装"))
+        assertTrue(text.contains("install Termux"))
     }
 
     @Test
     fun `权限引导要点`() {
         val text = TermuxChannel.describe(TermuxChannel.Availability.PermissionMissing)
-        assertTrue(text.contains("附加权限"))
+        assertTrue(text.contains("Additional permissions"))
     }
 
     @Test

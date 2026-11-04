@@ -37,7 +37,7 @@ internal object CardCharts {
   function fail(msg){ throw new Error('[MuseCharts] ' + msg); }
 
   function fmt(v){
-    if (typeof v !== 'number' || !isFinite(v)) fail('数值不是有限数字: ' + v);
+    if (typeof v !== 'number' || !isFinite(v)) fail('Value is not a finite number: ' + v);
     return nf.format(v);
   }
 
@@ -49,26 +49,26 @@ internal object CardCharts {
   }
 
   function checkSpec(spec){
-    if (!spec) fail('缺少 spec');
+    if (!spec) fail('Missing spec');
     var labels = spec.labels;
-    if (!Array.isArray(labels) || labels.length === 0) fail('labels 必须是非空数组');
-    if (!Array.isArray(spec.series) || spec.series.length === 0) fail('series 必须是非空数组');
-    if (spec.series.length > 6) fail('series 最多 6 条，再多请分组或改用堆叠图');
+    if (!Array.isArray(labels) || labels.length === 0) fail('labels must be a non-empty array');
+    if (!Array.isArray(spec.series) || spec.series.length === 0) fail('series must be a non-empty array');
+    if (spec.series.length > 6) fail('At most 6 series; group them or use a stacked chart');
     var seen = {};
     spec.series.forEach(function(s, i){
-      if (!s || typeof s.id !== 'string' || !s.id) fail('series[' + i + '] 缺少 id');
-      if (seen[s.id]) fail('series id 重复: ' + s.id);
+      if (!s || typeof s.id !== 'string' || !s.id) fail('series[' + i + '] is missing id');
+      if (seen[s.id]) fail('Duplicate series id: ' + s.id);
       seen[s.id] = true;
       if (!Array.isArray(s.values) || s.values.length !== labels.length) {
-        fail('series[' + s.id + '] 的 values 长度必须等于 labels');
+        fail('series[' + s.id + '] values length must equal labels');
       }
       s.values.forEach(function(v){
-        if (typeof v !== 'number' || !isFinite(v)) fail('series[' + s.id + '] 含非法数值');
+        if (typeof v !== 'number' || !isFinite(v)) fail('series[' + s.id + '] contains an invalid value');
       });
     });
     if (spec.minWidth != null) {
       if (typeof spec.minWidth !== 'number' || !isFinite(spec.minWidth) || spec.minWidth < 0) {
-        fail('minWidth 必须是不小于 0 的有限数字');
+        fail('minWidth must be a finite number >= 0');
       }
     }
     return spec;
@@ -102,7 +102,7 @@ internal object CardCharts {
     var d = document.createElement('details');
     d.className = 'm-disclosure';
     var s = document.createElement('summary');
-    s.textContent = '查看数据';
+    s.textContent = 'View data';
     d.appendChild(s);
     var wrap = document.createElement('div');
     wrap.className = 'm-disclosure-body m-table-region';
@@ -170,7 +170,7 @@ internal object CardCharts {
     if (stacked) {
       var hasPos = false, hasNeg = false;
       series.forEach(function(s){ s.values.forEach(function(v){ if (v > 0) hasPos = true; if (v < 0) hasNeg = true; }); });
-      if (hasPos && hasNeg) fail('堆叠柱状图不能正负混合，请改用 column');
+      if (hasPos && hasNeg) fail('Stacked columns cannot mix positive and negative values; use column instead');
     }
 
     var min = 0, max = 0;
@@ -233,7 +233,7 @@ internal object CardCharts {
         svg.appendChild(el('text', {
           x: W / 2, y: H / 2, 'text-anchor': 'middle',
           fill: 'var(--muse-faint)', 'font-size': 2.6
-        }, '所有系列已隐藏'));
+        }, 'All series are hidden'));
         return;
       }
       if (isColumn) {
@@ -320,12 +320,12 @@ internal object CardCharts {
     var labels, series;
     if (Array.isArray(items)) {
       checkSpec({ labels: items.map(function(x){ return x.label; }),
-                  series: [{ id: 'v', label: spec.title || '数值', values: items.map(function(x){ return x.value; }) }] });
+                  series: [{ id: 'v', label: spec.title || 'Value', values: items.map(function(x){ return x.value; }) }] });
       labels = items.map(function(x){ return x.label; });
-      series = [{ id: 'v', label: spec.title || '数值', values: items.map(function(x){ return x.value; }) }];
+      series = [{ id: 'v', label: spec.title || 'Value', values: items.map(function(x){ return x.value; }) }];
     } else {
       checkSpec(spec);
-      if (spec.series.length !== 1) fail('条形图只接受单个系列，多系列请用 column 或 stacked');
+      if (spec.series.length !== 1) fail('Bar charts accept a single series only; use column or stacked for multiple series');
       labels = spec.labels;
       series = spec.series;
     }
@@ -374,14 +374,14 @@ internal object CardCharts {
   // ── 饼图 / 环形 ─────────────────────────────────────
   function pie(root, spec, donut){
     checkSpec(spec);
-    if (spec.series.length !== 1) fail('饼图只接受一个系列');
+    if (spec.series.length !== 1) fail('Pie charts accept a single series only');
     var values = spec.series[0].values;
     var total = 0;
-    values.forEach(function(v){ if (v < 0) fail('饼图不接受负数'); total += v; });
-    if (total <= 0) fail('饼图合计为 0，无法计算占比');
+    values.forEach(function(v){ if (v < 0) fail('Pie charts do not accept negative values'); total += v; });
+    if (total <= 0) fail('Pie total is 0; cannot compute proportions');
     var labels = spec.labels;
     var inner = donut ? 0.6 : (typeof spec.innerRadius === 'number' ? spec.innerRadius : 0);
-    if (inner < 0 || inner > 0.9) fail('innerRadius 超出 0–0.9');
+    if (inner < 0 || inner > 0.9) fail('innerRadius out of range 0–0.9');
 
     var S = 100, C = 50, R = 40, IR = R * inner;
     var svg = el('svg', {
@@ -425,7 +425,7 @@ internal object CardCharts {
       svg.appendChild(el('text', {
         x: C, y: C + 7, 'text-anchor': 'middle',
         fill: 'var(--muse-faint)', 'font-size': 4
-      }, '合计'));
+      }, 'Total'));
     }
     root.appendChild(svg);
     var legendBox = document.createElement('div');
@@ -469,7 +469,7 @@ internal object CardCharts {
       if (kind === 'bar') return api.renderBarChart(root, spec);
       if (kind === 'pie') return api.renderPieChart(root, spec);
       if (kind === 'donut') return api.renderDonutChart(root, spec);
-      fail('未知 kind: ' + kind + '（可用 line/area/column/stacked/bar/pie/donut）');
+      fail('Unknown kind: ' + kind + ' (available: line/area/column/stacked/bar/pie/donut)');
     }
   };
   window.MuseCharts = api;

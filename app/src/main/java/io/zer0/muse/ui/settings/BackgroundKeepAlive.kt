@@ -77,21 +77,21 @@ fun detectKeepAliveGuide(): KeepAliveGuide {
     }
     return when {
         manufacturer.contains("huawei") || manufacturer.contains("honor") -> KeepAliveGuide(
-            brandName = "华为",
+            brandName = "Huawei",
             steps = listOf(
-                "打开系统「设置」→「应用」→「应用启动管理」",
-                "找到 Muse，关闭「自动管理」，手动允许「自启动」「关联启动」「后台活动」",
-                "在「设置」→「电池」→「更多电池设置」中关闭「休眠时始终保持网络连接」的限制",
+                "Open system Settings → Apps → App launch management",
+                "Find Muse, disable Auto Manage, and manually allow Auto-launch, Secondary launch and Background activity",
+                "In Settings → Battery → More battery settings, disable the sleep network-connection restriction",
             ),
             openSystemSettings = fallbackToDetails,
         )
         manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") ->
             KeepAliveGuide(
-                brandName = "小米",
+                brandName = "Xiaomi",
                 steps = listOf(
-                    "打开「设置」→「应用设置」→「应用管理」→ 找到 Muse",
-                    "开启「自启动」，在「省电策略」中选择「无限制」",
-                    "或直接跳转系统自启动管理页（下方按钮）",
+                    "Open Settings → App settings → Manage apps → find Muse",
+                    "Enable Auto-start, and under Battery saver choose No restrictions",
+                    "Or jump straight to the system auto-start management page (button below)",
                 ),
                 openSystemSettings = { ctx ->
                     attemptSettings(
@@ -110,9 +110,9 @@ fun detectKeepAliveGuide(): KeepAliveGuide {
             KeepAliveGuide(
                 brandName = "OPPO",
                 steps = listOf(
-                    "打开「设置」→「应用」→「应用管理」→ 找到 Muse",
-                    "开启「自启动」，在「电池」→「耗电管理」中选择「允许后台运行」",
-                    "或直接跳转系统自启动管理页（下方按钮）",
+                    "Open Settings → Apps → App management → find Muse",
+                    "Enable Auto-start, and under Battery → Power consumption management choose Allow background running",
+                    "Or jump straight to the system auto-start management page (button below)",
                 ),
                 openSystemSettings = { ctx ->
                     attemptSettings(
@@ -138,9 +138,9 @@ fun detectKeepAliveGuide(): KeepAliveGuide {
         manufacturer.contains("vivo") || manufacturer.contains("iqoo") -> KeepAliveGuide(
             brandName = "vivo",
             steps = listOf(
-                "打开「设置」→「应用与权限」→「权限管理」→ 找到 Muse",
-                "开启「自启动」，在「电池」→「后台高耗电」中选择「允许后台运行」",
-                "或直接跳转系统自启动管理页（下方按钮）",
+                "Open Settings → Apps & permissions → Permission management → find Muse",
+                "Enable Auto-start, and under Battery → Background power consumption management choose Allow background running",
+                "Or jump straight to the system auto-start management page (button below)",
             ),
             openSystemSettings = { ctx ->
                 attemptSettings(
@@ -160,11 +160,11 @@ fun detectKeepAliveGuide(): KeepAliveGuide {
             },
         )
         else -> KeepAliveGuide(
-            brandName = "通用",
+            brandName = "General",
             steps = listOf(
-                "在系统设置中允许 Muse 的「自启动 / 后台运行」",
-                "在电池优化中把 Muse 设为「不限制」（下方按钮可直达）",
-                "不要使用「强行停止」，直接划掉最近任务即可",
+                "Allow Muse Auto-start / Background running in system settings",
+                "Set Muse to Unrestricted in battery optimization (the button below goes straight there)",
+                "Do not use Force stop; just swipe away the recent task",
             ),
             openSystemSettings = { ctx ->
                 val ok = runCatching {

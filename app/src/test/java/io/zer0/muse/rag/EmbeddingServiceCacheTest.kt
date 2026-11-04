@@ -114,7 +114,7 @@ class EmbeddingServiceCacheTest {
         assertTrue("悬空的 cloudProviderId 必须回落本地关键词实现", provider is LocalKeywordEmbeddingProvider)
         assertTrue(
             "降级必须留下可追溯的 warn 日志,实际:$warnings",
-            warnings.any { it.contains("provider-that-was-deleted") && it.contains("不存在") },
+            warnings.any { it.contains("provider-that-was-deleted") && it.contains("does not exist") },
         )
         val state = service.activeBackend.value
         assertNotNull(state)
@@ -135,7 +135,7 @@ class EmbeddingServiceCacheTest {
         val provider = service.getProvider(cloudConfig(cloudProviderId = "openai-main"))
 
         assertTrue("停用的供应商不得继续用于 embedding", provider is LocalKeywordEmbeddingProvider)
-        assertTrue("停用降级必须有 warn 日志,实际:$warnings", warnings.any { it.contains("已停用") })
+        assertTrue("停用降级必须有 warn 日志,实际:$warnings", warnings.any { it.contains("is disabled") })
     }
 
     @Test
@@ -150,7 +150,7 @@ class EmbeddingServiceCacheTest {
         val provider = service.getProvider(cloudConfig())
 
         assertTrue(provider is LocalKeywordEmbeddingProvider)
-        assertTrue("API Key 为空导致的降级必须有 warn 日志,实际:$warnings", warnings.any { it.contains("API Key 为空") })
+        assertTrue("API Key 为空导致的降级必须有 warn 日志,实际:$warnings", warnings.any { it.contains("empty API key") })
     }
 
     @Test

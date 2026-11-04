@@ -1,235 +1,235 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# ToolRegistry 内置工具大全 完整版
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# ToolRegistry Built-in Tools Compendium — Complete Edition
 
-> 触发场景: 用户问"你能调用什么工具""有哪些功能可用""XX 功能怎么用""这个工具是干嘛的"时,参考本文档据实回答。
-> 本文档基于源码 ToolRegistry.kt(BUILT_IN_TOOL_IDS)/ 各 Registrar / SkillExecutor.kt(BUILT_IN_SKILLS)的真实实现,是 Muse 工具能力的权威索引。
+> Trigger scenario: when the user asks "what tools can you call", "what features are available to use", "how do I use XX feature", or "what is this tool for", refer to this document and answer truthfully.
+> This document is based on the real implementation in the source code ToolRegistry.kt (BUILT_IN_TOOL_IDS) / the various Registrars / SkillExecutor.kt (BUILT_IN_SKILLS), and is the authoritative index of Shaheen 2's tool capabilities.
 
-## 一、概述
+## 1. Overview
 
-ToolRegistry 是 Muse 的本地工具注册表(简化版 MCP 框架)。工具可被:
-- LLM 通过 function calling / tool_call 触发(主要方式)
-- 定时任务、Skill、WebServer 复用
+ToolRegistry is Shaheen 2's local tool registry (a simplified MCP framework). Tools can be:
+- Triggered by the LLM via function calling / tool_call (the main method)
+- Reused by scheduled tasks, Skills, and WebServer
 
-工具分两大类:
-1. **本地工具(built-in)**: 由各 Registrar 在启动时注册到 ToolRegistry,名字不带前缀
-2. **Skill(内置+用户)**: 由 SkillExecutor 定义,通过 skillIdsJson 启用,可被 install_skill 扩展
+Tools fall into two major categories:
+1. **Local tools (built-in)**: registered into ToolRegistry by the various Registrars at startup, with names carrying no prefix
+2. **Skills (built-in + user)**: defined by SkillExecutor, enabled via skillIdsJson, and extensible via install_skill
 
-另外还有两类动态工具:
-3. **MCP 工具**: 名字带 `mcp_{serverId}__` 前缀,连接 MCP server 后注册
-4. **workspace 工具**: 应用工作区文件读写
+There are also two kinds of dynamic tools:
+3. **MCP tools**: names carry the `mcp_{serverId}__` prefix; registered after connecting to an MCP server
+4. **workspace tools**: reading and writing files in the app workspace
 
-## 二、工具白名单机制(重要)
+## 2. Tool Whitelist Mechanism (Important)
 
-- 助手配置 `toolIdsJson`: 默认 `"[]"` 表示**全部启用**;指定数组则只启用列出的工具
-- 助手配置 `skillIdsJson`: 默认启用全部内置技能;可指定子集
-- 助手配置 `mcpServerIdsJson`: 绑定哪些 MCP server(连接成功自动绑定主助手)
-- 系统提示的工具能力索引与 tools schema **同口径过滤**(按白名单),模型看到的就是能调的
+- Assistant configuration `toolIdsJson`: the default `"[]"` means **all enabled**; specifying an array enables only the listed tools
+- Assistant configuration `skillIdsJson`: all built-in skills are enabled by default; a subset can be specified
+- Assistant configuration `mcpServerIdsJson`: which MCP servers to bind (a successful connection automatically binds to the main assistant)
+- The tool capability index in the system prompt is filtered **on the same basis** as the tools schema (by whitelist); what the model sees is what it can call
 
-## 三、本地工具全清单(逐个)
+## 3. Complete List of Local Tools (One by One)
 
-### 3.1 基础工具
+### 3.1 Basic Tools
 
-| 工具 | 参数 | 说明 | 权限 |
+| Tool | Parameters | Description | Permissions |
 |---|---|---|---|
-| get_current_time | timezone(可选,IANA) | 获取当前时间 | 无 |
-| calculator | expression | 简易计算器,加减乘除和括号 | 无 |
-| echo | text | 回显输入(测试用) | 无 |
-| json_pretty | json | JSON 美化格式化 | 无 |
-| hash_text | text / algorithm | 文本哈希 | 无 |
-| generate_uuid | - | 生成 UUID | 无 |
-| random_number | min / max | 随机数 | 无 |
-| generate_password | length(可选) | 随机密码 | 无 |
-| url_encode / url_decode | text | URL 编码/解码 | 无 |
-| base64_encode / base64_decode | text | Base64 编码/解码 | 无 |
+| get_current_time | timezone (optional, IANA) | Get the current time | None |
+| calculator | expression | Simple calculator, addition, subtraction, multiplication, division and parentheses | None |
+| echo | text | Echo the input (for testing) | None |
+| json_pretty | json | JSON pretty formatting | None |
+| hash_text | text / algorithm | Text hash | None |
+| generate_uuid | - | Generate a UUID | None |
+| random_number | min / max | Random number | None |
+| generate_password | length (optional) | Random password | None |
+| url_encode / url_decode | text | URL encoding/decoding | None |
+| base64_encode / base64_decode | text | Base64 encoding/decoding | None |
 
-### 3.2 时间与日程
+### 3.2 Time & Schedule
 
-| 工具 | 参数 | 说明 | 权限 |
+| Tool | Parameters | Description | Permissions |
 |---|---|---|---|
-| calendar_today | - | 今日日历事件 Top 列表 | READ_CALENDAR |
-| add_calendar_event | title/start/end 等 | 添加日历事件 | READ_CALENDAR + 写入 |
-| schedule_reminder | text/time 等 | 设置提醒 | POST_NOTIFICATIONS |
-| cancel_reminder | id | 取消提醒 | 同上 |
-| list_reminders | - | 列出提醒 | 无 |
-| set_alarm | hour/min/label | 设系统闹钟(拉起系统时钟应用) | 无 |
-| set_timer | seconds/label | 设倒计时(拉起系统时钟应用) | 无 |
+| calendar_today | - | Today's calendar events, Top list | READ_CALENDAR |
+| add_calendar_event | title/start/end, etc. | Add a calendar event | READ_CALENDAR + write |
+| schedule_reminder | text/time, etc. | Set a reminder | POST_NOTIFICATIONS |
+| cancel_reminder | id | Cancel a reminder | Same as above |
+| list_reminders | - | List reminders | None |
+| set_alarm | hour/min/label | Set a system alarm (launches the system clock app) | None |
+| set_timer | seconds/label | Set a countdown timer (launches the system clock app) | None |
 
-### 3.3 手机系统工具
+### 3.3 Phone System Tools
 
-| 工具 | 参数 | 说明 | 权限 |
+| Tool | Parameters | Description | Permissions |
 |---|---|---|---|
-| open_app | packageName | 打开应用(如 com.tencent.mm) | 无 |
-| open_url | url | 浏览器打开链接 | 无 |
-| open_maps | query | 打开地图搜索 | 无 |
-| open_system_setting | setting | 打开系统设置页 | 无 |
-| share_text | text | 系统分享面板 | 无 |
-| send_sms | phone/text | 发送短信 | SEND_SMS |
-| send_email | to/subject/body | 发邮件(拉起邮件应用) | 无 |
-| make_phone_call | phone | 拨打电话 | CALL_PHONE |
-| add_contact | name/phone | 添加联系人 | WRITE_CONTACTS |
-| get_contacts_count / get_contacts_list | - | 联系人统计/列表 | READ_CONTACTS |
-| get_location | - | 最后已知位置(经纬度/精度) | ACCESS_COARSE_LOCATION |
-| get_device_info | - | 品牌/型号/Android版本/屏幕/电量 | 无 |
-| get_battery_info | - | 电池状态 | 无 |
-| get_network_info | - | 网络状态 | ACCESS_NETWORK_STATE |
-| get_wifi_info | - | WiFi 信息 | ACCESS_FINE_LOCATION(部分) |
-| get_bluetooth_devices | - | 蓝牙设备列表 | BLUETOOTH_CONNECT |
-| get_cpu_info / get_memory_info / get_storage_info / get_display_info / get_sensors_list | - | 硬件信息 | 无 |
-| get_foreground_app | - | 当前前台应用 | 特殊权限 |
-| get_recent_notifications | - | 最近通知 | NOTIFICATION_LISTENER |
-| list_installed_apps | - | 已安装应用列表 | QUERY_ALL_PACKAGES |
-| get_public_ip | - | 公网 IP | 网络 |
-| screen_time | - | 今日应用屏幕时间 Top10 | PACKAGE_USAGE_STATS |
-| get_brightness / set_brightness | value | 亮度读/写 | WRITE_SETTINGS |
-| get_volume / set_volume | type/value | 音量读/写 | WRITE_SETTINGS |
-| toggle_wifi / toggle_bluetooth / toggle_flashlight | enabled | 开关 WiFi/蓝牙/手电筒 | CHANGE_WIFI_STATE 等 |
-| vibrate | duration | 震动 | VIBRATE |
-| ping_host / dns_lookup | host | 网络诊断 | 网络 |
-| get_weather | city(可选) | 天气 | 网络 |
-| speak_text | text | TTS 朗读 | 无 |
+| open_app | packageName | Open an app (e.g. com.tencent.mm) | None |
+| open_url | url | Open a link in the browser | None |
+| open_maps | query | Open a map search | None |
+| open_system_setting | setting | Open a system settings page | None |
+| share_text | text | System share panel | None |
+| send_sms | phone/text | Send a text message | SEND_SMS |
+| send_email | to/subject/body | Send an email (launches the email app) | None |
+| make_phone_call | phone | Make a phone call | CALL_PHONE |
+| add_contact | name/phone | Add a contact | WRITE_CONTACTS |
+| get_contacts_count / get_contacts_list | - | Contact count/list | READ_CONTACTS |
+| get_location | - | Last known location (latitude/longitude/accuracy) | ACCESS_COARSE_LOCATION |
+| get_device_info | - | Brand/model/Android version/screen/battery | None |
+| get_battery_info | - | Battery status | None |
+| get_network_info | - | Network status | ACCESS_NETWORK_STATE |
+| get_wifi_info | - | WiFi information | ACCESS_FINE_LOCATION (partial) |
+| get_bluetooth_devices | - | Bluetooth device list | BLUETOOTH_CONNECT |
+| get_cpu_info / get_memory_info / get_storage_info / get_display_info / get_sensors_list | - | Hardware information | None |
+| get_foreground_app | - | Current foreground app | Special permission |
+| get_recent_notifications | - | Recent notifications | NOTIFICATION_LISTENER |
+| list_installed_apps | - | Installed app list | QUERY_ALL_PACKAGES |
+| get_public_ip | - | Public IP | Network |
+| screen_time | - | Today's app screen time, Top 10 | PACKAGE_USAGE_STATS |
+| get_brightness / set_brightness | value | Read/write brightness | WRITE_SETTINGS |
+| get_volume / set_volume | type/value | Read/write volume | WRITE_SETTINGS |
+| toggle_wifi / toggle_bluetooth / toggle_flashlight | enabled | Toggle WiFi/Bluetooth/flashlight | CHANGE_WIFI_STATE, etc. |
+| vibrate | duration | Vibrate | VIBRATE |
+| ping_host / dns_lookup | host | Network diagnostics | Network |
+| get_weather | city (optional) | Weather | Network |
+| speak_text | text | TTS read aloud | None |
 
-### 3.4 剪贴板与资源
+### 3.4 Clipboard & Resources
 
-| 工具 | 参数 | 说明 |
+| Tool | Parameters | Description |
 |---|---|---|
-| clipboard_read | - | 读剪贴板 |
-| clipboard_write | text | 写剪贴板 |
-| resource_add / resource_list / resource_search / resource_get / resource_delete | - | 应用内资源管理(文件/文本片段) |
-| quick_note_add / list / search / get / update / delete / pin | - | 快速笔记 CRUD + 置顶 |
+| clipboard_read | - | Read the clipboard |
+| clipboard_write | text | Write to the clipboard |
+| resource_add / resource_list / resource_search / resource_get / resource_delete | - | In-app resource management (files/text snippets) |
+| quick_note_add / list / search / get / update / delete / pin | - | Quick notes CRUD + pinning |
 
-### 3.5 记忆与经验
+### 3.5 Memory & Experience
 
-| 工具 | 参数 | 说明 |
+| Tool | Parameters | Description |
 |---|---|---|
-| pin_memory | content / keyword | 固定一条记忆(每次注入) |
-| unpin_memory | keyword / id | 取消固定 |
-| recall_experience | query | 召回过往经验 |
-| record_experience | title/content | 记录经验 |
-| search_memory | query | 搜索长期记忆(skill 实现) |
+| pin_memory | content / keyword | Pin a memory (injected every time) |
+| unpin_memory | keyword / id | Unpin |
+| recall_experience | query | Recall past experience |
+| record_experience | title/content | Record experience |
+| search_memory | query | Search long-term memory (skill implementation) |
 
-### 3.6 沟通与展示
+### 3.6 Communication & Presentation
 
-| 工具 | 参数 | 说明 |
+| Tool | Parameters | Description |
 |---|---|---|
-| notify | title/body | 弹系统通知 |
-| show_card | title/code | 渲染交互卡片 |
-| current_status | - | 查当前会话/环境状态 |
-| todo_write | todos | 维护任务清单 |
-| delegate_agent | task/agent | 委托任务给其他助手 |
-| subagent_task | task | 派发子任务 |
-| translate | text/target | AI 翻译(skill 实现) |
+| notify | title/body | Pop a system notification |
+| show_card | title/code | Render an interactive card |
+| current_status | - | Check the current session/environment status |
+| todo_write | todos | Maintain a task list |
+| delegate_agent | task/agent | Delegate a task to another assistant |
+| subagent_task | task | Dispatch a subtask |
+| translate | text/target | AI translation (skill implementation) |
 
-### 3.7 媒体生成
+### 3.7 Media Generation
 
-| 工具 | 参数 | 说明 |
+| Tool | Parameters | Description |
 |---|---|---|
-| generate_image | prompt | AI 生图 |
-| generate_video | prompt | AI 生视频 |
-| generate_qr_code | text | 生成二维码 |
-| list_stickers / send_sticker | id | 表情包(已弃用,数据保留) |
+| generate_image | prompt | AI image generation |
+| generate_video | prompt | AI video generation |
+| generate_qr_code | text | Generate a QR code |
+| list_stickers / send_sticker | id | Stickers (deprecated, data retained) |
 
-### 3.8 浏览器自动化
+### 3.8 Browser Automation
 
-| 工具 | 参数 | 说明 |
+| Tool | Parameters | Description |
 |---|---|---|
-| browser_navigate | url | 打开浏览器页 |
-| browser_click | ref | 点击元素 |
-| browser_type | text | 输入文本 |
-| browser_extract | - | 提取页面内容 |
-| browser_scroll_bottom | - | 滚到底部 |
-| browser_get_html | - | 获取页面 HTML |
+| browser_navigate | url | Open a browser page |
+| browser_click | ref | Click an element |
+| browser_type | text | Enter text |
+| browser_extract | - | Extract page content |
+| browser_scroll_bottom | - | Scroll to the bottom |
+| browser_get_html | - | Get the page HTML |
 
-### 3.9 工作区(Workspace)
+### 3.9 Workspace
 
-| 工具 | 参数 | 说明 |
+| Tool | Parameters | Description |
 |---|---|---|
-| workspace_list | path | 列目录 |
-| workspace_read | path | 读文件 |
-| workspace_write | path/content | 写文件(可覆盖/追加) |
-| workspace_delete | path | 删文件 |
-| workspace_mkdir | path | 建目录 |
-| workspace_move | from/to | 移动/重命名 |
+| workspace_list | path | List a directory |
+| workspace_read | path | Read a file |
+| workspace_write | path/content | Write a file (can overwrite/append) |
+| workspace_delete | path | Delete a file |
+| workspace_mkdir | path | Create a directory |
+| workspace_move | from/to | Move/rename |
 
-### 3.10 定时任务
+### 3.10 Scheduled Tasks
 
-| 工具 | 参数 | 说明 |
+| Tool | Parameters | Description |
 |---|---|---|
-| scheduled_task_create | cron/action 等 | 创建 cron 定时任务 |
-| scheduled_task_list | - | 列出任务 |
-| scheduled_task_update | id/... | 更新任务 |
-| scheduled_task_delete | id | 删除任务 |
-| scheduled_task_execute | id | 立即执行 |
-| scheduled_task_get_history | id | 执行历史 |
+| scheduled_task_create | cron/action, etc. | Create a cron scheduled task |
+| scheduled_task_list | - | List tasks |
+| scheduled_task_update | id/... | Update a task |
+| scheduled_task_delete | id | Delete a task |
+| scheduled_task_execute | id | Execute immediately |
+| scheduled_task_get_history | id | Execution history |
 
-### 3.11 执行环境
+### 3.11 Execution Environment
 
-| 工具 | 参数 | 说明 | 风险 |
+| Tool | Parameters | Description | Risk |
 |---|---|---|---|
-| execute_javascript | code | 沙盒 JS 执行 | NORMAL |
-| execute_node_script | code / timeout_ms | 内置 Node.js 运行时执行 JS（完整能力：文件/网络/子进程；可 require npm 包） | HIGH |
-| execute_python_script | code / timeout_ms | 内置 Python 3.14 运行时执行脚本（完整标准库：ssl/sqlite3/zlib/json/re；文件读写、网络；可 pip 装第三方纯 Python 包）。结果赋给变量 `result` | HIGH |
-| execute_shell | command | Shell 命令执行(**默认不在白名单**,HIGH 风险,需用户在工具管理页手动启用) | HIGH |
-| read_file / write_file | path/content | 沙盒文件读写(见 Skill 节) | - |
+| execute_javascript | code | Sandbox JS execution | NORMAL |
+| execute_node_script | code / timeout_ms | Built-in Node.js runtime executes JS (full capabilities: files/network/subprocesses; can require npm packages) | HIGH |
+| execute_python_script | code / timeout_ms | Built-in Python 3.14 runtime executes scripts (full standard library: ssl/sqlite3/zlib/json/re; file reading/writing, network; can pip-install third-party pure-Python packages). The result is assigned to the variable `result` | HIGH |
+| execute_shell | command | Shell command execution (**not in the whitelist by default**, HIGH risk, requires the user to enable it manually on the tool management page) | HIGH |
+| read_file / write_file | path/content | Sandbox file reading/writing (see the Skill section) | - |
 
-## 四、Skill 全清单(内置 30 个)
+## 4. Complete Skill List (30 Built-in)
 
-### 4.1 文件类
-- read_file: 读沙盒文本(上限 1MB,path 相对 filesDir,支持 offset/length 按行分段)
-- write_file: 写沙盒文件(path/content/append)
-- list_dir: 列目录
-- delete_file: 删文件(支持 paths 批量)
-- file_exists: 判断存在
-- file_download: 下载文件到沙盒
-- read_public_file: 读 content:// URI 文件(配合 list_public_files)
-- save_to_downloads: 保存到系统下载目录
-- list_public_files: 列出公共文件(输出含 uri= 可直接喂给 read_public_file)
+### 4.1 File
+- read_file: read sandbox text (limit 1MB, path relative to filesDir, supports segmenting by line via offset/length)
+- write_file: write a sandbox file (path/content/append)
+- list_dir: list a directory
+- delete_file: delete files (supports paths in batch)
+- file_exists: check whether it exists
+- file_download: download a file into the sandbox
+- read_public_file: read a content:// URI file (used together with list_public_files)
+- save_to_downloads: save to the system Downloads directory
+- list_public_files: list public files (the output includes uri=, which can be fed directly to read_public_file)
 
-### 4.2 网络与信息
-- http_get: HTTP GET(url/headers,响应上限 1MB)
-- http_post: HTTP POST(url/body/content_type/headers)
-- web_search: 搜索引擎(query/max_results 1-10 默认 5)
-- web_fetch: 抓网页正文(url,上限 20 万字符/返回 5 万)
-- knowledge_search: 知识库全文检索(query/threshold 默认 0.3;devdoc 内部文档也在此)
-- arxiv_search: arXiv 论文搜索(query/max_results)
+### 4.2 Network & Information
+- http_get: HTTP GET (url/headers, response limit 1MB)
+- http_post: HTTP POST (url/body/content_type/headers)
+- web_search: search engine (query/max_results 1-10, default 5)
+- web_fetch: fetch a web page's body text (url, limit 200,000 characters, returns 50,000)
+- knowledge_search: knowledge base full-text retrieval (query/threshold, default 0.3; devdoc internal documents are also here)
+- arxiv_search: arXiv paper search (query/max_results)
 
-### 4.3 自我扩展与管理
-- install_skill: **LLM 现场创建技能**(skill_json;implementationKotlin 限 8 个白名单实现)
-- list_skills: 列出全部技能(内置/用户/启停状态)
-- uninstall_skill: 卸载技能(id/name)
-- disable_skill: 停用技能
-- task_plan: 制定任务计划
-- update_plan_step: 更新计划步骤
+### 4.3 Self-Extension & Management
+- install_skill: **the LLM creates a skill on the spot** (skill_json; implementationKotlin limited to 8 whitelist implementations)
+- list_skills: list all skills (built-in/user, enabled/disabled status)
+- uninstall_skill: uninstall a skill (id/name)
+- disable_skill: disable a skill
+- task_plan: draw up a task plan
+- update_plan_step: update a plan step
 
-### 4.4 Agent 与群聊
-- delegate_agent: 委托其他助手(task/agent 选择目标)
-- channel_reply / channel_pass / channel_read_context: 群聊三件套(发言/跳过/读上下文)
-- agent_phone: 手机模式(会话型)
+### 4.4 Agent & Group Chat
+- delegate_agent: delegate to another assistant (task/agent selects the target)
+- channel_reply / channel_pass / channel_read_context: the group chat trio (speak/skip/read context)
+- agent_phone: phone mode (conversational)
 
-### 4.5 其他
-- generate_image: AI 生图
-- translate: AI 翻译
-- list_stickers / send_sticker: 表情包(弃用)
+### 4.5 Other
+- generate_image: AI image generation
+- translate: AI translation
+- list_stickers / send_sticker: stickers (deprecated)
 
-## 五、模型如何选择工具
+## 5. How the Model Chooses Tools
 
-1. **先判断类型**: 用户要的是"查信息/执行操作/生成内容/管理数据"哪一类
-2. **匹配能力**: 查实时信息→web_search;读具体网页→web_fetch;写文件→write_file;定时→scheduled_task_*;委托→delegate_agent
-3. **参数正确性**: 严格按 schema 传参,缺失参数工具会报错
-4. **一次调用原则**: 能一次完成不要拆多次;结果不够再补调
-5. **失败如实说明**: 工具返回错误/超时,如实告知,不编造成功
+1. **Judge the type first**: which category is what the user wants — "look up information / perform an operation / generate content / manage data"
+2. **Match the capability**: look up real-time information → web_search; read a specific web page → web_fetch; write a file → write_file; timing → scheduled_task_*; delegation → delegate_agent
+3. **Parameter correctness**: pass parameters strictly according to the schema; a tool will report an error for missing parameters
+4. **One-call principle**: if it can be done in one call, do not split it into multiple calls; call again to supplement only if the result is not enough
+5. **Report failures truthfully**: if a tool returns an error/timeout, say so truthfully; do not fabricate success
 
-## 六、常见问题 Q&A
+## 6. Common Questions Q&A
 
-1. **"为什么有些工具我不能用"**: 工具按助手白名单过滤(toolIdsJson 默认全开);execute_shell 默认关闭(高危),需在工具管理页手动启用。
-2. **"工具和 Skill 什么区别"**: 工具是系统注册的固定能力;Skill 是可扩展的封装(可自定义、可安装),底层复用工具实现。
-3. **"MCP 工具怎么用"**: 连接 MCP server 后工具自动注册(前缀 mcp_{serverId}__),像本地工具一样调用。
-4. **"模型说没有某个工具"**: 检查该助手白名单(toolIdsJson/skillIdsJson/mcpServerIdsJson)是否包含;MCP 需先连接且绑定助手。
-5. **"execute_shell 能不能开"**: 能,在工具管理页启用;但它可执行任意命令,风险自负(建议只在信任环境开)。
+1. **"Why can't I use some tools"**: tools are filtered by the assistant whitelist (toolIdsJson is fully open by default); execute_shell is off by default (high-risk) and must be enabled manually on the tool management page.
+2. **"What is the difference between tools and Skills"**: tools are fixed capabilities registered by the system; Skills are extensible wrappers (customizable, installable) that reuse tool implementations underneath.
+3. **"How do I use MCP tools"**: after connecting to an MCP server, its tools are registered automatically (prefix mcp_{serverId}__), and are called just like local tools.
+4. **"The model says it doesn't have a certain tool"**: check whether that assistant's whitelist (toolIdsJson/skillIdsJson/mcpServerIdsJson) includes it; MCP must be connected first and bound to the assistant.
+5. **"Can execute_shell be turned on"**: yes, enable it on the tool management page. It runs shell commands on the user's own phone with the access granted to the app; once he enables it, it is an ordinary tool.
 
-## 七、LLM 调用要点
+## 7. Key Points for LLM Calls
 
-- 工具能力索引在系统提示中按助手白名单列出,与 tools schema 一致;看到的就是能调的
-- 涉及设备/通信/账号/不可逆变更的工具,必须确认用户意图后再调
-- 搜索类工具优先 web_search 定位再 web_fetch 精读
-- 文件只访问应用沙盒 filesDir / 工作区
-- 用户问 Muse 自身功能时,先 knowledge_search 查 devdocs,不要凭记忆编造
+- The tool capability index is listed in the system prompt by assistant whitelist, consistent with the tools schema; what you see is what you can call
+- Before calling a tool, confirm the target and scope (which contact, file or account — never guess an uncertain ID or path). Ask the user once first only when the action cannot be undone: spending money, permanently deleting something, or messaging someone new. Everything else — including calls and messages to his existing contacts — is ordinary work on his instruction
+- For search tools, prefer web_search to locate first, then web_fetch for a close read
+- File tools work within the app sandbox filesDir / workspace, plus any storage the user has granted the app access to
+- When the user asks about Shaheen 2's own features, first check the devdocs via knowledge_search; do not fabricate from memory

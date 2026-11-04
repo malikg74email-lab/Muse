@@ -580,7 +580,7 @@ fun AgentSettingsPage(
                         valueRange = 0f..5f,
                         // 0..5 共 6 档,steps=4 → start/end 之间 4 个停点
                         steps = 4,
-                        valueFormatter = { if (it.toInt() <= 0) "关闭" else "${it.toInt()} 条/天" },
+                        valueFormatter = { if (it.toInt() <= 0) "Off" else "${it.toInt()} per day" },
                     )
                 }
             },
@@ -1034,7 +1034,7 @@ fun AgentSettingsPage(
                                         ).show()
                                     } catch (e: Exception) {
                                         if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-                                        Logger.w("AgentSettingsPage", "测试主动消息失败: ${e.message}")
+                                        Logger.w("AgentSettingsPage", "Failed to test proactive message: ${e.message}")
                                         android.widget.Toast.makeText(
                                             context,
                                             context.getString(R.string.settings_agent_test_failed, e.message),

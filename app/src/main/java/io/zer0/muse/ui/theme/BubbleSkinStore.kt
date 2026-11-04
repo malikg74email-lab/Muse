@@ -158,7 +158,7 @@ class BubbleSkinStore(
     /** 导入/更新一张皮肤;返回 false 表示皮肤非法被拒(已有列表不受影响)。 */
     suspend fun upsertSkin(skin: BubbleSkin): Boolean {
         if (!BubbleSkinValidator.isValid(skin) || skin.id == BubbleSkinCatalog.DEFAULT_SKIN_ID) {
-            Logger.w("BubbleSkinStore", "拒绝保存非法气泡皮肤: ${skin.id}")
+            Logger.w("BubbleSkinStore", "Refusing to save invalid bubble skin: ${skin.id}")
             return false
         }
         store.edit { prefs ->

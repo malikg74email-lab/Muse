@@ -67,7 +67,7 @@ class ToolOrchestratorReadOnlyParallelTest {
         coordinator = mockk(relaxed = true)
         every { coordinator.isToolResultSuccess(any()) } answers {
             val result = firstArg<String>()
-            !result.contains("error") && !result.startsWith("[超时]")
+            !result.contains("error") && !result.startsWith("[Timeout]")
         }
         every {
             coordinator.markTaskStepRunningIfNotPaused(any(), any(), any(), any())

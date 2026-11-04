@@ -46,14 +46,14 @@ class WorldBookViewModel(
         viewModelScope.launch {
             runCatching {
                 repository.upsert(entry.copy(updatedAt = System.currentTimeMillis()))
-            }.onFailure { Logger.w(TAG, "save 失败: ${it.message}", it) }
+            }.onFailure { Logger.w(TAG, "save failed:  ${it.message}", it) }
         }
     }
 
     fun delete(id: String) {
         viewModelScope.launch {
             runCatching { repository.delete(id) }
-                .onFailure { Logger.w(TAG, "delete 失败: ${it.message}", it) }
+                .onFailure { Logger.w(TAG, "delete failed:  ${it.message}", it) }
         }
     }
 
@@ -61,7 +61,7 @@ class WorldBookViewModel(
         viewModelScope.launch {
             val count = runCatching { repository.importSillyTavernJson(jsonText) }
                 .getOrElse { e ->
-                    Logger.w(TAG, "importSillyTavern 失败: ${e.message}", e)
+                    Logger.w(TAG, "importSillyTavern failed:  ${e.message}", e)
                     _importMessage.value = context.getString(R.string.worldbook_import_failed, e.message ?: "")
                     return@launch
                 }
@@ -73,7 +73,7 @@ class WorldBookViewModel(
         viewModelScope.launch {
             val json = runCatching { repository.exportSillyTavernJson() }
                 .getOrElse { e ->
-                    Logger.w(TAG, "exportSillyTavern 失败: ${e.message}", e)
+                    Logger.w(TAG, "exportSillyTavern failed:  ${e.message}", e)
                     _importMessage.value = context.getString(R.string.worldbook_export_failed, e.message ?: "")
                     return@launch
                 }

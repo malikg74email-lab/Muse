@@ -225,7 +225,7 @@ internal fun prettifyContactLabel(raw: String): String {
     val isGroup = raw.startsWith("group:")
     val core = raw.removePrefix("group:")
     val shown = if (core.length <= 20) core else core.take(10) + "…" + core.takeLast(6)
-    return if (isGroup) "群 $shown" else shown
+    return if (isGroup) "Group $shown" else shown
 }
 
 /** 最近一次发送失败提示。放列表最上方，因为它是"为什么它不回"的直接答案。 */
@@ -265,7 +265,7 @@ private fun LastTurnPreview(turn: ChannelConversationStore.Turn?) {
         text = stringResource(
             R.string.channel_conversation_turn_line,
             roleLabel,
-            current.text.ifBlank { "[附件]" },
+            current.text.ifBlank { "[Attachment]" },
         ),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

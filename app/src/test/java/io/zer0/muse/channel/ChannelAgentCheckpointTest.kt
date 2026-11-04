@@ -51,7 +51,7 @@ class ChannelAgentCheckpointTest {
                 decryptChannelAgentCheckpoint("corrupted-checkpoint")
                 throw AssertionError("corrupted checkpoint must not be treated as a fresh run")
             } catch (error: ChannelAgentCheckpointUnreadableException) {
-                assertTrue(error.message.orEmpty().contains("不可读取"))
+                assertTrue(error.message.orEmpty().contains("unreadable"))
             }
         } finally {
             SecureKeyStore.delegate = originalCipher

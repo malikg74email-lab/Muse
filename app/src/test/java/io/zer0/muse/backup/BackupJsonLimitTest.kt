@@ -38,7 +38,7 @@ class BackupJsonLimitTest {
     fun `limit message includes upper bound`() {
         val msg = BackupService.singleJsonTooLargeMessage(70L * 1024 * 1024)
         assertTrue(msg.contains("64MB"))
-        assertTrue(msg.contains("已拒绝导入"))
-        assertEquals("单 JSON 备份体量 70MB 超过上限 64MB,已拒绝导入", msg)
+        assertTrue(msg.contains("import refused"))
+        assertEquals("Single-JSON backup size 70MB exceeds the limit 64MB; import refused", msg)
     }
 }

@@ -116,7 +116,7 @@ class VisionCache(context: Context) {
                 val key = CacheKey(entry.imageHash, entry.modelId, entry.userRequestHash, entry.promptVersion)
                 memoryCache[key.toString()] = entry
             }
-            Logger.d(TAG, "视觉缓存已加载 sidecar,共 ${entries.size} 条")
+            Logger.d(TAG, "Vision cache loaded the sidecar, ${entries.size} entries in total")
             // LRU 淘汰到上限内
             evictIfNeeded()
         }
@@ -138,7 +138,7 @@ class VisionCache(context: Context) {
             val entry = memoryCache[fullKey.toString()]
             if (entry != null) {
                 entry.lastUsedAt = System.currentTimeMillis()
-                Logger.d(TAG, "视觉缓存命中: model=${key.modelId}, promptVer=${key.promptVersion}")
+                Logger.d(TAG, "Vision cache hit: model=${key.modelId}, promptVer=${key.promptVersion}")
                 entry.description
             } else {
                 null
@@ -204,7 +204,7 @@ class VisionCache(context: Context) {
             if (toRemove.isNotEmpty()) {
                 // 全量重写 sidecar(删除操作较少,全量写可接受)
                 flushToDiskLocked(full = true)
-                Logger.d(TAG, "清理 session $sessionId 的视觉缓存,删除 ${toRemove.size} 条")
+                Logger.d(TAG, "Cleaning session $sessionId's vision cache, deleting ${toRemove.size} entries")
             }
         }
     }
@@ -218,7 +218,7 @@ class VisionCache(context: Context) {
             pendingFlush.clear()
             putSinceFlush = 0
             sidecarFile.delete()
-            Logger.d(TAG, "已清空所有视觉缓存")
+            Logger.d(TAG, "All vision cache cleared")
         }
     }
 
@@ -232,7 +232,7 @@ class VisionCache(context: Context) {
         repeat(toEvict) { idx ->
             val key = sorted[idx].key
             memoryCache.remove(key)
-            Logger.d(TAG, "LRU 淘汰视觉缓存条目: $key")
+            Logger.d(TAG, "LRU evicted vision cache entry: $key")
         }
     }
 
@@ -263,7 +263,7 @@ class VisionCache(context: Context) {
             pendingFlush.clear()
             putSinceFlush = 0
         }.onError { msg, t ->
-            Logger.w(TAG, "刷盘视觉缓存失败: $msg", t)
+            Logger.w(TAG, "Flushing the vision cache to disk failed: $msg", t)
         }
     }
 
@@ -279,7 +279,7 @@ class VisionCache(context: Context) {
                 AppJson.decodeFromString(ListSerializer(CacheEntry.serializer()), text)
             }
         }.onError { msg, t ->
-            Logger.w(TAG, "加载视觉缓存 sidecar 失败: $msg", t)
+            Logger.w(TAG, "Loading the vision cache sidecar failed: $msg", t)
         }.getOrNull() ?: emptyList()
     }
 

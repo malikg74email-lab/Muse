@@ -83,7 +83,7 @@ class VoiceCloningService(
     suspend fun cloneVoice(providerId: String, name: String, sampleAudioBase64: String): Result<String> = withContext(AppDispatchers.io) {
         val provider = providers[providerId]
         if (provider == null) {
-            Logger.w(TAG, "未知 voice cloning provider: $providerId")
+            Logger.w(TAG, "Unknown voice cloning provider: $providerId")
             return@withContext Result.Error("Unknown provider: $providerId")
         }
         provider.cloneVoice(name, sampleAudioBase64)
@@ -93,7 +93,7 @@ class VoiceCloningService(
     suspend fun listClonedVoices(providerId: String): Result<List<ClonedVoice>> = withContext(AppDispatchers.io) {
         val provider = providers[providerId]
         if (provider == null) {
-            Logger.w(TAG, "未知 voice cloning provider: $providerId")
+            Logger.w(TAG, "Unknown voice cloning provider: $providerId")
             return@withContext Result.Error("Unknown provider: $providerId")
         }
         provider.listClonedVoices()
@@ -103,7 +103,7 @@ class VoiceCloningService(
     suspend fun deleteVoice(providerId: String, voiceId: String): Result<Unit> = withContext(AppDispatchers.io) {
         val provider = providers[providerId]
         if (provider == null) {
-            Logger.w(TAG, "未知 voice cloning provider: $providerId")
+            Logger.w(TAG, "Unknown voice cloning provider: $providerId")
             return@withContext Result.Error("Unknown provider: $providerId")
         }
         provider.deleteVoice(voiceId)

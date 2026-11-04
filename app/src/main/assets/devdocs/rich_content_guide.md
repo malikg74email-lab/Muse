@@ -1,79 +1,79 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# 富内容渲染完整指南
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Complete Guide to Rich Content Rendering
 
-> 触发场景: 用户问"怎么发图片""图片能识别文字吗""AI 回复里代码/公式怎么显示""能发视频吗""附件怎么传"时,参考本文档据实回答。
-> 本文档基于源码 ui/chat/ 的 Markdown 渲染组件、MessageBubble 富内容处理、AttachmentChip.kt 的真实实现。
+> Trigger scenario: When the user asks "How do I send an image?", "Can an image have its text recognised?", "How are code/formulas in AI replies displayed?", "Can I send a video?" or "How do I send an attachment?", refer to this document and answer truthfully.
+> This document is based on the real implementation in the source code: the Markdown rendering components in ui/chat/, the rich-content handling in MessageBubble, and AttachmentChip.kt.
 
-## 一、概述
+## I. Overview
 
-Muse 聊天支持丰富的富内容:
-- **AI 输出侧**: Markdown 全渲染(代码高亮/LaTeX 公式/表格/引用/列表/图片/视频)
-- **用户输入侧**: 图片(压缩/OCR)、视频、文件附件、粘贴内容智能处理
+Shaheen 2 chat supports a wealth of rich content:
+- **AI output side**: Full Markdown rendering (code highlighting/LaTeX formulas/tables/blockquotes/lists/images/videos)
+- **User input side**: Images (compression/OCR), videos, file attachments, and smart handling of pasted content
 
-## 二、Markdown 渲染支持范围
+## II. Scope of Markdown Rendering Support
 
-| 类型 | 支持 | 说明 |
+| Type | Supported | Notes |
 |---|---|---|
-| 代码块 | ✅ | 语法高亮(CodeHighlighter),支持常见语言 |
-| 行内代码 | ✅ | `code` |
-| LaTeX 公式 | ✅ | $...$ 行内 / $$...$$ 块级(FormulaView) |
-| 表格 | ✅ | GFM 表格 |
-| 引用块 | ✅ | > 引用 |
-| 列表 | ✅ | 有序/无序/嵌套 |
-| 标题 | ✅ | # ~ ###### |
-| 粗体/斜体/删除线 | ✅ | **bold** *italic* ~~strike~~ |
-| 链接 | ✅ | [text](url),点击可打开 |
-| 图片 | ✅ | ![alt](url),流式内联渲染 |
-| 任务列表 | ✅ | - [x] 完成项 |
-| 水平线 | ✅ | --- |
+| Code block | ✅ | Syntax highlighting (CodeHighlighter), supports common languages |
+| Inline code | ✅ | `code` |
+| LaTeX formula | ✅ | $...$ inline / $$...$$ block-level (FormulaView) |
+| Table | ✅ | GFM tables |
+| Blockquote | ✅ | > quote |
+| List | ✅ | Ordered/unordered/nested |
+| Heading | ✅ | # ~ ###### |
+| Bold/italic/strikethrough | ✅ | **bold** *italic* ~~strike~~ |
+| Link | ✅ | [text](url), tap to open |
+| Image | ✅ | ![alt](url), streaming inline rendering |
+| Task list | ✅ | - [x] Completed item |
+| Horizontal rule | ✅ | --- |
 
-注意: Markdown 中嵌 HTML 的部分标签有限支持;数学公式依赖 KaTeX 类似实现,公式复杂度过高可能渲染失败(保留原文)。
+Note: Some HTML tags embedded in Markdown have only limited support; mathematical formulas rely on a KaTeX-like implementation, and a formula that is too complex may fail to render (the original text is retained).
 
-## 三、图片能力
+## III. Image Capabilities
 
-### 3.1 用户发送图片
-- 入口: 输入栏 + 号 → 图片 / 相机
-- **压缩**: 发送前自动压缩,降低流量与内存
-- **OCR**: 图片自动走 ML Kit 离线文字识别(中文+英文),识别结果可作为上下文给 LLM
-- 多图: 支持一次多张(上限 4 张,单张 ≤2MB 发送限制)
+### 3.1 The User Sends an Image
+- Entry point: The + button in the input bar → Image / Camera
+- **Compression**: Automatically compressed before sending, reducing data usage and memory
+- **OCR**: Images automatically go through ML Kit offline text recognition (Chinese + English), and the recognition result can be provided to the LLM as context
+- Multiple images: Multiple images can be sent at once (limit of 4, with a sending limit of ≤2MB per image)
 
-### 3.2 AI 回复中的图片
-- 流式渲染 data URI / 网络图
-- **SmartImage 解码**: 先 inJustDecodeBounds 探测尺寸 → inSampleSize 降采样防 OOM → 显示后显式 recycle()
-- 图片点击可放大查看
+### 3.2 Images in AI Replies
+- Streaming rendering of data URIs / network images
+- **SmartImage decoding**: First probe the dimensions with inJustDecodeBounds → downsample with inSampleSize to prevent OOM → explicitly recycle() after display
+- Tap an image to view it enlarged
 
-## 四、视频能力
+## IV. Video Capabilities
 
-- 用户可发送本地视频文件
-- AI 生成视频(generate_video 工具)在消息内联播放
-- 播放器支持进度/全屏(走系统播放器或内嵌)
+- The user can send a local video file
+- AI-generated video (the generate_video tool) plays inline in the message
+- The player supports progress/full screen (via the system player or an embedded one)
 
-## 五、文件附件
+## V. File Attachments
 
-- 用户可附加任意文件(AttachmentChip 显示文件名/大小/类型)
-- 附件以 URI 引用,不占消息文本
-- AI 可通过 file_download / save_to_downloads 处理文件
-- 粘贴长文本自动检测为文件(>5000 字符)提示转附件
+- The user can attach any file (AttachmentChip shows the file name/size/type)
+- Attachments are referenced by URI and do not take up message text
+- The AI can handle files via file_download / save_to_downloads
+- Long pasted text is automatically detected as a file (>5000 characters) and prompts the user to convert it to an attachment
 
-## 六、富内容边界与限制
+## VI. Rich-Content Boundaries and Limits
 
-- 图片 base64 单张 ≤2MB,超限丢弃并提示
-- 一次最多 4 张图片
-- 网页抓取内容超 5 万字符截断
-- 超长 AI 消息自动折叠
-- 音频: TTS 朗读,不内联播放录音文件
+- A single image in base64 is ≤2MB; if it exceeds the limit it is discarded and a notice is shown
+- At most 4 images at once
+- Web-scraped content is truncated beyond 50,000 characters
+- Overly long AI messages are automatically collapsed
+- Audio: TTS read-aloud; recording files are not played inline
 
-## 七、常见问题 Q&A
+## VII. Frequently Asked Questions Q&A
 
-1. **"图片发出去 AI 能看到吗"**: 能,图片压缩后走多模态通道;纯文本模型会自动降级为 OCR 文字描述。
-2. **"为什么 AI 回复的公式显示乱码"**: 复杂 LaTeX 可能渲染失败,会显示原始文本;可让 AI 换简单写法。
-3. **"怎么发大文件"**: 附件方式发送;超大文件建议先放网盘给链接。
-4. **"视频能发给 AI 分析吗"**: 支持发送视频文件,但 AI 分析的是文件名/元数据(无视频理解能力时),画面内容需截图。
-5. **"图片压缩会不会糊"**: 压缩保底清晰度,一般场景足够;原图保留在相册。
+1. **"Once I send an image, can the AI see it"**: Yes; after compression the image goes through the multimodal channel, and a text-only model automatically falls back to an OCR text description.
+2. **"Why does a formula in an AI reply display as garbled text"**: Complex LaTeX may fail to render and will be shown as the original text; you can ask the AI to use a simpler notation.
+3. **"How do I send a large file"**: Send it as an attachment; for a very large file, it is recommended to put it on a cloud drive first and provide a link.
+4. **"Can I send a video to the AI for analysis"**: Sending a video file is supported, but what the AI analyses is the file name/metadata (when it has no video-understanding capability); the visual content requires a screenshot.
+5. **"Will image compression make it blurry"**: Compression keeps a guaranteed minimum level of clarity, which is sufficient for general scenarios; the original image is retained in the photo album.
 
-## 八、LLM 调用要点
+## VIII. Key Points for LLM Calls
 
-- 回复中可自然使用 Markdown(代码/表格/公式/列表),UI 会正确渲染
-- 生成图片用 generate_image,视频用 generate_video,结果自动内联
-- 引用用户图片时描述内容而非假装看到原图(文本模型场景)
-- 长内容用标题/列表结构化,避免一大段无格式文本
+- Markdown (code/tables/formulas/lists) can be used naturally in replies; the UI will render it correctly
+- Use generate_image to generate images and generate_video for videos; the results are inlined automatically
+- When referencing an image from the user, describe its content rather than pretending to have seen the original image (in the text-model scenario)
+- Structure long content with headings/lists; avoid one large block of unformatted text

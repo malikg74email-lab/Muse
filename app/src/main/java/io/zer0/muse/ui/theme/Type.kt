@@ -154,11 +154,11 @@ fun loadCustomFontFamily(path: String?): FontFamily {
         FontFamily(Font(File(path)))
     } catch (e: java.io.IOException) {
         // 字体文件不存在或不可读
-        Logger.w("MuseTypography", "自定义字体加载失败,回退系统默认: ${e.message}")
+        Logger.w("MuseTypography", "Failed to load custom font, falling back to system default: ${e.message}")
         FontFamily.Default
     } catch (e: RuntimeException) {
         // 字体文件损坏或格式不支持时 Typeface 抛运行时异常
-        Logger.w("MuseTypography", "自定义字体加载失败,回退系统默认: ${e.message}")
+        Logger.w("MuseTypography", "Failed to load custom font, falling back to system default: ${e.message}")
         FontFamily.Default
     }
 }
@@ -203,7 +203,7 @@ fun Typography.scaled(scale: String): Typography {
         "xlarge" -> 1.3f
         else -> {
             // L-6: 未知档位静默回退 medium 不利于排查,此处告警并回退 medium(1.0x)。
-            Logger.w("MuseTypography", "未知 fontSizeScale=$scale,回退 medium")
+            Logger.w("MuseTypography", "Unknown fontSizeScale=$scale, falling back to medium")
             1.0f
         }
     }

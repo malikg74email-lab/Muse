@@ -225,7 +225,7 @@ fun CrashReportSettingsPage(onBack: () -> Unit) {
                                 context.getString(R.string.settings_crash_done_failed)
                         },
                     )
-                    Logger.i("CrashReportSettings", "上报结果: $outcome, 剩余 $pendingCount 条")
+                    Logger.i("CrashReportSettings", "Report result: $outcome, $pendingCount remaining")
                 }
             },
             dismissText = stringResource(R.string.action_cancel),

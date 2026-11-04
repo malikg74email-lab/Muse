@@ -347,7 +347,7 @@ fun MultiAgentSettingsPage(onBack: () -> Unit) {
  * 同样的查找并降级处理,二者查找逻辑保持一致。
  */
 private fun resolveReviewModelName(reviewModelId: String?, providers: List<ProviderConfig>, activeProviderId: String?): String {
-    if (reviewModelId.isNullOrBlank()) return "默认模型"
+    if (reviewModelId.isNullOrBlank()) return "Default model"
     // 优先在激活 Provider 中查找(最常见情况)
     val activeProvider = providers.firstOrNull { it.id == activeProviderId }
     activeProvider?.models?.firstOrNull { it.id == reviewModelId }?.let { model ->
@@ -360,7 +360,7 @@ private fun resolveReviewModelName(reviewModelId: String?, providers: List<Provi
             return matched.name.ifBlank { matched.id }
         }
     }
-    return "未知模型($reviewModelId)"
+    return "Unknown model ($reviewModelId)"
 }
 
 /**
@@ -920,23 +920,23 @@ private fun WorkflowNodeEditDialog(
 }
 
 private fun aggregationName(strategy: DelegationContract.TeamWorkflow.AggregationStrategy): String = when (strategy) {
-    DelegationContract.TeamWorkflow.AggregationStrategy.MERGE -> "合并"
-    DelegationContract.TeamWorkflow.AggregationStrategy.VOTE -> "投票"
-    DelegationContract.TeamWorkflow.AggregationStrategy.EXPERT_REVIEW -> "专家评审"
-    DelegationContract.TeamWorkflow.AggregationStrategy.FIRST_SUCCESS -> "首个成功"
-    DelegationContract.TeamWorkflow.AggregationStrategy.LLM_REVIEW -> "LLM 综合评审"
+    DelegationContract.TeamWorkflow.AggregationStrategy.MERGE -> "Merge"
+    DelegationContract.TeamWorkflow.AggregationStrategy.VOTE -> "Vote"
+    DelegationContract.TeamWorkflow.AggregationStrategy.EXPERT_REVIEW -> "Expert review"
+    DelegationContract.TeamWorkflow.AggregationStrategy.FIRST_SUCCESS -> "First success"
+    DelegationContract.TeamWorkflow.AggregationStrategy.LLM_REVIEW -> "LLM review"
 }
 
 private fun modeName(mode: DelegationContract.TeamWorkflowNode.Mode): String = when (mode) {
-    DelegationContract.TeamWorkflowNode.Mode.SEQUENTIAL -> "串行"
-    DelegationContract.TeamWorkflowNode.Mode.PARALLEL -> "并行"
-    DelegationContract.TeamWorkflowNode.Mode.CONDITIONAL -> "条件"
+    DelegationContract.TeamWorkflowNode.Mode.SEQUENTIAL -> "Sequential"
+    DelegationContract.TeamWorkflowNode.Mode.PARALLEL -> "Parallel"
+    DelegationContract.TeamWorkflowNode.Mode.CONDITIONAL -> "Conditional"
 }
 
 private fun modeShortName(mode: DelegationContract.TeamWorkflowNode.Mode): String = when (mode) {
-    DelegationContract.TeamWorkflowNode.Mode.SEQUENTIAL -> "串"
-    DelegationContract.TeamWorkflowNode.Mode.PARALLEL -> "并"
-    DelegationContract.TeamWorkflowNode.Mode.CONDITIONAL -> "条"
+    DelegationContract.TeamWorkflowNode.Mode.SEQUENTIAL -> "Seq"
+    DelegationContract.TeamWorkflowNode.Mode.PARALLEL -> "Par"
+    DelegationContract.TeamWorkflowNode.Mode.CONDITIONAL -> "Cond"
 }
 
 /**

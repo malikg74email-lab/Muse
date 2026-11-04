@@ -88,7 +88,7 @@ class MuseChatWidget : GlanceAppWidget() {
                 fallback
             }
         }.onError { errMsg, _ ->
-            Logger.w("MuseChatWidget", "queryLatestReply 失败: $errMsg")
+            Logger.w("MuseChatWidget", "queryLatestReply failed: $errMsg")
         }.getOrNull() ?: fallback
     }
 
@@ -138,7 +138,7 @@ private fun MuseChatWidgetContent(data: ChatWidgetData, params: ActionParameters
                     ),
                 )
                 Text(
-                    text = " 对话",
+                    text = " Chat",
                     style = TextStyle(
                         color = ColorProvider(Color(0xFF333333), Color(0xFFE5E5E5)),
                         fontSize = 16.sp,

@@ -17,7 +17,7 @@ class OAuthManagerTest {
         )
 
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("超时"))
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("timed out"))
     }
 
     @Test

@@ -281,7 +281,7 @@ internal fun ProviderEditPage(
                                 if (read <= 0) break
                                 total += read
                                 if (total > MAX_READ_BYTES) {
-                                    error("文件过大,超过 ${MAX_READ_BYTES / 1024 / 1024}MB 限制")
+                                    error("File too large; exceeds the ${MAX_READ_BYTES / 1024 / 1024}MB limit")
                                 }
                                 sb.append(buffer, 0, read)
                             }
@@ -604,7 +604,7 @@ internal fun ProviderEditPage(
     //  - 与 testConnection 区别:testConnection 只测 /models 端点(轻量),testModel 验证完整 chat 链路
     fun testModel(model: io.zer0.ai.core.Model) {
         if (apiKey.isBlank()) {
-            modelTestStatuses = modelTestStatuses + (model.id to ModelTestStatus.Failed("API Key 为空"))
+            modelTestStatuses = modelTestStatuses + (model.id to ModelTestStatus.Failed("API Key is empty"))
             return
         }
         // 置为 InProgress,禁用测试按钮
@@ -844,7 +844,7 @@ internal fun ProviderEditPage(
                 } else {
                     Logger.w(
                         "ProviderEditPage",
-                        "Codex 登录成功但未能从 id_token 解析 chatgpt_account_id（idToken 存在=${!s.idToken.isNullOrBlank()}）",
+                        "Codex login succeeded but chatgpt_account_id could not be parsed from id_token (idToken present=${!s.idToken.isNullOrBlank()})",
                     )
                 }
                 MuseToast.show(context.getString(R.string.oauth_login_success))
@@ -877,13 +877,13 @@ internal fun ProviderEditPage(
     // P2-11: 透传 providerId = config.id,登录成功后由 OAuthManager 自动持久化 TokenBundle
     val onOAuthLogin: () -> Unit = lambda@{
         val oauthConfig = config.oauthConfig ?: run {
-            MuseToast.show(context.getString(R.string.oauth_login_failed, "OAuth 未配置"))
+            MuseToast.show(context.getString(R.string.oauth_login_failed, "OAuth not configured"))
             return@lambda
         }
         if (oauthConfig.deviceCodeUrl.isNullOrBlank()) {
             // Auth Code Flow 需要 Activity 上下文
             val activity = context.findActivity() ?: run {
-                MuseToast.show(context.getString(R.string.oauth_login_failed, "无法获取 Activity 上下文"))
+                MuseToast.show(context.getString(R.string.oauth_login_failed, "Unable to get the Activity context"))
                 return@lambda
             }
             ioScope.launch { OAuthManager.launchAuthorizationCodeFlow(activity, oauthConfig, config.id) }
@@ -1270,7 +1270,7 @@ internal fun ProviderEditPage(
                     context.startActivity(openIntent)
                 }.onFailure {
                     MuseToast.show(
-                        context.getString(R.string.oauth_login_failed, it.message ?: "无法打开浏览器"),
+                        context.getString(R.string.oauth_login_failed, it.message ?: "Unable to open the browser"),
                     )
                 }
             },

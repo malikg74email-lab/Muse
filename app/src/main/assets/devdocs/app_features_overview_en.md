@@ -1,12 +1,12 @@
 <!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
-# Muse App Features Overview
+# Shaheen 2 App Features Overview
 
-> Reference this doc when users ask "what can you do", "what is Muse", "what features does this app have", "how to use".
+> Reference this doc when users ask "what can you do", "what is Shaheen 2", "what features does this app have", "how to use".
 > This document is an internal development document queried by the LLM via the knowledge_search tool. Its content is based on the real code of the muse project and is not shown to users verbatim.
 
-## 1. What is Muse
+## 1. What is Shaheen 2
 
-Muse is an Android AI assistant app. Its core positioning is a "companion LLM client + Agent platform". It integrates chat, multi-assistant persona management, long-term memory, knowledge base retrieval, Skill extensions, scheduled tasks, group chat collaboration, and other capabilities in one app. All data is stored locally (Room database + DataStore).
+Shaheen 2 is an Android AI assistant app. Its core positioning is a "companion LLM client + Agent platform". It integrates chat, multi-assistant persona management, long-term memory, knowledge base retrieval, Skill extensions, scheduled tasks, group chat collaboration, and other capabilities in one app. All data is stored locally (Room database + DataStore).
 
 Main differences from a typical LLM chat client:
 - Multi-assistant: each assistant has its own systemPrompt, model, tools, and memory configuration
@@ -28,7 +28,7 @@ The main interaction interface, streaming LLM replies. Entry: Home session list 
 - Thinking tags: supports MOOD/thinking tag expand/collapse
 
 ### 2. Agent / Assistant (AssistantScreen + AssistantDetailPages)
-Multi-assistant persona management. Each assistant is an independent individual with its own systemPrompt, model, tool toggles, and memory configuration. Entry: Settings (设置) → Assistant (助手) / Settings (设置) → Agent.
+Multi-assistant persona management. Each assistant is an independent individual with its own systemPrompt, model, tool toggles, and memory configuration. Entry: Settings → Assistant / Settings → Agent.
 
 Assistant details are split into 5 sub-pages:
 - Basic: avatar, name, model selection, assistant card export
@@ -38,7 +38,7 @@ Assistant details are split into 5 sub-pages:
 - Advanced: model parameters (temperature / reasoningLevel), request headers
 
 ### 3. Memory (MemoryScreen + MemorySettingsPage)
-Long-term memory system. Entry: Settings (设置) → Assistant (助手) → Memory sub-page / Settings (设置) → Memory (记忆).
+Long-term memory system. Entry: Settings → Assistant → Memory sub-page / Settings → Memory.
 
 - Fact extraction: the daily pipeline extracts facts from conversations
 - Compile injection: Facts are compiled into a markdown summary and injected into the system prompt via MemoryInjectionTransformer
@@ -47,7 +47,7 @@ Long-term memory system. Entry: Settings (设置) → Assistant (助手) → Mem
 - Global/independent memory: useGlobalMemory switches between global shared or assistant-independent
 
 ### 4. Knowledge Base (KnowledgeScreen)
-Users import documents for the LLM to retrieve. Entry: Settings (设置) → Knowledge Base (知识库).
+Users import documents for the LLM to retrieve. Entry: Settings → Knowledge Base.
 
 - Supported formats: txt / md / csv / json
 - Retrieval method: the LLM retrieves by title + content full-text via the knowledge_search tool
@@ -55,7 +55,7 @@ Users import documents for the LLM to retrieve. Entry: Settings (设置) → Kno
 - devdoc entries: entries with fileType="devdoc" are internal development documents, only for LLM queries and not listed in the UI (this document is one of them)
 
 ### 5. Skill System (SkillScreen)
-8 built-in skills + self-extension. Entry: Settings (设置) → Skill.
+8 built-in skills + self-extension. Entry: Settings → Skill.
 
 - Built-in skills: web_search / web_fetch / knowledge_search / install_skill / delegate_agent / list_stickers / send_sticker, etc.
 - install_skill: the LLM generates a skill definition itself and stores it (self-extension)
@@ -63,7 +63,7 @@ Users import documents for the LLM to retrieve. Entry: Settings (设置) → Kno
 - Management: install / uninstall / enable / disable
 
 ### 6. Scheduled Tasks (ScheduledTasksScreen)
-Cron-expression-based timed triggering of the assistant to generate messages and notifications. Entry: Settings (设置) → Scheduled Tasks (定时任务).
+Cron-expression-based timed triggering of the assistant to generate messages and notifications. Entry: Settings → Scheduled Tasks.
 
 - Standard 5-field cron expression (minute hour day month weekday)
 - When triggered, ScheduledTaskRunner calls ChatGenerationService to let the assistant generate a message
@@ -71,28 +71,28 @@ Cron-expression-based timed triggering of the assistant to generate messages and
 - Minimum interval 10 minutes
 
 ### 7. Proactive Messages (ChatSettingsPage)
-The assistant proactively sends messages to the user at fixed intervals and pops a notification (like a WeChat incoming message). Entry: Settings (设置) → Chat (聊天) → Proactive Messages (主动消息).
+The assistant proactively sends messages to the user at fixed intervals and pops a notification (like a WeChat incoming message). Entry: Settings → Chat → Proactive Messages.
 
 - Interval options: 1 / 2 / 4 / 8 / 12 / 24 hours
 - Actual interval = base interval ± random offset (lower bound 1 hour, to avoid being too frequent)
 - Scheduled by ProactiveMessageRunner, with notifications via MuseNotificationManager
 
 ### 8. Deep Thinking
-Temporarily enabled from the chat input bar's "+" menu. Entry: Chat page → input bar "+" → Deep Thinking (深度思考).
+Temporarily enabled from the chat input bar's "+" menu. Entry: Chat page → input bar "+" → Deep Thinking.
 
 - Enables ReasoningLevel.HIGH (8000-token reasoning budget)
 - Only effective for the current session runtime, not persisted to the assistant configuration
 - Overrides the assistant's default reasoningLevel
 
 ### 9. Web Search
-Toggle in the input bar's "+" menu. Entry: Chat page → input bar "+" → Web Search (联网搜索).
+Toggle in the input bar's "+" menu. Entry: Chat page → input bar "+" → Web Search.
 
 - Defaults to Bing scraping cn.bing.com
 - Supports SearXNG / Tavily (configured in Settings → Web Search)
 - Once enabled, the LLM autonomously decides when to call web_search / web_fetch
 
 ### 10. Group Chat (GroupChatScreen)
-Multi-agent collaborative discussion. Entry: Home group chat tab / Settings (设置) → Agent.
+Multi-agent collaborative discussion. Entry: Home group chat tab / Settings → Agent.
 
 - Select participating assistants when creating a group chat
 - Users can join channels to participate in the conversation
@@ -100,14 +100,14 @@ Multi-agent collaborative discussion. Entry: Home group chat tab / Settings (设
 - Scheduled by GroupChatScheduler for assistants to speak in turn
 
 ### 11. Standalone Translate Page (TranslateScreen)
-Multi-language translation. Entry: Settings (设置) → Tools (工具) → AI Translate (AI 翻译).
+Multi-language translation. Entry: Settings → Tools → AI Translate.
 
 - Supports pasting source text and copying the translation
 - Source language / target language selectable
 - Translated by the currently configured LLM model
 
 ### 12. Custom Theme
-Appearance personalization. Entry: Settings (设置) → Appearance (外观).
+Appearance personalization. Entry: Settings → Appearance.
 
 - Material You dynamic color (dynamicColor): follows the system wallpaper (Android 12+)
 - 3-layer fallback: dynamicColor > customTheme > presetTheme
@@ -116,21 +116,21 @@ Appearance personalization. Entry: Settings (设置) → Appearance (外观).
 - Font, Markdown spacing, etc. adjustable
 
 ### 13. WebServer (WebServerSection)
-Embedded Ktor server. Entry: Settings (设置) → Web Server (Web 服务器).
+Embedded Ktor server. Entry: Settings → Web Server.
 
 - Remote invocation of app capabilities over HTTP + JWT within the local network
 - mDNS service discovery (MdnsService); local network devices can auto-discover
-- Used for remote control of Muse from a PC or other devices
+- Used for remote control of Shaheen 2 from a PC or other devices
 
 ### 14. Backup (BackupSection)
-Data export/import and cloud backup. Entry: Settings (设置) → Backup (备份).
+Data export/import and cloud backup. Entry: Settings → Backup.
 
 - Local export / import: full data export to a file, restorable
 - Cloud backup: S3 / WebDAV
 - Balance query: query the cloud storage balance
 
 ### 15. Sticker Library
-v1.95 feature. Entry: Settings (设置) → Chat (聊天) → Sticker Library (表情包库).
+v1.95 feature. Entry: Settings → Chat → Sticker Library.
 
 - The LLM can list available stickers via the list_stickers tool
 - The LLM can send stickers to the user via the send_sticker(id=...) tool
@@ -138,7 +138,7 @@ v1.95 feature. Entry: Settings (设置) → Chat (聊天) → Sticker Library (�
 - Send probability: 0-100 adjustable (default 30); the model has this probability of calling send_sticker on each reply
 
 ### 16. TTS
-Text-to-speech. Entry: Settings (设置) → Media (媒体) → TTS.
+Text-to-speech. Entry: Settings → Media → TTS.
 
 - System TTS: invokes the Android system TTS engine
 - Cloud TTS: OpenAI / MiniMax / Edge (OpenAI-compatible interface format)
@@ -152,7 +152,7 @@ Image text recognition. Entry: auto-recognized when sending an image on the chat
 - Unified scheduling by OcrManager
 
 ### 18. User Profile
-Personalized information injection. Entry: Settings (设置) → Appearance (外观) → User Profile (用户画像).
+Personalized information injection. Entry: Settings → Appearance → User Profile.
 
 - Fillable: nickname / age / city / MBTI / occupation / interests
 - Content is injected into the system prompt so the LLM knows the user better
@@ -164,7 +164,7 @@ First-launch flow. Entry: first install and launch.
 - Step 2: personalized nickname setup (assistant name + user nickname) + Start Using / Add Model Provider
 
 ### 20. MCP (Model Context Protocol)
-Connector system. Entry: Settings (设置) → Models & Services (模型与服务) → MCP.
+Connector system. Entry: Settings → Models & Services → MCP.
 
 - Manage multiple McpClients
 - Supports local and remote MCP services
@@ -180,7 +180,7 @@ delegate_agent tool. Entry: invoked autonomously by the LLM.
 - After the sub-assistant finishes, the result is returned to the main assistant
 
 ### 22. QR Code Import/Export
-Assistant configuration sharing. Entry: Assistant details → Export QR code (导出二维码).
+Assistant configuration sharing. Entry: Assistant details → Export QR code.
 
 - Assistant configurations can be generated into QR codes for sharing
 - Scanning a QR code can import an assistant configuration
@@ -267,12 +267,12 @@ The settings page (SettingsScreen) is divided into the following sections, from 
 1. Answer truthfully: answer based on the features listed in this document; do not fabricate features that cannot be found
 2. Plain language: use language that ordinary users can understand; avoid piling up technical terms
 3. Give the entry: when answering about a feature, try to tell the user where to find it (settings path or operation entry)
-4. Be honest about limitations: if a feature the user asks about is not supported by Muse, say so clearly; do not pretend to support it
+4. Be honest about limitations: if a feature the user asks about is not supported by Shaheen 2, say so clearly; do not pretend to support it
 5. Distinguish versions: some features are marked with a version number (e.g. v1.95 stickers); older versions may not have them
 
 ## 5. Common Question Reference
 
-- "What can Muse do": refer to Section 2's core feature modules for an item-by-item introduction
+- "What can Shaheen 2 do": refer to Section 2's core feature modules for an item-by-item introduction
 - "How to use memory": enable it in Settings → Assistant → Memory sub-page, or say "Remember: XXX" in a conversation to pin a memory
 - "How to import knowledge": Settings → Knowledge Base, import txt/md/csv/json; the LLM will retrieve via knowledge_search
 - "How to send timed messages": Settings → Scheduled Tasks, configure a cron expression

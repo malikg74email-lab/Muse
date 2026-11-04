@@ -81,11 +81,11 @@ class BingWebViewSearcher(private val appContext: Context) {
         }
         when {
             outcome == null -> {
-                Logger.w(TAG, "search 超时(${SEARCH_TIMEOUT_MS}ms): $query")
+                Logger.w(TAG, "search timed out (${SEARCH_TIMEOUT_MS}ms): $query")
                 emptyList()
             }
             outcome.blocked -> {
-                Logger.w(TAG, "必应返回验证码/拦截页,放弃 WebView 兜底: $query")
+                Logger.w(TAG, "Bing returned a CAPTCHA/block page; abandoning WebView fallback: $query")
                 emptyList()
             }
             else -> outcome.results
@@ -138,7 +138,7 @@ class BingWebViewSearcher(private val appContext: Context) {
                     }
                 }
             } catch (e: Exception) {
-                Logger.w(TAG, "evaluateJavascript 异常: ${e.message}")
+                Logger.w(TAG, "evaluateJavascript error: ${e.message}")
                 finishOnce(ExtractOutcome(false, emptyList()))
             }
         }
@@ -163,7 +163,7 @@ class BingWebViewSearcher(private val appContext: Context) {
                     pollingStarted = false
                     wv.removeCallbacks(pollRunnable)
                     wv.removeCallbacks(watchdogRunnable)
-                    Logger.i(TAG, "主文档发生重定向，重置提取状态，等待最终页面后再提取")
+                    Logger.i(TAG, "Main document redirected; resetting extraction state and waiting for the final page before extracting")
                 }
             }
 
@@ -189,7 +189,7 @@ class BingWebViewSearcher(private val appContext: Context) {
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
                 if (request?.isForMainFrame == true) {
-                    Logger.w(TAG, "页面加载错误: code=${error?.errorCode} desc=${error?.description} url=${request.url}")
+                    Logger.w(TAG, "Page load error: code=${error?.errorCode} desc=${error?.description} url=${request.url}")
                 }
                 if (request?.isForMainFrame == true && !resumed) {
                     finishOnce(ExtractOutcome(false, emptyList()))
@@ -198,7 +198,7 @@ class BingWebViewSearcher(private val appContext: Context) {
 
             override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
                 if (request?.isForMainFrame == true) {
-                    Logger.w(TAG, "HTTP 错误: code=${errorResponse?.statusCode} reason=${errorResponse?.reasonPhrase} url=${request.url}")
+                    Logger.w(TAG, "HTTP error: code=${errorResponse?.statusCode} reason=${errorResponse?.reasonPhrase} url=${request.url}")
                 }
                 if (request?.isForMainFrame == true && !resumed) {
                     finishOnce(ExtractOutcome(false, emptyList()))
@@ -326,7 +326,7 @@ class BingWebViewSearcher(private val appContext: Context) {
             }
             ExtractOutcome(blocked, results)
         } catch (e: Exception) {
-            Logger.w(TAG, "解析提取结果失败: ${e.message}; raw=${raw.take(200)}")
+            Logger.w(TAG, "Failed to parse extraction result: ${e.message}; raw=${raw.take(200)}")
             ExtractOutcome(false, emptyList())
         }
     }
@@ -334,7 +334,7 @@ class BingWebViewSearcher(private val appContext: Context) {
     @SuppressLint("SetJavaScriptEnabled")
     private fun ensureWebView(): WebView {
         check(Looper.myLooper() == Looper.getMainLooper()) {
-            "BingWebViewSearcher WebView 必须在主线程访问"
+            "BingWebViewSearcher WebView must be accessed on the main thread"
         }
         webViewRef?.let { return it }
 
@@ -357,7 +357,7 @@ class BingWebViewSearcher(private val appContext: Context) {
             webViewClient = object : WebViewClient() {
                 /** ROM 兼容:渲染进程崩溃时销毁,下次搜索自动重建。 */
                 override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
-                    Logger.e(TAG, "WebView 渲染进程崩溃: ${detail?.didCrash()},销毁重建")
+                    Logger.e(TAG, "WebView renderer process crashed: ${detail?.didCrash()}; destroying and recreating")
                     webViewRef = null
                     view?.let { v ->
                         runCatching { (v.parent as? android.view.ViewGroup)?.removeView(v) }
@@ -378,10 +378,10 @@ class BingWebViewSearcher(private val appContext: Context) {
                 }
             }
             CookieManager.getInstance().flush()
-        }.onFailure { Logger.w(TAG, "设置 cookie 失败: ${it.message}") }
+        }.onFailure { Logger.w(TAG, "Failed to set cookie: ${it.message}") }
 
         webViewRef = wv
-        Logger.i(TAG, "headless WebView 已初始化")
+        Logger.i(TAG, "Headless WebView initialized")
         return wv
     }
 

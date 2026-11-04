@@ -1,92 +1,92 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# 聊天功能完整指南
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Complete Guide to Chat Features
 
-> 触发场景: 用户问"聊天里怎么操作""消息能做什么""怎么重新生成""怎么引用""怎么分叉""深度思考是什么""联网搜索怎么开"时,参考本文档据实回答。
-> 本文档基于源码 ChatScreen.kt / ChatViewModel.kt / MessageBubble.kt / InputBar.kt / ChatStreamCoordinator.kt 的真实实现。
+> Trigger scenario: when the user asks "how do I do things in chat" "what can I do with a message" "how do I regenerate" "how do I quote" "how do I branch" "what is deep thinking" "how do I turn on web search", refer to this document and answer truthfully.
+> This document is based on the real implementation in the source code's ChatScreen.kt / ChatViewModel.kt / MessageBubble.kt / InputBar.kt / ChatStreamCoordinator.kt.
 
-## 一、概述
+## 1. Overview
 
-聊天是 Muse 的主交互界面:流式输出 LLM 回复,支持 Markdown 富文本、消息级操作、模型切换、深度思考、联网搜索、语音图片等多模态输入。所有消息存本地数据库,支持多轮对话、分叉(branch)、中断恢复。
+Chat is Shaheen 2's main interaction interface: it streams LLM replies, and supports Markdown rich text, message-level operations, model switching, deep thinking, web search, and multimodal input such as voice and images. All messages are stored in a local database, and it supports multi-turn conversations, branching (branch), and interruption recovery.
 
-## 二、入口
+## 2. Entry Points
 
-- 首页会话列表 → 点击会话进入聊天
-- 会话列表可新建/置顶/归档/搜索会话
-- 聊天页顶栏: 会话标题 + 助手切换 + 更多菜单(搜索/清空/导出等)
+- Home conversation list → tap a conversation to enter chat
+- In the conversation list you can create/pin/archive/search conversations
+- Chat page top bar: conversation title + assistant switcher + more menu (search/clear/export, etc.)
 
-## 三、消息气泡操作(点击/长按弹出菜单)
+## 3. Message Bubble Operations (tap/long-press for the pop-up menu)
 
-每条消息(用户/AI)都支持以下操作:
+Every message (user/AI) supports the following operations:
 
-| 操作 | 说明 |
+| Operation | Description |
 |---|---|
-| 复制 | 复制消息全文(含 Markdown 原文) |
-| 重发/重新生成 | 对 AI 消息重新生成(保留上下文);对用户消息重发 |
-| 删除 | 删除该消息(同时清理 FTS 索引和生成检查点,重启不复活) |
-| 编辑 | 编辑用户消息内容后重发;AI 消息可编辑后作为新上下文 |
-| 引用 | 引用该消息回复(气泡顶部显示引用块) |
-| 委托 | delegate_agent:委托给其他助手处理 |
-| 翻译 | 调用 translate 翻译该消息 |
-| 朗读 | TTS 朗读(系统/云端引擎) |
-| 收藏 | 收藏到收藏夹(跨会话可查) |
-| 分叉 | 从该消息复制历史到新会话(分支) |
-| 分享 | 导出为 Markdown 走系统分享面板 |
+| Copy | Copy the full text of the message (including the original Markdown) |
+| Resend/Regenerate | Regenerate an AI message (preserving the context); resend a user message |
+| Delete | Delete this message (also clearing the FTS index and generation checkpoints, so it does not come back after a restart) |
+| Edit | Edit a user message's content and resend it; an AI message can be edited and used as new context |
+| Quote | Reply quoting this message (a quote block is shown at the top of the bubble) |
+| Delegate | delegate_agent: delegate it to another assistant to handle |
+| Translate | Call translate to translate this message |
+| Read aloud | TTS read-aloud (system/cloud engine) |
+| Favourite | Save it to favourites (can be looked up across conversations) |
+| Branch | Copy the history from this message into a new conversation (branch) |
+| Share | Export as Markdown via the system share panel |
 
-## 四、长消息处理
+## 4. Handling Long Messages
 
-- 超长 AI 消息自动折叠,点击"展开"查看全文
-- 流式输出时实时渲染 Markdown(代码高亮/公式/表格)
-- 消息间自动滚动到底部;用户上滑查看历史时暂停跟随
+- Overly long AI messages are folded automatically; tap "Expand" to view the full text
+- During streaming output, Markdown is rendered in real time (code highlighting/formulas/tables)
+- It scrolls automatically to the bottom between messages; following pauses when the user scrolls up to view history
 
-## 五、输入栏功能
+## 5. Input Bar Features
 
-### 5.1 文本输入
-- 多行输入,回车发送(可配置)
-- **粘贴检测**: 粘贴内容自动识别公共前后缀并剥离;超 5000 字符提示转文件
-- 输入草稿: 切会话自动保存,切回恢复
+### 5.1 Text Input
+- Multi-line input, Enter to send (configurable)
+- **Paste detection**: pasted content automatically has common prefixes and suffixes recognised and stripped; over 5000 characters, you are prompted to convert it to a file
+- Input drafts: saved automatically when you switch conversations, restored when you switch back
 
-### 5.2 "+"号菜单(增强功能)
-| 功能 | 说明 |
+### 5.2 "+" Menu (Enhanced Features)
+| Feature | Description |
 |---|---|
-| 深度思考 | 本会话开启 ReasoningLevel.HIGH(8000 tokens 推理预算),不持久化 |
-| 联网搜索 | 开启后 LLM 倾向调用 web_search / web_fetch |
-| 图片发送 | 选图发送(自动压缩/OCR 识别文字) |
-| 语音输入 | 按住说话,ASR 转文字 |
-| 快捷消息 | 预置 chips 一键发送({{input}}/{{clipboard}}/{{date}} 变量自动渲染) |
-| 相机 | 拍照发送 |
+| Deep thinking | Enables ReasoningLevel.HIGH for this conversation (8000 tokens reasoning budget), not persisted |
+| Web search | When enabled, the LLM tends to call web_search / web_fetch |
+| Send image | Choose an image to send (automatic compression/OCR text recognition) |
+| Voice input | Hold to speak, ASR converts it to text |
+| Quick messages | Pre-set chips sent with one tap ({{input}}/{{clipboard}}/{{date}} variables are rendered automatically) |
+| Camera | Take a photo and send it |
 
-### 5.3 模型切换
-- 输入栏模型胶囊可**临时切换当前会话模型**(历史消息不变,新消息用新模型)
-- 助手配置了专属模型时,手动切换会覆盖专属模型(提示"已覆盖助手专属模型,切会话恢复")
+### 5.3 Model Switching
+- The model capsule in the input bar can **temporarily switch the current conversation's model** (history messages are unchanged; new messages use the new model)
+- When the assistant has a dedicated model configured, a manual switch overrides the dedicated model (prompt: "The assistant's dedicated model has been overridden; it is restored when you switch conversations")
 
-## 六、流式输出与多轮
+## 6. Streaming Output and Multi-Turn
 
-- 首 token 到达前显示等待状态
-- 流式更新 UI(文本/思考/工具调用状态)
-- 思考标签(MOOD/思考内容)可展开折叠
-- 工具调用轮次自动执行,结果回填后继续生成,直到最终答复
-- 多轮对话上下文自动管理;超长时自动压缩(保留最近 N 条)
+- A waiting state is shown before the first token arrives
+- Streaming UI updates (text/thinking/tool call status)
+- Thinking tags (MOOD/thinking content) can be expanded and folded
+- Tool call rounds execute automatically, and generation continues after the results are filled back in, until the final answer
+- Multi-turn conversation context is managed automatically; when it is too long it is compressed automatically (keeping the most recent N items)
 
-## 七、中断与恢复
+## 7. Interruption and Recovery
 
-- 停止生成: 保留已生成的部分内容,标记可重新生成
-- 应用重启: 中断的生成可通过"恢复"继续;已完成的消息不会被误标
-- 生成检查点: 中断时自动保存进度,重启后自动续跑
+- Stop generation: the content generated so far is kept, and marked as regenerable
+- App restart: an interrupted generation can be continued via "Resume"; completed messages are not incorrectly marked
+- Generation checkpoints: progress is saved automatically when interrupted, and resumes automatically after a restart
 
-## 八、常见问题 Q&A
+## 8. Common Questions Q&A
 
-1. **"怎么重新生成 AI 回复"**: 长按/点击 AI 消息 → 重发(重新生成)。
-2. **"怎么删除消息"**: 长按消息 → 删除。删除后重启不会复活。
-3. **"怎么引用某句话回复"**: 长按消息 → 引用,输入栏出现引用块,输入回复。
-4. **"分叉是什么"**: 把当前消息之前的历史复制成新会话,在不影响原会话的情况下继续聊不同方向。
-5. **"深度思考有什么用"**: 给模型更高推理预算,适合复杂问题(代码/分析/规划)。
-6. **"怎么换模型"**: 输入栏模型胶囊直接切换;或设置→模型与服务的全局默认模型。
-7. **"为什么 AI 不联网搜索"**: 检查输入栏+号菜单"联网搜索"是否开启;开启后 AI 自主判断何时搜。
-8. **"消息顺序乱了/重复"**: 通常是旧版本中断恢复误标导致,已修复;遇到请更新版本并反馈。
+1. **"How do I regenerate an AI reply"**: long-press/tap the AI message → Resend (regenerate).
+2. **"How do I delete a message"**: long-press the message → Delete. It will not come back after deletion and a restart.
+3. **"How do I reply quoting a sentence"**: long-press the message → Quote; a quote block appears in the input bar; enter your reply.
+4. **"What is branching"**: copying the history before the current message into a new conversation, so you can continue chatting in a different direction without affecting the original conversation.
+5. **"What is deep thinking useful for"**: it gives the model a higher reasoning budget, suitable for complex problems (code/analysis/planning).
+6. **"How do I change the model"**: switch directly with the model capsule in the input bar; or Settings → Models and Services for the global default model.
+7. **"Why doesn't the AI search the web"**: check whether "Web search" is enabled in the input bar's + menu; once enabled, the AI decides on its own when to search.
+8. **"Messages are out of order/duplicated"**: this is usually caused by incorrect marking during interruption recovery in an old version, and has been fixed; if you encounter it, please update the version and report it.
 
-## 九、LLM 调用要点
+## 9. Key Points for LLM Calls
 
-- 流式回复实时渲染;思考内容放 reasoning,正文放 content
-- 工具调用轮次: 调用后等结果回填再继续,不要自己编造工具结果
-- 用户上滑查看历史时,新消息不强制滚底(由 UI 处理)
-- 生成中断时保留已产出内容,恢复后继续
+- Streaming replies are rendered in real time; put thinking content in reasoning, and the main text in content
+- Tool call rounds: after calling, wait for the result to be filled back in before continuing; do not fabricate tool results yourself
+- When the user scrolls up to view history, new messages do not force a scroll to the bottom (handled by the UI)
+- When generation is interrupted, keep the content produced so far, and continue after recovery

@@ -164,10 +164,10 @@ private fun ChannelBubble(turn: ChannelConversationStore.Turn) {
  */
 private fun turnBody(turn: ChannelConversationStore.Turn): String = when {
     turn.mediaDescription.isNotBlank() -> turn.mediaDescription
-    turn.mediaKind == "image" -> "[图片]"
-    turn.mediaPath.isNotBlank() -> "[附件]"
+    turn.mediaKind == "image" -> "[Image]"
+    turn.mediaPath.isNotBlank() -> "[Attachment]"
     turn.text.isNotBlank() -> turn.text
-    else -> "[空消息]"
+    else -> "[Empty message]"
 }
 
 private fun formatTime(at: Long): String =

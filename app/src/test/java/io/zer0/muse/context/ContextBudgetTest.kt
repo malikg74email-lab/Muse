@@ -29,9 +29,9 @@ class ContextBudgetTest {
         // 保留头部
         assertTrue(result.text.startsWith("m".repeat(1_000)))
         // 注记包含分区、原始长度与上限,可诊断
-        assertTrue(result.text.contains("分区=LONG_TERM_MEMORY"))
-        assertTrue(result.text.contains("原始 30000"))
-        assertTrue(result.text.contains("上限 24000"))
+        assertTrue(result.text.contains("section=LONG_TERM_MEMORY"))
+        assertTrue(result.text.contains("original 30000"))
+        assertTrue(result.text.contains("limit 24000"))
     }
 
     @Test
@@ -46,7 +46,7 @@ class ContextBudgetTest {
         val clampedDoc = budget.clampText(ContextSection.ATTACHMENT_TEXT, docs.joinToString("\n\n---\n\n"))
         val send = "$clampedDoc\n\n---\n\n$raw"
         assertTrue(send.endsWith(raw))
-        assertTrue(send.contains("内容已按上下文预算截断"))
+        assertTrue(send.contains("Content truncated per the context budget"))
     }
 
     @Test
@@ -81,6 +81,6 @@ class ContextBudgetTest {
         val result = budget.clamp(ContextSection.RELEVANT_MEMORY, "x".repeat(10_000))
         assertTrue(result.truncated)
         assertTrue("实际长度 ${result.text.length}", result.text.length <= 500)
-        assertTrue(result.text.contains("内容已按上下文预算截断"))
+        assertTrue(result.text.contains("Content truncated per the context budget"))
     }
 }

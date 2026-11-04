@@ -67,7 +67,7 @@ class ChannelReplyWindowPrecheckTest {
 
     @Test
     fun `拦截终态错误码写明是排队超时`() {
-        assertEquals("被动回复窗口已过期(排队超时)", REPLY_WINDOW_EXPIRED_BY_QUEUE)
+        assertEquals("The passive-reply window has expired (queue timeout)", REPLY_WINDOW_EXPIRED_BY_QUEUE)
     }
 
     /**

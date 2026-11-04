@@ -219,7 +219,7 @@ class PluginSecurityGateTest {
         val decision = PluginSecurityGate.review(packageOf(tools = emptyList()))
 
         assertFalse(decision.allowed)
-        assertTrue(decision.reason?.contains("未声明任何工具") == true)
+        assertTrue(decision.reason?.contains("declares no tools") == true)
     }
 
     @Test

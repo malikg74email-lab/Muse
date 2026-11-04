@@ -130,7 +130,7 @@ class CloudDocumentParserTest {
                 mineruMode = true,
             )
             assertTrue(result is Result.Error)
-            assertTrue((result as Result.Error).message.contains("超时"))
+            assertTrue((result as Result.Error).message.contains("timed out"))
         } finally {
             server.stop(0)
         }

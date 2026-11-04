@@ -19,15 +19,15 @@ class PromptInvariantTest {
 
     @Test
     fun `invariant list is not empty`() {
-        assertTrue("锚点表被清空了，提示词约束就失去了守护", invariants.isNotEmpty())
+        assertTrue("The invariant list was emptied; the prompt constraints lose their guard", invariants.isNotEmpty())
     }
 
     @Test
     fun `artifact vs show_card decision is based on what the user does with it`() {
         val joined = invariants.joinToString("\n")
 
-        assertTrue("要按「拿走」判断 artifact", joined.contains("用户会把它复制走或保存吗"))
-        assertTrue("要按「操作」判断 show_card", joined.contains("用户会点它、拖它、改它吗"))
+        assertTrue("artifact is judged by taking away", joined.contains("Will the user copy it away or save it?"))
+        assertTrue("show_card is judged by operating on it", joined.contains("Will the user tap it, drag it, or change it?"))
     }
 
     @Test
@@ -35,8 +35,8 @@ class PromptInvariantTest {
         val joined = invariants.joinToString("\n")
 
         assertTrue(
-            "同一内容出两份是用户实际抱怨的现象，必须显式禁止",
-            joined.contains("不要**为同一份内容同时出卡片和 artifact"),
+            "Duplicating the same content in both forms is a real user complaint and must be explicitly forbidden",
+            joined.contains("Do not** produce both a card and an artifact for the same content"),
         )
     }
 
@@ -44,9 +44,9 @@ class PromptInvariantTest {
     fun `search has both stop and continue criteria`() {
         val joined = invariants.joinToString("\n")
 
-        assertTrue("要有「该停」的判据", joined.contains("已能直接回答用户的问题"))
-        assertTrue("多来源一致就该停", joined.contains("多个来源对同一事实一致"))
-        assertTrue("要有「该继续」的判据", joined.contains("关键数字/日期/名称仍缺失"))
+        assertTrue("must have a stop criterion", joined.contains("Can already answer the user's question directly"))
+        assertTrue("multiple agreeing sources mean stop", joined.contains("Multiple sources agree on the same fact"))
+        assertTrue("must have a continue criterion", joined.contains("Key numbers/dates/names are still missing"))
     }
 
     @Test
@@ -54,8 +54,8 @@ class PromptInvariantTest {
         val joined = invariants.joinToString("\n")
 
         assertTrue(
-            "拿搜索摘要当已核实是第 12 条的另一半问题",
-            joined.contains("不能拿摘要当已核实"),
+            "Treating a search summary as verified is the other half of item 12",
+            joined.contains("do not treat a summary as verified"),
         )
     }
 
@@ -72,7 +72,7 @@ class PromptInvariantTest {
             // 锚点表自身会出现一次；正文里必须还有至少一次。
             val occurrences = Regex(Regex.escape(phrase)).findAll(source).count()
             assertTrue(
-                "锚点「$phrase」只出现在锚点表里，提示词正文没写 —— 行为不会变",
+                "Invariant '$phrase' appears only in the invariant list, not in the prompt body - behaviour would not change",
                 occurrences >= 2,
             )
         }

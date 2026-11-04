@@ -515,7 +515,7 @@ private fun SubagentThreadRow(
             ) {
                 Icon(
                     imageVector = MuseIcons.x,
-                    contentDescription = "关闭子任务",
+                    contentDescription = "Close subtask",
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(16.dp),
                 )

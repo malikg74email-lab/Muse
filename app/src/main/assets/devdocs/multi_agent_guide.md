@@ -1,88 +1,88 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# 多 Agent 协作完整指南
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Complete Guide to Multi-Agent Collaboration
 
-> 触发场景: 用户问"多个助手怎么一起用""能委托任务给别的助手吗""群聊是什么""怎么让助手们讨论"时,参考本文档据实回答。
-> 本文档基于源码 AgentRouter.kt / AgentToolsRegistrar.kt / GroupChatScheduler.kt / GroupChatScreen.kt 的真实实现。
+> Trigger scenario: When the user asks "How do I use multiple assistants together?", "Can I delegate a task to another assistant?", "What is a group chat?" or "How do I get the assistants to discuss something?", refer to this document and answer truthfully.
+> This document is based on the real implementation in the source code AgentRouter.kt / AgentToolsRegistrar.kt / GroupChatScheduler.kt / GroupChatScreen.kt.
 
-## 一、概述
+## I. Overview
 
-Muse 支持多个助手(Agent)协作:
-1. **delegate_agent 委托**: 当前助手把任务委托给另一个助手跑一轮 LLM,拿结果继续
-2. **群聊(GroupChat)**: 多个助手在频道里轮流发言讨论,用户可加入
-3. **DM**: 两个助手的私聊
+Shaheen 2 supports collaboration between multiple assistants (Agents):
+1. **delegate_agent delegation**: The current assistant delegates a task to another assistant to run for one round of LLM, takes the result, and continues
+2. **Group chat (GroupChat)**: Multiple assistants take turns speaking and discussing in a channel, and the user can join in
+3. **DM**: A private chat between two assistants
 
-## 二、delegate_agent 委托机制
+## II. The delegate_agent Delegation Mechanism
 
-### 调用方式(LLM 视角)
+### How to Call It (LLM Perspective)
 ```
-delegate_agent(task = "帮我算一下预算", agent = "财务助手")
+delegate_agent(task = "Help me calculate the budget", agent = "Finance Assistant")
 ```
-- **task**: 委托的任务描述(完整上下文)
-- **agent**: 目标助手 id(从系统提示的助手清单里选)
+- **task**: The description of the delegated task (full context)
+- **agent**: The target assistant's id (chosen from the list of assistants in the system prompt)
 
-### 流程
-1. 当前助手调用 delegate_agent,指定目标助手
-2. 目标助手用**自己的** systemPrompt/模型/记忆/工具跑一轮
-3. 结果返回给当前助手,当前助手整合后回复用户
+### Flow
+1. The current assistant calls delegate_agent and specifies the target assistant
+2. The target assistant runs for one round using **its own** systemPrompt/model/memory/tools
+3. The result is returned to the current assistant, which integrates it and then replies to the user
 
-### 要点
-- 委托给专业助手(如翻译/代码/文案),发挥各自人格优势
-- task 要写清上下文,目标助手看不到当前对话
-- 结果回传后如实整合,不篡改子助手结论
-- 子助手隔离子会话,不注入主对话长期记忆(避免递归)
+### Key Points
+- Delegate to a specialist assistant (e.g. translation/code/copywriting) to make use of each one's persona strengths
+- Write the context clearly in the task; the target assistant cannot see the current conversation
+- Once the result is returned, integrate it truthfully; do not falsify the sub-assistant's conclusions
+- Sub-assistants use isolated sub-sessions and are not injected with the main conversation's long-term memory (to avoid recursion)
 
-## 三、群聊(GroupChat)
+## III. Group Chat (GroupChat)
 
-### 3.1 类型
-| 类型 | 说明 |
+### 3.1 Types
+| Type | Description |
 |---|---|
-| DM | 两个助手私聊 |
-| Group | 多人群组(≥3 人) |
+| DM | Private chat between two assistants |
+| Group | Multi-person group (≥3 people) |
 
-### 3.2 创建
-1. 首页群聊 Tab → 新建
-2. 选参与助手(2+ 个)
-3. 选类型(DM/Group)
-4. 创建后助手机器人自动开始发言
+### 3.2 Creating One
+1. Home page, Group Chat Tab → New
+2. Select the participating assistants (2 or more)
+3. Select the type (DM/Group)
+4. After creation, the assistant bots automatically start speaking
 
-### 3.3 发言调度(GroupChatScheduler)
-- 助手轮流发言,由调度器决定发言顺序(轮转/响应)
-- 用户可加入频道发言(@某助手可定向)
-- invokeAgent / vote / summary 等调度模式
+### 3.3 Message Scheduling (GroupChatScheduler)
+- The assistants take turns speaking, and the scheduler decides the speaking order (rotation/response)
+- The user can join the channel and speak (@ a particular assistant to target it)
+- Scheduling modes such as invokeAgent / vote / summary
 
-### 3.4 群聊工具三件套(LLM 视角)
-| 工具 | 用途 |
+### 3.4 The Three Group-Chat Tools (LLM Perspective)
+| Tool | Purpose |
 |---|---|
-| channel_reply | 发言(身份绑定当前助手,参数含发言内容) |
-| channel_pass | 跳过本轮(无话可说时) |
-| channel_read_context | 读更多历史上下文 |
+| channel_reply | Speak (identity is bound to the current assistant; the parameter contains the message content) |
+| channel_pass | Skip this round (when there is nothing to say) |
+| channel_read_context | Read more of the historical context |
 
-注意: channel_* 工具只在群聊上下文可用;主会话中不可调用(防身份冒用)。
+Note: The channel_* tools are only available in a group-chat context; they cannot be called in the main session (to prevent identity impersonation).
 
-## 四、Agent 专属模型(resolveAssistantModel)
+## IV. Assistant-Specific Models (resolveAssistantModel)
 
-- 每个助手可配置专属模型(modelId+providerId)
-- 群聊发言/委托/投票时,目标助手用自己配置的模型
-- 未配置则用全局默认模型
+- Each assistant can be configured with its own dedicated model (modelId+providerId)
+- During group-chat speaking/delegation/voting, the target assistant uses the model configured for it
+- If none is configured, the global default model is used
 
-## 五、@mention 与定向
+## V. @mention and Targeting
 
-- 群聊中 @某助手 → 该助手被点名,优先回应
-- 用户发言可 @ 多个助手
+- In a group chat, @ a particular assistant → that assistant is named and responds with priority
+- The user can @ multiple assistants in one message
 
-## 六、常见问题 Q&A
+## VI. Frequently Asked Questions Q&A
 
-1. **"怎么创建多个助手"**: 设置 → 助手 → 新建,配置人格/模型/白名单。
-2. **"怎么让助手帮我查资料再回答"**: 委托给擅长搜索的助手,或当前助手直接用 web_search(委托非必需)。
-3. **"群聊助手不说话"**: 检查助手是否启用、模型是否可用;channel_pass 是正常的(无话可说时跳过)。
-4. **"子助手能看到我的聊天记录吗"**: 看不到完整记录,只收到委托 task;长期记忆也是隔离的。
-5. **"怎么把群聊结果保存"**: 群聊消息落库,可回看;重要结论可让助手总结。
-6. **"主助手能委派给群聊吗"**: 不能直接;委托是点到点的单助手任务。
+1. **"How do I create multiple assistants"**: Settings → Assistants → New, and configure the persona/model/allowlist.
+2. **"How do I get an assistant to look something up for me before answering"**: Delegate to an assistant that is good at searching, or the current assistant can use web_search directly (delegation is not essential).
+3. **"The group-chat assistants aren't speaking"**: Check whether the assistants are enabled and whether their models are usable; channel_pass is normal (it skips when there is nothing to say).
+4. **"Can a sub-assistant see my chat history"**: It cannot see the full record; it only receives the delegated task, and long-term memory is isolated as well.
+5. **"How do I save group-chat results"**: Group-chat messages are stored in the database and can be reviewed; for important conclusions, you can ask an assistant to summarise them.
+6. **"Can the main assistant delegate to a group chat"**: Not directly; delegation is a point-to-point, single-assistant task.
 
-## 七、LLM 调用要点
+## VII. Key Points for LLM Calls
 
-- 需要专业分工时用 delegate_agent(不是所有任务都值得委托,简单问题自己答)
-- 群聊里必须用 channel_* 三件套发言,不要输出游离文本
-- 委托任务写清背景/目标/期望格式,减少来回
-- 群聊发言简短有观点,不刷屏
-- 用户 @ 你时优先回应
+- Use delegate_agent when a specialist division of labour is needed (not every task is worth delegating; answer simple questions yourself)
+- In a group chat you must speak using the channel_* trio of tools; do not output stray text
+- Write the delegated task with a clear background/goal/expected format to reduce back-and-forth
+- Keep group-chat messages short and opinionated; do not flood the channel
+- When the user @s you, respond with priority

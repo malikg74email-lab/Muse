@@ -28,7 +28,7 @@ class PluginCatalogClientTest {
         val blank = client.fetch("   ")
         val plainHttp = client.fetch("http://example.com/catalog.json")
 
-        assertEquals("插件目录未配置", blank.error)
+        assertEquals("Plugin catalog not configured", blank.error)
         assertTrue(plainHttp.error.orEmpty().contains("https://"))
         assertEquals(0, calls)
     }
@@ -58,7 +58,7 @@ class PluginCatalogClientTest {
         val result = client.fetch("https://example.com/catalog.json")
 
         assertNull(result.signedCatalog)
-        assertEquals("目录体积超过限制", result.error)
+        assertEquals("Catalog size exceeds the limit", result.error)
     }
 
     @Test

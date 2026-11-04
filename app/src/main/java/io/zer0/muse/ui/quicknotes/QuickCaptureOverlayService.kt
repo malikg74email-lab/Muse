@@ -80,7 +80,7 @@ class QuickCaptureOverlayService : Service() {
         // v2.2.0: Koin 未启动时优雅退场(与 ChatGenerationService 同款防御) —
         // Safe Mode/进程异常恢复场景下 by inject 会崩 "KoinApplication has not been started"。
         if (org.koin.core.context.GlobalContext.getOrNull() == null) {
-            Logger.w("QuickCaptureOverlayService", "Koin 未启动(Safe Mode?) — 停止悬浮窗服务")
+            Logger.w("QuickCaptureOverlayService", "Koin not started (Safe Mode?) — stopping overlay service")
             stopSelf()
             return
         }
@@ -94,7 +94,7 @@ class QuickCaptureOverlayService : Service() {
                 }
             } catch (t: Throwable) {
                 if (t is kotlin.coroutines.cancellation.CancellationException) throw t
-                Logger.w(TAG, "悬浮窗主题监听失败: ${t.message}")
+                Logger.w(TAG, "Failed to observe overlay theme: ${t.message}")
                 themeColors = QuickCaptureThemeColors.fallback(applicationContext)
                 applyThemeColors()
             }
@@ -339,10 +339,10 @@ class QuickCaptureOverlayService : Service() {
             overlayView = view
             windowParams = params
         } catch (e: SecurityException) {
-            Logger.w(TAG, "添加快速记录悬浮窗失败: ${e.message}")
+            Logger.w(TAG, "Failed to add quick-capture overlay: ${e.message}")
             stopSelf()
         } catch (e: RuntimeException) {
-            Logger.w(TAG, "快速记录悬浮窗窗口异常: ${e.message}")
+            Logger.w(TAG, "Quick-capture overlay window error: ${e.message}")
             stopSelf()
         }
     }

@@ -47,7 +47,7 @@ internal fun effectiveVisionResponseText(text: String, reasoningContent: String?
 /** 为视觉能力不匹配提供可诊断的供应商、模型和注册表原因。 */
 internal fun visionUnsupportedReason(providerName: String, modelId: String, inputModalities: Set<String>): String {
     val detected = inputModalities.sorted().joinToString(", ").ifBlank { "unknown" }
-    return "供应商 $providerName 的模型 $modelId 不支持图片输入(已识别能力: $detected, 请更换真正支持视觉输入的模型)"
+    return "Provider $providerName's model $modelId does not support image input (detected capability: $detected; please switch to a model that truly supports vision input)"
 }
 
 /**
@@ -137,21 +137,21 @@ class VisionBridge(
          * 让视觉模型针对性回答(而非泛泛描述)。
          */
         private val VISION_PROMPT_NOTE_ONLY = """
-            请分析这张图片,为另一个纯文本模型生成结构化描述。
-            使用以下固定字段输出,每个字段独占一行,字段名后加冒号:
+            Please analyze this image and generate a structured description for a text-only model.
+            Output using the following fixed fields, each field on its own line, with a colon after the field name:
 
-            image_overview: 图片的整体内容概述
-            visible_text: 图片中可见的重要文字(OCR),无则写"无"
-            objects_and_layout: 重要物体、位置、数量及其关系
-            charts_or_data: 图表/表格/数据细节,无则写"无"
-            user_request: 用一句话重述用户的请求
-            user_request_answer: 根据图片内容回答用户的请求
-            evidence: 支持上述回答的视觉证据
-            uncertainty: 不确定、被遮挡或需要猜测的内容
+            image_overview: an overview of the image's overall content
+            visible_text: important visible text in the image (OCR), or "none" if there is none
+            objects_and_layout: important objects, their positions, counts and relationships
+            charts_or_data: chart/table/data details, or "none" if there are none
+            user_request: restate the user's request in one sentence
+            user_request_answer: answer the user's request based on the image content
+            evidence: visual evidence supporting the answer above
+            uncertainty: content that is uncertain, occluded or requires guessing
 
-            不要提及你是工具或独立模型,直接输出字段内容即可。
+            Do not mention that you are a tool or a separate model; output the field contents directly.
 
-            用户请求:
+            User request:
             %s
         """.trimIndent()
 
@@ -162,25 +162,25 @@ class VisionBridge(
          * 坐标格式由 [primitivePromptShape] 根据模型 outputFormat 派生。
          */
         private val VISION_PROMPT_WITH_GROUNDING = """
-            请分析这张图片,为另一个纯文本模型生成结构化 JSON 描述。
-            返回严格的 JSON(不要 markdown 代码块),包含以下字段:
+            Please analyze this image and generate a structured JSON description for a text-only model.
+            Return strict JSON (no markdown code block) containing the following fields:
 
             {
-              "image_overview": "图片整体内容概述",
-              "visible_text": ["图片中可见的重要文字1", "文字2"],
-              "objects_and_layout": "重要物体、位置、数量及其关系",
-              "charts_or_data": "图表/表格/数据细节,无则写 none",
-              "user_request": "用一句话重述用户的请求",
-              "user_request_answer": "根据图片内容回答用户的请求",
-              "evidence": "支持上述回答的视觉证据",
-              "uncertainty": "不确定、被遮挡或需要猜测的内容",
+              "image_overview": "an overview of the image's overall content",
+              "visible_text": ["important visible text in the image 1", "text 2"],
+              "objects_and_layout": "important objects, their positions, counts and relationships",
+              "charts_or_data": "chart/table/data details, or none if there are none",
+              "user_request": "restate the user's request in one sentence",
+              "user_request_answer": "answer the user's request based on the image content",
+              "evidence": "visual evidence supporting the answer above",
+              "uncertainty": "content that is uncertain, occluded or requires guessing",
               "visual_primitives": %s
             }
 
-            坐标使用归一化 0-1000 坐标系(左上角原点)。
-            不要提及你是工具或独立模型。
+            Coordinates use the normalized 0-1000 coordinate system (origin at the top-left corner).
+            Do not mention that you are a tool or a separate model.
 
-            用户请求:
+            User request:
             %s
         """.trimIndent()
     }
@@ -275,7 +275,7 @@ class VisionBridge(
             val preparedImages: List<VisionImagePreprocessor.PreparedImage> = try {
                 VisionImagePreprocessor.prepareBatch(images)
             } catch (e: VisionImagePreprocessException) {
-                Logger.w(TAG, "图片预处理失败,走降级路径: ${e.message}")
+                Logger.w(TAG, "Image preprocessing failed, taking the fallback path: ${e.message}")
                 val notice = buildFailureNotice(e.message)
                 return@withContext VisionPrepareResult(
                     text = "$notice\n\n$text",
@@ -294,7 +294,7 @@ class VisionBridge(
                 onProgress?.invoke(0, preparedImages.size)
                 val descriptions = analyzeImages(preparedImages, userRequest, sessionId, messageId, onProgress)
                 if (descriptions.isEmpty()) {
-                    val notice = buildFailureNotice("视觉分析返回空结果")
+                    val notice = buildFailureNotice("Vision analysis returned an empty result")
                     VisionPrepareResult("$notice\n\n$text", emptyList(), success = false, descriptionCount = 0)
                 } else {
                     val visionPrefix = buildVisionContext(descriptions)
@@ -306,7 +306,7 @@ class VisionBridge(
                     )
                 }
             } catch (e: VisionAnalysisException) {
-                Logger.w(TAG, "视觉辅助 prepare 失败,走降级路径: ${e.message}")
+                Logger.w(TAG, "Vision assistance prepare failed, taking the fallback path: ${e.message}")
                 val notice = buildFailureNotice(e.message)
                 VisionPrepareResult(
                     text = "$notice\n\n$text",
@@ -338,9 +338,9 @@ class VisionBridge(
         val useGrounding = visionModel.supportsVisionGrounding()
         val prompt = if (useGrounding) {
             val primitiveShape = primitivePromptShape(visionModel.visionCapabilities)
-            VISION_PROMPT_WITH_GROUNDING.format(primitiveShape, userRequest.ifBlank { "(无明确请求,请整体描述图片)" })
+            VISION_PROMPT_WITH_GROUNDING.format(primitiveShape, userRequest.ifBlank { "(No specific request; please describe the image as a whole)" })
         } else {
-            VISION_PROMPT_NOTE_ONLY.format(userRequest.ifBlank { "(无明确请求,请整体描述图片)" })
+            VISION_PROMPT_NOTE_ONLY.format(userRequest.ifBlank { "(No specific request; please describe the image as a whole)" })
         }
 
         val userMessage = UIMessage(
@@ -350,7 +350,7 @@ class VisionBridge(
         )
 
         return try {
-            Logger.i(TAG, "开始视觉分析: model=${visionModel.id}, grounding=$useGrounding, userRequest=${userRequest.take(50)}")
+            Logger.i(TAG, "Starting vision analysis: model=${visionModel.id}, grounding=$useGrounding, userRequest=${userRequest.take(50)}")
             val rawResponse = withTimeout(ANALYSIS_TIMEOUT_MS) {
                 retryOnNetworkError(maxRetries = MAX_RETRIES, initialDelayMs = INITIAL_RETRY_DELAY_MS) {
                     callVisionModel(userMessage, visionModel, visionProvider)
@@ -358,7 +358,7 @@ class VisionBridge(
             }.trim()
 
             if (rawResponse.isBlank()) {
-                throw VisionAnalysisException("视觉模型返回空描述")
+                throw VisionAnalysisException("Vision model returned an empty description")
             }
 
             // 5. grounding 路径解析 JSON 并归一化;note-only 路径直接用原始文本
@@ -368,19 +368,19 @@ class VisionBridge(
                 truncateNote(rawResponse)
             }
 
-            Logger.i(TAG, "视觉分析完成,描述长度: ${description.length}, grounding=$useGrounding")
+            Logger.i(TAG, "Vision analysis complete, description length: ${description.length}, grounding=$useGrounding")
             "<vision-context>\n$description\n</vision-context>"
         } catch (e: VisionAnalysisException) {
             throw e
         } catch (e: CancellationException) {
             if (e is kotlinx.coroutines.TimeoutCancellationException) {
-                Logger.w(TAG, "视觉分析超时(${ANALYSIS_TIMEOUT_MS}ms)")
-                throw VisionAnalysisException("视觉模型响应超时(${ANALYSIS_TIMEOUT_MS / 1000}s),请稍后重试或更换视觉模型", e)
+                Logger.w(TAG, "Vision analysis timed out (${ANALYSIS_TIMEOUT_MS}ms)")
+                throw VisionAnalysisException("Vision model response timed out (${ANALYSIS_TIMEOUT_MS / 1000}s); please retry later or switch the vision model", e)
             }
             throw e
         } catch (e: Exception) {
             val friendlyMsg = friendlyVisionError(e)
-            Logger.w(TAG, "视觉分析失败: ${e.message} -> $friendlyMsg", e)
+            Logger.w(TAG, "Vision analysis failed: ${e.message} -> $friendlyMsg", e)
             throw VisionAnalysisException(friendlyMsg, e)
         }
     }
@@ -415,32 +415,32 @@ class VisionBridge(
     private suspend fun resolveVisionModelStrict(): Pair<Model, ProviderConfig> {
         val enabled = settings.visionEnabledFlow.first()
         if (!enabled) {
-            Logger.w(TAG, "视觉分析[跳过]: 视觉辅助开关未开启")
-            throw VisionAnalysisException("视觉辅助未启用(请在设置-视觉辅助中开启总开关)")
+            Logger.w(TAG, "Vision analysis [skipped]: the vision assistance switch is not on")
+            throw VisionAnalysisException("Vision assistance is not enabled (please turn on the master switch in Settings - Vision assistance)")
         }
 
         val visionModelId = settings.visionModelIdFlow.first()
         val visionProviderId = settings.visionProviderIdFlow.first()
         if (visionModelId.isNullOrBlank() || visionProviderId.isNullOrBlank()) {
-            Logger.w(TAG, "视觉分析[跳过]: modelId=$visionModelId providerId=$visionProviderId")
-            throw VisionAnalysisException("视觉模型或供应商未配置(请在设置-视觉辅助中选择)")
+            Logger.w(TAG, "Vision analysis [skipped]: modelId=$visionModelId providerId=$visionProviderId")
+            throw VisionAnalysisException("Vision model or provider not configured (please select one in Settings - Vision assistance)")
         }
 
         val allProviders = settings.getAllProviders()
         val visionProvider: ProviderConfig = allProviders.firstOrNull { it.id == visionProviderId }
-            ?: throw VisionAnalysisException("视觉供应商 $visionProviderId 未找到(可能已被删除)").also {
-                Logger.w(TAG, "视觉分析[跳过]: providerId=$visionProviderId 不在 ${allProviders.size} 个供应商中")
+            ?: throw VisionAnalysisException("Vision provider $visionProviderId not found (it may have been deleted)").also {
+                Logger.w(TAG, "Vision analysis [skipped]: providerId=$visionProviderId is not among the ${allProviders.size} providers")
             }
 
         val rawVisionModel: Model = visionProvider.models.firstOrNull { it.id == visionModelId }
-            ?: throw VisionAnalysisException("视觉模型 $visionModelId 未找到(供应商 ${visionProvider.displayName} 共 ${visionProvider.models.size} 个模型)").also {
-                Logger.w(TAG, "视觉分析[跳过]: modelId=$visionModelId 不在供应商 ${visionProvider.displayName} 的模型列表中")
+            ?: throw VisionAnalysisException("Vision model $visionModelId not found (provider ${visionProvider.displayName} has ${visionProvider.models.size} models)").also {
+                Logger.w(TAG, "Vision analysis [skipped]: modelId=$visionModelId is not in provider ${visionProvider.displayName}'s model list")
             }
 
         val visionModel = ModelRegistry.enhanceModel(rawVisionModel)
         Logger.i(
             TAG,
-            "视觉分析[配置]: model=${visionModel.id} supportsVision=${visionModel.supportsVisionInput()} " +
+            "Vision analysis [config]: model=${visionModel.id} supportsVision=${visionModel.supportsVisionInput()} " +
                 "inputModalities=${visionModel.inputModalities}",
         )
 
@@ -469,28 +469,28 @@ class VisionBridge(
         return when (resolveOutputFormat(caps?.outputFormat)) {
             "gemini" -> """
                 [
-                  {"type": "box", "box_2d": [ymin, xmin, ymax, xmax], "ref": "物体简短描述", "confidence": 0.9}
+                  {"type": "box", "box_2d": [ymin, xmin, ymax, xmax], "ref": "brief object description", "confidence": 0.9}
                 ]
-                box_2d 使用 [ymin, xmin, ymax, xmax] 顺序,归一化到 0-1000
+                box_2d uses the [ymin, xmin, ymax, xmax] order, normalized to 0-1000
             """.trimIndent()
             "qwen" -> """
                 [
-                  {"type": "box", "bbox_2d": [x1, y1, x2, y2], "ref": "物体简短描述", "confidence": 0.9},
-                  {"type": "point", "point_2d": [x, y], "ref": "点位置描述"}
+                  {"type": "box", "bbox_2d": [x1, y1, x2, y2], "ref": "brief object description", "confidence": 0.9},
+                  {"type": "point", "point_2d": [x, y], "ref": "point location description"}
                 ]
-                bbox_2d 和 point_2d 使用 [x, y] 顺序,归一化到 0-1000
+                bbox_2d and point_2d use the [x, y] order, normalized to 0-1000
             """.trimIndent()
             "anchor" -> """
                 [
-                  {"role": "button|text|object|region", "center": [x, y], "box": [x1, y1, x2, y2], "ref": "元素描述"}
+                  {"role": "button|text|object|region", "center": [x, y], "box": [x1, y1, x2, y2], "ref": "element description"}
                 ]
-                visual_anchors 的坐标归一化到 0-1000,box 使用 [x1, y1, x2, y2] 顺序
+                visual_anchors coordinates are normalized to 0-1000; box uses the [x1, y1, x2, y2] order
             """.trimIndent()
             else -> """
                 [
-                  {"type": "box", "box": [x1, y1, x2, y2], "ref": "物体简短描述", "confidence": 0.9}
+                  {"type": "box", "box": [x1, y1, x2, y2], "ref": "brief object description", "confidence": 0.9}
                 ]
-                box 使用 [x1, y1, x2, y2] 顺序(左上角原点),归一化到 0-1000
+                box uses the [x1, y1, x2, y2] order (origin at the top-left corner), normalized to 0-1000
             """.trimIndent()
         }
     }
@@ -504,7 +504,7 @@ class VisionBridge(
     private fun parseGroundingResponse(rawResponse: String, caps: VisionCapabilities?): String {
         // 尝试提取 JSON(模型可能返回 markdown 代码块包裹的 JSON)
         val jsonText = extractJson(rawResponse) ?: run {
-            Logger.w(TAG, "grounding 响应非 JSON,走兜底 note 路径")
+            Logger.w(TAG, "Grounding response is not JSON, taking the fallback note path")
             return formatInvalidStructuredNote(rawResponse)
         }
 
@@ -539,7 +539,7 @@ class VisionBridge(
 
             truncateNote(builder.toString())
         } catch (e: Exception) {
-            Logger.w(TAG, "解析 grounding JSON 失败,走兜底: ${e.message}")
+            Logger.w(TAG, "Parsing grounding JSON failed, taking the fallback: ${e.message}")
             formatInvalidStructuredNote(rawResponse)
         }
     }
@@ -554,7 +554,7 @@ class VisionBridge(
 
     /** v1.0.4: 从 JsonObject 中安全提取字符串字段(数组转为逗号分隔)。 */
     private fun jsonField(obj: kotlinx.serialization.json.JsonObject, key: String): String {
-        val element = obj[key] ?: return "无"
+        val element = obj[key] ?: return "none"
         return when (element) {
             is kotlinx.serialization.json.JsonPrimitive -> element.content
             is kotlinx.serialization.json.JsonArray -> element.mapNotNull {
@@ -658,13 +658,13 @@ class VisionBridge(
         val truncated = if (rawResponse.length > 1200) rawResponse.take(1200) + "[truncated]" else rawResponse
         return buildString {
             append("image_overview: ").append(truncated).append('\n')
-            append("visible_text: 视觉模型未返回结构化 JSON,以上为原始响应\n")
-            append("objects_and_layout: 无\n")
-            append("charts_or_data: 无\n")
-            append("user_request: 无\n")
-            append("user_request_answer: 无\n")
-            append("evidence: 无\n")
-            append("uncertainty: 视觉模型未返回结构化 JSON")
+            append("visible_text: The vision model did not return structured JSON; the above is the raw response\n")
+            append("objects_and_layout: none\n")
+            append("charts_or_data: none\n")
+            append("user_request: none\n")
+            append("user_request_answer: none\n")
+            append("evidence: none\n")
+            append("uncertainty: The vision model did not return structured JSON")
         }
     }
 
@@ -692,7 +692,7 @@ class VisionBridge(
                 effectiveVisionResponseText(completion.text, completion.reasoningContent),
             )
         } catch (e: UnsupportedOperationException) {
-            Logger.w(TAG, "completeText 不支持,降级 streamChat: ${e.message}")
+            Logger.w(TAG, "completeText not supported, degrading to streamChat: ${e.message}")
             collectStreamText(messages, visionModel, visionProvider)
         }
     }
@@ -739,25 +739,25 @@ class VisionBridge(
         val providerError = (e as? ProviderException)?.providerError
             ?: inferFromMessage(message, e)
         return when (providerError) {
-            is ProviderError.AuthError -> "视觉模型 API Key 无效或权限不足(401/403),请检查供应商配置"
+            is ProviderError.AuthError -> "The vision model's API key is invalid or has insufficient permission (401/403); please check the provider configuration"
             // v2.6.8: 余额不足单独提示 —— 旧路径会落到“参数错误”，把用户带去调参数
-            is ProviderError.InsufficientQuota -> "视觉模型账户额度不足(402)，请到供应商后台充值后再试"
-            is ProviderError.RateLimit -> "视觉模型限流(429),请稍后重试或切换视觉模型"
-            is ProviderError.ServerError -> "视觉模型服务端临时不可用(${providerError.httpCode}),请稍后重试"
-            is ProviderError.Network -> "视觉模型网络连接失败,请检查网络或供应商地址"
+            is ProviderError.InsufficientQuota -> "The vision model account has insufficient quota (402); please top up in the provider console and retry"
+            is ProviderError.RateLimit -> "Vision model rate limited (429); please retry later or switch the vision model"
+            is ProviderError.ServerError -> "The vision model server is temporarily unavailable (${providerError.httpCode}); please retry later"
+            is ProviderError.Network -> "Vision model network connection failed; please check the network or provider address"
             is ProviderError.InvalidRequest -> {
                 if (providerError.httpCode == 413 || message.contains("413", ignoreCase = true) ||
                     message.contains("too large", ignoreCase = true) ||
                     message.contains("payload too large", ignoreCase = true)
                 ) {
-                    "图片过大(413),请压缩后重试或更换支持大图的视觉模型"
+                    "Image too large (413); please compress it and retry, or switch to a vision model that supports large images"
                 } else {
-                    "视觉模型请求参数错误: ${providerError.displayMessage}"
+                    "Vision model request parameter error: ${providerError.displayMessage}"
                 }
             }
-            is ProviderError.Cancelled -> "视觉分析已取消"
-            is ProviderError.Unknown -> "视觉分析失败: ${providerError.displayMessage}"
-            null -> "视觉分析失败: $message"
+            is ProviderError.Cancelled -> "Vision analysis cancelled"
+            is ProviderError.Unknown -> "Vision analysis failed: ${providerError.displayMessage}"
+            null -> "Vision analysis failed: $message"
         }
     }
 
@@ -828,7 +828,7 @@ class VisionBridge(
                             }
 
                             if (cached != null) {
-                                Logger.d(TAG, "第 ${index + 1}/${preparedImages.size} 张图片命中视觉缓存")
+                                Logger.d(TAG, "Image ${index + 1}/${preparedImages.size} hit the vision cache")
                                 val done = successCount.incrementAndGet()
                                 reportProgress(done)
                                 "<vision-context>\n$cached\n</vision-context>"
@@ -848,7 +848,7 @@ class VisionBridge(
                             }
                         } catch (e: VisionAnalysisException) {
                             lastError.set(e)
-                            Logger.w(TAG, "第 ${index + 1}/${preparedImages.size} 张图片分析失败: ${e.message}")
+                            Logger.w(TAG, "Image ${index + 1}/${preparedImages.size} analysis failed: ${e.message}")
                             null
                         }
                     }
@@ -885,7 +885,7 @@ class VisionBridge(
         val detail = if (reason.isNullOrBlank()) "" else "($reason)"
         return """
             <vision-context>
-            [图片分析失败:辅助视觉模型暂时不可用,本轮不会把图片内容传给文本模型。请明确说明你没有看到图片,并请用户稍后重试或检查视觉模型配置$detail。]
+            [Image analysis failed: the auxiliary vision model is temporarily unavailable, so the image content will not be passed to the text model this turn. Please state clearly that you did not see the image, and ask the user to retry later or check the vision model configuration$detail.]
             </vision-context>
         """.trimIndent()
     }

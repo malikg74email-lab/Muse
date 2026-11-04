@@ -32,8 +32,8 @@ class UiAgentToolTest {
 
         val description = registry.listTools().first { it.name == "ui_agent" }.description
 
-        assertTrue(description.contains("截图可能包含聊天或账号等敏感信息"))
-        assertTrue(description.contains("发送到所选视觉模型分析"))
+        assertTrue(description.contains("screenshots may contain sensitive information such as chats or accounts"))
+        assertTrue(description.contains("sends it to the selected vision model for analysis"))
     }
 
     @Test
@@ -51,7 +51,7 @@ class UiAgentToolTest {
         )
 
         assertTrue(outcome.isError)
-        assertTrue(outcome.content.contains("任务未完成"))
+        assertTrue(outcome.content.contains("Task not completed:"))
         assertEquals(false, outcome.details["finished"])
         assertTrue(orchestratorText.startsWith("Error:"))
         assertFalse(ToolResultJudge.isSuccess(orchestratorText))
@@ -73,7 +73,7 @@ class UiAgentToolTest {
         )
 
         assertFalse(outcome.isError)
-        assertTrue(outcome.content.contains("任务结束"))
+        assertTrue(outcome.content.contains("Task finished:"))
         assertEquals(true, outcome.details["finished"])
         assertTrue(ToolResultJudge.isSuccess(orchestratorText))
     }

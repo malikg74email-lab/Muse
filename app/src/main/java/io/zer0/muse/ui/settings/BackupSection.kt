@@ -490,7 +490,7 @@ internal fun BackupSection(
                             MuseToast.show(context.getString(R.string.settings_backup_restore_auto_done, s, m))
                         }
                         .onFailure { e ->
-                            Logger.w("BackupSection", "自动备份恢复失败: ${e.message}", e)
+                            Logger.w("BackupSection", "Auto backup restore failed: ${e.message}", e)
                             MuseToast.show(context.getString(R.string.settings_backup_restore_auto_failed))
                         }
                         .isSuccess
@@ -629,15 +629,15 @@ private fun formatBackupSize(bytes: Long): String = when {
  * 直接展示等于什么都没说。这里按常见成因给出可操作提示。
  */
 private fun friendlyImportError(raw: String?): String {
-    if (raw.isNullOrBlank()) return "备份文件无法读取，请确认文件完整"
+    if (raw.isNullOrBlank()) return "The backup file cannot be read; please verify the file is intact"
     val lower = raw.lowercase()
     val rules = listOf(
-        listOf("入库数不一致", "verify", "check") to "备份文件与当前版本不匹配，已回滚到导入前的状态",
-        listOf("password", "密码", "decrypt") to "解压失败，请检查备份密码是否正确",
-        listOf("version", "版本") to "备份版本过新或过旧，当前应用无法读取",
-        listOf("no such file", "not found", "找不到") to "找不到备份文件，可能已被移动或删除",
-        listOf("space", "磁盘", "空间") to "存储空间不足，请清理后重试",
+        listOf("入库数不一致", "verify", "check") to "The backup file does not match the current version; rolled back to the pre-import state",
+        listOf("password", "密码", "decrypt") to "Extraction failed; please check that the backup password is correct",
+        listOf("version", "版本") to "The backup version is too new or too old for the current app to read",
+        listOf("no such file", "not found", "找不到") to "Backup file not found; it may have been moved or deleted",
+        listOf("space", "磁盘", "空间") to "Not enough storage space; please free some space and try again",
     )
     val hit = rules.firstOrNull { (keys, _) -> keys.any { it in lower || it in raw } }
-    return hit?.second ?: "备份文件异常，已回滚到导入前的状态"
+    return hit?.second ?: "The backup file is abnormal; rolled back to the pre-import state"
 }

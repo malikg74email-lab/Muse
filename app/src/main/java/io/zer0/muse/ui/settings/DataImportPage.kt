@@ -92,7 +92,7 @@ fun SettingsDataImportPage(onBack: () -> Unit) {
                         sessionRepo = sessionRepo,
                     )
                 }.onError { message, throwable ->
-                    Logger.w("DataImportPage", "第三方备份导入异常: ${throwable?.message ?: message}", throwable)
+                    Logger.w("DataImportPage", "Third-party backup import error: ${throwable?.message ?: message}", throwable)
                 }.getOrNull()
                 importResult = outcome ?: ImportResult(
                     errors = listOf(context.getString(R.string.import_error_parse_failed)),
@@ -111,7 +111,7 @@ fun SettingsDataImportPage(onBack: () -> Unit) {
                 isImporting = true
                 val outcome = resultOf { configImporter.importFromUri(context, uri) }
                     .onError { message, throwable ->
-                        Logger.w("DataImportPage", "配置导入异常: ${throwable?.message ?: message}", throwable)
+                        Logger.w("DataImportPage", "Config import error: ${throwable?.message ?: message}", throwable)
                     }.getOrNull()
                 jsonImportResult = outcome
                 isImporting = false

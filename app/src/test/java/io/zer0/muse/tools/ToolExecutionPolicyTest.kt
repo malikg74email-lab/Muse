@@ -106,7 +106,7 @@ class ToolExecutionPolicyTest {
         val (clamped, truncated) = policy.clampOutput(big)
         assertTrue(truncated)
         assertTrue(clamped.startsWith("x".repeat(100)))
-        assertTrue(clamped.contains("输出已截断"))
+        assertTrue(clamped.contains("Output truncated"))
 
         // 未超限原样返回
         val (same, wasTruncated) = policy.clampOutput("small")

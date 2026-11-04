@@ -85,7 +85,7 @@ object VisionImagePreprocessor {
         val bytes = runCatching {
             Base64.decode(imageBase64, Base64.NO_WRAP)
         }.getOrElse {
-            Logger.w(TAG, "base64 解码失败: ${it.message}")
+            Logger.w(TAG, "base64 decoding failed: ${it.message}")
             return@withContext null
         }
 
@@ -149,13 +149,13 @@ object VisionImagePreprocessor {
 
         for (img in images) {
             val prepared = prepareSingle(img, count) ?: run {
-                Logger.w(TAG, "第 ${results.size + 1} 张图片预处理失败,丢弃")
+                Logger.w(TAG, "Image ${results.size + 1} preprocessing failed, discarded")
                 continue
             }
             totalBytes += prepared.base64.length
             if (totalBytes > POLICY.totalBase64BudgetBytes) {
                 throw VisionImagePreprocessException(
-                    "压缩后图片总大小(${totalBytes / 1024}KB)超过预算(${POLICY.totalBase64BudgetBytes / 1024}KB)",
+                    "Total size of compressed images (${totalBytes / 1024}KB) exceeds the budget (${POLICY.totalBase64BudgetBytes / 1024}KB)",
                 )
             }
             results.add(prepared)

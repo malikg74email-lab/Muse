@@ -136,9 +136,9 @@ fun PermissionWizardScreen(onBack: () -> Unit) {
         } catch (e: CancellationException) {
             throw e
         } catch (e: SecurityException) {
-            Logger.w("PermissionWizard", "刷新权限状态被系统拒绝: ${e.message}", e)
+            Logger.w("PermissionWizard", "Refreshing permission state was rejected by the system: ${e.message}", e)
         } catch (e: IllegalStateException) {
-            Logger.w("PermissionWizard", "刷新权限状态失败: ${e.message}", e)
+            Logger.w("PermissionWizard", "Failed to refresh permission state: ${e.message}", e)
         }
     }
 

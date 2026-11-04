@@ -103,16 +103,16 @@ a{color:var(--ink)}
 <div class="wrap">
 
   <!-- F-43: 旧内嵌页仅在 React assets 缺失时兜底展示,醒目提示用户升级 Muse App -->
-  <div class="legacy-notice">网页控制台已升级，请升级 Muse App 到最新版本以使用新版界面。当前为旧版兼容页。</div>
+  <div class="legacy-notice">The web console has been upgraded. Please update the Muse App to the latest version to use the new interface. This is the legacy compatibility page.</div>
 
   <!-- 登录页 -->
   <div id="view-login" class="login">
     <div class="brand">Muse</div>
-    <div class="sub">输入手机端设置页生成的 6 位 PIN</div>
+    <div class="sub">Enter the 6-digit PIN generated on the phone settings page</div>
     <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="······" autocomplete="off">
-    <button id="login-btn" class="btn">连接</button>
+    <button id="login-btn" class="btn">Connect</button>
     <div id="login-err" class="err"></div>
-    <div class="tip">仅限本机与已授权的局域网设备访问</div>
+    <div class="tip">Access is limited to this device and authorized LAN devices</div>
   </div>
 
   <!-- 主界面 -->
@@ -120,16 +120,16 @@ a{color:var(--ink)}
     <div class="top">
       <span class="logo">Muse</span>
       <span class="sp"></span>
-      <button id="btn-new">新对话</button>
-      <button id="btn-refresh">刷新</button>
-      <button id="btn-settings">设置</button>
-      <button id="btn-logout">退出</button>
+      <button id="btn-new">New chat</button>
+      <button id="btn-refresh">Refresh</button>
+      <button id="btn-settings">Settings</button>
+      <button id="btn-logout">Log out</button>
     </div>
     <div id="page-sessions"></div>
     <div id="page-messages" class="hide"></div>
     <div id="composer" class="hide">
-      <textarea id="message-input" rows="2" placeholder="写点什么…"></textarea>
-      <button id="send-btn">发送</button>
+      <textarea id="message-input" rows="2" placeholder="Write something…"></textarea>
+      <button id="send-btn">Send</button>
     </div>
     <div id="page-settings" class="hide"></div>
   </div>
@@ -179,33 +179,33 @@ function api(path){
 var hostSocket=null;
 var hostState={sessions:[],sessionId:null,messages:[],isStreaming:false};
 function hostSend(command){
-  if(!hostSocket||hostSocket.readyState!==WebSocket.OPEN){throw new Error("Host 尚未连接")}
+  if(!hostSocket||hostSocket.readyState!==WebSocket.OPEN){throw new Error("Host is not connected yet")}
   hostSocket.send(JSON.stringify(command));
 }
 function renderHostMessages(){
-  var h="<button class='back' onclick='window.__backList()'>← 返回</button>";
-  if(!hostState.messages.length) h+='<div class="empty">暂无消息</div>';
+  var h="<button class='back' onclick='window.__backList()'>← Back</button>";
+  if(!hostState.messages.length) h+='<div class="empty">No messages yet</div>';
   hostState.messages.forEach(function(m){
     var isUser=m.role==="USER"||m.role==="user";
     h+="<div class='msg "+(isUser?"user":"ai")+"'>"+
-      "<div class='av'>"+(isUser?"我":m.role==="tool"?"T":"M")+"</div><div class='body'>";
+      "<div class='av'>"+(isUser?"Me":m.role==="tool"?"T":"M")+"</div><div class='body'>";
     if(m.reasoning) h+="<div class='rs'>"+esc(m.reasoning)+"</div>";
     h+="<div class='b'>"+inlineMd(m.content||"")+"</div>";
     h+="<div class='meta'>"+(m.modelId?esc(m.modelId)+" · ":"")+fmtTime(m.createdAt)+"</div></div></div>";
   });
   $("page-messages").innerHTML=h;
   $("composer").classList.remove("hide");
-  $("send-btn").textContent=hostState.isStreaming?"停止":"发送";
+  $("send-btn").textContent=hostState.isStreaming?"Stop":"Send";
   $("send-btn").classList.toggle("stop",hostState.isStreaming);
   $("send-btn").disabled=!hostState.isStreaming&&!$("message-input").value.trim();
 }
 function renderHostSessions(){
   var list=hostState.sessions;
-  if(!list.length){$("page-sessions").innerHTML='<div class="empty">暂无会话</div>';return}
+  if(!list.length){$("page-sessions").innerHTML='<div class="empty">No conversations yet</div>';return}
   var h="<div class='list'>";
   list.forEach(function(s){
     h+="<button class='item' onclick='window.__hostOpenSession(\""+esc(s.id)+"\")'>"+
-      "<div class='t'>"+esc(s.title||"未命名")+(s.pinned?"<span class='pin'>置顶</span>":"")+"</div>"+
+      "<div class='t'>"+esc(s.title||"Untitled")+(s.pinned?"<span class='pin'>Pinned</span>":"")+"</div>"+
       "<div class='m'>"+fmtTime(s.updatedAt)+"</div></button>";
   });
   h+="</div>";
@@ -234,15 +234,15 @@ window.__backList=function(){show("sessions");renderHostSessions()};
 /* ── 登录 ── */
 function doLogin(){
   var pin=$("pin").value.trim();
-  if(pin.length!==6){$("login-err").textContent="请输入 6 位 PIN";return}
+  if(pin.length!==6){$("login-err").textContent="Enter the 6-digit PIN";return}
   $("login-btn").disabled=true;$("login-err").textContent="";
   fetch("/api/auth/pin-login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin:pin})})
     .then(function(r){
-      if(!r.ok){return r.json().then(function(j){throw new Error(j.message||"PIN 错误")})}
+      if(!r.ok){return r.json().then(function(j){throw new Error(j.message||"Incorrect PIN")})}
       return r.json();
     })
     .then(function(){ $("pin").value=""; loadHost(); })
-    .catch(function(e){ $("login-err").textContent=e.message||"连接失败"; })
+    .catch(function(e){ $("login-err").textContent=e.message||"Connection failed"; })
     .finally(function(){ $("login-btn").disabled=false; });
 }
 $("login-btn").onclick=doLogin;
@@ -251,54 +251,54 @@ $("pin").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin()});
 /* ── 会话列表 ── */
 function loadSessions(){
   show("sessions");
-  $("page-sessions").innerHTML='<div class="loading">加载中…</div>';
+  $("page-sessions").innerHTML='<div class="loading">Loading…</div>';
   api("/api/sessions").then(function(list){
-    if(!list||!list.length){$("page-sessions").innerHTML='<div class="empty">暂无会话</div>';return}
+    if(!list||!list.length){$("page-sessions").innerHTML='<div class="empty">No conversations yet</div>';return}
     var h="<div class='list'>";
     list.forEach(function(s){
       h+="<div class='item' onclick='window.__openSession(\""+s.id+"\")'>"
-        +"<div class='t'>"+esc(s.title||"未命名")+(s.pinned?"<span class='pin'>置顶</span>":"")+"</div>"
+        +"<div class='t'>"+esc(s.title||"Untitled")+(s.pinned?"<span class='pin'>Pinned</span>":"")+"</div>"
         +"<div class='p'>"+esc(s.lastMessagePreview||"")+"</div>"
         +"<div class='m'>"+fmtTime(s.updatedAt||s.createdAt)+"</div></div>";
     });
     h+="</div>";
     $("page-sessions").innerHTML=h;
-  }).catch(function(e){$("page-sessions").innerHTML='<div class="empty">加载失败：'+esc(e.message)+'</div>'});
+  }).catch(function(e){$("page-sessions").innerHTML='<div class="empty">Failed to load: '+esc(e.message)+'</div>'});
 }
 window.__openSession=function(id){
   state.session=id;
   show("messages");
-  $("page-messages").innerHTML='<button class="back" onclick="window.__backList()">← 返回</button><div class="loading">加载中…</div>';
+  $("page-messages").innerHTML='<button class="back" onclick="window.__backList()">← Back</button><div class="loading">Loading…</div>';
   api("/api/sessions/"+encodeURIComponent(id)+"/messages").then(function(msgs){
-    if(!msgs||!msgs.length){$("page-messages").innerHTML='<button class="back" onclick="window.__backList()">← 返回</button><div class="empty">暂无消息</div>';return}
-    var h="<button class='back' onclick='window.__backList()'>← 返回</button>";
+    if(!msgs||!msgs.length){$("page-messages").innerHTML='<button class="back" onclick="window.__backList()">← Back</button><div class="empty">No messages yet</div>';return}
+    var h="<button class='back' onclick='window.__backList()'>← Back</button>";
     msgs.forEach(function(m){
       var isUser=m.role==="USER"||m.role==="user";
       h+="<div class='msg "+(isUser?"user":"ai")+"'>"
-        +"<div class='av'>"+(isUser?"我":"M")+"</div><div class='body'>";
+        +"<div class='av'>"+(isUser?"Me":"M")+"</div><div class='body'>";
       if(m.reasoning)h+="<div class='rs'>"+esc(m.reasoning)+"</div>";
       h+="<div class='b'>"+inlineMd(m.content||"")+"</div>";
       h+="<div class='meta'>"+(m.modelId?esc(m.modelId)+" · ":"")+fmtTime(m.createdAt)+"</div></div></div>";
     });
     $("page-messages").innerHTML=h;
-  }).catch(function(e){$("page-messages").innerHTML='<button class="back" onclick="window.__backList()">← 返回</button><div class="empty">加载失败：'+esc(e.message)+'</div>'});
+  }).catch(function(e){$("page-messages").innerHTML='<button class="back" onclick="window.__backList()">← Back</button><div class="empty">Failed to load: '+esc(e.message)+'</div>'});
 };
 window.__backList=function(){show("sessions");renderHostSessions()};
 
 /* ── 设置 ── */
 function loadSettings(){
   show("settings");
-  $("page-settings").innerHTML='<div class="loading">加载中…</div>';
+  $("page-settings").innerHTML='<div class="loading">Loading…</div>';
   api("/api/settings").then(function(s){
-    var h="<h2>当前模型</h2>"
-      +"<div class='row'><div><div class='n'>"+esc(s.selectedModelId||"未选择")+"</div><div class='d'>Provider: "+esc(s.activeProviderId||"无")+"</div></div></div>"
-      +"<h2>模型供应商</h2>";
-    if(!s.providers||!s.providers.length)h+='<div class="empty">暂无供应商</div>';
+    var h="<h2>Current model</h2>"
+      +"<div class='row'><div><div class='n'>"+esc(s.selectedModelId||"Not selected")+"</div><div class='d'>Provider: "+esc(s.activeProviderId||"None")+"</div></div></div>"
+      +"<h2>Model providers</h2>";
+    if(!s.providers||!s.providers.length)h+='<div class="empty">No providers yet</div>';
     s.providers.forEach(function(p){
-      h+="<div class='row'><div><div class='n'>"+esc(p.name)+"</div><div class='d'>"+esc(p.type)+" · "+p.modelCount+" 个模型</div></div><span class='badge "+(p.enabled?"on":"")+"'>"+(p.enabled?"启用":"停用")+"</span></div>";
+      h+="<div class='row'><div><div class='n'>"+esc(p.name)+"</div><div class='d'>"+esc(p.type)+" · "+p.modelCount+" models</div></div><span class='badge "+(p.enabled?"on":"")+"'>"+(p.enabled?"Enabled":"Disabled")+"</span></div>";
     });
     $("page-settings").innerHTML=h;
-  }).catch(function(e){$("page-settings").innerHTML='<div class="empty">加载失败：'+esc(e.message)+'</div>'});
+  }).catch(function(e){$("page-settings").innerHTML='<div class="empty">Failed to load: '+esc(e.message)+'</div>'});
 }
 
 /* ── 顶栏按钮 ── */

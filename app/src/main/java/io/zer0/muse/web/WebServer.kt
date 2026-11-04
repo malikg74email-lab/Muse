@@ -216,7 +216,7 @@ class WebServer(
             throw t
         } catch (t: Exception) {
             // 启动边界必须把端口占用、配置解码和引擎初始化错误统一落到可见状态，不能让 fire-and-forget 协程静默失败。
-            recordStartFailure(t.message ?: "配置或引擎初始化失败", t)
+            recordStartFailure(t.message ?: "Configuration or engine initialization failed", t)
             false
         }
     }
@@ -247,14 +247,14 @@ class WebServer(
         }
         stop()
         check(start()) {
-            "WebServer 启动失败: ${lastError.value ?: "未知错误"}"
+            "WebServer failed to start: ${lastError.value ?: "Unknown error"}"
         }
         return@withLock true
     }
 
     private suspend fun startLocked(): Boolean {
         if (server != null) {
-            Logger.w(TAG, "WebServer 已在运行中,跳过重复启动")
+            Logger.w(TAG, "WebServer is already running; skipping duplicate start")
             return true
         }
         _lastError.value = null
@@ -288,7 +288,7 @@ class WebServer(
             // v2.x: HTTPS — 启用时准备自签证书(首次生成,之后复用 filesDir 中的 keystore)
             val tls = if (config.httpsEnabled) {
                 WebServerTls.loadOrCreate(context).also { material ->
-                    Logger.i(TAG, "WebServer HTTPS 已启用,自签证书 SHA-256 指纹: ${material.fingerprint}")
+                    Logger.i(TAG, "WebServer HTTPS enabled; self-signed certificate SHA-256 fingerprint: ${material.fingerprint}")
                 }
             } else {
                 null
@@ -321,7 +321,7 @@ class WebServer(
             mdnsService.register(port)
             notificationManager.updateWebServerStatus(port, true)
             // H4: 不再明文输出密码/PIN,避免日志泄露敏感凭据
-            Logger.i(TAG, "WebServer 已启动: $bindHost:$port (${if (config.httpsEnabled) "HTTPS" else "HTTP"})")
+            Logger.i(TAG, "WebServer started: $bindHost:$port (${if (config.httpsEnabled) "HTTPS" else "HTTP"})")
             true
         }.onError { msg, t ->
             recordStartFailure(t?.message?.takeIf { it.isNotBlank() } ?: msg, t)
@@ -330,7 +330,7 @@ class WebServer(
 
     private fun recordStartFailure(detail: String, throwable: Throwable?) {
         _lastError.value = detail
-        Logger.e(TAG, "WebServer 启动失败: $detail", throwable)
+        Logger.e(TAG, "WebServer failed to start: $detail", throwable)
         server = null
         _isRunning.value = false
         currentPort = 0
@@ -358,7 +358,7 @@ class WebServer(
             _isRunning.value = false
             mdnsService.unregister()
             notificationManager.updateWebServerStatus(currentPort, false)
-            Logger.i(TAG, "WebServer 已停止")
+            Logger.i(TAG, "WebServer stopped")
         }
         currentPort = 0
         currentPassword = ""
@@ -451,7 +451,7 @@ class WebServer(
         install(StatusPages) {
             exception<Throwable> { call, cause ->
                 if (cause is kotlin.coroutines.cancellation.CancellationException) throw cause
-                Logger.e(TAG, "WebServer 未捕获异常: ${cause.message}")
+                Logger.e(TAG, "Uncaught WebServer exception: ${cause.message}")
                 call.respond(
                     HttpStatusCode.InternalServerError,
                     ErrorResponse("internal_error", cause.message ?: context.getString(R.string.webserver_unknown_error)),
@@ -587,8 +587,8 @@ class WebServer(
                     // 下次「网页端连不上」时能直接从日志分辨是鉴权失败还是网络不通。
                     Logger.i(
                         TAG,
-                        "/ws 已建立: remote=${call.request.origin.remoteHost} " +
-                            "cookie=${if (call.request.cookies[TOKEN_COOKIE_NAME] != null) "有" else "无"}",
+                        "/ws established: remote=${call.request.origin.remoteHost} " +
+                            "cookie=${if (call.request.cookies[TOKEN_COOKIE_NAME] != null) "yes" else "no"}",
                     )
                     hostWebSocketGateway.serve(this)
                 }
@@ -757,7 +757,7 @@ class WebServer(
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w("WebServer", "A2A 处理失败: ${e.message}", e)
+            Logger.w("WebServer", "A2A processing failed: ${e.message}", e)
             a2aError(idJson, io.zer0.muse.web.a2a.A2aErrors.INTERNAL_ERROR, e.message ?: "internal error")
         }
     }

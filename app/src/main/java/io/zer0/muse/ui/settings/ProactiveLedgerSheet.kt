@@ -246,9 +246,9 @@ private fun ThoughtRow(thought: PendingThoughtEntity, now: Long) {
 private fun describeAge(thought: PendingThoughtEntity, now: Long): String {
     val hours = (now - thought.createdAt).coerceAtLeast(0L) / 3_600_000L
     return when {
-        hours < 1 -> "刚刚"
-        hours < 24 -> "${hours} 小时前"
-        else -> "${hours / 24} 天前"
+        hours < 1 -> "Just now"
+        hours < 24 -> "${hours} hours ago"
+        else -> "${hours / 24} days ago"
     }
 }
 

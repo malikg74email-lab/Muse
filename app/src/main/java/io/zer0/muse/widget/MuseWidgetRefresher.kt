@@ -24,15 +24,15 @@ object MuseWidgetRefresher {
     suspend fun refreshAll(context: Context) {
         // updateAll 是 GlanceAppWidget 的扩展，内部会遍历该 widget 的所有实例。
         runCatching { MuseChatWidget().updateAll(context) }
-            .onFailure { Logger.w(TAG, "刷新对话小组件失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Failed to refresh chat widget: ${it.message}") }
         runCatching { MuseQuickWidget().updateAll(context) }
-            .onFailure { Logger.w(TAG, "刷新快捷小组件失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Failed to refresh quick widget: ${it.message}") }
     }
 
     /** 仅刷新对话小组件（消息变化时用）。 */
     suspend fun refreshChatWidget(context: Context) {
         runCatching { MuseChatWidget().updateAll(context) }
-            .onFailure { Logger.w(TAG, "刷新对话小组件失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Failed to refresh chat widget: ${it.message}") }
     }
 
     /** 供诊断：当前已添加的小组件实例数。 */

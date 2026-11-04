@@ -176,7 +176,7 @@ class PluginPackageLoaderTest {
 
         val result = PluginPackageLoader.loadFromZip(withoutTools)
 
-        assertTrue((result as PluginPackageLoader.Result.Err).reason.contains("未声明任何工具"))
+        assertTrue((result as PluginPackageLoader.Result.Err).reason.contains("declares no tools"))
     }
 
     @Test

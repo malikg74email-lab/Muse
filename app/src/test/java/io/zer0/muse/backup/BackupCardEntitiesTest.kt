@@ -228,7 +228,7 @@ class BackupCardEntitiesTest {
         assertTrue("必须抛错", error is IllegalStateException)
         assertTrue(
             "错误信息要指出是槽位重复,而不是 SQLite 的 UNIQUE constraint failed: ${error?.message}",
-            error?.message?.contains("停靠槽位重复") == true,
+            error?.message?.contains("Duplicate card dock slots") == true,
         )
         // 未停靠卡可以有多张，不算重复
         requireNoDuplicateDockSlots(listOf(card("a"), card("b")))

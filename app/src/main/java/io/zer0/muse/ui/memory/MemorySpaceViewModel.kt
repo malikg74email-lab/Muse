@@ -61,13 +61,13 @@ class MemorySpaceViewModel(
             val id = withContext(Dispatchers.IO) {
                 resultOf { spaceRepository.createSpace(name, icon, description) }
                     .onError { msg, t ->
-                        _operationMessage.value = "创建 Space 失败: $msg"
-                        Logger.w("MemorySpaceViewModel", "createSpace 失败: $msg", t)
+                        _operationMessage.value = "Failed to create Space: $msg"
+                        Logger.w("MemorySpaceViewModel", "createSpace failed: $msg", t)
                     }
                     .getOrNull()
             }
             if (id != null) {
-                _operationMessage.value = "已创建空间: $name"
+                _operationMessage.value = "Space created: $name"
             }
         }
     }
@@ -78,12 +78,12 @@ class MemorySpaceViewModel(
             val ok = withContext(Dispatchers.IO) {
                 resultOf { spaceRepository.renameSpace(id, newName) }
                     .onError { msg, t ->
-                        _operationMessage.value = "重命名失败: $msg"
-                        Logger.w("MemorySpaceViewModel", "renameSpace 失败: $msg", t)
+                        _operationMessage.value = "Rename failed: $msg"
+                        Logger.w("MemorySpaceViewModel", "renameSpace failed: $msg", t)
                     }
                     .getOrNull() ?: false
             }
-            if (ok) _operationMessage.value = "已重命名"
+            if (ok) _operationMessage.value = "Renamed"
         }
     }
 
@@ -92,7 +92,7 @@ class MemorySpaceViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 resultOf { spaceRepository.updateDescription(id, description) }
-                    .onError { msg, t -> Logger.w("MemorySpaceViewModel", "updateDescription 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MemorySpaceViewModel", "updateDescription failed: $msg", t) }
             }
         }
     }
@@ -102,7 +102,7 @@ class MemorySpaceViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 resultOf { spaceRepository.updateIcon(id, icon) }
-                    .onError { msg, t -> Logger.w("MemorySpaceViewModel", "updateIcon 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MemorySpaceViewModel", "updateIcon failed: $msg", t) }
             }
         }
     }
@@ -117,12 +117,12 @@ class MemorySpaceViewModel(
             val ok = withContext(Dispatchers.IO) {
                 resultOf { spaceRepository.deleteSpace(id) }
                     .onError { msg, t ->
-                        _operationMessage.value = "删除失败: $msg"
-                        Logger.w("MemorySpaceViewModel", "deleteSpace 失败: $msg", t)
+                        _operationMessage.value = "Delete failed: $msg"
+                        Logger.w("MemorySpaceViewModel", "deleteSpace failed: $msg", t)
                     }
                     .getOrNull() ?: false
             }
-            _operationMessage.value = if (ok) "已删除空间,事实已迁回默认空间" else "默认空间不可删除"
+            _operationMessage.value = if (ok) "Space deleted; facts moved back to the default space" else "The default space cannot be deleted"
         }
     }
 
@@ -131,7 +131,7 @@ class MemorySpaceViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 resultOf { spaceRepository.reorderSpaces(orderedIds) }
-                    .onError { msg, t -> Logger.w("MemorySpaceViewModel", "reorderSpaces 失败: $msg", t) }
+                    .onError { msg, t -> Logger.w("MemorySpaceViewModel", "reorderSpaces failed: $msg", t) }
             }
         }
     }

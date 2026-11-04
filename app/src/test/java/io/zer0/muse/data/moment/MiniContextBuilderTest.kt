@@ -148,7 +148,7 @@ class MiniContextBuilderTest {
 
         val systemText = result.filter { it.role == MessageRole.SYSTEM }.joinToString("\n") { it.content }
         assertTrue("私信必须下发语音约定\n实际内容:\n$systemText", systemText.contains(voiceMessageInstruction()))
-        assertTrue("标记写法要写清楚", systemText.contains("[语音]") && systemText.contains("[/语音]"))
+        assertTrue("标记写法要写清楚", systemText.contains("[Voice]") && systemText.contains("[/Voice]"))
         assertEquals("约定排在用户素材之前且素材仍是最后一条", MessageRole.USER, result.last().role)
     }
 
@@ -162,7 +162,7 @@ class MiniContextBuilderTest {
         val result = builder().buildMessages(assistant(lorebookIds = "[]"), "请发一条朋友圈动态")
 
         val systemText = result.filter { it.role == MessageRole.SYSTEM }.joinToString("\n") { it.content }
-        assertFalse("朋友圈没有语音出口，不应出现标记\n实际内容:\n$systemText", systemText.contains("[语音]"))
+        assertFalse("朋友圈没有语音出口，不应出现标记\n实际内容:\n$systemText", systemText.contains("[Voice]"))
         assertFalse(systemText.contains(voiceMessageInstruction()))
     }
 

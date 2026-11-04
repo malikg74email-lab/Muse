@@ -24,7 +24,7 @@ internal fun Route.installHostMediaRoutes(mediaStore: HostMediaStore) {
         val token = call.parameters["token"].orEmpty()
         val file = token.takeIf { it.isNotBlank() }?.let(mediaStore::resolve)
         if (file == null) {
-            if (token.isNotBlank()) Logger.d(TAG, "媒体不可用: token=$token")
+            if (token.isNotBlank()) Logger.d(TAG, "Media unavailable: token=$token")
             call.respond(HttpStatusCode.NotFound)
             return@get
         }

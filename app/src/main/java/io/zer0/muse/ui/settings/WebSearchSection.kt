@@ -257,14 +257,14 @@ internal fun WebSearchSection(webSearchConfig: WebSearchConfig, settings: Settin
             )
         } else {
             Column(Modifier.padding(MusePaddings.cardInner)) {
-                Text("查询：${response.normalizedQuery}", style = MaterialTheme.typography.bodySmall)
+                Text("Query: ${response.normalizedQuery}", style = MaterialTheme.typography.bodySmall)
                 Text(
-                    "状态：${response.status}   来源：${response.provider ?: "未知"}",
+                    "Status: ${response.status}   Source: ${response.provider ?: "Unknown"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    "结果：${response.results.size} 条",
+                    "Results: ${response.results.size}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

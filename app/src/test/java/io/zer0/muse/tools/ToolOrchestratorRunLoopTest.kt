@@ -291,7 +291,7 @@ class ToolOrchestratorRunLoopTest {
 
         assertTrue(result.success)
         val toolMessage = history.first { it.role == MessageRole.TOOL }
-        assertTrue(toolMessage.content.startsWith("[超时]"))
+        assertTrue(toolMessage.content.startsWith("[Timeout]"))
         assertTrue(toolMessage.content.contains("calculator"))
     }
 

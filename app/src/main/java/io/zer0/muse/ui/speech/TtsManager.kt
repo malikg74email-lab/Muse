@@ -177,7 +177,7 @@ class TtsManager(
                 lastFallbackReason = resolved.fallbackReason
                 Logger.w(
                     "TtsManager",
-                    "TTS 跟随供应商配置失败,回退手动配置: ${resolved.fallbackReason}" +
+                    "TTS failed to follow provider config, falling back to manual config: ${resolved.fallbackReason}" +
                         "(providerId=${mediaConfig.ttsProviderId}, modelId=${mediaConfig.ttsModelId})",
                 )
             }
@@ -236,8 +236,8 @@ class TtsManager(
 
     private val tts: TextToSpeech = TextToSpeech(appContext) { status ->
         if (status == TextToSpeech.SUCCESS) {
-            // 默认中文(系统 TTS 不支持时回退默认语言)
-            applyLanguage(Locale.CHINESE)
+            // 默认跟随全局语言配置(系统 TTS 不支持时回退默认语言)
+            applyLanguage(globalLanguage())
             ready.set(true)
             // v1.0.4 (P2): 同步暴露给 UI
             _isReady.value = true
@@ -409,11 +409,11 @@ class TtsManager(
      * @return 三种结果之一：首选引擎成功 / 回落系统音色成功 / 彻底失败（见 [TtsSynthResult]）
      */
     suspend fun synthesizeTo(text: String, outputFile: File, emotionOverride: String? = null): TtsSynthResult {
-        if (text.isBlank()) return TtsSynthResult.Failure("待合成文本为空")
+        if (text.isBlank()) return TtsSynthResult.Failure("Text to synthesize is empty")
         outputFile.parentFile?.let { parent ->
             if (!parent.exists() && !parent.mkdirs()) {
-                Logger.w("TtsManager", "synthesizeTo: 目标目录创建失败 ${parent.absolutePath}")
-                return TtsSynthResult.Failure("目标目录创建失败")
+                Logger.w("TtsManager", "synthesizeTo: failed to create target directory ${parent.absolutePath}")
+                return TtsSynthResult.Failure("Failed to create target directory")
             }
         }
         return synthesizeToFile(text, outputFile, emotionOverride)
@@ -446,7 +446,7 @@ class TtsManager(
             )
             // v1.104: 云端 TTS 失败时回退到系统 TTS,避免网络断/额度用尽时朗读静默失败
             val reason = cloudFailureReason(resolved)
-            if (!cloudOk) Logger.w("TtsManager", "云端 TTS 未生效: $reason")
+            if (!cloudOk) Logger.w("TtsManager", "Cloud TTS not in effect: $reason")
             return resolveCloudSynthOutcome(
                 cloudOk = cloudOk,
                 failureReason = reason,
@@ -457,7 +457,7 @@ class TtsManager(
         return if (synthesizeWithSystemTts(text, file)) {
             TtsSynthResult.Success
         } else {
-            TtsSynthResult.Failure("系统 TTS 合成失败")
+            TtsSynthResult.Failure("System TTS synthesis failed")
         }
     }
 
@@ -469,7 +469,7 @@ class TtsManager(
      */
     private fun cloudFailureReason(resolved: ResolvedSpeechEndpoint): String =
         resolved.fallbackReason
-            ?: if (resolved.apiKey.isBlank()) "API Key 为空" else "云端 TTS 合成失败"
+            ?: if (resolved.apiKey.isBlank()) "API Key is empty" else "Cloud TTS synthesis failed"
 
     /**
      * v1.104: 系统 TTS 合成(从 synthesizeToFile 抽出,供云端失败回退复用)。
@@ -544,7 +544,7 @@ class TtsManager(
             pendingTail.clear()
         } else if (playbackJob?.isActive == true) {
             pendingTail.addLast(chunks to utteranceId)
-            Logger.d("TtsManager", "speak(flush=false): 排队追加 ${chunks.size} 片,队列深度=${pendingTail.size}")
+            Logger.d("TtsManager", "speak(flush=false): queued ${chunks.size} chunks, queue depth=${pendingTail.size}")
             return true
         }
         currentUtteranceId = utteranceId
@@ -927,7 +927,7 @@ class TtsManager(
                         synthesizeToFile(sentence, file)
                     } catch (e: Exception) {
                         Logger.w("TtsManager", "cloud stream synth failed: ${e.message}")
-                        TtsSynthResult.Failure(e.message ?: "云端流式合成异常")
+                        TtsSynthResult.Failure(e.message ?: "Cloud streaming synthesis error")
                     }
                     if (outcome !is TtsSynthResult.Failure) {
                         cloudPlayChannel.send(file)
@@ -1015,7 +1015,7 @@ class TtsManager(
     private fun streamFallbackToSystemTts(remainingText: String, utteranceId: String) {
         if (remainingText.isBlank()) return
         if (!ready.get()) {
-            Logger.w("TtsManager", "stream fallback: 系统 TTS 未就绪,放弃降级")
+            Logger.w("TtsManager", "stream fallback: system TTS not ready, giving up fallback")
             // 仍清掉云端管线状态,避免悬挂
             stopCloudStream()
             stopPlayback()
@@ -1029,8 +1029,8 @@ class TtsManager(
         stopCloudStream()
         // 2. 停掉 MediaPlayer 播放,避免与系统 TTS 直播重叠
         stopPlayback()
-        // 3. 应用语言(系统 TTS 默认中文,fallback 也走中文)
-        applyLanguage(Locale.CHINESE)
+        // 3. 应用语言(跟随全局语言配置)
+        applyLanguage(globalLanguage())
         // 4. 标记朗读状态(复用 utteranceId,UI 高亮保持不变)
         currentUtteranceId = utteranceId
         cloudStreamUtteranceId = utteranceId

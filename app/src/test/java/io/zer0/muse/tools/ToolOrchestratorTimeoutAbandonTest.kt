@@ -177,7 +177,7 @@ class ToolOrchestratorTimeoutAbandonTest {
 
         // 1) 超时语义保持:给 LLM/UI 的是 [超时] 终态
         val toolMessage = history.first { it.role == MessageRole.TOOL }
-        assertTrue(toolMessage.content.startsWith("[超时]"))
+        assertTrue(toolMessage.content.startsWith("[Timeout]"))
         assertEquals(ToolOrchestrator.ToolExecStatus.TIMED_OUT.name, result.toolRounds.single().status)
         val cardAtTimeout = accessor.snapshot.taskCards.values.single()
         assertEquals(TaskStepStatus.TIMED_OUT, cardAtTimeout.steps.single().status)

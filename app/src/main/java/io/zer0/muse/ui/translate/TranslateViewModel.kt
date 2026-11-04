@@ -558,7 +558,7 @@ class TranslateViewModel(
                 )
             }.filter { it.name.isNotEmpty() }
         } catch (e: Exception) {
-            Logger.w(TAG, "解析自定义风格失败: ${e.message}")
+            Logger.w(TAG, "Failed to parse custom styles: ${e.message}")
             emptyList()
         }
     }
@@ -712,17 +712,17 @@ class TranslateViewModel(
             glossary: Map<String, String> = emptyMap(),
         ): String = buildString {
             if (sourceLanguage == SOURCE_AUTO) {
-                appendLine("你是一个专业翻译助手。请自动识别下面文本的语言,并将其翻译为$targetLanguage。")
+                appendLine("You are a professional translation assistant. Automatically detect the language of the text below and translate it into $targetLanguage.")
             } else {
-                appendLine("你是一个专业翻译助手。请将下面的文本从$sourceLanguage 翻译为$targetLanguage。")
+                appendLine("You are a professional translation assistant. Translate the text below from $sourceLanguage into $targetLanguage.")
             }
-            appendLine("- 只输出译文,不要加解释、前缀或注释")
-            appendLine("- 保留原文的格式(换行/列表/代码块等)")
-            appendLine("- 如果原文已经是$targetLanguage,原样输出")
+            appendLine("- Output only the translation, with no explanation, prefix or notes")
+            appendLine("- Preserve the formatting of the source text (line breaks, lists, code blocks, etc.)")
+            appendLine("- If the source text is already in $targetLanguage, output it unchanged")
             // 自定义风格优先:命中自定义风格时使用其 prompt 指令
             appendStyleAndGlossary(style, customStyles, glossary)
             appendLine()
-            appendLine("原文:")
+            appendLine("Source text:")
             appendLine(text)
         }
 
@@ -741,18 +741,18 @@ class TranslateViewModel(
                 appendLine("- ${custom.prompt}")
             } else {
                 when (style) {
-                    "学术" -> appendLine("- 使用学术、正式、严谨的表达方式")
-                    "商务" -> appendLine("- 使用商务、专业、礼貌的表达方式")
-                    "口语化" -> appendLine("- 使用自然、口语化、贴近日常对话的表达方式")
-                    "润色" -> appendLine("- 在忠实原意的基础上润色译文,使其更流畅优美")
-                    "简洁" -> appendLine("- 尽量简洁,去除冗余表达,保留核心信息")
-                    else -> appendLine("- 使用通用、准确、自然的表达方式")
+                    "学术" -> appendLine("- Use academic, formal and rigorous expression")
+                    "商务" -> appendLine("- Use businesslike, professional and polite expression")
+                    "口语化" -> appendLine("- Use natural, colloquial expression close to everyday conversation")
+                    "润色" -> appendLine("- Polish the translation while staying faithful to the original meaning, making it smoother and more elegant")
+                    "简洁" -> appendLine("- Be as concise as possible, removing redundancy and keeping the core information")
+                    else -> appendLine("- Use general, accurate and natural expression")
                 }
             }
             // gap4.6: 术语表（格式化复用 GlossaryStore.formatPromptSnippet，不内联重写）
             val snippet = GlossaryStore.formatPromptSnippet(glossary)
             if (snippet.isNotEmpty()) {
-                appendLine("- 请参考以下术语表进行翻译: $snippet")
+                appendLine("- Translate using the following glossary: $snippet")
             }
         }
 
@@ -777,20 +777,20 @@ class TranslateViewModel(
             glossary: Map<String, String> = emptyMap(),
         ): String = buildString {
             if (sourceLanguage == SOURCE_AUTO) {
-                appendLine("你是一个专业翻译助手。请自动识别每段文本的语言,并将其翻译为$targetLanguage。")
+                appendLine("You are a professional translation assistant. Automatically detect the language of each passage below and translate it into $targetLanguage.")
             } else {
-                appendLine("你是一个专业翻译助手。请将下面的每段文本从$sourceLanguage 翻译为$targetLanguage。")
+                appendLine("You are a professional translation assistant. Translate each passage below from $sourceLanguage into $targetLanguage.")
             }
-            appendLine("- 严格输出 JSON 数组格式: [{\"original\":\"原文\",\"translated\":\"译文\"},...]")
-            appendLine("- 数组顺序与输入顺序一一对应")
-            appendLine("- original 字段保留原文,translated 字段为对应译文")
-            appendLine("- 不要输出 JSON 之外的任何内容(不要 markdown 代码块)")
-            appendLine("- 如果某段已经是$targetLanguage,translated 与 original 相同")
+            appendLine("- Output strictly in JSON array format: [{\"original\":\"source text\",\"translated\":\"translation\"},...]")
+            appendLine("- The array order corresponds one-to-one with the input order")
+            appendLine("- The original field keeps the source text; the translated field holds the corresponding translation")
+            appendLine("- Do not output anything outside the JSON (no markdown code blocks)")
+            appendLine("- If a passage is already in $targetLanguage, its translated value equals its original")
             // v2.6.7: 与单条翻译走同一个 helper —— 之前批量不传风格与术语表，
             // 而且内置/自定义是叠加而非覆盖，两条路径译风不一致。
             appendStyleAndGlossary(style, customStyles, glossary)
             appendLine()
-            appendLine("待翻译文本(共 ${texts.size} 段):")
+            appendLine("Text to translate (${texts.size} passages in total):")
             texts.forEachIndexed { idx, t ->
                 appendLine("[${idx + 1}] $t")
             }
@@ -820,7 +820,7 @@ class TranslateViewModel(
                     BatchResult(original = original, translated = translated)
                 }
             } catch (e: Exception) {
-                Logger.w(TAG, "解析批量翻译响应失败: ${e.message}")
+                Logger.w(TAG, "Failed to parse batch translation response: ${e.message}")
                 // 兜底:按行尝试映射(模型未返回 JSON 数组时)
                 val lines = raw.split("\n").filter { it.isNotBlank() }
                 if (lines.size == originals.size) {

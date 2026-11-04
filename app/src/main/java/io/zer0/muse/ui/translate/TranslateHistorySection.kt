@@ -298,9 +298,9 @@ private fun formatHistoryTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     return when {
-        diff < 60_000 -> "刚刚"
-        diff < 60 * 60_000 -> "${diff / 60_000} 分钟前"
-        diff < 24 * 60 * 60_000 -> "${diff / (60 * 60_000)} 小时前"
+        diff < 60_000 -> "Just now"
+        diff < 60 * 60_000 -> "${diff / 60_000} minutes ago"
+        diff < 24 * 60 * 60_000 -> "${diff / (60 * 60_000)} hours ago"
         else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 }

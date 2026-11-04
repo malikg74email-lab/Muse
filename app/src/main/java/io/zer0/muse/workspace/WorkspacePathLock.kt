@@ -69,8 +69,8 @@ internal class WorkspacePathLock(
         if (acquired == null) {
             release(key, entry)
             throw WorkspaceIoException(
-                "等待文件锁超时(${acquireTimeoutMs}ms)：另一个会话或任务正在写「$display」," +
-                    "本次未执行,请稍后重试",
+                "Timed out waiting for the file lock (${acquireTimeoutMs}ms): another session or task is writing \"$display\"," +
+                    "not executed this time; please retry later",
             )
         }
         try {

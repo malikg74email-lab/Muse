@@ -45,7 +45,7 @@ internal object Ed25519 {
 
     /** 基点 x(取偶数解)。 */
     private val BASE_X: BigInteger = recoverX(BASE_Y, signBit = 0)
-        ?: error("Ed25519 基点恢复失败")
+        ?: error("Ed25519 base point recovery failed")
 
     private val BASE = Point(BASE_X, BASE_Y, BigInteger.ONE, BASE_X.multiply(BASE_Y).mod(P))
     private val IDENTITY = Point(BigInteger.ZERO, BigInteger.ONE, BigInteger.ONE, BigInteger.ZERO)
@@ -56,7 +56,7 @@ internal object Ed25519 {
 
     /** 32 字节种子 → 32 字节公钥。 */
     fun seedToPublicKey(seed: ByteArray): ByteArray {
-        require(seed.size == 32) { "seed 必须为 32 字节" }
+        require(seed.size == 32) { "seed must be 32 bytes" }
         val h = sha512(seed)
         val a = clamp(h.copyOfRange(0, 32))
         val aScalar = leToInt(a)
@@ -69,7 +69,7 @@ internal object Ed25519 {
      * @return 64 字节签名(R || s)
      */
     fun sign(seed: ByteArray, message: ByteArray): ByteArray {
-        require(seed.size == 32) { "seed 必须为 32 字节" }
+        require(seed.size == 32) { "seed must be 32 bytes" }
         val h = sha512(seed)
         val aScalar = leToInt(clamp(h.copyOfRange(0, 32)))
         val prefix = h.copyOfRange(32, 64)

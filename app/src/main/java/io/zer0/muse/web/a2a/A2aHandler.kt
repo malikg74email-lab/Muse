@@ -51,15 +51,15 @@ class A2aHandler(
     fun agentCard(baseUrl: String): AgentCard = AgentCard(
         protocolVersion = A2A_PROTOCOL_VERSION,
         name = "Shaheen 2",
-        description = "Shaheen 2 — Android 端 AI 助手，提供隔离的文本对话补全（A2A 不执行本地工具或设备操作）。",
+        description = "Shaheen 2 — Android-side AI assistant providing isolated text conversation completion (A2A does not execute local tools or device operations).",
         url = "$baseUrl/a2a",
         version = appVersion,
         capabilities = AgentCapabilities(streaming = false, pushNotifications = false),
         skills = listOf(
             AgentSkill(
                 id = "chat",
-                name = "对话",
-                description = "隔离文本对话与多轮上下文；A2A 不执行本地工具或设备操作。",
+                name = "Conversation",
+                description = "Isolated text conversations and multi-turn context; A2A does not execute local tools or device operations.",
                 tags = listOf("chat", "text"),
             ),
         ),
@@ -132,7 +132,7 @@ class A2aHandler(
                 ),
             )
         } catch (e: TimeoutCancellationException) {
-            Logger.w(TAG, "A2A SendMessage 超时: ${e.message}")
+            Logger.w(TAG, "A2A SendMessage timed out: ${e.message}")
             record(A2aTask(id = taskId, state = A2aTaskState.FAILED, error = "generation timeout"))
         } catch (e: CancellationException) {
             if (taskRegistry.isCancelable(taskId)) {
@@ -140,7 +140,7 @@ class A2aHandler(
             }
             throw e
         } catch (e: Exception) {
-            Logger.e(TAG, "A2A SendMessage 失败: ${e.message}", e)
+            Logger.e(TAG, "A2A SendMessage failed: ${e.message}", e)
             record(A2aTask(id = taskId, state = A2aTaskState.FAILED, error = e.message ?: "internal error"))
         }
     }

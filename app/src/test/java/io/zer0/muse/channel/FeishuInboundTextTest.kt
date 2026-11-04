@@ -31,9 +31,9 @@ class FeishuInboundTextTest {
 
     @Test
     fun `non-text message types map to placeholders`() {
-        assertEquals("[图片]", FeishuReceiver.parseFeishuMessageText("""{"image_key":"x"}""", "image"))
-        assertEquals("[语音]", FeishuReceiver.parseFeishuMessageText("""{"file_key":"x"}""", "audio"))
-        assertEquals("[文件]", FeishuReceiver.parseFeishuMessageText("""{"file_key":"x"}""", "file"))
+        assertEquals("[Image]", FeishuReceiver.parseFeishuMessageText("""{"image_key":"x"}""", "image"))
+        assertEquals("[Voice]", FeishuReceiver.parseFeishuMessageText("""{"file_key":"x"}""", "audio"))
+        assertEquals("[File]", FeishuReceiver.parseFeishuMessageText("""{"file_key":"x"}""", "file"))
     }
 
     @Test

@@ -115,7 +115,7 @@ class ChatTaskCardCoordinatorRetryTest {
 
         val step = stepOf(accessor, "s0")
         assertNotNull(step)
-        assertTrue(step!!.result.startsWith("[超时]"))
+        assertTrue(step!!.result.startsWith("[Timeout]"))
         assertEquals(TaskCardPhase.DONE, accessor.snapshot.taskCards[CARD_ID]?.phase)
     }
 
@@ -137,7 +137,7 @@ class ChatTaskCardCoordinatorRetryTest {
 
         // 取消后步骤必须落到 CANCELLED(而不是永远 RUNNING,也不是 FAILED)
         awaitStatus(accessor, "s0", TaskStepStatus.CANCELLED)
-        assertTrue(stepOf(accessor, "s0")!!.result.startsWith("[取消]"))
+        assertTrue(stepOf(accessor, "s0")!!.result.startsWith("[Cancelled]"))
     }
 
     @Test
@@ -194,7 +194,7 @@ class ChatTaskCardCoordinatorRetryTest {
 
         val step = stepOf(accessor, "s0")
         assertEquals(TaskStepStatus.FAILED, step?.status)
-        assertTrue("应提示需手动重试", step!!.result.contains("不自动重试"))
+        assertTrue("应提示需手动重试", step!!.result.contains("not retried automatically"))
         io.mockk.coVerify(exactly = 0) { registry.executeFromJson("send_sms", any<String>()) }
     }
 

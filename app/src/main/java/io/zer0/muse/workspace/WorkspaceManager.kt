@@ -118,7 +118,7 @@ class WorkspaceManager(private val context: Context) {
         val ids = mountStore.mountIds()
         val parsed = WorkspacePathParser.parse(path, ids)
         val mountId = parsed.mountId ?: WorkspacePathParser.DEFAULT_MOUNT_ID
-        val mount = mountStore.find(mountId) ?: throw WorkspaceIoException("挂载不存在: $mountId")
+        val mount = mountStore.find(mountId) ?: throw WorkspaceIoException("Mount does not exist: $mountId")
         checkVisible(mount, scope)
         checkCapability(mount, need)
         checkPath(parsed, allowRoot)
@@ -128,7 +128,7 @@ class WorkspaceManager(private val context: Context) {
     /** 会话可见范围校验。 */
     private fun checkVisible(mount: WorkspaceMount, scope: Set<String>?) {
         if (scope != null && mount.id !in scope) {
-            throw WorkspaceIoException("「${mount.label}」不在本会话可用范围")
+            throw WorkspaceIoException("\"${mount.label}\" is not available in this session's scope")
         }
     }
 
@@ -142,18 +142,18 @@ class WorkspaceManager(private val context: Context) {
     /** 路径段校验：拒绝 `..`；按需拒绝挂载根目录本身。 */
     private fun checkPath(parsed: WorkspacePath, allowRoot: Boolean) {
         if (WorkspacePathParser.hasParentSegment(parsed.relative)) {
-            throw WorkspaceIoException("路径不能包含 ..")
+            throw WorkspaceIoException("Path must not contain ..")
         }
         if (!allowRoot && parsed.isMountRoot) {
-            throw WorkspaceIoException("该操作不能直接作用于挂载根目录")
+            throw WorkspaceIoException("This operation cannot act directly on a mount root directory")
         }
     }
 
     /** 能力不足时的提示语。 */
     private fun deniedMessage(mount: WorkspaceMount, need: MountCapability): String = when (need) {
-        MountCapability.WRITE -> "「${mount.label}」是只读挂载，不能写入、删除或移动"
-        MountCapability.READ -> "「${mount.label}」没有读取权限"
-        MountCapability.LIST -> "「${mount.label}」不能列目录"
+        MountCapability.WRITE -> "\"${mount.label}\" is a read-only mount; cannot write, delete or move"
+        MountCapability.READ -> "\"${mount.label}\" has no read permission"
+        MountCapability.LIST -> "\"${mount.label}\" cannot list directories"
     }
 
     /** 取（并缓存）一条挂载的文件系统。 */
@@ -163,12 +163,12 @@ class WorkspaceManager(private val context: Context) {
             val fs = when (mount.provider) {
                 MountProvider.LOCAL -> {
                     val root = mount.rootPath?.takeIf { it.isNotBlank() }
-                        ?: throw WorkspaceIoException("挂载「${mount.label}」缺少目录路径")
+                        ?: throw WorkspaceIoException("Mount \"${mount.label}\" is missing the directory path")
                     LocalWorkspaceFs(File(root))
                 }
                 MountProvider.SAF -> {
                     val uri = mount.treeUri?.takeIf { it.isNotBlank() }
-                        ?: throw WorkspaceIoException("挂载「${mount.label}」缺少目录授权")
+                        ?: throw WorkspaceIoException("Mount \"${mount.label}\" is missing directory authorization")
                     SafWorkspaceFs(context, Uri.parse(uri))
                 }
             }
@@ -230,7 +230,7 @@ class WorkspaceManager(private val context: Context) {
             val atDefaultRoot = t.mount.id == WorkspaceMount.MAIN_ID && t.relative.isEmpty()
             ListResult.Success(if (atDefaultRoot) otherMountEntries(scope) + entries else entries)
         } catch (e: WorkspaceIoException) {
-            ListResult.Error(e.message ?: "列目录失败")
+            ListResult.Error(e.message ?: "Listing directory failed")
         }
     }
 
@@ -262,15 +262,15 @@ class WorkspaceManager(private val context: Context) {
             lockedBy(t) {
                 val size = t.fs.size(t.relative)
                 if (size > MAX_READ_BYTES) {
-                    return@lockedBy ReadResult.Error("文件过大($size 字节),读取上限为 $MAX_READ_BYTES 字节")
+                    return@lockedBy ReadResult.Error("File too large ($size bytes); the read limit is $MAX_READ_BYTES bytes")
                 }
                 if (!t.fs.exists(t.relative) || t.fs.isDirectory(t.relative)) {
-                    return@lockedBy ReadResult.Error("文件不存在: ${t.display}")
+                    return@lockedBy ReadResult.Error("File does not exist: ${t.display}")
                 }
                 ReadResult.Success(t.fs.readText(t.relative))
             }
         } catch (e: WorkspaceIoException) {
-            ReadResult.Error(e.message ?: "读取失败")
+            ReadResult.Error(e.message ?: "Read failed")
         }
     }
 
@@ -285,7 +285,7 @@ class WorkspaceManager(private val context: Context) {
             val t = target(relativePath, MountCapability.READ, scope, allowRoot = false)
             lockedBy(t) {
                 if (!t.fs.exists(t.relative) || t.fs.isDirectory(t.relative)) {
-                    return@lockedBy ReadResult.Error("文件不存在: ${t.display}")
+                    return@lockedBy ReadResult.Error("File does not exist: ${t.display}")
                 }
                 val paginated = offsetChars != null || lengthChars != null || t.fs.size(t.relative) > MAX_READ_BYTES
                 val content = if (paginated) {
@@ -300,7 +300,7 @@ class WorkspaceManager(private val context: Context) {
                 ReadResult.Success(content)
             }
         } catch (e: WorkspaceIoException) {
-            ReadResult.Error(e.message ?: "读取失败")
+            ReadResult.Error(e.message ?: "Read failed")
         }
     }
 
@@ -315,14 +315,14 @@ class WorkspaceManager(private val context: Context) {
     /** 写文本文件（同一路径的写入串行，不同文件并行）。 */
     suspend fun writeFile(relativePath: String, content: String, scope: Set<String>? = null): OpResult = withContext(Dispatchers.IO) {
         if (content.toByteArray(Charsets.UTF_8).size.toLong() > MAX_WRITE_BYTES) {
-            return@withContext OpResult.Error("内容过大,写入上限为 $MAX_WRITE_BYTES 字节")
+            return@withContext OpResult.Error("Content too large; the write limit is $MAX_WRITE_BYTES bytes")
         }
         try {
             val t = target(relativePath, MountCapability.WRITE, scope, allowRoot = false)
             lockedBy(t) { t.fs.writeText(t.relative, content, append = false) }
             OpResult.Success
         } catch (e: WorkspaceIoException) {
-            OpResult.Error(e.message ?: "写入失败")
+            OpResult.Error(e.message ?: "Write failed")
         }
     }
 
@@ -346,15 +346,15 @@ class WorkspaceManager(private val context: Context) {
             lockedBy(t) {
                 val size = t.fs.size(t.relative)
                 if (size > MAX_READ_BYTES) {
-                    return@lockedBy EditResult.Failed("文件过大($size 字节),读取上限为 $MAX_READ_BYTES 字节")
+                    return@lockedBy EditResult.Failed("File too large ($size bytes); the read limit is $MAX_READ_BYTES bytes")
                 }
                 if (!t.fs.exists(t.relative) || t.fs.isDirectory(t.relative)) {
-                    return@lockedBy EditResult.Failed("文件不存在: ${t.display}")
+                    return@lockedBy EditResult.Failed("File does not exist: ${t.display}")
                 }
                 commitEdit(relativePath, scope, t.fs.readText(t.relative), decide)
             }
         } catch (e: WorkspaceIoException) {
-            EditResult.Failed(e.message ?: "编辑失败")
+            EditResult.Failed(e.message ?: "Edit failed")
         }
     }
 
@@ -369,7 +369,7 @@ class WorkspaceManager(private val context: Context) {
         if (decision is EditDecision.Abort) return EditResult.Rejected(decision.message)
         val content = (decision as EditDecision.Commit).content
         if (content.toByteArray(Charsets.UTF_8).size.toLong() > MAX_WRITE_BYTES) {
-            return EditResult.Failed("内容过大,写入上限为 $MAX_WRITE_BYTES 字节")
+            return EditResult.Failed("Content too large; the write limit is $MAX_WRITE_BYTES bytes")
         }
         // 写回前才判写权限：只读挂载上读取是合法的，该报的是「不能写」。
         val writable = target(relativePath, MountCapability.WRITE, scope, allowRoot = false)
@@ -380,14 +380,14 @@ class WorkspaceManager(private val context: Context) {
     /** 追加写入。 */
     suspend fun appendFile(relativePath: String, content: String, scope: Set<String>? = null): OpResult = withContext(Dispatchers.IO) {
         if (content.toByteArray(Charsets.UTF_8).size.toLong() > MAX_WRITE_BYTES) {
-            return@withContext OpResult.Error("内容过大,单次追加上限为 $MAX_WRITE_BYTES 字节")
+            return@withContext OpResult.Error("Content too large; the single-append limit is $MAX_WRITE_BYTES bytes")
         }
         try {
             val t = target(relativePath, MountCapability.WRITE, scope, allowRoot = false)
             lockedBy(t) { t.fs.writeText(t.relative, content, append = true) }
             OpResult.Success
         } catch (e: WorkspaceIoException) {
-            OpResult.Error(e.message ?: "追加失败")
+            OpResult.Error(e.message ?: "Append failed")
         }
     }
 
@@ -398,7 +398,7 @@ class WorkspaceManager(private val context: Context) {
             lockedBy(t) { t.fs.delete(t.relative) }
             OpResult.Success
         } catch (e: WorkspaceIoException) {
-            OpResult.Error(e.message ?: "删除失败")
+            OpResult.Error(e.message ?: "Delete failed")
         }
     }
 
@@ -409,7 +409,7 @@ class WorkspaceManager(private val context: Context) {
             lockedBy(t) { t.fs.mkdirs(t.relative) }
             OpResult.Success
         } catch (e: WorkspaceIoException) {
-            OpResult.Error(e.message ?: "目录创建失败")
+            OpResult.Error(e.message ?: "Directory creation failed")
         }
     }
 
@@ -419,12 +419,12 @@ class WorkspaceManager(private val context: Context) {
             val src = target(from, MountCapability.WRITE, scope, allowRoot = false)
             val dst = target(to, MountCapability.WRITE, scope, allowRoot = false)
             if (src.mount.id != dst.mount.id) {
-                return@withContext OpResult.Error("不能跨挂载移动,请改用复制")
+                return@withContext OpResult.Error("Cannot move across mounts; please use copy instead")
             }
             lockedByBoth(src, dst) { src.fs.move(src.relative, dst.relative) }
             OpResult.Success
         } catch (e: WorkspaceIoException) {
-            OpResult.Error(e.message ?: "移动失败")
+            OpResult.Error(e.message ?: "Move failed")
         }
     }
 
@@ -435,7 +435,7 @@ class WorkspaceManager(private val context: Context) {
             val dst = target(to, MountCapability.WRITE, scope, allowRoot = false)
             lockedByBoth(src, dst) { copyLocked(src, dst) }
         } catch (e: WorkspaceIoException) {
-            OpResult.Error(e.message ?: "复制失败")
+            OpResult.Error(e.message ?: "Copy failed")
         }
     }
 
@@ -445,9 +445,9 @@ class WorkspaceManager(private val context: Context) {
             src.fs.copy(src.relative, dst.relative)
             return OpResult.Success
         }
-        if (src.fs.isDirectory(src.relative)) return OpResult.Error("跨挂载只能复制单个文件")
+        if (src.fs.isDirectory(src.relative)) return OpResult.Error("Only a single file can be copied across mounts")
         val bytes = src.fs.readBytes(src.relative)
-            ?: return OpResult.Error("读取源文件失败: ${src.display}")
+            ?: return OpResult.Error("Reading the source file failed: ${src.display}")
         bytes.inputStream().use { dst.fs.writeStream(dst.relative, it, MAX_WRITE_BYTES) }
         return OpResult.Success
     }
@@ -470,9 +470,9 @@ class WorkspaceManager(private val context: Context) {
         maxResults: Int = DEFAULT_GREP_MAX_RESULTS,
         scope: Set<String>? = null,
     ): GrepResult = withContext(Dispatchers.IO) {
-        if (pattern.isEmpty()) return@withContext GrepResult.Error("pattern 不能为空")
+        if (pattern.isEmpty()) return@withContext GrepResult.Error("pattern must not be empty")
         val regex = if (isRegex) {
-            matchOrNull(pattern) ?: return@withContext GrepResult.Error("正则语法错误: $pattern")
+            matchOrNull(pattern) ?: return@withContext GrepResult.Error("Invalid regex syntax: $pattern")
         } else {
             null
         }
@@ -492,7 +492,7 @@ class WorkspaceManager(private val context: Context) {
             }
             GrepResult.Success(matches, scanned, truncated)
         } catch (e: WorkspaceIoException) {
-            GrepResult.Error(e.message ?: "搜索失败")
+            GrepResult.Error(e.message ?: "Search failed")
         }
     }
 
@@ -523,7 +523,7 @@ class WorkspaceManager(private val context: Context) {
         val files = try {
             start.fs.walkFiles(start.relative, MAX_GREP_FILES)
         } catch (e: WorkspaceIoException) {
-            Logger.w(TAG, "grep 遍历失败: ${e.message}")
+            Logger.w(TAG, "grep traversal failed: ${e.message}")
             return ScanOutcome(0, false)
         }
         var scanned = 0
@@ -561,7 +561,7 @@ class WorkspaceManager(private val context: Context) {
     private fun matchOrNull(pattern: String): Regex? = try {
         Regex(pattern)
     } catch (e: Exception) {
-        Logger.w(TAG, "grep 正则编译失败: ${e.message}")
+        Logger.w(TAG, "grep regex compilation failed: ${e.message}")
         null
     }
 
@@ -588,10 +588,10 @@ class WorkspaceManager(private val context: Context) {
                     ?: "imported-file"
                 importInto(dir, sanitizeImportedName(rawName), uri, scope)
             } catch (e: WorkspaceIoException) {
-                FileImportResult.Error(e.message ?: "文件导入失败")
+                FileImportResult.Error(e.message ?: "File import failed")
             } catch (e: Exception) {
-                Logger.w(TAG, "importFile 失败: ${e.message}", e)
-                FileImportResult.Error("文件导入失败: ${e.message}")
+                Logger.w(TAG, "importFile failed: ${e.message}", e)
+                FileImportResult.Error("File import failed: ${e.message}")
             }
         }
 
@@ -619,7 +619,7 @@ class WorkspaceManager(private val context: Context) {
     /** 把 URI 流式拷进 [dest]（调用方负责持锁）。 */
     private suspend fun streamInto(dest: Target, uri: Uri): FileImportResult {
         val input = context.contentResolver.openInputStream(uri)
-            ?: return FileImportResult.Error("无法读取所选文件")
+            ?: return FileImportResult.Error("Cannot read the selected file")
         var bytes = 0L
         input.use { stream -> bytes = dest.fs.writeStream(dest.relative, stream, MAX_IMPORT_BYTES) }
         return FileImportResult.Success(dest.display, bytes)
@@ -658,7 +658,7 @@ class WorkspaceManager(private val context: Context) {
                 null
             }
         }
-    }.onFailure { Logger.w(TAG, "读取导入文件名失败: ${it.message}") }.getOrNull()
+    }.onFailure { Logger.w(TAG, "Reading the imported file name failed: ${it.message}") }.getOrNull()
 
     private fun sanitizeImportedName(raw: String): String {
         val leaf = raw.trim().substringAfterLast('/').substringAfterLast('\\')

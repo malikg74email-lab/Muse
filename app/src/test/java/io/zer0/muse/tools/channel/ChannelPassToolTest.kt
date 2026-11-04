@@ -21,7 +21,7 @@ class ChannelPassToolTest {
         assertTrue("reason" in def.parameters)
 
         val result = tool.execute(emptyMap())
-        assertEquals("已跳过本轮", result)
+        assertEquals("Skipped this turn", result)
         assertNull(passedReason)
     }
 

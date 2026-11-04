@@ -193,10 +193,10 @@ private data class ToolTemplate(
 )
 
 private val TOOL_TEMPLATES = listOf(
-    ToolTemplate("clipboard_read", "读取剪贴板", "{}"),
-    ToolTemplate("get_current_time", "获取当前时间", "{\"timezone\":\"Asia/Shanghai\"}"),
-    ToolTemplate("calculator", "计算", "{\"expression\":\"1+2*3\"}"),
-    ToolTemplate("browser_navigate", "打开网页", "{\"url\":\"https://example.com\"}"),
+    ToolTemplate("clipboard_read", "Read clipboard", "{}"),
+    ToolTemplate("get_current_time", "Get current time", "{\"timezone\":\"Asia/Shanghai\"}"),
+    ToolTemplate("calculator", "Calculate", "{\"expression\":\"1+2*3\"}"),
+    ToolTemplate("browser_navigate", "Open web page", "{\"url\":\"https://example.com\"}"),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1060,7 +1060,7 @@ private fun TaskDialog(
                 if (parseError != null) {
                     errorMessage = context.getString(
                         R.string.schedule_err_tool_params_invalid,
-                        parseError.message ?: "JSON 语法错误",
+                        parseError.message ?: "JSON syntax error",
                     )
                     return@MuseDialog
                 }

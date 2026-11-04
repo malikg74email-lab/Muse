@@ -33,7 +33,7 @@ object MediaMetadataDurationProbe : VoiceDurationProbe {
                 ?: 0L
         }.getOrElse { e ->
             // 探测失败不影响消息可用性：时长只是 UI 显示用的元数据
-            Logger.d(TAG, "音频时长探测失败: ${e.message}")
+            Logger.d(TAG, "Failed to probe audio duration: ${e.message}")
             0L
         }
         runCatching { retriever.release() }
@@ -87,7 +87,7 @@ class VoiceMessageStore(
      */
     override suspend fun persist(tempFile: File, key: String): String? = withContext(Dispatchers.IO) {
         if (!tempFile.isFile || tempFile.length() <= 0L) {
-            Logger.w(TAG, "语音落盘跳过：源文件不存在或为空 ${tempFile.name}")
+            Logger.w(TAG, "Voice save skipped: source file missing or empty ${tempFile.name}")
             return@withContext null
         }
         val dir = ensureStorageDir() ?: return@withContext null
@@ -96,10 +96,10 @@ class VoiceMessageStore(
         val staging = File(dir, target.name + TMP_SUFFIX)
         runCatching {
             tempFile.copyTo(staging, overwrite = true)
-            if (target.exists() && !target.delete()) error("旧存档删除失败: ${target.name}")
-            if (!staging.renameTo(target)) error("改名失败: ${staging.name}")
+            if (target.exists() && !target.delete()) error("Failed to delete old archive: ${target.name}")
+            if (!staging.renameTo(target)) error("Rename failed: ${staging.name}")
         }.onFailure { e ->
-            Logger.w(TAG, "语音落盘失败: ${e.message}")
+            Logger.w(TAG, "Failed to save voice file: ${e.message}")
             runCatching { staging.delete() }
         }
         if (!target.isFile) return@withContext null
@@ -128,7 +128,7 @@ class VoiceMessageStore(
     override suspend fun delete(uri: String) {
         withContext(Dispatchers.IO) {
             val file = resolve(uri) ?: return@withContext
-            if (!file.delete()) Logger.w(TAG, "语音存档删除失败: ${file.name}")
+            if (!file.delete()) Logger.w(TAG, "Failed to delete voice archive: ${file.name}")
         }
     }
 
@@ -171,7 +171,7 @@ class VoiceMessageStore(
 
     private fun ensureStorageDir(): File? {
         if (!storageDir.exists() && !storageDir.mkdirs()) {
-            Logger.w(TAG, "语音存档目录创建失败: ${storageDir.absolutePath}")
+            Logger.w(TAG, "Failed to create voice archive directory: ${storageDir.absolutePath}")
             return null
         }
         return storageDir.takeIf { it.isDirectory }

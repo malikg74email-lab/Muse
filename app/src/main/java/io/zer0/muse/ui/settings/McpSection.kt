@@ -506,7 +506,7 @@ private fun McpServerAddDialog(onDismiss: () -> Unit, onAdd: suspend (McpServerC
                     InlineError(message = err, onDismiss = { addError = null })
                 }
                 Text(
-                    text = "配置模板",
+                    text = "Config template",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -628,19 +628,19 @@ private fun McpServerAddDialog(onDismiss: () -> Unit, onAdd: suspend (McpServerC
                 )
                 if (feishuAutoRefresh) {
                     SettingField(
-                        label = "飞书 App ID",
+                        label = "Feishu App ID",
                         value = feishuAppId,
                         onValueChange = { feishuAppId = it },
                         placeholder = "cli_xxxxx",
                     )
                     SettingField(
-                        label = "飞书 App Secret",
+                        label = "Feishu App Secret",
                         value = feishuAppSecret,
                         onValueChange = { feishuAppSecret = it },
                         visualTransformation = PasswordVisualTransformation(),
                     )
                     Text(
-                        text = "Muse 会自动获取并续期 tenant_access_token，不需要每 2 小时手动更换 TAT。",
+                        text = "Shaheen 2 automatically fetches and renews the tenant_access_token; no need to manually replace the TAT every 2 hours.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -743,9 +743,9 @@ private fun McpServerAddDialog(onDismiss: () -> Unit, onAdd: suspend (McpServerC
             if (transportType == McpTransportType.STDIO && command.isBlank()) {
                 addError = context.getString(R.string.settings_mcp_stdio_command_required)
             } else if (transportType != McpTransportType.STDIO && url.isBlank()) {
-                addError = context.getString(R.string.settings_mcp_failed, "URL 不能为空")
+                addError = context.getString(R.string.settings_mcp_failed, "URL must not be empty")
             } else if (feishuAutoRefresh && (feishuAppId.isBlank() || feishuAppSecret.isBlank())) {
-                addError = context.getString(R.string.settings_mcp_failed, "飞书模板需要填写 App ID 和 App Secret")
+                addError = context.getString(R.string.settings_mcp_failed, "The Feishu template requires an App ID and App Secret")
             } else {
                 val config = McpServerConfig(
                     id = "mcp-" + System.currentTimeMillis(),

@@ -1,53 +1,53 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# 插件编写完整指南
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Complete Guide to Writing Plugins
 
-> 触发场景: 用户问"插件怎么写""能做插件吗""插件和技能什么区别"时,参考本文档据实回答。
-> 本文档基于源码 data/plugin/ 模块(PluginPackageLoader/PluginManifest/PluginManager)+ tools/script/ 引擎的真实实现。
+> Trigger scenario: when the user asks "how do I write a plugin" "can I make a plugin" "what is the difference between a plugin and a skill", refer to this document and answer truthfully.
+> This document is based on the real implementation of the data/plugin/ module in the source code (PluginPackageLoader/PluginManifest/PluginManager) + the tools/script/ engine.
 
-## 一、概述
+## 1. Overview
 
-Muse 的插件是 **JS 技能包**,文件格式为 `.muse-plugin`(ZIP): 一个包含 manifest.json + main.js 的目录,打包后加载进应用,提供新的工具能力。与 install_skill(Kotlin 白名单实现)不同,插件用 **JS 引擎执行**(WebViewSkillEngine),能力更灵活(但仍受沙盒限制)。
+Shaheen 2 plugins are **JS skill packages**, in the `.muse-plugin` (ZIP) file format: a directory containing manifest.json + main.js, packaged, then loaded into the app to provide new tool capabilities. Unlike install_skill (a Kotlin allowlist implementation), plugins are executed with a **JS engine** (WebViewSkillEngine), so their capabilities are more flexible (but still subject to sandbox limits).
 
-> `.skillpkg` 预览格式已下架,只保留 `.muse-plugin` 一种插件包格式。
+> The `.skillpkg` preview format has been discontinued, and only one plugin package format, `.muse-plugin`, is retained.
 
-## 二、.muse-plugin 包结构
+## 2. .muse-plugin Package Structure
 
 ```
 my-plugin.muse-plugin (ZIP)
-├── manifest.json   # 包描述(必填)
-├── main.js         # 插件主逻辑(必填,kind=tool/provider 时；runtime=js)
-├── main.py         # Python 插件主逻辑(runtime=python 时,入口为 .py)
-└── assets/         # 可选,插件资源
+├── manifest.json   # Package description (required)
+├── main.js         # Main plugin logic (required, when kind=tool/provider; runtime=js)
+├── main.py         # Python main plugin logic (when runtime=python, the entry is .py)
+└── assets/         # Optional, plugin resources
 ```
 
-### manifest.json 字段全解
-| 字段 | 必填 | 说明 |
+### Complete Explanation of manifest.json Fields
+| Field | Required | Description |
 |---|---|---|
-| id | ✅ | 插件唯一 id(小写字母/数字/下划线/连字符) |
-| name | ✅ | 显示名 |
-| description | ✅ | 功能描述(给 LLM 看,决定何时调用) |
-| version | 可选 | 版本号,默认 0.1.0 |
-| entry | 可选 | 入口文件,默认 main.js(runtime=python 时应为 .py) |
-| runtime | 可选 | 运行时: js(默认,WebView V8 沙盒) / python(内置 Python 3.14) |
-| kind | 可选 | 插件类型: tool(默认) / ui-skin / provider |
-| trust | 可选 | 信任级别;外部 ZIP 必须为 sandboxed |
-| capabilities | 可选 | 声明的能力(resource.read / resource.write / network / ui / ui.mood) |
-| tools | 可选 | 暴露的工具定义(名称/参数/描述) |
-| signature | 可选 | 发行者签名 envelope(公钥 + SHA256withECDSA 签名) |
+| id | ✅ | Unique plugin id (lowercase letters/numbers/underscores/hyphens) |
+| name | ✅ | Display name |
+| description | ✅ | Functional description (shown to the LLM, determines when it is called) |
+| version | Optional | Version number, default 0.1.0 |
+| entry | Optional | Entry file, default main.js (when runtime=python it should be .py) |
+| runtime | Optional | Runtime: js (default, WebView V8 sandbox) / python (built-in Python 3.14) |
+| kind | Optional | Plugin type: tool (default) / ui-skin / provider |
+| trust | Optional | Trust level; external ZIPs must be sandboxed |
+| capabilities | Optional | Declared capabilities (resource.read / resource.write / network / ui / ui.mood) |
+| tools | Optional | Definitions of the exposed tools (name/parameters/description) |
+| signature | Optional | Publisher signature envelope (public key + SHA256withECDSA signature) |
 
-### main.js 编写规范
-- 使用 JS 引擎支持的 API(见 SkillEngine)
-- 导出工具处理函数,参数从调用上下文获取
-- 返回值(字符串/JSON)回填给 LLM
-- 如需 IO 能力(HTTP 等),可直接用 `fetch` / `XMLHttpRequest` / `WebSocket`(沙盒已放开网络),也可返回 `{ __bridge__: true, action: "...", params: {...} }` 桥接请求对象由 Kotlin 侧执行(两种都行,桥接对文件/剪贴板等能力更直接)
+### main.js Authoring Rules
+- Use APIs supported by the JS engine (see SkillEngine)
+- Export tool handler functions; parameters are obtained from the calling context
+- Return values (string/JSON) are filled back in for the LLM
+- If IO capabilities (HTTP, etc.) are needed, you can use `fetch` / `XMLHttpRequest` / `WebSocket` directly (the sandbox has network access opened up), or return a `{ __bridge__: true, action: "...", params: {...} }` bridge request object, which is executed by the Kotlin side (either approach works; the bridge is more direct for capabilities such as files/clipboard)
 
-### main.py 编写规范(runtime=python)
-- 入口文件定义与 `tools[].functionName` **同名的函数**;函数接受一个 `dict` 参数(工具调用参数)
-- 返回值可为 dict/list/str/数字;会被 JSON 序列化回填给 LLM
-- 可用**完整标准库**(ssl/sqlite3/zlib/hashlib/json/re/urllib 等),文件读写与网络直接可用(子进程隔离)
-- 可 `import` 通过 pip 安装的第三方纯 Python 包(`python -m pip install <包名>`)
-- 可用 `host.getConfig(key)` 读取插件配置(与 JS 插件同语义)
-- 示例:
+### main.py Authoring Rules (runtime=python)
+- The entry file defines a function with the **same name** as `tools[].functionName`; the function accepts a `dict` parameter (the tool call arguments)
+- The return value may be a dict/list/str/number; it is JSON-serialised and filled back in for the LLM
+- The **full standard library** is available (ssl/sqlite3/zlib/hashlib/json/re/urllib, etc.); file reading/writing and networking are directly available (subprocess isolation)
+- You can `import` third-party pure-Python packages installed via pip (`python -m pip install <package-name>`)
+- You can use `host.getConfig(key)` to read plugin configuration (same semantics as JS plugins)
+- Example:
   ```python
   def fetch_stats(args):
       import json, urllib.request
@@ -56,58 +56,58 @@ my-plugin.muse-plugin (ZIP)
       return {"count": len(data)}
   ```
 
-## 三、执行模型
+## 3. Execution Model
 
-| 引擎 | 说明 |
+| Engine | Description |
 |---|---|
-| WebViewSkillEngine | WebView V8 沙盒执行(生产 JS 技能引擎,实现 SkillEngine 接口) |
-| ProcessSkillEngine | 内置 Node.js 运行时执行(runtime=js 时可选用,完整能力) |
-| PythonSkillEngine | 内置 Python 3.14 运行时执行(runtime=python 时使用;子进程隔离) |
-| SkillBridge | `__bridge__` 桥接执行器: JS 返回桥接请求 → Kotlin 执行安全实现 |
+| WebViewSkillEngine | Executes in the WebView V8 sandbox (the production JS skill engine, implements the SkillEngine interface) |
+| ProcessSkillEngine | Executes with the built-in Node.js runtime (can be selected when runtime=js, full capabilities) |
+| PythonSkillEngine | Executes with the built-in Python 3.14 runtime (used when runtime=python; subprocess isolation) |
+| SkillBridge | `__bridge__` bridge executor: JS returns a bridge request → Kotlin executes a safe implementation |
 
-插件运行时选择: manifest 的 `runtime` 字段决定用哪套引擎。`js`(默认)走 WebView V8
-沙盒 + `__bridge__` 桥接;`python` 走内置 Python 运行时(子进程,完整标准库 + pip 第三方包,
-无 WebView 沙盒限制也无桥接层——子进程自身已有完整能力)。
+Plugin runtime selection: the manifest's `runtime` field determines which engine is used. `js` (default) uses the WebView V8
+sandbox + `__bridge__` bridge; `python` uses the built-in Python runtime (subprocess, full standard library + pip third-party packages,
+no WebView sandbox limits and no bridge layer — the subprocess itself already has full capabilities).
 
-安全边界（v2.x 沙盒已放开）:
-- JS 在沙盒内执行，**可直接使用网络**（fetch/XHR/WebSocket）；仅**页面导航**被禁（不能弹窗/跳页）
-- 本地文件通过 file:// / content:// 读取仍被隔离（防跨域读取）
-- 明文 HTTP 受限：系统 network_security_config 禁明文，除 localhost/127.0.0.1 例外，其余需 https
-- `__bridge__` 桥接动作**默认全部放行**（不再逐项声明能力）；其中 `fs_*` 锁定在插件自己的沙盒目录，`http_*` 走 SSRF 防护
-- 能力声明（manifest 的 capabilities）现仅用于安装预览展示，不再作为安装硬门槛
-- 外部包必须声明 `trust: "sandboxed"`;发行者签名仍会验证（防篡改）
-- **python 运行时**：脚本在独立子进程执行（崩溃不影响宿主），但拥有该进程的完整能力
-  （文件读写/网络/子进程）；插件工具本身仍走统一的工具审批链（HIGH 风险需用户确认）
+Security boundaries (the v2.x sandbox has been opened up):
+- JS executes inside the sandbox and **can use the network directly** (fetch/XHR/WebSocket); only **page navigation** is prohibited (no pop-ups/page jumps)
+- Reading local files via file:// / content:// remains isolated (to prevent cross-origin reading)
+- Plaintext HTTP is restricted: the system's network_security_config prohibits plaintext, except localhost/127.0.0.1; everything else requires https
+- `__bridge__` bridge actions are **all allowed by default** (capabilities are no longer declared item by item); of these, `fs_*` is locked to the plugin's own sandbox directory, and `http_*` goes through SSRF protection
+- Capability declarations (the manifest's capabilities) are now used only for display in the install preview, and are no longer a hard installation threshold
+- External packages must declare `trust: "sandboxed"`; the publisher signature is still verified (tamper prevention)
+- **python runtime**: scripts execute in a separate subprocess (a crash does not affect the host), but have the full capabilities of that process
+  (file reading/writing/network/subprocesses); the plugin tool itself still goes through the unified tool approval chain (HIGH risk requires user confirmation)
 
-## 四、加载/分发/更新
+## 4. Loading/Distribution/Updates
 
-- 打包: .muse-plugin 目录 → zip(扩展名 .muse-plugin)
-- 分发: 分享 zip 文件 / 从插件市场安装
-- 加载: PluginPackageLoader 解析 manifest → 校验安全约束(ZIP 防炸弹/路径遍历/入口存在)→ 注册工具到 ToolRegistry(带插件前缀)
-- 信任: 发行者 P-256 ECDSA 签名 + 本机信任根 + 内置官方目录;未签名或不受信发行者的包不会自动受信
-- 更新: 重新导入覆盖(按 id)
+- Packaging: .muse-plugin directory → zip (extension .muse-plugin)
+- Distribution: share the zip file / install from the plugin marketplace
+- Loading: PluginPackageLoader parses the manifest → checks the security constraints (ZIP bomb protection/path traversal/entry exists) → registers the tools in ToolRegistry (with a plugin prefix)
+- Trust: publisher P-256 ECDSA signature + local trust root + built-in official catalogue; packages from unsigned or untrusted publishers are not automatically trusted
+- Updates: re-import to overwrite (by id)
 
-## 五、插件与 install_skill 的区别
+## 5. Differences Between Plugins and install_skill
 
-| 维度 | install_skill(Kotlin 白名单) | 插件(.muse-plugin, JS) |
+| Dimension | install_skill (Kotlin allowlist) | Plugin (.muse-plugin, JS) |
 |---|---|---|
-| 实现 | 复用 8 个内置 Kotlin 实现 | 自写 JS 逻辑 |
-| 灵活性 | 低(仅组合白名单) | 高(可写复杂逻辑) |
-| 安全 | 高(无任意代码) | 中(JS 沙盒 + 桥接审计) |
-| 适用 | 简单工具(查/读/写/搜) | 复杂插件(流程/计算/多步) |
-| 创建者 | 用户/LLM(对话创建) | 开发者(写代码打包) |
+| Implementation | Reuses 8 built-in Kotlin implementations | Custom-written JS logic |
+| Flexibility | Low (only combines the allowlist) | High (can write complex logic) |
+| Security | High (no arbitrary code) | Medium (JS sandbox + bridge audit) |
+| Suitable for | Simple tools (query/read/write/search) | Complex plugins (workflows/calculations/multi-step) |
+| Creator | User/LLM (created in conversation) | Developer (writes code and packages it) |
 
-## 六、常见问题 Q&A
+## 6. Common Questions Q&A
 
-1. **"我不会写代码能做插件吗"**: 简单工具用对话让 AI 创建(install_skill)即可;复杂插件需要 JS 基础。
-2. **"插件安全吗"**: JS 在沙盒执行,不能直接访问系统;网络请求走 Kotlin 桥接审计;导入不明来源插件需谨慎。
-3. **"插件和技能哪个好"**: 简单场景用技能(install_skill 免代码);要自定义逻辑用插件。
-4. **"怎么分享插件"**: 打包成 .muse-plugin zip 发给别人导入即可。
-5. **"插件能用网络吗"**: 通过 __bridge__ 桥接;HTTP 请求经 Kotlin 侧 SSRF 防护后执行。
+1. **"I don't know how to code, can I make a plugin"**: for simple tools, just have the AI create one in conversation (install_skill); complex plugins require a foundation in JS.
+2. **"Are plugins safe"**: JS executes in a sandbox and cannot directly access the system; network requests go through Kotlin bridge auditing; be careful when importing plugins from unknown sources.
+3. **"Which is better, a plugin or a skill"**: use a skill for simple scenarios (install_skill, no code); use a plugin when you need custom logic.
+4. **"How do I share a plugin"**: package it as a .muse-plugin zip and send it to the other person to import.
+5. **"Can a plugin use the network"**: through the __bridge__ bridge; HTTP requests are executed after SSRF protection on the Kotlin side.
 
-## 七、LLM 调用要点
+## 7. Key Points for LLM Calls
 
-- 用户要"简单的查/读/写工具" → 用 install_skill 现场创建(免代码)
-- 用户要"复杂自定义插件" → 引导用户说明需要 JS,可参考插件开发模板
-- 插件注册的工具像普通工具一样调用,参数按 manifest 定义
-- 插件执行失败/报错,如实反馈错误信息,不编造
+- The user wants a "simple query/read/write tool" → use install_skill to create it on the spot (no code)
+- The user wants a "complex custom plugin" → guide the user to explain that JS is needed; they can refer to the plugin development template
+- Tools registered by a plugin are called like ordinary tools, with parameters as defined in the manifest
+- If plugin execution fails/reports an error, report the error information truthfully; do not fabricate

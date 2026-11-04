@@ -29,7 +29,7 @@ object ShareIntentHelper {
             context.startActivity(buildChooserIntent(context, shareIntent, chooserTitle))
         }.onFailure { error ->
             // 没有可处理分享的应用或 URI 授权失败时，分享入口不能再次让应用崩溃。
-            Logger.w("ShareIntentHelper", "无法启动分享 chooser: ${error.message}", error)
+            Logger.w("ShareIntentHelper", "Cannot start the share chooser: ${error.message}", error)
         }
     }
 

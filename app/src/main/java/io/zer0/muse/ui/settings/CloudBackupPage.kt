@@ -520,7 +520,7 @@ fun CloudBackupPage(onBack: () -> Unit) {
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Text(
-                                text = "${sliderValue.toInt()} 天",
+                                text = "${sliderValue.toInt()} days",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 // LAYOUT-01: 天数数值列限 1 行,不反向挤占标签。
@@ -534,7 +534,7 @@ fun CloudBackupPage(onBack: () -> Unit) {
                             valueRange = 1f..30f,
                             // 1..30 共 30 个取值,steps = 30-2 = 28
                             steps = 28,
-                            valueFormatter = { "${it.toInt()} 天" },
+                            valueFormatter = { "${it.toInt()} days" },
                         )
                         Spacer(Modifier.height(MusePaddings.contentGap))
                         // v1.134 P2-3: 短间隔警示 — 间隔 ≤ 2 天时显示流量/电量提示

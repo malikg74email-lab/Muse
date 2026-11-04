@@ -59,12 +59,12 @@ class WarmupHistoryTest {
     fun `简报为系统消息且防认领`() {
         val briefing = WarmupHistory.briefingMessage(truncated = true)
         assertEquals(MessageRole.SYSTEM, briefing.role)
-        assertTrue(briefing.content.contains("导入"))
-        assertTrue(briefing.content.contains("最新"))
-        assertTrue(briefing.content.contains("保留最近部分"))
+        assertTrue(briefing.content.contains("Imported"))
+        assertTrue(briefing.content.contains("latest"))
+        assertTrue(briefing.content.contains("most recent part"))
 
         val full = WarmupHistory.briefingMessage(truncated = false)
-        assertFalse(full.content.contains("保留最近部分"))
+        assertFalse(full.content.contains("most recent part"))
     }
 
     @Test

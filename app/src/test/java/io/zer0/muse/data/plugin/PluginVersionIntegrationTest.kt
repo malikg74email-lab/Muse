@@ -196,7 +196,7 @@ class PluginVersionIntegrationTest {
         val hijack = install(manager, signedPackage("lineage-plugin", "1.1.0", newKeyPair()))
 
         assertTrue("换公钥的同名插件必须被拒绝", hijack.isFailure)
-        assertTrue(hijack.exceptionOrNull()?.message.orEmpty().contains("发行者"))
+        assertTrue(hijack.exceptionOrNull()?.message.orEmpty().contains("publisher"))
         assertEquals("1.0.0", manager.findPlugin("lineage-plugin")?.version)
         trustFile.delete()
         Unit

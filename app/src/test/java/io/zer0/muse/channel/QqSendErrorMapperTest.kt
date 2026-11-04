@@ -44,19 +44,19 @@ class QqSendErrorMapperTest {
     @Test
     fun `被动回复超时说清是太晚了`() {
         val text = QqSendErrorMapper.describe("HTTP 400: {\"code\":40034128}", isGroup = true)
-        assertTrue(text.contains("5 分钟"))
+        assertTrue(text.contains("5 minutes"))
     }
 
     @Test
     fun `不在群里时提示先拉群`() {
         val text = QqSendErrorMapper.describe("HTTP 400: {\"code\":40034101}", isGroup = true)
-        assertTrue(text.contains("拉进群"))
+        assertTrue(text.contains("add the bot to the group"))
     }
 
     @Test
     fun `无主动消息权限时说明群聊不支持主动推送`() {
         val text = QqSendErrorMapper.describe("HTTP 400: {\"code\":40034102}", isGroup = true)
-        assertTrue(text.contains("主动"))
+        assertTrue(text.contains("proactive"))
     }
 
     @Test

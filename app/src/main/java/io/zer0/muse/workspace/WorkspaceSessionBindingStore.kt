@@ -83,7 +83,7 @@ class WorkspaceSessionBindingStore(private val context: Context) {
         val table: Map<String, List<String>> = resultOf {
             val text = storeFile.readText(Charsets.UTF_8)
             if (text.isBlank()) emptyMap() else json.decodeFromString(serializer, text)
-        }.onError { message, _ -> Logger.w(TAG, "读取会话绑定失败: $message") }
+        }.onError { message, _ -> Logger.w(TAG, "Reading session bindings failed: $message") }
             .getOrNull() ?: return emptyMap()
         return table
     }
@@ -96,7 +96,7 @@ class WorkspaceSessionBindingStore(private val context: Context) {
                 storeFile.writeText(json.encodeToString(serializer, table), Charsets.UTF_8)
                 temp.delete()
             }
-        }.onError { message, _ -> Logger.w(TAG, "写入会话绑定失败: $message") }
+        }.onError { message, _ -> Logger.w(TAG, "Writing session bindings failed: $message") }
     }
 
     companion object {

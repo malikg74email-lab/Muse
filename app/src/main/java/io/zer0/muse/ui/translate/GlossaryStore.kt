@@ -74,7 +74,7 @@ class GlossaryStore(private val context: Context) {
             if (!file.exists()) return emptyMap()
             AppJson.decodeFromString(mapSerializer, file.readText())
         } catch (e: Exception) {
-            Logger.w(TAG, "读取术语表失败: ${e.message}")
+            Logger.w(TAG, "Failed to read glossary: ${e.message}")
             emptyMap()
         }
     }
@@ -84,7 +84,7 @@ class GlossaryStore(private val context: Context) {
             file.parentFile?.mkdirs()
             file.writeText(AppJson.encodeToString(mapSerializer, map))
         } catch (e: Exception) {
-            Logger.w(TAG, "保存术语表失败: ${e.message}")
+            Logger.w(TAG, "Failed to save glossary: ${e.message}")
         }
     }
 

@@ -243,7 +243,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     settings.saveSelectedModel(outcome.modelId)
                                 }
                                 is ProviderModelFetcher.VerifyOutcome.NotReady -> {
-                                    Logger.w("Onboarding", "测试连接失败: ${outcome.kind} ${outcome.reason}")
+                                    Logger.w("Onboarding", "Connection test failed: ${outcome.kind} ${outcome.reason}")
                                     testStatus = TestStatus.Error(
                                         context.getString(
                                             R.string.settings_provider_test_error_failed,
@@ -837,13 +837,13 @@ private fun friendlyConnectError(raw: String): String {
     // 规则表：按顺序匹配，命中即返回。
     // 用表而非长 when，避免单函数圈复杂度超标。
     val rules = listOf(
-        listOf("401", "unauthorized", "invalid api key") to "API 密钥无效或已过期，请重新填写",
-        listOf("403", "forbidden") to "没有访问权限，请确认该密钥已开通此模型",
-        listOf("404", "model_not_found", "no such model") to "接口地址或模型名称不对，请核对后重试",
-        listOf("429", "rate limit") to "请求过于频繁，请稍后再试",
-        listOf("timeout", "timed out") to "连接超时，请检查网络或接口地址",
-        listOf("500", "502", "503", "server error") to "供应商服务异常，稍后再试；若持续失败，可能是内置模型已下线",
-        listOf("no model") to "没有找到可测试的模型，请先点击「获取」拉取模型列表",
+        listOf("401", "unauthorized", "invalid api key") to "The API key is invalid or expired; please enter it again",
+        listOf("403", "forbidden") to "No access permission; please confirm this key has this model enabled",
+        listOf("404", "model_not_found", "no such model") to "The endpoint URL or model name is wrong; please check and retry",
+        listOf("429", "rate limit") to "Requests are too frequent; please try again later",
+        listOf("timeout", "timed out") to "Connection timed out; please check the network or endpoint URL",
+        listOf("500", "502", "503", "server error") to "The provider service is abnormal; try again later. If it keeps failing, the built-in model may have been retired",
+        listOf("no model") to "No testable model found; tap Fetch to pull the model list first",
     )
     val hit = rules.firstOrNull { (keys, _) -> keys.any { it in lower } }
     return hit?.second ?: raw

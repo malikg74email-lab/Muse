@@ -157,7 +157,7 @@ internal class HostWebSocketGateway(
                         command.requestId?.let { rememberCompletedRequest(context, it) }
                     }
                 } catch (error: HostProtocolException) {
-                    Logger.w("HostWebSocket", "协议命令失败: ${error.message}", error)
+                    Logger.w("HostWebSocket", "Protocol command failed: ${error.message}", error)
                     sendEvent(
                         connection,
                         HostEvent(type = "error", error = error.message),
@@ -236,7 +236,7 @@ internal class HostWebSocketGateway(
                 // B-31: SSRF 防护 — 交由 SsrfGuard 从文本提取 http(s) URL 并逐个判定私网/回环/链路本地/
                 // IPv6/IP 字面量,任一命中即拒绝。替代原先漏链本地/IPv6/整数 IP 的自造正则,复用统一判断逻辑。
                 if (containsBlockedUrl(text)) {
-                    Logger.w("HostWebSocket", "chat.send SSRF 拦截: 文本含内网 URL")
+                    Logger.w("HostWebSocket", "chat.send SSRF blocked: text contains an intranet URL")
                     throw HostProtocolException("message contains internal URLs (SSRF blocked)")
                 }
                 command.sessionId?.let { sessionId ->

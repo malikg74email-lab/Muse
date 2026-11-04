@@ -151,10 +151,10 @@ class CloudTtsService(
             VoiceInfo("ballad", "Ballad", "en"),
         )
         private val EDGE_VOICES = listOf(
-            VoiceInfo("zh-CN-XiaoxiaoNeural", "晓晓 (zh-CN)", "zh-CN", "female"),
-            VoiceInfo("zh-CN-YunxiNeural", "云希 (zh-CN)", "zh-CN", "male"),
-            VoiceInfo("zh-CN-YunyangNeural", "云扬 (zh-CN)", "zh-CN", "male"),
-            VoiceInfo("zh-CN-XiaoyiNeural", "晓伊 (zh-CN)", "zh-CN", "female"),
+            VoiceInfo("zh-CN-XiaoxiaoNeural", "Xiaoxiao (zh-CN)", "zh-CN", "female"),
+            VoiceInfo("zh-CN-YunxiNeural", "Yunxi (zh-CN)", "zh-CN", "male"),
+            VoiceInfo("zh-CN-YunyangNeural", "Yunyang (zh-CN)", "zh-CN", "male"),
+            VoiceInfo("zh-CN-XiaoyiNeural", "Xiaoyi (zh-CN)", "zh-CN", "female"),
             VoiceInfo("en-US-JennyNeural", "Jenny (en-US)", "en-US", "female"),
             VoiceInfo("en-US-GuyNeural", "Guy (en-US)", "en-US", "male"),
         )
@@ -168,15 +168,15 @@ class CloudTtsService(
             VoiceInfo("Aoede", "Aoede", "en"),
         )
         private val DASHSCOPE_VOICES = listOf(
-            VoiceInfo("longxiaochun", "龙小淳", "zh-CN", "female"),
-            VoiceInfo("longyan", "龙岩", "zh-CN", "male"),
-            VoiceInfo("longxiao", "龙小", "zh-CN", "female"),
-            VoiceInfo("longshu", "龙叔", "zh-CN", "male"),
-            VoiceInfo("longjing", "龙晶", "zh-CN", "female"),
-            VoiceInfo("longmiao", "龙淼", "zh-CN", "female"),
+            VoiceInfo("longxiaochun", "Long Xiaochun", "zh-CN", "female"),
+            VoiceInfo("longyan", "Long Yan", "zh-CN", "male"),
+            VoiceInfo("longxiao", "Long Xiao", "zh-CN", "female"),
+            VoiceInfo("longshu", "Long Shu", "zh-CN", "male"),
+            VoiceInfo("longjing", "Long Jing", "zh-CN", "female"),
+            VoiceInfo("longmiao", "Long Miao", "zh-CN", "female"),
         )
         private val FISH_VOICES = listOf(
-            VoiceInfo("", "默认音色(空 reference_id)"),
+            VoiceInfo("", "Default voice (empty reference_id)"),
         )
         private val GROQ_VOICES = listOf(
             VoiceInfo("Fritz-PlayAI", "Fritz", "en"),
@@ -244,7 +244,7 @@ class CloudTtsService(
     ): Boolean = withContext(AppDispatchers.io) {
         // Edge TTS 走兼容代理,endpoint 必须由用户提供(无官方 endpoint)
         if (apiKey.isBlank() && engine != "edge") {
-            Logger.w(TAG, "云端 TTS apiKey 为空,跳过")
+            Logger.w(TAG, "Cloud TTS apiKey is empty; skipping")
             return@withContext false
         }
 
@@ -262,12 +262,12 @@ class CloudTtsService(
                 "step" -> synthesizeStep(text, apiKey, model, voice, endpoint, cloudConfig)
                 "xai" -> synthesizeXai(text, apiKey, voice, endpoint)
                 else -> {
-                    Logger.w(TAG, "未知 TTS 引擎: $engine")
+                    Logger.w(TAG, "Unknown TTS engine: $engine")
                     null
                 }
             }
         }.onError { _, t ->
-            Logger.w(TAG, "云端 TTS 合成失败($engine)", t)
+            Logger.w(TAG, "Cloud TTS synthesis failed ($engine)", t)
         }.getOrNull()
 
         if (audioBytes == null || audioBytes.isEmpty()) {
@@ -277,7 +277,7 @@ class CloudTtsService(
         resultOf {
             outputFile.writeBytes(audioBytes)
         }.onError { _, t ->
-            Logger.w(TAG, "写入 TTS 音频文件失败", t)
+            Logger.w(TAG, "Failed to write TTS audio file", t)
         }.isSuccess
     }
 
@@ -310,7 +310,7 @@ class CloudTtsService(
                 CloudTtsProvider.CLONED -> emptyList()
             }
         }.onError { _, t ->
-            Logger.w(TAG, "listVoices($provider) 失败", t)
+            Logger.w(TAG, "listVoices($provider) failed", t)
         }.getOrNull() ?: emptyList()
     }
 
@@ -433,10 +433,10 @@ class CloudTtsService(
     ): ByteArray {
         val baseUrl = endpoint.ifBlank { EDGE_DEFAULT_ENDPOINT }
         if (baseUrl.isBlank()) {
-            Logger.w(TAG, "Edge TTS endpoint 未配置,跳过(需用户在设置中填写兼容代理地址)")
+            Logger.w(TAG, "Edge TTS endpoint not configured; skipping (the user must fill in a compatible proxy address in Settings)")
             return ByteArray(0)
         }
-        val voiceName = voice.ifBlank { "zh-CN-XiaoxiaoNeural" }
+        val voiceName = voice.ifBlank { "en-US-JennyNeural" }
 
         val payload = kotlinx.serialization.json.buildJsonObject {
             put("model", JsonPrimitive(model.ifBlank { "tts-1" }))
@@ -472,7 +472,7 @@ class CloudTtsService(
         // B-36: 奇数长度防护——此前直接取 hex[i+1],奇数长度会越界(<IndexOutOfBounds)。
         //     返回空数组,由上层识别失败走降级路径(回退系统 TTS),避免崩溃。
         if (hex.length % 2 != 0) {
-            Logger.w(TAG, "hexToBytes: 奇数长度(${hex.length}),返回空")
+            Logger.w(TAG, "hexToBytes: odd length (${hex.length}), returning empty")
             return ByteArray(0)
         }
         val len = hex.length
@@ -544,14 +544,14 @@ class CloudTtsService(
                 val bytes = runCatching {
                     response.use { resp ->
                         if (!resp.isSuccessful) {
-                            Logger.w(TAG, "TTS 下载失败: HTTP ${resp.code}")
+                            Logger.w(TAG, "TTS download failed: HTTP ${resp.code}")
                             null
                         } else {
                             resp.body.bytes()
                         }
                     }
                 }.onFailure { e ->
-                    Logger.w(TAG, "TTS 响应体读取失败: ${e.message}")
+                    Logger.w(TAG, "Failed to read TTS response body: ${e.message}")
                 }.getOrNull()
                 if (!cont.isCancelled) {
                     cont.resume(bytes)
@@ -774,7 +774,7 @@ class CloudTtsService(
         val resp = executeCancellable(req) ?: return ByteArray(0)
         resp.use { resp ->
             if (!resp.isSuccessful) {
-                Logger.w(TAG, "ElevenLabs 合成失败: HTTP ${resp.code}")
+                Logger.w(TAG, "ElevenLabs synthesis failed: HTTP ${resp.code}")
                 return ByteArray(0)
             }
             return resp.body.bytes()
@@ -819,7 +819,7 @@ class CloudTtsService(
         val resp = executeCancellable(req) ?: return ByteArray(0)
         resp.use { resp ->
             if (!resp.isSuccessful) {
-                Logger.w(TAG, "Groq 合成失败: HTTP ${resp.code}")
+                Logger.w(TAG, "Groq synthesis failed: HTTP ${resp.code}")
                 return ByteArray(0)
             }
             return resp.body.bytes()
@@ -866,14 +866,14 @@ class CloudTtsService(
         val resp = executeCancellable(req) ?: return ByteArray(0)
         resp.use { resp ->
             if (!resp.isSuccessful) {
-                Logger.w(TAG, "Qwen 合成失败: HTTP ${resp.code}")
+                Logger.w(TAG, "Qwen synthesis failed: HTTP ${resp.code}")
                 return ByteArray(0)
             }
             val body = resp.body.string()
             val json = Json { ignoreUnknownKeys = true }
             val root = json.parseToJsonElement(body) as? JsonObject
                 ?: run {
-                    Logger.w(TAG, "Qwen 合成失败: 响应非 JSON 格式")
+                    Logger.w(TAG, "Qwen synthesis failed: response is not JSON")
                     return ByteArray(0)
                 }
             // DashScope 原生返回结构:output.audio.url(兼容顶层 audio.url)
@@ -882,7 +882,7 @@ class CloudTtsService(
                 ?.let { it["url"]?.jsonPrimitive?.contentOrNull }
                 ?: (root["audio"] as? JsonObject)?.let { it["url"]?.jsonPrimitive?.contentOrNull }
                 ?: run {
-                    Logger.w(TAG, "Qwen 合成失败: 响应缺少 output.audio.url")
+                    Logger.w(TAG, "Qwen synthesis failed: response missing output.audio.url")
                     return ByteArray(0)
                 }
             // 二次下载音频文件(Phase 3 P1: withTimeoutOrNull 兜底,超时经 Call.cancel 中断
@@ -892,7 +892,7 @@ class CloudTtsService(
                 executeBytesCancellable(audioReq)
             }
             if (audioBytes == null) {
-                Logger.w(TAG, "Qwen 合成失败: 二次音频下载超时或失败(${audioDownloadTimeoutMs}ms)")
+                Logger.w(TAG, "Qwen synthesis failed: secondary audio download timed out or failed (${audioDownloadTimeoutMs}ms)")
                 return ByteArray(0)
             }
             return audioBytes
@@ -937,7 +937,7 @@ class CloudTtsService(
         val resp = executeCancellable(req) ?: return ByteArray(0)
         resp.use { resp ->
             if (!resp.isSuccessful) {
-                Logger.w(TAG, "Step 合成失败: HTTP ${resp.code}")
+                Logger.w(TAG, "Step synthesis failed: HTTP ${resp.code}")
                 return ByteArray(0)
             }
             return resp.body.bytes()
@@ -951,7 +951,7 @@ class CloudTtsService(
      * 请求体: {"text": "...", "voice_id": "...", "language": "..."}
      * 响应: 音频二进制流(mp3)。
      *
-     * language 按音色名简单推断(含 "zh" → zh-CN,含 "en" → en-US,否则默认 zh-CN)。
+     * language 按音色名简单推断(含 "zh" → zh-CN,含 "en" → en-US,否则默认 en-US)。
      * 若上游接口实际不可用,调用失败后由上层 [synthesizeToFile] 回退系统 TTS。
      */
     private suspend fun synthesizeXai(text: String, apiKey: String, voice: String, endpoint: String): ByteArray {
@@ -960,7 +960,7 @@ class CloudTtsService(
         val language = when {
             voiceName.contains("zh", ignoreCase = true) -> "zh-CN"
             voiceName.contains("en", ignoreCase = true) -> "en-US"
-            else -> "zh-CN"
+            else -> "en-US"
         }
 
         val payload = kotlinx.serialization.json.buildJsonObject {
@@ -981,7 +981,7 @@ class CloudTtsService(
         val resp = executeCancellable(req) ?: return ByteArray(0)
         resp.use { resp ->
             if (!resp.isSuccessful) {
-                Logger.w(TAG, "xAI 合成失败: HTTP ${resp.code} (endpoint=$baseUrl, voice=$voiceName)")
+                Logger.w(TAG, "xAI synthesis failed: HTTP ${resp.code} (endpoint=$baseUrl, voice=$voiceName)")
                 return ByteArray(0)
             }
             return resp.body.bytes()

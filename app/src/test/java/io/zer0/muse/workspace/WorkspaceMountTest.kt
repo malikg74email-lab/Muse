@@ -82,7 +82,7 @@ class WorkspaceMountTest {
     fun toolOutputsMountRejectsWrite() = runTest {
         val result = manager.writeFile("tool_outputs:/a.txt", "x")
         assertTrue("内置工具输出挂载必须拒绝写入: $result", result is WorkspaceManager.OpResult.Error)
-        assertTrue("提示里应说明只读: $result", (result as WorkspaceManager.OpResult.Error).message.contains("只读"))
+        assertTrue("提示里应说明只读: $result", (result as WorkspaceManager.OpResult.Error).message.contains("read-only"))
     }
 
     @Test
@@ -127,7 +127,7 @@ class WorkspaceMountTest {
         val result = manager.writeFile("docs:/a.txt", "x")
         assertTrue("只读挂载必须拒绝写入: $result", result is WorkspaceManager.OpResult.Error)
         val message = (result as WorkspaceManager.OpResult.Error).message
-        assertTrue("提示里应说明只读: $message", message.contains("只读"))
+        assertTrue("提示里应说明只读: $message", message.contains("read-only"))
     }
 
     @Test

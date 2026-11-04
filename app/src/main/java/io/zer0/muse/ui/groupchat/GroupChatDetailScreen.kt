@@ -223,14 +223,14 @@ fun GroupChatDetailScreen(
                     val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, boundsOptions)
                     if (boundsOptions.outWidth <= 0 || boundsOptions.outHeight <= 0) {
-                        throw IllegalStateException("无法解析图片尺寸")
+                        throw IllegalStateException("Unable to determine image dimensions")
                     }
                     val maxDim = maxOf(boundsOptions.outWidth, boundsOptions.outHeight)
                     var sampleSize = 1
                     while (maxDim / sampleSize > 1024) sampleSize *= 2
                     val decodeOptions = BitmapFactory.Options().apply { inSampleSize = sampleSize }
                     val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
-                        ?: throw IllegalStateException("无法解码图片")
+                        ?: throw IllegalStateException("Unable to decode image")
                     try {
                         encodeBitmapToBase64(bitmap)
                     } finally {
@@ -240,7 +240,7 @@ fun GroupChatDetailScreen(
                 viewModel.addPendingImage("data:image/jpeg;base64,$dataUri")
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) throw t
-                Logger.w("GroupChatDetail", "图片读取失败: ${t.message}", t)
+                Logger.w("GroupChatDetail", "Failed to read image: ${t.message}", t)
             }
         }
     }
@@ -256,13 +256,13 @@ fun GroupChatDetailScreen(
                 val (bytes, mimeType, fileName) = withContext(Dispatchers.IO) {
                     val stream = context.contentResolver.openInputStream(uri)
                         ?: context.contentResolver.openFileDescriptor(uri, "r")?.let { java.io.FileInputStream(it.fileDescriptor) }
-                        ?: throw IllegalStateException("无法读取文件")
+                        ?: throw IllegalStateException("Unable to read file")
                     val data = stream.use { it.readBytes() }
-                    Triple(data, context.contentResolver.getType(uri) ?: "application/octet-stream", uri.lastPathSegment ?: "文件")
+                    Triple(data, context.contentResolver.getType(uri) ?: "application/octet-stream", uri.lastPathSegment ?: "File")
                 }
                 if (bytes.size > 10 * 1024 * 1024) {
                     // P2-10: 超限文件此前静默丢弃,用户无感知;改为明确提示
-                    Logger.w("GroupChatDetail", "文件超出 10MB 上限,已拒绝: $fileName")
+                    Logger.w("GroupChatDetail", "File exceeds the 10MB limit; rejected: $fileName")
                     io.zer0.muse.ui.common.feedback.MuseToast.show(
                         context.getString(R.string.err_group_chat_attachment_too_large),
                     )
@@ -272,7 +272,7 @@ fun GroupChatDetailScreen(
                 viewModel.addPendingFileAttachment(FileAttachment(name = fileName, mimeType = mimeType, base64 = base64))
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) throw t
-                Logger.w("GroupChatDetail", "文件读取失败: ${t.message}", t)
+                Logger.w("GroupChatDetail", "Failed to read file: ${t.message}", t)
                 // P2-10: 读失败不再仅日志,给用户可见提示
                 io.zer0.muse.ui.common.feedback.MuseToast.show(
                     context.getString(R.string.err_group_chat_attachment_read_failed),
@@ -314,14 +314,14 @@ fun GroupChatDetailScreen(
                     val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, boundsOptions)
                     if (boundsOptions.outWidth <= 0 || boundsOptions.outHeight <= 0) {
-                        throw IllegalStateException("无法解析图片尺寸")
+                        throw IllegalStateException("Unable to determine image dimensions")
                     }
                     val maxDim = maxOf(boundsOptions.outWidth, boundsOptions.outHeight)
                     var sampleSize = 1
                     while (maxDim / sampleSize > 1024) sampleSize *= 2
                     val decodeOptions = BitmapFactory.Options().apply { inSampleSize = sampleSize }
                     val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
-                        ?: throw IllegalStateException("无法解码图片")
+                        ?: throw IllegalStateException("Unable to decode image")
                     try {
                         encodeBitmapToBase64(bitmap)
                     } finally {
@@ -331,7 +331,7 @@ fun GroupChatDetailScreen(
                 viewModel.addPendingImage("data:image/jpeg;base64,$dataUri")
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) throw t
-                Logger.w("GroupChatDetail", "图片读取失败: ${t.message}", t)
+                Logger.w("GroupChatDetail", "Failed to read image: ${t.message}", t)
             }
         }
     }
@@ -998,7 +998,7 @@ fun GroupChatDetailScreen(
                         runCatching {
                             documentLauncher.launch(arrayOf("text/*", "application/pdf"))
                         }.onFailure {
-                            Logger.w("GroupChatDetail", "文件选择器启动失败", it)
+                            Logger.w("GroupChatDetail", "Failed to launch file picker", it)
                         }
                     },
                     onInsertKnowledge = {

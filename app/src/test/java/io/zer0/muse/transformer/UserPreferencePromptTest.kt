@@ -37,9 +37,9 @@ class UserPreferencePromptTest {
     fun `wording marks it as a hard constraint not a suggestion`() {
         val out = render(listOf("别用空泛鼓励"))
 
-        assertTrue("必须说清是硬约束", out.contains("必须遵守"))
-        assertTrue("要明确优先级", out.contains("优先级高于"))
-        assertFalse("不能写成软性建议", out.contains("尽量"))
+        assertTrue("must state it is a hard constraint", out.contains("must be followed"))
+        assertTrue("must state the priority", out.contains("higher priority"))
+        assertTrue("must call them hard constraints, not suggestions", out.contains("hard constraints, not suggestions"))
     }
 
     @Test

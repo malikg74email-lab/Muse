@@ -140,7 +140,7 @@ class UpdateChecker(
                 parseReleaseInfo(bodyText)
             }
         }.onError { msg, t ->
-            Logger.e(TAG, "检查更新失败($label): ${t?.message ?: msg}", t)
+            Logger.e(TAG, "Update check failed ($label): ${t?.message ?: msg}", t)
         }.getOrNull() ?: Result.Error("network error")
     }
 

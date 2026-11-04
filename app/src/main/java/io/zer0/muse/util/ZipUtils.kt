@@ -33,9 +33,9 @@ fun readZipEntryWithLimit(zis: ZipInputStream, maxBytes: Long, entryName: String
         if (read <= 0) break
         total += read
         if (total > maxBytes) {
-            val label = entryName?.let { "条目 '$it' " } ?: "条目 "
+            val label = entryName?.let { "Entry '$it' " } ?: "Entry "
             throw IOException(
-                "${label}解压大小超过限制(${maxBytes / 1024 / 1024}MB),可能是恶意压缩包或 ZIP 炸弹",
+                "${label}uncompressed size exceeds the limit (${maxBytes / 1024 / 1024}MB); may be a malicious archive or ZIP bomb",
             )
         }
         out.write(buf, 0, read)
@@ -61,9 +61,9 @@ fun copyZipEntryWithLimit(zis: ZipInputStream, output: OutputStream, maxBytes: L
         if (read == 0) continue
         total += read
         if (total > maxBytes) {
-            val label = entryName?.let { "条目 '$it' " } ?: "条目 "
+            val label = entryName?.let { "Entry '$it' " } ?: "Entry "
             throw IOException(
-                "${label}解压大小超过限制(${maxBytes / 1024 / 1024}MB),可能是恶意压缩包或 ZIP 炸弹",
+                "${label}uncompressed size exceeds the limit (${maxBytes / 1024 / 1024}MB); may be a malicious archive or ZIP bomb",
             )
         }
         output.write(buf, 0, read)

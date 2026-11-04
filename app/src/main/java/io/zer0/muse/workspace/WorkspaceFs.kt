@@ -23,7 +23,7 @@ internal inline fun <T> workspaceIo(op: String, block: () -> T): T {
     if (result is Result.Error) {
         val cause = result.throwable
         if (cause is WorkspaceIoException) throw cause
-        throw WorkspaceIoException("${op}失败: ${result.message}", cause)
+        throw WorkspaceIoException("${op} failed: ${result.message}", cause)
     }
     return result.getOrThrow()
 }
@@ -125,7 +125,7 @@ class LocalWorkspaceFs(private val root: File) : WorkspaceFs {
         if (segments.isEmpty()) return if (allowRoot) root else null
         val candidate = File(root, segments.joinToString("/"))
         val canonical = resultOf { candidate.canonicalFile }
-            .onError { message, _ -> Logger.w(TAG, "canonicalFile 解析失败: $message") }
+            .onError { message, _ -> Logger.w(TAG, "canonicalFile parsing failed: $message") }
             .getOrNull() ?: return null
         val rootCanonical = root.canonicalPath
         val canonicalPath = canonical.canonicalPath
@@ -135,11 +135,11 @@ class LocalWorkspaceFs(private val root: File) : WorkspaceFs {
     }
 
     private fun require(relative: String, allowRoot: Boolean = false): File =
-        resolve(relative, allowRoot) ?: throw WorkspaceIoException("非法路径或越界访问: $relative")
+        resolve(relative, allowRoot) ?: throw WorkspaceIoException("Invalid path or out-of-bounds access: $relative")
 
     override suspend fun list(relative: String): List<FsEntry> = withContext(Dispatchers.IO) {
         val dir = require(relative, allowRoot = true)
-        if (!dir.isDirectory) throw WorkspaceIoException("不是文件夹: $relative")
+        if (!dir.isDirectory) throw WorkspaceIoException("Not a folder: $relative")
         val rootCanonical = root.canonicalPath
         (dir.listFiles()?.toList() ?: emptyList()).map { file ->
             FsEntry(
@@ -169,8 +169,8 @@ class LocalWorkspaceFs(private val root: File) : WorkspaceFs {
 
     override suspend fun readText(relative: String): String = withContext(Dispatchers.IO) {
         val file = require(relative)
-        if (!file.isFile) throw WorkspaceIoException("不是文件: $relative")
-        workspaceIo("读取") { file.readText(Charsets.UTF_8) }
+        if (!file.isFile) throw WorkspaceIoException("Not a file: $relative")
+        workspaceIo("Read") { file.readText(Charsets.UTF_8) }
     }
 
     override suspend fun readBytes(relative: String): ByteArray? = withContext(Dispatchers.IO) {
@@ -181,8 +181,8 @@ class LocalWorkspaceFs(private val root: File) : WorkspaceFs {
 
     override suspend fun readTextRange(relative: String, offsetChars: Int, lengthChars: Int): String = withContext(Dispatchers.IO) {
         val file = require(relative)
-        if (!file.isFile) throw WorkspaceIoException("不是文件: $relative")
-        workspaceIo("读取") {
+        if (!file.isFile) throw WorkspaceIoException("Not a file: $relative")
+        workspaceIo("Read") {
             io.zer0.muse.tools.ToolTextFilePager.readPage(
                 file = file,
                 path = relative,
@@ -196,7 +196,7 @@ class LocalWorkspaceFs(private val root: File) : WorkspaceFs {
 
     override suspend fun writeText(relative: String, content: String, append: Boolean): Unit = withContext(Dispatchers.IO) {
         val file = require(relative)
-        workspaceIo("写入") {
+        workspaceIo("Write") {
             file.parentFile?.takeIf { !it.exists() }?.mkdirs()
             if (append) file.appendText(content, Charsets.UTF_8) else file.writeText(content, Charsets.UTF_8)
         }
@@ -213,7 +213,7 @@ class LocalWorkspaceFs(private val root: File) : WorkspaceFs {
                 while (read >= 0) {
                     if (read > 0) {
                         written += read
-                        if (written > maxBytes) throw WorkspaceIoException("文件过大")
+                        if (written > maxBytes) throw WorkspaceIoException("File too large")
                         output.write(buffer, 0, read)
                     }
                     read = source.read(buffer)
@@ -223,45 +223,45 @@ class LocalWorkspaceFs(private val root: File) : WorkspaceFs {
         if (result is Result.Error) {
             resultOf { file.delete() }
             val cause = result.throwable
-            throw if (cause is WorkspaceIoException) cause else WorkspaceIoException("写入失败: ${result.message}", cause)
+            throw if (cause is WorkspaceIoException) cause else WorkspaceIoException("Write failed: ${result.message}", cause)
         }
         written
     }
 
     override suspend fun delete(relative: String): Unit = withContext(Dispatchers.IO) {
         val file = require(relative, allowRoot = false)
-        if (!file.exists()) throw WorkspaceIoException("路径不存在: $relative")
-        workspaceIo("删除") {
+        if (!file.exists()) throw WorkspaceIoException("Path does not exist: $relative")
+        workspaceIo("Delete") {
             val ok = if (file.isDirectory) file.deleteRecursively() else file.delete()
-            if (!ok) throw WorkspaceIoException("删除失败（可能存在子项或权限不足）")
+            if (!ok) throw WorkspaceIoException("Delete failed (child items may exist or permission is insufficient)")
         }
     }
 
     override suspend fun mkdirs(relative: String): Unit = withContext(Dispatchers.IO) {
         val dir = require(relative)
         if (dir.exists()) {
-            if (!dir.isDirectory) throw WorkspaceIoException("目标已存在且不是文件夹: $relative")
+            if (!dir.isDirectory) throw WorkspaceIoException("Target already exists and is not a folder: $relative")
             return@withContext
         }
-        if (!dir.mkdirs()) throw WorkspaceIoException("目录创建失败: $relative")
+        if (!dir.mkdirs()) throw WorkspaceIoException("Directory creation failed: $relative")
     }
 
     override suspend fun move(from: String, to: String): Unit = withContext(Dispatchers.IO) {
         val src = require(from)
         val dst = require(to)
-        if (!src.exists()) throw WorkspaceIoException("源路径不存在: $from")
-        if (dst.exists()) throw WorkspaceIoException("目标已存在: $to")
+        if (!src.exists()) throw WorkspaceIoException("Source path does not exist: $from")
+        if (dst.exists()) throw WorkspaceIoException("Target already exists: $to")
         dst.parentFile?.takeIf { !it.exists() }?.mkdirs()
-        if (!src.renameTo(dst)) throw WorkspaceIoException("移动失败")
+        if (!src.renameTo(dst)) throw WorkspaceIoException("Move failed")
     }
 
     override suspend fun copy(from: String, to: String): Unit = withContext(Dispatchers.IO) {
         val src = require(from)
         val dst = require(to)
-        if (!src.exists()) throw WorkspaceIoException("源路径不存在: $from")
-        if (dst.exists()) throw WorkspaceIoException("目标已存在: $to")
+        if (!src.exists()) throw WorkspaceIoException("Source path does not exist: $from")
+        if (dst.exists()) throw WorkspaceIoException("Target already exists: $to")
         dst.parentFile?.takeIf { !it.exists() }?.mkdirs()
-        workspaceIo("复制") {
+        workspaceIo("Copy") {
             if (src.isDirectory) src.copyRecursively(dst, overwrite = false) else src.copyTo(dst, overwrite = false)
         }
     }

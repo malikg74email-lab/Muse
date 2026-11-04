@@ -172,13 +172,13 @@ private fun runProbe(config: ProxyConfig, texts: ProbeTexts): TestOutcome {
             )
         }
     } catch (e: java.net.SocketTimeoutException) {
-        Logger.w(TAG, "代理探测超时: ${e.message}")
+        Logger.w(TAG, "Proxy probe timed out: ${e.message}")
         TestOutcome(false, "${texts.timeout} (${e.message ?: e::class.simpleName})")
     } catch (e: java.net.UnknownHostException) {
-        Logger.w(TAG, "代理探测 DNS 失败: ${e.message}")
+        Logger.w(TAG, "Proxy probe DNS failed: ${e.message}")
         TestOutcome(false, "${texts.dnsFailed} (${e.message ?: e::class.simpleName})")
     } catch (e: java.io.IOException) {
-        Logger.w(TAG, "代理探测连接失败: ${e.message}")
+        Logger.w(TAG, "Proxy probe connection failed: ${e.message}")
         TestOutcome(false, "${texts.connectFailed}${e.message ?: e::class.simpleName}")
     } catch (e: kotlinx.coroutines.CancellationException) {
         // v2.6.9（真 bug 修复）: CancellationException 的继承链是
@@ -192,7 +192,7 @@ private fun runProbe(config: ProxyConfig, texts: ProbeTexts): TestOutcome {
     } catch (e: IllegalArgumentException) {
         // v2.6.9: 只捕具体类型。探针里可能抛 IllegalArgumentException 的点是
         // URI 构造与 JSON 解析（SerializationException 即其子类）。
-        Logger.w(TAG, "代理探测参数异常: ${e.message}", e)
+        Logger.w(TAG, "Proxy probe argument error: ${e.message}", e)
         TestOutcome(false, "${texts.unexpected}${e.message ?: e::class.simpleName}")
     }
 }

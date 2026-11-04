@@ -88,12 +88,12 @@ class VisionBridgePureFunctionsTest {
     fun `buildFailureNotice includes reason and guidance`() {
         val notice = bridge.buildFailureNotice("模型超时")
         assertTrue(notice.contains("模型超时"))
-        assertTrue(notice.contains("图片分析失败"))
-        assertTrue(notice.contains("请用户稍后重试"))
+        assertTrue(notice.contains("Image analysis failed"))
+        assertTrue(notice.contains("retry later"))
 
         val blank = bridge.buildFailureNotice(null)
         assertFalse(blank.contains("null"))
-        assertTrue(blank.contains("图片分析失败"))
+        assertTrue(blank.contains("Image analysis failed"))
     }
 
     @Test
@@ -129,6 +129,6 @@ class VisionBridgePureFunctionsTest {
         assertTrue(notice.contains("SiliconFlow"))
         assertTrue(notice.contains("GLM-4.6"))
         assertTrue(notice.contains("text"))
-        assertTrue(notice.contains("不支持图片输入"))
+        assertTrue(notice.contains("does not support image input"))
     }
 }

@@ -42,7 +42,7 @@ internal class GenericSearchProvider(
 
     override suspend fun search(query: String, maxResults: Int): List<WebSearchResult> = withContext(AppDispatchers.io) {
         resultOf { requestOnce(query, maxResults) }
-            .onError { msg, t -> Logger.w(TAG, "$name 搜索失败: $msg", t) }
+            .onError { msg, t -> Logger.w(TAG, "$name search failed: $msg", t) }
             .getOrNull()
             ?: emptyList()
     }
@@ -50,7 +50,7 @@ internal class GenericSearchProvider(
     private fun requestOnce(query: String, maxResults: Int): List<WebSearchResult> {
         val endpoint = engine.endpoint.trim()
         if (endpoint.isEmpty()) {
-            Logger.w(TAG, "$name 未配置 endpoint，跳过")
+            Logger.w(TAG, "$name has no endpoint configured; skipping")
             return emptyList()
         }
 
@@ -119,7 +119,7 @@ internal class GenericSearchProvider(
     private fun parseResults(raw: String, maxResults: Int): List<WebSearchResult> {
         val root = json.parseToJsonElement(raw)
         val array = locateArray(root) ?: run {
-            Logger.w(TAG, "$name 响应里找不到结果数组（resultsPath='${engine.resultsPath}'）")
+            Logger.w(TAG, "$name result array not found in response (resultsPath='${engine.resultsPath}')")
             return emptyList()
         }
         return array.mapNotNull { element ->

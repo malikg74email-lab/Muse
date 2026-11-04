@@ -26,7 +26,7 @@ import java.io.OutputStream
 class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
 
     private val root: DocumentFile = DocumentFile.fromTreeUri(context, treeUri)
-        ?: throw WorkspaceIoException("无法打开授权目录")
+        ?: throw WorkspaceIoException("Cannot open the authorized directory")
 
     /** 逐段下钻到目标文档。 */
     private fun find(relative: String): DocumentFile? {
@@ -67,11 +67,11 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
     }
 
     override suspend fun list(relative: String): List<FsEntry> = withContext(Dispatchers.IO) {
-        val dir = find(relative) ?: throw WorkspaceIoException("目录不存在: $relative")
-        if (!dir.isDirectory) throw WorkspaceIoException("不是文件夹: $relative")
+        val dir = find(relative) ?: throw WorkspaceIoException("Directory does not exist: $relative")
+        if (!dir.isDirectory) throw WorkspaceIoException("Not a folder: $relative")
         val base = relative.trim('/')
         dir.listFiles().map { doc ->
-            val name = doc.name ?: "(未命名)"
+            val name = doc.name ?: "(Unnamed)"
             FsEntry(
                 name = name,
                 relativePath = if (base.isEmpty()) name else "$base/$name",
@@ -95,12 +95,12 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
     }
 
     override suspend fun readText(relative: String): String = withContext(Dispatchers.IO) {
-        val doc = find(relative) ?: throw WorkspaceIoException("文件不存在: $relative")
-        if (!doc.isFile) throw WorkspaceIoException("不是文件: $relative")
-        workspaceIo("读取") {
+        val doc = find(relative) ?: throw WorkspaceIoException("File does not exist: $relative")
+        if (!doc.isFile) throw WorkspaceIoException("Not a file: $relative")
+        workspaceIo("Read") {
             context.contentResolver.openInputStream(doc.uri)?.use { input ->
                 input.readBytes().toString(Charsets.UTF_8)
-            } ?: throw WorkspaceIoException("无法打开文件: $relative")
+            } ?: throw WorkspaceIoException("Cannot open file: $relative")
         }
     }
 
@@ -122,27 +122,27 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
     }
 
     override suspend fun writeText(relative: String, content: String, append: Boolean): Unit = withContext(Dispatchers.IO) {
-        val parentAndName = findParent(relative) ?: throw WorkspaceIoException("路径非法: $relative")
+        val parentAndName = findParent(relative) ?: throw WorkspaceIoException("Invalid path: $relative")
         val (parent, name) = parentAndName
         val existing = parent.findFile(name)
         val target = existing ?: parent.createFile(MIME_BINARY, name)
-            ?: throw WorkspaceIoException("无法创建文件: $relative")
-        workspaceIo("写入") {
+            ?: throw WorkspaceIoException("Cannot create file: $relative")
+        workspaceIo("Write") {
             if (append && existing != null) {
                 appendBytes(target, content.toByteArray(Charsets.UTF_8))
             } else {
                 context.contentResolver.openOutputStream(target.uri, "wt")?.use { out ->
                     out.write(content.toByteArray(Charsets.UTF_8))
-                } ?: throw WorkspaceIoException("无法写入: $relative")
+                } ?: throw WorkspaceIoException("Cannot write: $relative")
             }
         }
     }
 
     override suspend fun writeStream(relative: String, source: InputStream, maxBytes: Long): Long = withContext(Dispatchers.IO) {
-        val parentAndName = findParent(relative) ?: throw WorkspaceIoException("路径非法: $relative")
+        val parentAndName = findParent(relative) ?: throw WorkspaceIoException("Invalid path: $relative")
         val (parent, name) = parentAndName
         val target = parent.findFile(name) ?: parent.createFile(MIME_BINARY, name)
-            ?: throw WorkspaceIoException("无法创建文件: $relative")
+            ?: throw WorkspaceIoException("Cannot create file: $relative")
         var written = 0L
         val result = resultOf {
             context.contentResolver.openOutputStream(target.uri, "wt")?.use { out ->
@@ -151,17 +151,17 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
                 while (read >= 0) {
                     if (read > 0) {
                         written += read
-                        if (written > maxBytes) throw WorkspaceIoException("文件过大")
+                        if (written > maxBytes) throw WorkspaceIoException("File too large")
                         out.write(buffer, 0, read)
                     }
                     read = source.read(buffer)
                 }
-            } ?: throw WorkspaceIoException("无法写入: $relative")
+            } ?: throw WorkspaceIoException("Cannot write: $relative")
         }
         if (result is Result.Error) {
             runCatching { target.delete() }
             val cause = result.throwable
-            throw if (cause is WorkspaceIoException) cause else WorkspaceIoException("写入失败: ${result.message}", cause)
+            throw if (cause is WorkspaceIoException) cause else WorkspaceIoException("Write failed: ${result.message}", cause)
         }
         written
     }
@@ -179,7 +179,7 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
         context.contentResolver.openOutputStream(target.uri, "wt")?.use { out ->
             out.write(old)
             out.write(bytes)
-        } ?: throw WorkspaceIoException("无法追加写入")
+        } ?: throw WorkspaceIoException("Cannot append")
     }
 
     private fun readBytesSync(doc: DocumentFile): ByteArray? = runCatching {
@@ -187,29 +187,29 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
     }.getOrNull()
 
     override suspend fun delete(relative: String): Unit = withContext(Dispatchers.IO) {
-        val doc = find(relative) ?: throw WorkspaceIoException("路径不存在: $relative")
-        if (!doc.delete()) throw WorkspaceIoException("删除失败: $relative")
+        val doc = find(relative) ?: throw WorkspaceIoException("Path does not exist: $relative")
+        if (!doc.delete()) throw WorkspaceIoException("Delete failed: $relative")
     }
 
     override suspend fun mkdirs(relative: String): Unit = withContext(Dispatchers.IO) {
-        ensureDirectory(relative) ?: throw WorkspaceIoException("目录创建失败: $relative")
+        ensureDirectory(relative) ?: throw WorkspaceIoException("Directory creation failed: $relative")
     }
 
     override suspend fun move(from: String, to: String): Unit = withContext(Dispatchers.IO) {
-        val src = find(from) ?: throw WorkspaceIoException("源路径不存在: $from")
-        val fromParent = findParent(from) ?: throw WorkspaceIoException("路径非法: $from")
-        val toParentAndName = findParent(to) ?: throw WorkspaceIoException("目标路径非法: $to")
+        val src = find(from) ?: throw WorkspaceIoException("Source path does not exist: $from")
+        val fromParent = findParent(from) ?: throw WorkspaceIoException("Invalid path: $from")
+        val toParentAndName = findParent(to) ?: throw WorkspaceIoException("Target path invalid: $to")
         val (toParent, toName) = toParentAndName
-        if (toParent.findFile(toName) != null) throw WorkspaceIoException("目标已存在: $to")
+        if (toParent.findFile(toName) != null) throw WorkspaceIoException("Target already exists: $to")
         if (fromParent.first.uri == toParent.uri && src.renameTo(toName)) return@withContext
         copy(from, to)
-        if (!src.delete()) throw WorkspaceIoException("移动后清理失败: $from")
+        if (!src.delete()) throw WorkspaceIoException("Post-move cleanup failed: $from")
     }
 
     override suspend fun copy(from: String, to: String): Unit = withContext(Dispatchers.IO) {
-        val src = find(from) ?: throw WorkspaceIoException("源路径不存在: $from")
-        val (parent, name) = findParent(to) ?: throw WorkspaceIoException("目标路径非法: $to")
-        if (parent.findFile(name) != null) throw WorkspaceIoException("目标已存在: $to")
+        val src = find(from) ?: throw WorkspaceIoException("Source path does not exist: $from")
+        val (parent, name) = findParent(to) ?: throw WorkspaceIoException("Target path invalid: $to")
+        if (parent.findFile(name) != null) throw WorkspaceIoException("Target already exists: $to")
         copyDocument(src, parent, name)
     }
 
@@ -219,15 +219,15 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
     }
 
     private fun copyDirectory(src: DocumentFile, parent: DocumentFile, name: String) {
-        val dir = parent.createDirectory(name) ?: throw WorkspaceIoException("无法创建目录: $name")
+        val dir = parent.createDirectory(name) ?: throw WorkspaceIoException("Cannot create directory: $name")
         src.listFiles().forEach { child ->
             copyDocument(child, dir, child.name ?: return@forEach)
         }
     }
 
     private fun copyFile(src: DocumentFile, parent: DocumentFile, name: String) {
-        val target = parent.createFile(MIME_BINARY, name) ?: throw WorkspaceIoException("无法创建文件: $name")
-        workspaceIo("复制") {
+        val target = parent.createFile(MIME_BINARY, name) ?: throw WorkspaceIoException("Cannot create file: $name")
+        workspaceIo("Copy") {
             openInput(src).use { input ->
                 openOutput(target, name).use { output -> input.copyTo(output) }
             }
@@ -236,18 +236,18 @@ class SafWorkspaceFs(private val context: Context, treeUri: Uri) : WorkspaceFs {
 
     /** 打开源文档的读取流。 */
     private fun openInput(src: DocumentFile): InputStream =
-        context.contentResolver.openInputStream(src.uri) ?: throw WorkspaceIoException("无法读取 ${src.name}")
+        context.contentResolver.openInputStream(src.uri) ?: throw WorkspaceIoException("Cannot read ${src.name}")
 
     /** 打开目标文档的写入流。 */
     private fun openOutput(target: DocumentFile, name: String): OutputStream =
-        context.contentResolver.openOutputStream(target.uri, "wt") ?: throw WorkspaceIoException("无法写入 $name")
+        context.contentResolver.openOutputStream(target.uri, "wt") ?: throw WorkspaceIoException("Cannot write $name")
 
     override suspend fun walkFiles(relative: String, limit: Int): List<String> = withContext(Dispatchers.IO) {
         val out = mutableListOf<String>()
         val start = if (relative.isBlank()) {
             root
         } else {
-            find(relative) ?: throw WorkspaceIoException("目录不存在: $relative")
+            find(relative) ?: throw WorkspaceIoException("Directory does not exist: $relative")
         }
         val base = relative.trim('/')
         fun visit(dir: DocumentFile) {

@@ -1,71 +1,71 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# 个性化配置完整指南
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Complete Guide to Personalization Settings
 
-> 触发场景: 用户问"怎么换主题""怎么改字体""用户画像是干嘛的""怎么让 AI 更了解我"时,参考本文档据实回答。
-> 本文档基于源码 AppearanceSettingsStore.kt / SettingsScreen.kt 的真实实现。
+> Trigger scenario: When the user asks "How do I change the theme?", "How do I change the font?", "What is the user profile for?" or "How do I let the AI understand me better?", refer to this document and answer truthfully.
+> This document is based on the real implementation in the source code AppearanceSettingsStore.kt / SettingsScreen.kt.
 
-## 一、概述
+## I. Overview
 
-个性化分两大块:
-1. **外观**: 主题(动态取色/自定义/预设)、字体、Markdown 留白
-2. **用户画像**: 用户的背景信息,注入 system prompt 让 AI 更了解用户
+Personalization is divided into two major parts:
+1. **Appearance**: Theme (dynamic colour/custom/preset), font, Markdown whitespace
+2. **User profile**: The user's background information, injected into the system prompt so the AI understands the user better
 
-## 二、主题系统(三层回退)
+## II. The Theme System (Three-Layer Fallback)
 
-优先级从高到低:
-1. **Material You 动态取色**(dynamicColor): 跟随系统壁纸取色(Android 12+)
-2. **自定义主题**(customTheme): 基于种子色生成 ColorScheme,可自定义 primary/secondary/tertiary
-3. **预设主题**(presetTheme): 内置多套配色
+In order of priority, from high to low:
+1. **Material You dynamic colour** (dynamicColor): Takes its colours from the system wallpaper (Android 12+)
+2. **Custom theme** (customTheme): Generates a ColorScheme from a seed colour; primary/secondary/tertiary can be customised
+3. **Preset theme** (presetTheme): Multiple built-in colour schemes
 
-回退链: 动态取色可用 → 用之;否则自定义主题;否则预设主题。
+Fallback chain: If dynamic colour is available → use it; otherwise the custom theme; otherwise the preset theme.
 
-### 配置
-- 设置 → 外观 → 主题
-- 自定义主题: 选种子色 → 自动生成整套配色;可微调三主色
-- 预设主题: 内置多套(深色/浅色/彩色等)
+### Configuration
+- Settings → Appearance → Theme
+- Custom theme: Select a seed colour → a full colour scheme is generated automatically; the three main colours can be fine-tuned
+- Preset theme: Multiple built-in schemes (dark/light/colourful, etc.)
 
-## 三、字体与排版
+## III. Fonts and Typography
 
-- 设置 → 外观 → 字体
-- 选项: 系统默认 / 多种内置字体
-- Markdown 留白可调(阅读舒适度)
+- Settings → Appearance → Font
+- Options: System default / multiple built-in fonts
+- Markdown whitespace is adjustable (for reading comfort)
 
-## 四、用户画像
+## IV. User Profile
 
-### 4.1 字段
-| 字段 | 说明 |
+### 4.1 Fields
+| Field | Description |
 |---|---|
-| 称呼 | AI 对用户的称呼(如"子奇") |
-| 年龄 | - |
-| 城市 | - |
-| MBTI | 性格类型 |
-| 职业 | - |
-| 兴趣 | 逗号分隔的爱好列表 |
+| Form of address | The name the AI uses for the user (e.g. "Ziqi") |
+| Age | - |
+| City | - |
+| MBTI | Personality type |
+| Occupation | - |
+| Interests | A comma-separated list of hobbies |
 
-### 4.2 注入机制
-- 画像内容注入 system prompt,让 AI 在对话中自然体现(称呼/城市话题/兴趣推荐)
-- 修改后**新消息生效**(历史消息不变)
+### 4.2 Injection Mechanism
+- The profile content is injected into the system prompt, so the AI reflects it naturally in conversation (form of address/city topics/interest recommendations)
+- After a change, it **takes effect for new messages** (historical messages are unchanged)
 
-## 五、聊天外观选项
+## V. Chat Appearance Options
 
-| 选项 | 说明 |
+| Option | Description |
 |---|---|
-| 默认展开 | AI 长消息默认展开/折叠 |
-| 消息显示 | 气泡/时间戳/头像等显示选项 |
-| 温度 | 全局默认采样温度(0-2) |
-| 高级 | 上下文长度等 |
+| Default expanded | Whether long AI messages are expanded/collapsed by default |
+| Message display | Display options for bubbles/timestamps/avatars, etc. |
+| Temperature | The global default sampling temperature (0-2) |
+| Advanced | Context length, etc. |
 
-## 六、常见问题 Q&A
+## VI. Frequently Asked Questions Q&A
 
-1. **"换了主题没反应"**: 确认应用未锁主题;动态取色需 Android 12+ 且系统开启了 Material You。
-2. **"想让 AI 叫我昵称"**: 设置 → 外观 → 用户画像 → 填写称呼,新消息生效。
-3. **"字体怎么恢复默认"**: 外观 → 字体 → 选系统默认。
-4. **"用户画像会被 AI 用来干嘛"**: 注入 system prompt,让 AI 用你的称呼、聊你城市/兴趣相关话题;不会上传云端。
-5. **"每个助手画像一样吗"**: 用户画像是全局的;助手差异靠各自 systemPrompt 设定。
+1. **"I changed the theme but nothing happened"**: Confirm that the app has not locked the theme; dynamic colour requires Android 12+ and Material You enabled in the system.
+2. **"I want the AI to call me by a nickname"**: Settings → Appearance → User Profile → fill in the form of address; it takes effect for new messages.
+3. **"How do I restore the font to the default"**: Appearance → Font → select the system default.
+4. **"What will the AI use my user profile for"**: It is injected into the system prompt so the AI uses your form of address and talks about topics related to your city/interests; it is not uploaded to the cloud.
+5. **"Is the profile the same for every assistant"**: The user profile is global; differences between assistants rely on their respective systemPrompt settings.
 
-## 七、LLM 调用要点
+## VII. Key Points for LLM Calls
 
-- 用户画像中的称呼/城市/兴趣等,对话中自然使用(叫称呼/提城市天气/荐兴趣话题)
-- 不要生硬念出画像内容(如"根据你的 MBTI 你是 INTJ"),自然融入
-- 用户修改画像后,按新信息对话
-- 不要追问用户"你的兴趣是什么"当画像里已有
+- For the form of address/city/interests, etc. in the user profile, use them naturally in conversation (use the form of address/mention the city's weather/recommend interest topics)
+- Do not stiffly recite the profile content (e.g. "According to your MBTI you are INTJ"); blend it in naturally
+- After the user modifies their profile, converse according to the new information
+- Do not ask the user "What are your interests?" when the profile already contains them

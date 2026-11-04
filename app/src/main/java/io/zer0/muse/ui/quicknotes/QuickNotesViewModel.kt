@@ -106,7 +106,7 @@ class QuickNotesViewModel(
     private val activeNotesFlow: Flow<List<QuickNoteEntity>> = retryTrigger.flatMapLatest {
         dao.observeActive(limit = MAX_LIMIT).catch { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
-            Logger.w(TAG, "加载快速记录失败: ${e.message}")
+            Logger.w(TAG, "Failed to load quick notes: ${e.message}")
             _loadError.value = e.message ?: context.getString(R.string.common_load_failed)
             emit(emptyList())
         }
@@ -116,7 +116,7 @@ class QuickNotesViewModel(
     private val trashFlow: Flow<List<QuickNoteEntity>> = retryTrigger.flatMapLatest {
         dao.observeTrash().catch { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
-            Logger.w(TAG, "加载回收站失败: ${e.message}")
+            Logger.w(TAG, "Failed to load recycle bin: ${e.message}")
             _loadError.value = e.message ?: context.getString(R.string.common_load_failed)
             emit(emptyList())
         }
@@ -126,7 +126,7 @@ class QuickNotesViewModel(
     private val foldersFlow: Flow<List<String>> = retryTrigger.flatMapLatest {
         dao.observeFolders().catch { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
-            Logger.w(TAG, "加载文件夹失败: ${e.message}")
+            Logger.w(TAG, "Failed to load folders: ${e.message}")
             _loadError.value = e.message ?: context.getString(R.string.common_load_failed)
             emit(emptyList())
         }
@@ -301,7 +301,7 @@ class QuickNotesViewModel(
             val finalEncryptedContent = if (existing.encrypted) {
                 if (newContent != null && newContent.isNotBlank()) {
                     runCatching { noteCipher.encrypt(newContent) }.getOrElse {
-                        Logger.w(TAG, "快捷笔记更新加密失败: ${it.message}")
+                        Logger.w(TAG, "Failed to update quick note encryption: ${it.message}")
                         existing.encryptedContent
                     }
                 } else {
@@ -412,31 +412,31 @@ class QuickNotesViewModel(
                 // 原实现 getOrElse 返回明文写入 encryptedContent,UI 显示"已加密"实为明文,
                 // 用户误以为受保护。失败时保持原样并提示。
                 if (existing.content.isBlank()) {
-                    MuseToast.show("没有可加密的内容")
+                    MuseToast.show("No content to encrypt")
                     return@launch
                 }
                 val cipher = runCatching { noteCipher.encrypt(existing.content) }.getOrNull()
                 if (cipher == null) {
-                    MuseToast.show("加密失败,笔记保持原样")
-                    Logger.w(TAG, "快捷笔记加密失败,保持明文未标记加密")
+                    MuseToast.show("Encryption failed; the note stays unchanged")
+                    Logger.w(TAG, "Quick note encryption failed; keeping plaintext, not marked encrypted")
                     return@launch
                 }
                 dao.setEncrypted(id, true, cipher)
-                MuseToast.show("已加密")
+                MuseToast.show("Encrypted")
             } else {
                 // 审计修复 (0.7): 解密失败保留密文与加密标记,不得把密文当明文写入 content。
                 if (existing.encryptedContent.isNotBlank()) {
                     val plain = runCatching { noteCipher.decrypt(existing.encryptedContent) }.getOrNull()
                     if (plain == null) {
-                        MuseToast.show("解密失败,笔记保持加密")
-                        Logger.w(TAG, "快捷笔记解密失败,保留密文")
+                        MuseToast.show("Decryption failed; the note stays encrypted")
+                        Logger.w(TAG, "Quick note decryption failed; keeping ciphertext")
                         return@launch
                     }
                     dao.setEncrypted(id, false, plain)
                 } else {
                     dao.setEncrypted(id, false, existing.content)
                 }
-                MuseToast.show("已解密")
+                MuseToast.show("Decrypted")
             }
         }
     }
@@ -582,7 +582,7 @@ class QuickNotesViewModel(
             }
             dtos.size
         } catch (e: Exception) {
-            Logger.w(TAG, "导入快速记录失败: ${e.message}")
+            Logger.w(TAG, "Failed to import quick notes: ${e.message}")
             -1
         }
     }

@@ -82,14 +82,14 @@ class PluginVersionPolicyTest {
             installed(),
             appVersion,
         )
-        assertTrue(rejected(otherKey).contains("发行者"))
+        assertTrue(rejected(otherKey).contains("publisher"))
 
         val otherId = PluginVersionPolicy.evaluate(
             candidate(publisherId = "someone-else"),
             installed(),
             appVersion,
         )
-        assertTrue(rejected(otherId).contains("发行者"))
+        assertTrue(rejected(otherId).contains("publisher"))
     }
 
     @Test

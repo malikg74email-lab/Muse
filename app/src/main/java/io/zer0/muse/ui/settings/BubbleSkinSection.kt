@@ -99,7 +99,7 @@ internal fun BubbleSkinSection(fontSizeScale: String, defaultDark: Boolean) {
         val text = runCatching {
             context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
         }.onFailure { e ->
-            Logger.w("BubbleSkinSection", "皮肤导入读取失败: ${e.message}")
+            Logger.w("BubbleSkinSection", "Failed to read skin import: ${e.message}")
         }.getOrNull()
         scope.launch {
             val imported = store.importSkin(text)

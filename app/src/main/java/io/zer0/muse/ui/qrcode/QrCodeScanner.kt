@@ -47,7 +47,7 @@ object QrCodeScanner {
                     cont.resume(content)
                 }
                 .addOnFailureListener { e ->
-                    Logger.w(TAG, "二维码扫描失败: ${e.message}")
+                    Logger.w(TAG, "QR code scan failed: ${e.message}")
                     scanner.close()
                     cont.resume(null)
                 }

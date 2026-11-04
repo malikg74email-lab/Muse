@@ -102,7 +102,7 @@ fun UserPreferencePage(onBack: () -> Unit, store: PreferenceStore = koinInject()
                             scope.launch {
                                 runCatching { store.setEnabled(pref.id, enabled) }
                                     .onFailure {
-                                        Logger.w("UserPreferencePage", "切换偏好状态失败: ${it.message}")
+                                        Logger.w("UserPreferencePage", "Failed to toggle preference state: ${it.message}")
                                     }
                             }
                         },
@@ -125,7 +125,7 @@ fun UserPreferencePage(onBack: () -> Unit, store: PreferenceStore = koinInject()
                 deleting = null
                 scope.launch {
                     runCatching { store.remove(target.id) }
-                        .onFailure { Logger.w("UserPreferencePage", "删除偏好失败: ${it.message}") }
+                        .onFailure { Logger.w("UserPreferencePage", "Failed to delete preference: ${it.message}") }
                 }
             },
             onDismiss = { deleting = null },

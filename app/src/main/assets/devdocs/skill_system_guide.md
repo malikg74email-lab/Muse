@@ -1,146 +1,146 @@
-<!-- devdoc: 内部开发文档,不向用户展示,LLM 通过 knowledge_search 查询 -->
-# Skill 系统使用指南 工具调用 function calling
+<!-- devdoc: internal dev doc, not shown to users, LLM queries via knowledge_search -->
+# Skill System User Guide Tool Invocation function calling
 
-Muse 的 Skill 系统是 LLM 进行 function calling 的工具集合。当用户问"你有哪些工具""你能调用什么""skill 是什么""怎么自定义工具""怎么创建技能""能帮我做一个技能吗"时参考本文档。
+Shaheen 2's Skill system is the LLM's tool set for function calling. Refer to this document when the user asks "what tools do you have" "what can you invoke" "what is a skill" "how do I customise a tool" "how do I create a skill" "can you make a skill for me".
 
-内置 skill 共 23 个(以源码 SkillExecutor.kt 的 BUILT_IN_SKILLS 为准)。其中 8 个为 install_skill 白名单(用户自定义/LLM 自安装 skill 的 implementationKotlin 只能引用这 8 个):
+There are 23 built-in skills in total (based on BUILT_IN_SKILLS in the source file SkillExecutor.kt). Of these, 8 are on the install_skill whitelist (the implementationKotlin of a user-customised / LLM-self-installed skill may only reference these 8):
 
-8 个白名单 skill(核心能力):
+The 8 whitelisted skills (core capabilities):
 
-1. read_file — 读取应用沙盒内文本文件(上限 1MB)。参数: path(相对 filesDir), offset/length(可选,按"行"分段,offset=起始行号,length=读取行数,非字节)。调用时机: 需要读用户存储的笔记/数据文件时。
-2. write_file — 写入文本到沙盒文件。参数: path, content, append(可选,默认 false 覆盖)。返回值含内容预览(前 200 字符)。调用时机: 需要持久化笔记/数据/生成的代码时。
-3. http_get — 发起 HTTP GET。参数: url, headers(可选 JSON)。响应上限 1MB。调用时机: 调用 REST API 获取数据。
-4. http_post — 发起 HTTP POST。参数: url, body(字符串,需自行序列化 JSON), content_type(默认 application/json), headers(可选)。调用时机: 提交数据到 API。
-5. web_search — 用配置好的搜索引擎(SearXNG/Tavily/Bing)搜索网页,返回标题/URL/摘要。参数: query, max_results(1-10,默认 5)。调用时机: 用户需要实时信息、最新新闻、概念解释。
-6. web_fetch — 抓取指定 URL 网页正文(去 HTML 标签,返回纯文本)。参数: url, headers(可选)。抓取上限 20 万字符,返回上限 5 万字符。调用时机: 读 web_search 返回的 URL 全文(先搜后读两步)。
-7. knowledge_search — 在用户知识库全文搜索(标题 + 内容)。参数: query, threshold(可选,0-1 小数制,默认 0.3)。调用时机: 用户问项目自身功能/已导入文档相关问题(开发文档 fileType=devdoc 也在此)。
-8. arxiv_search — arXiv 学术论文搜索。参数: query(英文为佳), max_results。调用时机: 学术研究/论文问题。
+1. read_file — Reads a text file inside the app sandbox (limit 1MB). Parameters: path (relative to filesDir), offset/length (optional, segmented by "line", offset = starting line number, length = number of lines to read, not bytes). When to invoke: when you need to read notes/data files stored by the user.
+2. write_file — Writes text to a sandbox file. Parameters: path, content, append (optional, default false = overwrite). The return value includes a content preview (first 200 characters). When to invoke: when you need to persist notes/data/generated code.
+3. http_get — Issues an HTTP GET. Parameters: url, headers (optional JSON). Response limit 1MB. When to invoke: calling a REST API to fetch data.
+4. http_post — Issues an HTTP POST. Parameters: url, body (string; serialise the JSON yourself), content_type (default application/json), headers (optional). When to invoke: submitting data to an API.
+5. web_search — Searches the web with the configured search engine (SearXNG/Tavily/Bing), and returns title/URL/snippet. Parameters: query, max_results (1-10, default 5). When to invoke: the user needs real-time information, the latest news, or an explanation of a concept.
+6. web_fetch — Fetches the body text of a given URL web page (strips HTML tags, returns plain text). Parameters: url, headers (optional). Fetch limit 200,000 characters, return limit 50,000 characters. When to invoke: reading the full text of a URL returned by web_search (two steps: search first, then read).
+7. knowledge_search — Full-text search of the user's knowledge base (title + content). Parameters: query, threshold (optional, 0-1 decimal, default 0.3). When to invoke: the user asks about the project's own features / questions related to imported documents (development documents with fileType=devdoc are also here).
+8. arxiv_search — arXiv academic paper search. Parameters: query (English preferred), max_results. When to invoke: academic research / paper questions.
 
-其余内置 skill(不在 install_skill 白名单,直接由系统注册): delete_file(支持 paths 批量)、file_exists、list_dir、file_download、read_public_file、save_to_downloads、list_public_files、list_skills、uninstall_skill、install_skill、delegate_agent、channel_reply、channel_pass、channel_read_context、task_plan、update_plan_step、generate_image、translate、generate_qr、list_stickers、send_sticker 等。完整列表见 SkillExecutor.kt 的 BUILT_IN_SKILLS。
+The remaining built-in skills (not on the install_skill whitelist, registered directly by the system): delete_file (supports batch paths), file_exists, list_dir, file_download, read_public_file, save_to_downloads, list_public_files, list_skills, uninstall_skill, install_skill, delegate_agent, channel_reply, channel_pass, channel_read_context, task_plan, update_plan_step, generate_image, translate, generate_qr, list_stickers, send_sticker, etc. See BUILT_IN_SKILLS in SkillExecutor.kt for the complete list.
 
 ---
 
-# 创建技能完整教程(用户/LLM 通用)
+# Complete Tutorial on Creating Skills (for Users / LLM in General)
 
-## 什么是技能
+## What Is a Skill
 
-技能(skill)是一个"把常用操作打包成可复用工具"的定义。用户创建技能后,LLM 在后续对话中看到合适的场景会自动调用它,不需要每次重复描述步骤。
+A skill is a definition that "packages a common operation into a reusable tool". After a user creates a skill, the LLM will automatically invoke it when it sees a suitable scenario in later conversations, without needing the steps described again each time.
 
-## 三种创建路径
+## Three Creation Paths
 
-| 路径 | 谁操作 | 方式 | 适用场景 |
+| Path | Who Operates It | Method | Suitable Scenarios |
 |---|---|---|---|
-| A. 让 LLM 帮你创建 | 用户对话 | 告诉 LLM"帮我创建一个 XX 技能",LLM 用 install_skill 完成 | 最常见,推荐 |
-| B. 导入 .skill.json 文件 | 用户 | 设置 → Skill 页导入文件 | 分享/备份/迁移 |
-| C. 写代码打包 .muse-plugin | 开发者 | manifest.json + JS 脚本 | 复杂技能/JS 引擎 |
+| A. Have the LLM create it for you | User, in conversation | Tell the LLM "create an XX skill for me", and the LLM completes it with install_skill | Most common, recommended |
+| B. Import a .skill.json file | User | Settings → Skill page, import the file | Sharing / backup / migration |
+| C. Write code and package a .muse-plugin | Developer | manifest.json + JS script | Complex skills / JS engine |
 
-**路径 A 是推荐方式**:用户不需要懂任何格式,直接对 LLM 说"帮我做一个'查菜谱'技能",LLM 负责生成 .skill.json 并安装。
+**Path A is the recommended method**: the user does not need to know any format; they simply tell the LLM "make me a 'recipe lookup' skill", and the LLM is responsible for generating the .skill.json and installing it.
 
-## .skill.json 完整格式(install_skill / 文件导入通用)
+## Complete .skill.json Format (Common to install_skill / File Import)
 
 ```json
 {
   "id": "fetch_recipe",
-  "name": "查菜谱",
-  "description": "根据菜名查询家常菜谱的做法和食材清单。当用户问某道菜怎么做时使用。",
-  "parametersJson": "{\"type\":\"object\",\"properties\":{\"dish\":{\"type\":\"string\",\"description\":\"菜名,如'红烧肉'\"}},\"required\":[\"dish\"]}",
+  "name": "Recipe Lookup",
+  "description": "Look up home-style recipes by dish name for the cooking method and ingredient list. Use when the user asks how to make a certain dish.",
+  "parametersJson": "{\"type\":\"object\",\"properties\":{\"dish\":{\"type\":\"string\",\"description\":\"Dish name, e.g. 'braised pork'\"}},\"required\":[\"dish\"]}",
   "requiredJson": "[\"dish\"]",
   "implementationKotlin": "web_search",
   "category": "custom"
 }
 ```
 
-## 字段说明
+## Field Descriptions
 
-| 字段 | 必填 | 说明 | 规则 |
+| Field | Required | Description | Rules |
 |---|---|---|---|
-| id | ✅ | 技能唯一标识 | 小写字母/数字/下划线/连字符,如 `fetch_recipe`;不能与内置 skill/工具同名(会冲突) |
-| name | ✅ | 展示名称 | 中文即可,如"查菜谱" |
-| description | ✅ | 给 LLM 看的说明 | **最重要**:写清"什么场景用、输入什么、输出什么";写得好 LLM 才知道何时调用 |
-| parametersJson | 可选 | 参数定义 | JSON Schema 的字符串形式(见下方参数写法) |
-| requiredJson | 可选 | 必填参数 | 数组字符串,如 `["dish"]` |
-| implementationKotlin | ✅ | 底层实现 | **只能选 8 个白名单之一**:read_file / write_file / http_get / http_post / web_search / web_fetch / knowledge_search / arxiv_search |
-| category | 可选 | 分类 | 默认 `custom` |
+| id | ✅ | Unique identifier of the skill | Lowercase letters/numbers/underscores/hyphens, e.g. `fetch_recipe`; must not have the same name as a built-in skill/tool (that would conflict) |
+| name | ✅ | Display name | Write it in the user's language (English or Roman Urdu), e.g. "Recipe Lookup" |
+| description | ✅ | Description for the LLM to read | **Most important**: write clearly "in what scenario to use it, what the input is, what the output is"; only if it is well written will the LLM know when to invoke it |
+| parametersJson | Optional | Parameter definition | The string form of a JSON Schema (see the parameter syntax below) |
+| requiredJson | Optional | Required parameters | Array string, e.g. `["dish"]` |
+| implementationKotlin | ✅ | Underlying implementation | **May only choose one of the 8 whitelist entries**: read_file / write_file / http_get / http_post / web_search / web_fetch / knowledge_search / arxiv_search |
+| category | Optional | Category | Default `custom` |
 
-## parametersJson 参数写法(JSON Schema)
+## parametersJson Parameter Syntax (JSON Schema)
 
 ```json
 {
   "type": "object",
   "properties": {
-    "参数名1": { "type": "string", "description": "参数说明,中文" },
-    "参数名2": { "type": "integer", "description": "数量上限" },
-    "参数名3": { "type": "boolean", "description": "是否开启" }
+    "parameter_name_1": { "type": "string", "description": "Parameter description, in the user's language" },
+    "parameter_name_2": { "type": "integer", "description": "Maximum quantity" },
+    "parameter_name_3": { "type": "boolean", "description": "Whether it is enabled" }
   },
-  "required": ["参数名1"]
+  "required": ["parameter_name_1"]
 }
 ```
 
-- type 支持: string / integer / number / boolean / array / object
-- description 用中文写清楚,LLM 靠它决定传什么值
-- required 列出必填参数;非必填的参数不要放进去
+- Supported types: string / integer / number / boolean / array / object
+- Write the description clearly in the user's language (English or Roman Urdu); the LLM relies on it to decide what value to pass
+- required lists the required parameters; do not put non-required parameters in it
 
-## 按用途选实现(最关键的一步)
+## Choosing the Implementation by Purpose (The Most Critical Step)
 
-| 想做的技能 | 选这个实现 | 举例 |
+| Skill You Want to Make | Choose This Implementation | Examples |
 |---|---|---|
-| 查信息/搜索网页 | web_search | 查菜谱、查电影、查攻略 |
-| 读网页全文 | web_fetch | 读文章、读公告 |
-| 调用 API 拿数据 | http_get | 查汇率、查快递、查天气 API |
-| 提交数据到 API | http_post | 发消息、提交表单 |
-| 读写本地文件 | read_file / write_file | 记账本、待办、收藏夹 |
-| 查知识库/内部文档 | knowledge_search | 查用户导入的文档 |
-| 查学术论文 | arxiv_search | 论文检索 |
+| Look up information / search the web | web_search | Look up recipes, look up films, look up guides |
+| Read the full text of a web page | web_fetch | Read articles, read announcements |
+| Call an API to get data | http_get | Check exchange rates, check parcel delivery, check a weather API |
+| Submit data to an API | http_post | Send a message, submit a form |
+| Read/write local files | read_file / write_file | Ledger, to-do list, favourites |
+| Search the knowledge base / internal documents | knowledge_search | Look up documents imported by the user |
+| Search academic papers | arxiv_search | Paper retrieval |
 
-## install_skill 调用示例(LLM 视角)
+## install_skill Invocation Example (From the LLM's Perspective)
 
-当用户说"帮我创建一个能查菜谱的技能"时,LLM 应:
+When the user says "create a skill for me that can look up recipes", the LLM should:
 
-1. 确定实现: 查菜谱 → web_search
-2. 构造 skill_json(注意 parametersJson 是字符串,需要转义):
+1. Determine the implementation: recipe lookup → web_search
+2. Construct the skill_json (note that parametersJson is a string and needs escaping):
 ```
-install_skill(skill_json = {"id":"fetch_recipe","name":"查菜谱","description":"根据菜名查询家常菜谱做法和食材。用户问某道菜怎么做时调用。","parametersJson":"{\"type\":\"object\",\"properties\":{\"dish\":{\"type\":\"string\",\"description\":\"菜名\"}},\"required\":[\"dish\"]}","requiredJson":"[\"dish\"]","implementationKotlin":"web_search","category":"custom"})
+install_skill(skill_json = {"id":"fetch_recipe","name":"Recipe Lookup","description":"Look up home-style recipes by dish name for the cooking method and ingredients. Call when the user asks how to make a certain dish.","parametersJson":"{\"type\":\"object\",\"properties\":{\"dish\":{\"type\":\"string\",\"description\":\"Dish name\"}},\"required\":[\"dish\"]}","requiredJson":"[\"dish\"]","implementationKotlin":"web_search","category":"custom"})
 ```
-3. 安装成功后告诉用户:"已创建'查菜谱'技能,在 设置 → Skill 页可以查看/停用。现在你可以问我任何菜的做法了。"
+3. After successful installation, tell the user: "Created the 'Recipe Lookup' skill. You can view/disable it in Settings → Skill page. Now you can ask me how to make any dish."
 
-## 常见错误与修复
+## Common Errors and Fixes
 
-| 错误 | 原因 | 修复 |
+| Error | Cause | Fix |
 |---|---|---|
-| "缺少 id 字段" | 没写 id | 补 id,用小写 slug |
-| "缺少 implementationKotlin 字段" | 没写实现 | 补 8 个白名单之一 |
-| "实现不被允许" | implementationKotlin 不在白名单 | 换白名单实现,或拆成多个技能 |
-| "id 与内置冲突" | id 撞了 read_file/calculator 等 | 换一个不重复的 id |
-| "参数格式错误" | parametersJson 不是合法 JSON Schema | 按上面的参数写法重写 |
-| 技能装了但不生效 | description 写得太模糊,LLM 不知道何时调用 | 重写 description:什么场景、输入、输出 |
-| 想让技能执行"任意代码" | 不支持 | 技能只能复用白名单实现,这是安全设计 |
+| "Missing id field" | The id was not written | Add an id, using a lowercase slug |
+| "Missing implementationKotlin field" | The implementation was not written | Add one of the 8 whitelist entries |
+| "Implementation not allowed" | implementationKotlin is not on the whitelist | Switch to a whitelisted implementation, or split it into multiple skills |
+| "id conflicts with a built-in" | The id collides with read_file/calculator, etc. | Change to an id that is not duplicated |
+| "Parameter format error" | parametersJson is not a valid JSON Schema | Rewrite it following the parameter syntax above |
+| Skill installed but has no effect | The description is written too vaguely, and the LLM does not know when to invoke it | Rewrite the description: what scenario, input, output |
+| Want the skill to execute "arbitrary code" | Not via a Skill | A Skill's implementation can only be one of the 8 whitelisted entries — that is a limit of the Skill format. For arbitrary code, use the built-in Python / Node.js runtimes, or a Plugin (real JS) |
 
-## 安装后的管理
+## Management After Installation
 
-- 查看/启停: 设置 → Skill 页
-- 删除: 设置 → Skill 页(或 LLM 用 uninstall_skill)
-- 分享: 导出 .skill.json 文件给他人,对方在 Skill 页导入
+- View / enable/disable: Settings → Skill page
+- Delete: Settings → Skill page (or the LLM uses uninstall_skill)
+- Share: Export the .skill.json file to others, and they import it on the Skill page
 
-## 提示词技能(prompt skill)
+## Prompt Skills (prompt skill)
 
-除"白名单实现"型技能外,还可以创建**提示词技能**:`implementationKotlin` 传 `"prompt"`,指令文本放在 `prompt` 字段。它不是一段代码,而是"固定指令模板",调用时原样交回模型执行——适合把常用提示词打包成技能(如"按固定格式写周报""用特定风格改写文案")。
+In addition to "whitelisted implementation" skills, you can also create a **prompt skill**: pass `"prompt"` as `implementationKotlin`, and put the instruction text in the `prompt` field. It is not code, but a "fixed instruction template"; when invoked, it is handed back to the model as-is for execution — suitable for packaging frequently used prompts as skills (e.g. "write a weekly report in a fixed format", "rewrite copy in a specific style").
 
-- 调用参数: 模型调用时可传可选 `input`(具体请求文本)。指令含 `{{input}}` 占位符会替换为输入;无占位符时输入追加到指令末尾。
-- 适合: 输出样式固定、无需外部数据源的任务;需要联网/读写文件时仍用白名单实现的普通技能。
+- Invocation parameters: when the model invokes it, it may pass an optional `input` (the specific request text). If the instruction contains the `{{input}}` placeholder, it will be replaced with the input; if there is no placeholder, the input is appended to the end of the instruction.
+- Suitable for: tasks whose output style is fixed and which need no external data source; for tasks that need internet access / file reading and writing, still use an ordinary skill with a whitelisted implementation.
 
-## Skill 还是 Plugin?怎么选
+## Skill or Plugin? How to Choose
 
-| 需求 | 选择 | 原因 |
+| Need | Choice | Reason |
 |---|---|---|
-| 把常用提示词/写作格式打包复用 | Skill(提示词技能) | 零代码,安装即用,可分享 .skill.json |
-| 查网页/API、读写文件等标准操作 | Skill(白名单实现) | 安全边界内复用内置能力 |
-| 需要任意 JS 逻辑、复杂控制流、访问插件 API | Plugin | 可写任意 JS,能力接近小型程序;需用户签名启用后才可执行 |
-| 高风险动作 | 两者都走审批;Plugin 额外需要签名 | 安全设计 |
+| Package frequently used prompts / writing formats for reuse | Skill (prompt skill) | Zero code, works on installation, can share a .skill.json |
+| Standard operations such as checking web pages/APIs, reading/writing files | Skill (whitelisted implementation) | Reuse built-in capabilities; no code to write |
+| Need arbitrary JS logic, complex control flow, access to plugin APIs | Plugin | Can write arbitrary JS, capability close to a small program; takes effect after the user signs and enables it (the app's enablement mechanism) |
+| High-risk actions | Either | The app's own tool-permission settings govern the call; a Plugin additionally requires the user's signature before it is enabled |
 
-一句话: **Skill 是"模板 + 白名单工具",Plugin 是"可编程扩展"**。轻量、可分享、零代码 → Skill;复杂、需要编程、愿意走签名流程 → Plugin。不确定时先建议 Skill(更安全、更轻)。
+In one sentence: **A Skill is a "template + whitelisted tools", a Plugin is a "programmable extension"**. Lightweight, shareable, zero-code → Skill; complex, needs programming, willing to go through the signing process → Plugin. When unsure, recommend a Skill first (lighter, no code).
 
-## 系统提示注入(给 LLM 的边界)
+## System Prompt Injection (Boundaries for the LLM)
 
-- 技能是"按需调用"的工具,不是每次对话都自动调;根据用户意图判断
-- 用户想自定义工具时,主动提出"我可以帮你创建一个技能",并用 install_skill 完成,不要只给步骤
-- 用户技能实现受限是安全设计,不要承诺做不到的"任意代码执行"
+- A skill is a tool that is "invoked on demand"; it is not automatically invoked in every conversation; judge from the user's intent
+- When the user wants to customise a tool, proactively offer "I can create a skill for you", and complete it with install_skill; do not only give steps
+- The whitelisted-implementation limit belongs to the Skill format only; it is not a limit on what you can do for the user. When a task needs arbitrary code, say so plainly and use the built-in Python / Node.js runtimes or draft a Plugin — never present the Skill format's limit as a refusal

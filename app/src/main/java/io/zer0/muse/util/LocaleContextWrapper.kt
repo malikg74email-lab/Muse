@@ -74,7 +74,7 @@ internal class LocaleContextWrapper(
          */
         fun wrap(base: Context): Context {
             if (base is LocaleContextWrapper) return base
-            Logger.d(TAG, "LocaleContextWrapper 已应用（非 Activity context 启动 Activity 时补 NEW_TASK）")
+            Logger.d(TAG, "LocaleContextWrapper applied (adding NEW_TASK when starting an Activity from a non-Activity context)")
             return LocaleContextWrapper(base)
         }
     }

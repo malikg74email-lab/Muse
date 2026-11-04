@@ -65,7 +65,7 @@ class ChatSystemTimeProviderRequestTest {
         )
         val messages = composeSystemPromptMessages(
             staticPrompt = "stable prompt",
-            dynamicPrompt = "当前时间: 2026-10-05 12:34:56 星期一",
+            dynamicPrompt = "Current time: 2026-10-05 12:34:56 Monday",
         ) + UIMessage(role = MessageRole.USER, content = "现在几点？")
 
         service.completeText(messages = messages, model = model)
@@ -73,10 +73,10 @@ class ChatSystemTimeProviderRequestTest {
         val body = AppJson.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject
         val serializedMessages = body["messages"]?.jsonArray.orEmpty()
         assertTrue(
-            "最终 Provider 请求必须保留当前时间 SYSTEM 消息",
+            "The final provider request must keep the current-time SYSTEM message",
             serializedMessages.any { message ->
                 message.jsonObject["role"]?.jsonPrimitive?.content == "system" &&
-                    message.jsonObject["content"]?.jsonPrimitive?.content?.contains("当前时间:") == true
+                    message.jsonObject["content"]?.jsonPrimitive?.content?.contains("Current time:") == true
             },
         )
     }

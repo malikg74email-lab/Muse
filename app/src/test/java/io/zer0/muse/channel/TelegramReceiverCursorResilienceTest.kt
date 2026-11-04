@@ -22,7 +22,7 @@ class TelegramReceiverCursorResilienceTest {
         )
         assertTrue(
             "损坏 offset 应记录告警并丢弃游标",
-            src.contains("Telegram offset 文件损坏"),
+            src.contains("Telegram offset file is corrupt"),
         )
     }
 

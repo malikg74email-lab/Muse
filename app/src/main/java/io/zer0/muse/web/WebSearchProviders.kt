@@ -97,7 +97,7 @@ class SearXNGProvider(
         // H-WS1: 用 resultOf 替代 runCatching,避免吞 CancellationException
         resultOf {
             val url = "$endpoint/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}" +
-                "&format=json&categories=general&language=zh-CN"
+                "&format=json&categories=general&language=en"
             val req = Request.Builder().url(url)
                 .header("User-Agent", "muse/1.0 (Android LLM client)")
                 .header("Accept", "application/json")

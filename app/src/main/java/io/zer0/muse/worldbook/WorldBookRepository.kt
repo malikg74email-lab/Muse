@@ -112,7 +112,7 @@ class WorldBookRepository(
                     val opts = if (caseSensitive) emptySet() else setOf(kotlin.text.RegexOption.IGNORE_CASE)
                     Regex(keyword, opts)
                 }.getOrElse { e ->
-                    Logger.w(TAG, "正则编译失败: ${e.message}, keyword=$keyword")
+                    Logger.w(TAG, "Regex compilation failed:  ${e.message}, keyword=$keyword")
                     null
                 }
             } ?: return false
@@ -126,7 +126,7 @@ class WorldBookRepository(
                     val opts = if (caseSensitive) emptySet() else setOf(kotlin.text.RegexOption.IGNORE_CASE)
                     Regex("\\b" + Regex.escape(keyword) + "\\b", opts)
                 }.getOrElse { e ->
-                    Logger.w(TAG, "全词正则编译失败: ${e.message}, keyword=$keyword")
+                    Logger.w(TAG, "Whole-word regex compilation failed:  ${e.message}, keyword=$keyword")
                     null
                 }
             } ?: return false
@@ -180,7 +180,7 @@ class WorldBookRepository(
     suspend fun importSillyTavernJson(jsonText: String): Int {
         val root = runCatching { json.parseToJsonElement(jsonText).jsonObject }
             .getOrElse { e ->
-                Logger.w(TAG, "SillyTavern JSON 解析失败: ${e.message}")
+                Logger.w(TAG, "SillyTavern JSON parsing failed:  ${e.message}")
                 return 0
             }
         val entriesObj = root["entries"]?.jsonObject ?: return 0
@@ -193,7 +193,7 @@ class WorldBookRepository(
         }
         if (toInsert.isEmpty()) return 0
         dao.insertAll(toInsert)
-        Logger.i(TAG, "SillyTavern 导入完成: ${toInsert.size} 条")
+        Logger.i(TAG, "SillyTavern import complete:  ${toInsert.size}  entries")
         return toInsert.size
     }
 
@@ -249,7 +249,7 @@ class WorldBookRepository(
             val keys = obj["key"]?.jsonArray?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList()
             val comment = (obj["comment"] as? JsonPrimitive)?.contentOrNull
             val title = (obj["title"] as? JsonPrimitive)?.contentOrNull
-            val name = comment?.ifBlank { title } ?: title ?: "未命名"
+            val name = comment?.ifBlank { title } ?: title ?: "Unnamed"
             val content = (obj["content"] as? JsonPrimitive)?.contentOrNull ?: ""
             val alwaysActive = (obj["constant"] as? JsonPrimitive)?.contentOrNull?.toBooleanStrictOrNull() ?: false
             val priority = (obj["order"] as? JsonPrimitive)?.intOrNull ?: 50
@@ -286,7 +286,7 @@ class WorldBookRepository(
                 updatedAt = now,
             )
         }.getOrElse { e ->
-            Logger.w(TAG, "SillyTavern 条目解析失败: ${e.message}")
+            Logger.w(TAG, "SillyTavern entry parsing failed:  ${e.message}")
             null
         }
     }
@@ -309,7 +309,7 @@ class WorldBookRepository(
         fun parseKeywords(keywordsJson: String): List<String> = keywordsCache.computeIfAbsent(keywordsJson) {
             runCatching { json.decodeFromString(stringListSerializer, it) }
                 .getOrElse { e ->
-                    Logger.w(TAG, "keywordsJson 解析失败: ${e.message}, raw=$keywordsJson")
+                    Logger.w(TAG, "keywordsJson parsing failed:  ${e.message}, raw=$keywordsJson")
                     emptyList()
                 }
         }

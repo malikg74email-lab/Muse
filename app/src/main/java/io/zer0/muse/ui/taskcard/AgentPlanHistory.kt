@@ -61,7 +61,7 @@ private fun parseHistoricalPlan(message: UIMessage, toolInfo: ToolCallInfo, sess
     val title = historicalJsonText(arguments["title"])
         ?.trim()
         ?.takeIf { it.isNotBlank() }
-        ?: "任务计划"
+        ?: "Task plan"
 
     return AgentPlan(
         id = planId,
@@ -137,7 +137,7 @@ private fun parseHistoricalPlanSteps(value: JsonElement?): List<AgentPlanStep> {
             title = historicalJsonText(obj["title"])
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
-                ?: "步骤 ${index + 1}",
+                ?: "Step ${index + 1}",
             description = historicalJsonText(obj["description"])
                 ?.trim()
                 .orEmpty(),

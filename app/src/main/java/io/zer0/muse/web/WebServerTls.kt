@@ -81,7 +81,7 @@ internal object WebServerTls {
 
         loadExisting(keyStoreFile, passwordFile)?.let { return it }
 
-        Logger.i(TAG, "首次生成 HTTPS 自签证书(filesDir/$KEYSTORE_FILE)")
+        Logger.i(TAG, "Generating HTTPS self-signed certificate for the first time (filesDir/$KEYSTORE_FILE)")
         return generate(keyStoreFile, passwordFile)
     }
 
@@ -99,7 +99,7 @@ internal object WebServerTls {
         } catch (t: Throwable) {
             // 不吞 CancellationException:仅在真实失败时回退。
             if (t is kotlin.coroutines.cancellation.CancellationException) throw t
-            Logger.w(TAG, "加载已有 HTTPS 证书失败,将重新生成: ${t.message}")
+            Logger.w(TAG, "Failed to load existing HTTPS certificate; regenerating: ${t.message}")
             null
         }
     }

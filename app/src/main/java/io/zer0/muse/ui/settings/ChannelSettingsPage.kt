@@ -915,7 +915,7 @@ private fun WeClawBindDialog(onDismiss: () -> Unit, onBound: (WeClawClient.QrSta
                 continue
             }
             pollFailures = 0
-            Logger.i("WeClawBind", "扫码状态: ${st.status}")
+            Logger.i("WeClawBind", "Scan status: ${st.status}")
             when (st.status.lowercase()) {
                 "confirmed" -> {
                     onBound(st)

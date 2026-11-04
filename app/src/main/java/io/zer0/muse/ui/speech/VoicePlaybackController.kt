@@ -77,7 +77,7 @@ class MediaPlayerVoiceAudioPlayer : VoiceAudioPlayer {
                 prepared = true
                 runCatching { ready.start() }
                     .onFailure { e ->
-                        Logger.w(TAG, "语音起播失败: ${e.message}")
+                        Logger.w(TAG, "Failed to start voice playback: ${e.message}")
                         onError(e)
                     }
             }
@@ -89,7 +89,7 @@ class MediaPlayerVoiceAudioPlayer : VoiceAudioPlayer {
             mp.prepareAsync()
             true
         }.getOrElse { e ->
-            Logger.w(TAG, "语音装载失败: ${e.message}")
+            Logger.w(TAG, "Failed to load voice: ${e.message}")
             runCatching { release() }
             onError(e)
             false
@@ -98,13 +98,13 @@ class MediaPlayerVoiceAudioPlayer : VoiceAudioPlayer {
     override fun start() {
         val mp = player ?: return
         if (!prepared) return
-        runCatching { mp.start() }.onFailure { Logger.w(TAG, "语音续播失败: ${it.message}") }
+        runCatching { mp.start() }.onFailure { Logger.w(TAG, "Failed to resume voice playback: ${it.message}") }
     }
 
     override fun pause() {
         val mp = player ?: return
         if (!prepared) return
-        runCatching { mp.pause() }.onFailure { Logger.w(TAG, "语音暂停失败: ${it.message}") }
+        runCatching { mp.pause() }.onFailure { Logger.w(TAG, "Failed to pause voice playback: ${it.message}") }
     }
 
     override fun positionMs(): Long = runCatching {
@@ -116,7 +116,7 @@ class MediaPlayerVoiceAudioPlayer : VoiceAudioPlayer {
         val mp = player ?: return
         player = null
         prepared = false
-        runCatching { mp.release() }.onFailure { Logger.w(TAG, "语音播放器释放失败: ${it.message}") }
+        runCatching { mp.release() }.onFailure { Logger.w(TAG, "Failed to release voice player: ${it.message}") }
     }
 
     private companion object {
@@ -183,7 +183,7 @@ class VoicePlaybackController(
                 onError = { stop() },
             )
         }.getOrElse { e ->
-            Logger.w(TAG, "语音播放器装载异常: ${e.message}")
+            Logger.w(TAG, "Voice player load error: ${e.message}")
             false
         }
         if (!loaded) {

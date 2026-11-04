@@ -215,11 +215,11 @@ fun TerminalScreen(onBack: () -> Unit) {
                     webViewClient =
                         object : WebViewClient() {
                             override fun onPageFinished(view: WebView?, url: String?) {
-                                Logger.i(TAG, "WebView 加载完成: $url")
+                                Logger.i(TAG, "WebView load finished: $url")
                             }
 
                             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                                Logger.w(TAG, "WebView 加载错误: ${error?.errorCode} ${error?.description} ${request?.url}")
+                                Logger.w(TAG, "WebView load error: ${error?.errorCode} ${error?.description} ${request?.url}")
                             }
                         }
                     webChromeClient =
@@ -239,7 +239,7 @@ fun TerminalScreen(onBack: () -> Unit) {
                             fun onReady() {
                                 mainHandler.post {
                                     webReady = true
-                                    Logger.i(TAG, "WebView onReady 到达:pending=${pendingJs.size}")
+                                    Logger.i(TAG, "WebView onReady reached: pending=${pendingJs.size}")
                                     val wv = webViewRef
                                     if (wv != null) {
                                         while (pendingJs.isNotEmpty()) {
