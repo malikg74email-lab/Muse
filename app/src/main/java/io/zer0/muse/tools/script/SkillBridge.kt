@@ -122,9 +122,9 @@ object SkillBridge {
         if (!isBridge) return HandleResult.NotBridge
 
         val action = (obj["action"] as? JsonPrimitive)?.contentOrNull
-            ?: return HandleResult.Failure("__bridge__ 缺少 action 字段")
+            ?: return HandleResult.Failure("__bridge__ missing the action field")
         if (action !in allowedActions) {
-            return HandleResult.Failure("__bridge__ action '$action' 不在放行动作集内")
+            return HandleResult.Failure("__bridge__ action '$action' is not in the allowed action set")
         }
         val params = obj["params"] as? JsonObject ?: buildJsonObject { }
         return when (action) {
@@ -139,7 +139,7 @@ object SkillBridge {
             "clipboard_write" -> execClipboardWrite(host, params)
             "notify" -> execNotify(host, params)
             "device_info" -> HandleResult.Output(deviceInfoJson())
-            else -> HandleResult.Failure("__bridge__ action '$action' 不受支持")
+            else -> HandleResult.Failure("__bridge__ action '$action' is not supported")
         }
     }
 
@@ -148,27 +148,27 @@ object SkillBridge {
     /** 执行 http_get：SSRF 防护(含重定向逐跳校验) + 完整输出落盘。 */
     private fun execHttpGet(params: JsonObject, host: Host?): HandleResult {
         val url = (params["url"] as? JsonPrimitive)?.contentOrNull
-            ?: return HandleResult.Failure("http_get 缺少 url 参数")
+            ?: return HandleResult.Failure("http_get missing the url parameter")
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            return HandleResult.Failure("http_get url 仅支持 http/https 协议")
+            return HandleResult.Failure("http_get url only supports the http/https protocols")
         }
         val outputDirectory = host?.context?.let { File(it.filesDir, TOOL_OUTPUTS_DIR) }
-            ?: return HandleResult.Failure("http_get 缺少完整响应存储上下文")
+            ?: return HandleResult.Failure("http_get missing the full-response storage context")
         return execHttpGetWithRedirects(url, outputDirectory)
     }
 
     /** v2.2.1: 执行 http_post（不跟随重定向，fail-closed）。 */
     private fun execHttpPost(params: JsonObject, host: Host?): HandleResult {
         val url = (params["url"] as? JsonPrimitive)?.contentOrNull
-            ?: return HandleResult.Failure("http_post 缺少 url 参数")
+            ?: return HandleResult.Failure("http_post missing the url parameter")
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            return HandleResult.Failure("http_post url 仅支持 http/https 协议")
+            return HandleResult.Failure("http_post url only supports the http/https protocols")
         }
         val outputDirectory = host?.context?.let { File(it.filesDir, TOOL_OUTPUTS_DIR) }
-            ?: return HandleResult.Failure("http_post 缺少完整响应存储上下文")
+            ?: return HandleResult.Failure("http_post missing the full-response storage context")
         val body = (params["body"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         if (body.toByteArray(Charsets.UTF_8).size > MAX_REQUEST_BYTES) {
-            return HandleResult.Failure("http_post 请求体超过上限(${MAX_REQUEST_BYTES / 1024}KB)")
+            return HandleResult.Failure("http_post request body exceeds the limit (${MAX_REQUEST_BYTES / 1024}KB)")
         }
         val contentType = (params["content_type"] as? JsonPrimitive)?.contentOrNull
             ?.takeIf { it.isNotBlank() } ?: "text/plain; charset=utf-8"
@@ -181,9 +181,9 @@ object SkillBridge {
                 }.toString(),
             )
         } catch (e: Exception) {
-            Logger.w(TAG, "http_post 桥接失败: ${e.message}")
+            Logger.w(TAG, "http_post bridge failed: ${e.message}")
             val message = if (e is SkillBridgeHttpClient.PinnedAddressException) {
-                "http_post 拒绝访问内网/非公网地址: ${e.url}"
+                "http_post refused access to an intranet/non-public address: ${e.url}"
             } else {
                 // v2.2.1: 带地址与失败阶段(超时/解析/TLS)
                 ToolFailureText.httpFailure("http_post", url, e)
@@ -210,9 +210,9 @@ object SkillBridge {
                 }.toString(),
             )
         } catch (e: Exception) {
-            Logger.w(TAG, "http_get 桥接失败: ${e.message}")
+            Logger.w(TAG, "http_get bridge failed: ${e.message}")
             val message = if (e is SkillBridgeHttpClient.PinnedAddressException) {
-                "http_get 拒绝访问内网/非公网地址: ${e.url}"
+                "http_get refused access to an intranet/non-public address: ${e.url}"
             } else {
                 // v2.2.1: 带地址与失败阶段(超时/解析/TLS)
                 ToolFailureText.httpFailure("http_get", startUrl, e)
@@ -223,7 +223,7 @@ object SkillBridge {
 
     // ── 沙盒文件 ──────────────────────────────────────────────────────────
 
-    private fun fsRootOf(host: Host?): File = host?.fsRoot ?: throw SkillBridgeFs.BridgeFsException("当前动作未提供沙盒目录")
+    private fun fsRootOf(host: Host?): File = host?.fsRoot ?: throw SkillBridgeFs.BridgeFsException("The current action does not provide a sandbox directory")
 
     private fun execFsList(host: Host?, params: JsonObject): HandleResult {
         return try {
@@ -258,7 +258,7 @@ object SkillBridge {
         return try {
             val root = fsRootOf(host)
             val path = paramString(params, "path")
-            if (path.isEmpty()) return HandleResult.Failure("fs_read 缺少 path 参数")
+            if (path.isEmpty()) return HandleResult.Failure("fs_read missing the path parameter")
             val content = SkillBridgeFs.read(
                 root = root,
                 path = path,
@@ -280,7 +280,7 @@ object SkillBridge {
         return try {
             val root = fsRootOf(host)
             val path = paramString(params, "path")
-            if (path.isEmpty()) return HandleResult.Failure("fs_write 缺少 path 参数")
+            if (path.isEmpty()) return HandleResult.Failure("fs_write missing the path parameter")
             val content = paramString(params, "content")
             val written = SkillBridgeFs.write(root, path, content)
             HandleResult.Output(
@@ -298,7 +298,7 @@ object SkillBridge {
         return try {
             val root = fsRootOf(host)
             val path = paramString(params, "path")
-            if (path.isEmpty()) return HandleResult.Failure("fs_delete 缺少 path 参数")
+            if (path.isEmpty()) return HandleResult.Failure("fs_delete missing the path parameter")
             SkillBridgeFs.delete(root, path)
             HandleResult.Output(
                 buildJsonObject {
@@ -313,54 +313,54 @@ object SkillBridge {
 
     private fun fsFailure(action: String, e: Exception): HandleResult = HandleResult.Failure(
         if (e is SkillBridgeFs.BridgeFsException) {
-            "$action 被拒绝: ${e.message}"
+            "$action rejected: ${e.message}"
         } else {
-            "$action 失败: ${e.message ?: "未知错误"}"
+            "$action failed: ${e.message ?: "unknown error"}"
         },
     )
 
     // ── 系统能力 ──────────────────────────────────────────────────────────
 
     private suspend fun execClipboardRead(host: Host?): HandleResult {
-        val context = host?.context ?: return HandleResult.Failure("桥接宿主缺少 Context,无法读取剪贴板")
+        val context = host?.context ?: return HandleResult.Failure("The bridge host has no Context; cannot read the clipboard")
         return withContext(Dispatchers.Main) {
             try {
                 val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                    ?: return@withContext HandleResult.Failure("剪贴板服务不可用")
+                    ?: return@withContext HandleResult.Failure("Clipboard service unavailable")
                 val text = manager.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
                 HandleResult.Output(buildJsonObject { put("text", JsonPrimitive(text)) }.toString())
             } catch (e: Exception) {
-                HandleResult.Failure("clipboard_read 失败: ${e.message ?: "未知错误"}")
+                HandleResult.Failure("clipboard_read failed: ${e.message ?: "unknown error"}")
             }
         }
     }
 
     private suspend fun execClipboardWrite(host: Host?, params: JsonObject): HandleResult {
-        val context = host?.context ?: return HandleResult.Failure("桥接宿主缺少 Context,无法写入剪贴板")
+        val context = host?.context ?: return HandleResult.Failure("The bridge host has no Context; cannot write the clipboard")
         val text = paramString(params, "text")
         return withContext(Dispatchers.Main) {
             try {
                 val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                    ?: return@withContext HandleResult.Failure("剪贴板服务不可用")
+                    ?: return@withContext HandleResult.Failure("Clipboard service unavailable")
                 manager.setPrimaryClip(ClipData.newPlainText("muse-skill", text))
                 HandleResult.Output("""{"ok":true}""")
             } catch (e: Exception) {
-                HandleResult.Failure("clipboard_write 失败: ${e.message ?: "未知错误"}")
+                HandleResult.Failure("clipboard_write failed: ${e.message ?: "unknown error"}")
             }
         }
     }
 
     private suspend fun execNotify(host: Host?, params: JsonObject): HandleResult {
-        val context = host?.context ?: return HandleResult.Failure("桥接宿主缺少 Context,无法发送提示")
+        val context = host?.context ?: return HandleResult.Failure("The bridge host has no Context; cannot send a notification")
         val title = paramString(params, "title")
         val body = paramString(params, "body").ifBlank { title }
-        if (body.isBlank()) return HandleResult.Failure("notify 缺少 title/body")
+        if (body.isBlank()) return HandleResult.Failure("notify missing title/body")
         return withContext(Dispatchers.Main) {
             try {
                 android.widget.Toast.makeText(context, body, android.widget.Toast.LENGTH_SHORT).show()
                 HandleResult.Output("""{"ok":true}""")
             } catch (e: Exception) {
-                HandleResult.Failure("notify 失败: ${e.message ?: "未知错误"}")
+                HandleResult.Failure("notify failed: ${e.message ?: "unknown error"}")
             }
         }
     }

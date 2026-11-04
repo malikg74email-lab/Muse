@@ -50,7 +50,7 @@ class ToolApprovalRouter {
             synchronized(lock) {
                 val current = backingDelegate
                 if (value != null && current != null && current !== value && inFlight.get() > 0) {
-                    Logger.w(TAG, "审批进行中,拒绝替换审批 delegate(跨会话覆盖) | inFlight=${inFlight.get()}")
+                    Logger.w(TAG, "An approval is in flight; refusing to replace the approval delegate (cross-session override) | inFlight=${inFlight.get()}")
                     return
                 }
                 backingDelegate = value
@@ -63,7 +63,7 @@ class ToolApprovalRouter {
         argsPreview: String,
         args: Map<String, Any?> = emptyMap(),
     ): ToolApprovalState {
-        val bridge = backingDelegate ?: return ToolApprovalState.Denied("审批通道未就绪")
+        val bridge = backingDelegate ?: return ToolApprovalState.Denied("Approval channel not ready")
         inFlight.incrementAndGet()
         return try {
             bridge.requestToolApproval(toolName, toolCallId, argsPreview, args)

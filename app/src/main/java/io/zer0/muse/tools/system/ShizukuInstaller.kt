@@ -51,7 +51,7 @@ class ShizukuInstaller(private val context: Context) {
                 context.startActivity(playIntent)
                 true
             } catch (e: Exception) {
-                Logger.w(TAG, "打开 Play Store 失败: ${e.message}")
+                Logger.w(TAG, "Failed to open the Play Store: ${e.message}")
                 openGitHubInBrowser()
             }
         }
@@ -66,7 +66,7 @@ class ShizukuInstaller(private val context: Context) {
             context.startActivity(browserIntent)
             true
         } catch (e: Exception) {
-            Logger.e(TAG, "无法打开下载页: ${e.message}", e)
+            Logger.e(TAG, "Could not open the download page: ${e.message}", e)
             false
         }
     }

@@ -22,19 +22,19 @@ object NoteThoughtTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "note_thought",
-        description = "记下一件以后值得主动问起的事。在对话里自然出现时使用：" +
-            "他说了将来要做的事、正困扰他的事、或者明确表达过的期待。" +
-            "不要记日常寒暄和无关紧要的细节 —— 只有隔几天再问起会显得自然的事才值得记。",
+        description = "Note down something worth proactively asking about later. Use it when it comes up naturally in conversation:" +
+            "he mentioned something he will do in the future, something troubling him, or an expectation he clearly expressed." +
+            "Do not note everyday pleasantries and trivial details — only things it would feel natural to ask about again after a few days are worth noting.",
         parameters = mapOf(
-            "seed" to "必填。那件事是什么，一句话，用你自己的话写，不要照抄原话。",
-            "kind" to "必填。类型：reminder（他有具体要做的事）/ follow_up（没聊完的话题）/" +
-                "care（他的状态，比如身体或情绪）/ share（你自己想分享的事）/" +
-                "milestone（你们之间的节点）。",
-            "urgency" to "可选。immediate（过了时间点就没意义）/ window（这几天说都行，默认）/" +
-                "evergreen（什么时候说都行）。",
-            "weight" to "可选。你有多在意这件事，0 到 1 之间的小数，默认 0.6。" +
-                "真正要紧的事才给 0.8 以上。",
-            "within_hours" to "可选。如果是 immediate 或 window，多少小时内说都算合适。默认 168（一周）。",
+            "seed" to "Required. What the matter is, in one sentence, in your own words; do not copy the original wording.",
+            "kind" to "Required. Type: reminder (he has something specific to do) / follow_up (a topic that was not finished) /" +
+                "care (his state, e.g. body or mood) / share (something you yourself want to share) /" +
+                "milestone (a milestone between you).",
+            "urgency" to "Optional. immediate (meaningless once the time point passes) / window (fine to say any time in these days, default) /" +
+                "evergreen (fine to say at any time).",
+            "weight" to "Optional. How much you care about this matter, a decimal between 0 and 1, default 0.6." +
+                "Only give 0.8 or above to truly important matters.",
+            "within_hours" to "Optional. If immediate or window, within how many hours it is appropriate to mention. Default 168 (one week).",
         ),
         category = "built-in",
         riskLevel = ToolRiskLevel.NORMAL,
@@ -46,7 +46,7 @@ object NoteThoughtTool {
         executionContext: ToolExecutionContext,
     ): String {
         val parsed = ParsedArgs.from(args)
-        if (parsed.seed.isBlank()) return "Error: seed 不能为空"
+        if (parsed.seed.isBlank()) return "Error: seed must not be empty"
 
         val now = System.currentTimeMillis()
         val assistantId = resolveAssistantId(executionContext)
@@ -75,9 +75,9 @@ object NoteThoughtTool {
         )
 
         return if (recorded) {
-            "已记下。之后合适的时候我会问起这件事。"
+            "Noted. I will ask about this matter when the time is right."
         } else {
-            "这件事我已经记着了，不用重复记。"
+            "I already have this matter noted; no need to note it again."
         }
     }
 

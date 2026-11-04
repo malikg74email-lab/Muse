@@ -24,6 +24,13 @@ package io.zer0.muse.tools
 internal object ToolResultJudge {
 
     private val BRACKET_FAILURE_MARKERS = listOf(
+        // Current producer markers (English).
+        "[Timeout]",
+        "[Interrupted]",
+        "[Failed]",
+        "[Cancelled]",
+        // Legacy Chinese markers: retained so results persisted/exported by
+        // older versions are still judged as failures.
         "[超时]",
         "[中断]",
         "[工具输出已截断",
@@ -44,6 +51,9 @@ internal object ToolResultJudge {
      * 强失败前缀:多词合成的专用错误消息,语义明确,几乎不可能是正常正文的开头。
      */
     private val STRONG_FAILURE_PREFIXES = listOf(
+        // English producer shapes (current).
+        "Tool does not exist", "Missing required parameter",
+        // Legacy Chinese shapes: retained for persisted/older results.
         "工具不存在", "工具执行异常", "参数解析失败", "skill 执行异常",
         "路径越权", "缺少参数", "文件过大", "文件不存在", "未知 skill",
         "URL 必须", "未找到 id 为", "子助手",

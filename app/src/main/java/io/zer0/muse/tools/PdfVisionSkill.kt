@@ -45,14 +45,14 @@ object PdfVisionSkill {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = NAME,
-        description = "对 PDF 文件做视觉解析(每页渲染为图片 → 视觉模型 OCR 提取文字)。" +
-            "适用于扫描版 PDF(图片型)或复杂版式 PDF(表格/公式/图文混排)。" +
-            "普通文字版 PDF 请优先用 read_file(若可读)或文档解析附件,本工具耗时较长。" +
-            "需要配置支持 vision 的模型(GPT-4o / Gemini / Claude 等)。" +
-            "返回每页 OCR 文本,用 '--- Page N ---' 分隔。",
+        description = "Do visual parsing on a PDF file (each page rendered as an image → a vision model OCR-extracts the text)." +
+            "Suitable for scanned PDFs (image-type) or complex-layout PDFs (tables/formulas/mixed text and images)." +
+            "For ordinary text PDFs, prefer read_file (if readable) or document-parsing attachments; this tool takes a long time." +
+            "Requires a configured model that supports vision (GPT-4o / Gemini / Claude, etc.)." +
+            "Returns each page's OCR text, separated by '--- Page N ---'.",
         parameters = mapOf(
-            "path" to "必填,PDF 文件绝对路径(如 '/sdcard/Download/report.pdf' 或工作区相对路径)",
-            "max_pages" to "可选,最大解析页数(默认 50,硬上限 200),防止超大 PDF 耗时过长",
+            "path" to "Required, the PDF file's absolute path (e.g. '/sdcard/Download/report.pdf' or a workspace-relative path)",
+            "max_pages" to "Optional, maximum pages to parse (default 50, hard limit 200), to prevent huge PDFs from taking too long",
         ),
         required = setOf("path"),
         category = "built-in",
@@ -70,9 +70,9 @@ object PdfVisionSkill {
      */
     suspend fun execute(args: Map<String, String>, parser: PdfVisionParser, context: Context, workspaceRoot: File): String {
         val rawPath = args["path"]?.trim()?.takeIf { it.isNotBlank() }
-            ?: return "[错误] 缺少必填参数 path"
+            ?: return "Error: missing required parameter path"
 
-        if (rawPath.contains("..")) return "[错误] 路径禁止包含 '..'"
+        if (rawPath.contains("..")) return "Error: path must not contain '..'"
 
         val maxPages = resolveMaxPages(args["max_pages"])
 
@@ -85,7 +85,7 @@ object PdfVisionSkill {
             File(rawPath),
         )
         val target = candidates.firstOrNull { it.exists() && it.isFile }
-            ?: return "[错误] PDF 文件不存在: $rawPath"
+            ?: return "Error: PDF file does not exist: $rawPath"
 
         // 进度日志(便于调试,UI 侧若需进度展示可后续扩展)
         var lastReported = 0L
@@ -94,30 +94,30 @@ object PdfVisionSkill {
                 // 限制日志频率(每页一条即可)
                 val now = System.currentTimeMillis()
                 if (now - lastReported > 500 || current == total) {
-                    Logger.i("PdfVisionSkill", "parse_pdf 进度: $current/$total (${target.name})")
+                    Logger.i("PdfVisionSkill", "parse_pdf progress: $current/$total (${target.name})")
                     lastReported = now
                 }
             }
         }.getOrElse {
-            Logger.w("PdfVisionSkill", "parse_pdf 异常", it)
-            return "[错误] 解析异常: ${it.message}"
+            Logger.w("PdfVisionSkill", "parse_pdf exception", it)
+            return "Error: parsing exception: ${it.message}"
         }
 
         if (!result.success) {
-            return "[错误] ${result.error ?: "解析失败"}"
+            return "Error: ${result.error ?: "parsing failed"}"
         }
 
         // 截断到 maxPages(如果 PDF 超过 maxPages,parse 内部已处理;此处仅做最终输出截断)
         val finalText = if (result.pagesProcessed > maxPages) {
             result.text.take(estimateCharsForPages(maxPages)) +
-                "\n\n[注意: 实际解析 ${result.pagesProcessed} 页,已截断到 $maxPages 页的内容量]"
+                "\n\n[Note: actually parsed ${result.pagesProcessed} pages; truncated to the content volume of $maxPages pages]"
         } else {
             result.text
         }
 
         return buildString {
-            appendLine("[PDF 视觉解析成功] 文件: ${target.name}")
-            appendLine("总页数: ${result.pageCount},成功解析: ${result.pagesProcessed}")
+            appendLine("[PDF visual parsing succeeded] File: ${target.name}")
+            appendLine("Total pages: ${result.pageCount}, successfully parsed: ${result.pagesProcessed}")
             appendLine()
             append(finalText)
         }

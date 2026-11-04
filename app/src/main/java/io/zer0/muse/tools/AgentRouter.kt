@@ -64,7 +64,7 @@ class AgentRouter(
                 targetId = null,
                 targetName = null,
                 confidence = 0f,
-                reason = "当前没有其他助手或团队可委托",
+                reason = "There are currently no other assistants or teams to delegate to",
             )
         }
 
@@ -118,7 +118,7 @@ class AgentRouter(
                     targetId = team.id,
                     targetName = team.name,
                     confidence = score.coerceIn(0f, 1f),
-                    reason = "团队「${team.name}」的能力覆盖该任务",
+                    reason = "Team '${team.name}' has capabilities covering this task",
                 )
             } else {
                 null
@@ -132,7 +132,7 @@ class AgentRouter(
                     targetId = assistant.id,
                     targetName = assistant.name,
                     confidence = score.coerceIn(0f, 1f),
-                    reason = "助手「${assistant.name}」的能力标签匹配该任务",
+                    reason = "Assistant '${assistant.name}' has capability tags matching this task",
                 )
             } else {
                 null
@@ -149,7 +149,7 @@ class AgentRouter(
                 val teamScore = bestTeam?.second ?: 0f
                 val assistantScore = bestAssistant?.second ?: 0f
                 val bestScore = maxOf(teamScore, assistantScore)
-                Logger.d("AgentRouter", "路由置信度 $bestScore 低于阈值 $CONFIDENCE_THRESHOLD,回退默认 Agent")
+                Logger.d("AgentRouter", "Routing confidence $bestScore is below the threshold $CONFIDENCE_THRESHOLD, falling back to the default Agent")
                 // 未命中阈值,返回最高分候补供上层决策
                 val fallback = assistantResult ?: assistantScores.maxByOrNull { it.second }
                     ?.let { (assistant, score) ->
@@ -158,7 +158,7 @@ class AgentRouter(
                             targetId = assistant.id,
                             targetName = assistant.name,
                             confidence = score.coerceIn(0f, 1f),
-                            reason = "未强匹配,候选助手「${assistant.name}」",
+                            reason = "No strong match; candidate assistant '${assistant.name}'",
                         )
                     }
                 fallback ?: RouteResult(
@@ -166,7 +166,7 @@ class AgentRouter(
                     targetId = null,
                     targetName = null,
                     confidence = 0f,
-                    reason = "未找到合适的助手或团队",
+                    reason = "No suitable assistant or team found",
                 )
             }
         }
@@ -202,14 +202,14 @@ class AgentRouter(
 
         // 构造助手/团队花名册,让 LLM 知道每个候选的 id 和能力描述
         val roster = buildString {
-            append("可用助手:\n")
+            append("Available assistants:\n")
             assistants.forEach { a ->
                 // 优先用 summary,为空时降级到 systemPrompt 前 80 字
                 val desc = a.summary.ifBlank { a.systemPrompt.take(80) }
                 append("- ${a.id} | ${a.name}${if (desc.isBlank()) "" else ": $desc"}\n")
             }
             if (config.teams.isNotEmpty()) {
-                append("\n可用团队:\n")
+                append("\nAvailable teams:\n")
                 config.teams.forEach { t ->
                     append("- ${t.id} | ${t.name}${if (t.description.isBlank()) "" else ": ${t.description}"}\n")
                 }
@@ -217,15 +217,15 @@ class AgentRouter(
         }
 
         val prompt = """
-你是一个轻量路由器。只有当候选助手/团队明显比当前助手更合适时才选择它。
-只输出一个候选 ID;如果没有明显匹配,输出 NONE。不要解释。
+You are a lightweight router. Only pick a candidate assistant/team when it is clearly a better fit than the current assistant.
+Output exactly one candidate ID; if there is no clear match, output NONE. Do not explain.
 
-用户任务:
+User task:
 $task
 
 $roster
 
-候选 ID:
+Candidate IDs:
         """.trimIndent()
 
         return try {
@@ -237,7 +237,7 @@ $roster
             val completion = withTimeoutOrNull(4_000L) {
                 chatService.completeText(
                     messages = listOf(
-                        UIMessage(role = MessageRole.SYSTEM, content = "只做轻量分类,只输出候选 ID 或 NONE,不要思考长文。"),
+                        UIMessage(role = MessageRole.SYSTEM, content = "Do only lightweight classification; output only a candidate ID or NONE, no long reasoning."),
                         UIMessage(role = MessageRole.USER, content = prompt),
                     ),
                     model = routed?.second,
@@ -265,7 +265,7 @@ $roster
                     targetId = matchedAssistant.id,
                     targetName = matchedAssistant.name,
                     confidence = 0.8f,
-                    reason = "LLM 路由命中助手「${matchedAssistant.name}」",
+                    reason = "LLM routing matched assistant '${matchedAssistant.name}'",
                     source = "llm",
                 )
             } else {
@@ -277,17 +277,17 @@ $roster
                         targetId = matchedTeam.id,
                         targetName = matchedTeam.name,
                         confidence = 0.8f,
-                        reason = "LLM 路由命中团队「${matchedTeam.name}」",
+                        reason = "LLM routing matched team '${matchedTeam.name}'",
                         source = "llm",
                     )
                 } else {
                     // LLM 回复的 ID 无法匹配,降级规则路由
-                    Logger.d("AgentRouter", "LLM 路由回复『$id』未匹配任何助手/团队,降级规则路由")
+                    Logger.d("AgentRouter", "LLM routing reply '$id' matched no assistant/team, falling back to rule routing")
                     route(task, excludeAssistantId)
                 }
             }
         } catch (e: Exception) {
-            Logger.w("AgentRouter", "LLM 路由异常,降级规则路由", e)
+            Logger.w("AgentRouter", "LLM routing error, falling back to rule routing", e)
             route(task, excludeAssistantId)
         }
     }

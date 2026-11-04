@@ -41,7 +41,7 @@ object ContextCheckpointMerge {
     const val DIVIDER_MARKER = "[CONTEXT_DIVIDER]"
 
     /** 摘要正文的抬头：让模型知道这段是"更早的历史"，不是本轮新输入。 */
-    private const val HEADER = "历史对话摘要（更早的内容已压缩，以下为要点）"
+    private const val HEADER = "Conversation history summary (earlier content has been compressed; the key points are below)"
 
     /** 合并结果。[applied]=false 表示未生效（无检查点 / 边界无法安全定位），此时原样返回。 */
     data class Result(

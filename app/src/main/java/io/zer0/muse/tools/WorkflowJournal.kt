@@ -128,7 +128,7 @@ class WorkflowJournal(
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            Logger.w(TAG, "record 失败 runId=$runId seq=$nodeSeq: ${error.message}", error)
+            Logger.w(TAG, "record failed runId=$runId seq=$nodeSeq: ${error.message}", error)
         }
     }
 
@@ -137,7 +137,7 @@ class WorkflowJournal(
         withContext(Dispatchers.IO) {
             val file = pathOf(runId)
             val parent = file.parentFile ?: error("workflow journal has no parent directory")
-            check(parent.exists() || parent.mkdirs()) { "无法创建工作流日志目录" }
+            check(parent.exists() || parent.mkdirs()) { "Could not create the workflow journal directory" }
             val storedResult = if (nodeKind == NODE_KIND_SENSITIVE_TOOL && result.isNotEmpty()) {
                 requireNotNull(resultCipher) { "sensitive workflow result requires an encryption provider" }.encrypt(result)
             } else {
@@ -179,13 +179,13 @@ class WorkflowJournal(
                     AppJson.decodeFromString(Entry.serializer(), line)
                 }.getOrNull()
                 if (parsed == null) {
-                    Logger.w(TAG, "跳过损坏的 JSONL 行: ${line.take(80)}")
+                    Logger.w(TAG, "Skipping a corrupted JSONL line: ${line.take(80)}")
                     continue
                 }
                 val restored = if (parsed.nodeKind == NODE_KIND_SENSITIVE_TOOL && parsed.result.isNotEmpty()) {
                     val plaintext = resultCipher?.decryptOrNull(parsed.result)
                     if (plaintext == null) {
-                        Logger.w(TAG, "敏感工作流结果无法解密，阻止自动恢复 seq=${parsed.nodeSeq}")
+                        Logger.w(TAG, "A sensitive workflow result could not be decrypted; automatic resume blocked seq=${parsed.nodeSeq}")
                         parsed.copy(result = "", status = "failed")
                     } else {
                         parsed.copy(result = plaintext)
@@ -256,7 +256,7 @@ class WorkflowJournal(
         journalDir.listFiles()?.forEach { file ->
             if (file.isFile && file.lastModified() < cutoff) {
                 if (!file.delete()) {
-                    Logger.w(TAG, "cleanup 删除失败: ${file.name}")
+                    Logger.w(TAG, "cleanup deletion failed: ${file.name}")
                 }
             }
         }

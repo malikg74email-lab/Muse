@@ -51,10 +51,10 @@ object TodoTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "todo_write",
-        description = "管理当前会话的待办清单,用于多步骤工作。" +
-            "把复杂任务拆成子任务;单步就能完成的简单任务不需要。" +
-            "每次调用会整体替换清单(替换式,不是增量)。" +
-            "会话由宿主提供,不要自己编造 session id。",
+        description = "Manage the current session's to-do list, for multi-step work." +
+            "Break complex tasks into subtasks; simple tasks completable in one step do not need it." +
+            "Each call replaces the whole list (replacement-style, not incremental)." +
+            "The session is provided by the host; do not invent a session id yourself.",
         parameters = mapOf(
             "todos" to
                 "Required. JSON array of todo items: " +
@@ -217,9 +217,9 @@ object TodoTool {
             .fold(
                 onSuccess = { result },
                 onFailure = { error ->
-                    io.zer0.common.Logger.w("TodoTool", "待办落库失败 session=$sessionId: ${error.message}")
-                    "$result\n[注意] 待办未能写入本地数据库（${error.message ?: "未知原因"}），" +
-                        "本次清单只存在于当前内存，重启后会丢失。请告知用户。"
+                    io.zer0.common.Logger.w("TodoTool", "To-do persistence failed session=$sessionId: ${error.message}")
+                    "$result\n[Note] The to-do list could not be written to the local database (${error.message ?: "unknown reason"})," +
+                        "this list exists only in the current memory and will be lost after a restart. Please tell the user."
                 },
             )
     }

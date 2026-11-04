@@ -27,10 +27,10 @@ class NetworkTextToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "ping_host",
-                description = "Ping 指定的域名或 IP,测试网络可达性。",
+                description = "Ping the specified domain or IP to test network reachability.",
                 parameters = mapOf(
-                    "host" to "必填,目标域名或 IP,如 baidu.com",
-                    "timeout_ms" to "可选,超时毫秒数,默认 3000",
+                    "host" to "Required, target domain or IP, e.g. baidu.com",
+                    "timeout_ms" to "Optional, timeout in milliseconds, default 3000",
                 ),
                 required = setOf("host"),
                 category = "built-in",
@@ -53,15 +53,15 @@ class NetworkTextToolsRegistrar(
                         "$timeout",
                     )
                 }
-            }.onError { msg, _ -> Logger.w("NetworkTools", "Ping 失败: $msg") }
+            }.onError { msg, _ -> Logger.w("NetworkTools", "Ping failed: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_ping_host_failed, host)
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "dns_lookup",
-                description = "解析域名对应的所有 IP 地址(A 记录)。",
-                parameters = mapOf("host" to "必填,目标域名,如 google.com"),
+                description = "Resolve all IP addresses for a domain (A records).",
+                parameters = mapOf("host" to "Required, target domain, e.g. google.com"),
                 required = setOf("host"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,
@@ -79,14 +79,14 @@ class NetworkTextToolsRegistrar(
                         context.getString(R.string.tool_dns_lookup_result, host, ips.size, ips.joinToString("\n"))
                     }
                 }
-            }.onError { msg, _ -> Logger.w("NetworkTools", "DNS 解析失败: $msg") }
+            }.onError { msg, _ -> Logger.w("NetworkTools", "DNS resolution failed: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_dns_lookup_failed, host)
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_public_ip",
-                description = "获取当前设备的公网 IP 地址。",
+                description = "Get the current device's public IP address.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -110,17 +110,17 @@ class NetworkTextToolsRegistrar(
                     }
                     context.getString(R.string.tool_public_ip_failed)
                 }
-            }.onError { msg, _ -> Logger.w("NetworkTools", "获取公网 IP 失败: $msg") }
+            }.onError { msg, _ -> Logger.w("NetworkTools", "Get public IP failed: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_public_ip_failed)
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "json_pretty",
-                description = "将 JSON 字符串格式化为易读形式(美化/压缩)。",
+                description = "Format a JSON string into a readable form (beautify/minify).",
                 parameters = mapOf(
-                    "json" to "必填,要格式化的 JSON 字符串",
-                    "indent" to "可选,true/false 是否展开缩进,默认 true",
+                    "json" to "Required, the JSON string to format",
+                    "indent" to "Optional, true/false whether to expand indentation, default true",
                 ),
                 required = setOf("json"),
                 category = "built-in",
@@ -138,20 +138,20 @@ class NetworkTextToolsRegistrar(
                 }
                 val element = Json.parseToJsonElement(input)
                 prettyJson.encodeToString(JsonElement.serializer(), element)
-            }.onError { msg, _ -> Logger.w("NetworkTools", "JSON 格式化失败: $msg") }
+            }.onError { msg, _ -> Logger.w("NetworkTools", "JSON formatting failed: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_json_pretty_failed)
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "generate_password",
-                description = "生成随机密码。可指定长度和是否包含大小写字母、数字、符号。",
+                description = "Generate a random password. You can specify the length and whether to include uppercase/lowercase letters, digits and symbols.",
                 parameters = mapOf(
-                    "length" to "可选,密码长度,默认 16,范围 4-64",
-                    "uppercase" to "可选,true/false 包含大写字母,默认 true",
-                    "lowercase" to "可选,true/false 包含小写字母,默认 true",
-                    "digits" to "可选,true/false 包含数字,默认 true",
-                    "symbols" to "可选,true/false 包含特殊符号,默认 true",
+                    "length" to "Optional, password length, default 16, range 4-64",
+                    "uppercase" to "Optional, true/false include uppercase letters, default true",
+                    "lowercase" to "Optional, true/false include lowercase letters, default true",
+                    "digits" to "Optional, true/false include digits, default true",
+                    "symbols" to "Optional, true/false include special symbols, default true",
                 ),
                 required = emptySet(),
                 category = "built-in",

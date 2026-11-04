@@ -55,13 +55,13 @@ object ShellSandboxTool {
         name = NAME,
         // v1.0.75 fix (工具审查 02): 补触发场景与返回格式
         // C-26: 示例改为沙箱内路径(/sdcard 等外部路径已被路径限制拦截)
-        description = "在应用沙箱内执行白名单 Shell 命令,用于查询设备状态(文件/磁盘/进程)后做决策(仅 Agent Mode)。" +
-            "允许的命令:ls/cat/grep/echo/wc/head/tail/find/file/stat/df/du/uname/whoami/date/pwd/tree。" +
-            "工作目录为应用数据目录,路径参数仅允许应用数据目录内;禁止命令分隔符(&;|)和重定向(<>),超时 10 秒。" +
-            "长输出会保存到可分段读取的应用文件。" +
-            "返回: 成功=命令输出,失败=[错误]原因。",
+        description = "Execute whitelisted Shell commands inside the app sandbox, for querying device state (files/disk/processes) before making decisions (Agent Mode only)." +
+            "Allowed commands: ls/cat/grep/echo/wc/head/tail/find/file/stat/df/du/uname/whoami/date/pwd/tree." +
+            "The working directory is the app data directory; path arguments are only allowed inside the app data directory; command separators (&;|) and redirection (<>) are forbidden; 10-second timeout." +
+            "Long output is saved to an app file that can be read in chunks." +
+            "Returns: success = the command output, failure = Error: reason.",
         parameters = mapOf(
-            "command" to "必填,要执行的命令(如 'ls -la' 或 'cat notes.txt')",
+            "command" to "Required, the command to execute (e.g. 'ls -la' or 'cat notes.txt')",
         ),
         required = setOf("command"),
         category = "built-in",
@@ -80,29 +80,29 @@ object ShellSandboxTool {
         // 即使白名单/权限模式有 bug,黑名单(rm/sudo/git/curl/wget 等)和不安全语法
         // (换行注入/通配符)仍然会被拦截。这是"硬边界"——TRUSTED 模式也无法绕过。
         if (ToolPermissionResolver.isUnsafeCommand(command)) {
-            return@withContext "[错误] 命令命中硬边界黑名单(危险可执行文件或不安全语法),已被拒绝执行"
+            return@withContext "Error: the command hit the hard-boundary blocklist (dangerous executable or unsafe syntax) and was refused"
         }
 
         // 安全检查 1:禁止危险字符
         val forbidden = command.firstOrNull { it in FORBIDDEN_CHARS }
         if (forbidden != null) {
-            return@withContext "[错误] 命令包含禁止字符 '$forbidden'(&;|`$(){}<>,防止注入)"
+            return@withContext "Error: the command contains the forbidden character '$forbidden' (&;|`$(){}<>, to prevent injection)"
         }
 
         // 安全检查 2:解析命令名,校验白名单
         val parts = command.trim().split(Regex("\\s+"))
         if (parts.isEmpty() || parts[0].isBlank()) {
-            return@withContext "[错误] 命令为空"
+            return@withContext "Error: the command is empty"
         }
         val cmdName = parts[0]
         if (cmdName !in ALLOWED_COMMANDS) {
-            return@withContext "[错误] 命令 '$cmdName' 不在白名单内。允许: ${ALLOWED_COMMANDS.joinToString("/")}"
+            return@withContext "Error: command '$cmdName' is not in the whitelist. Allowed: ${ALLOWED_COMMANDS.joinToString("/")}"
         }
 
         // 安全检查 3:find 命令限制路径(禁止 / 等系统目录全盘扫描)
         // C-26: 精确匹配可被 "/system/bin" 绕过,改前缀匹配
         if (cmdName == "find" && parts.any { arg -> arg == "/" || SYSTEM_DIR_PREFIXES.any { arg.startsWith(it) } }) {
-            return@withContext "[错误] find 禁止扫描系统目录(/、/system、/proc、/sys 等)"
+            return@withContext "Error: find may not scan system directories (/, /system, /proc, /sys, etc.)"
         }
 
         // 安全检查 3.5:读文件类命令的路径参数必须解析到沙箱(filesDir)内,
@@ -121,7 +121,7 @@ object ShellSandboxTool {
                     }.getOrDefault(true)
                 }
             if (badArg != null) {
-                return@withContext "[错误] 路径 '$badArg' 超出沙箱范围(仅允许应用数据目录内)"
+                return@withContext "Error: path '$badArg' is outside the sandbox scope (only inside the app data directory is allowed)"
             }
         }
 
@@ -153,16 +153,16 @@ object ShellSandboxTool {
                 reader.join()
                 readFailure.get()?.let { throw it }
                 return@withContext capture.finish(
-                    header = "[超时] 命令 ${TIMEOUT_MS / 1000}s 未完成,已终止",
-                    emptyMessage = "(无输出)",
+                    header = "[Timeout] Command ${TIMEOUT_MS / 1000}s did not complete; terminated",
+                    emptyMessage = "(No output)",
                 )
             }
             reader.join()
             readFailure.get()?.let { throw it }
             val exitCode = process.exitValue()
             val result = capture.finish(
-                header = if (exitCode == 0) "" else "[退出码 $exitCode]",
-                emptyMessage = if (exitCode == 0) "[成功] 命令执行完成,无输出" else "(无输出)",
+                header = if (exitCode == 0) "" else "[Exit code $exitCode]",
+                emptyMessage = if (exitCode == 0) "Success: command executed, no output" else "(No output)",
             )
 
             Logger.i(
@@ -171,8 +171,8 @@ object ShellSandboxTool {
             )
             result
         }.getOrElse {
-            Logger.w("ShellSandbox", "execute 失败: ${it.message}", it)
-            "[错误] 执行失败: ${it.message}"
+            Logger.w("ShellSandbox", "execute failed: ${it.message}", it)
+            "Error: execution failed: ${it.message}"
         }
     }
 }
@@ -190,7 +190,7 @@ class ShellSandboxToolRegistrar(
 
     fun registerAll() {
         toolRegistry.register(ShellSandboxTool.toolDef()) { args ->
-            val command = args["command"] ?: return@register "[错误] 缺少必填参数 command"
+            val command = args["command"] ?: return@register "Error: missing required parameter command"
             ShellSandboxTool.execute(command, workDir)
         }
     }

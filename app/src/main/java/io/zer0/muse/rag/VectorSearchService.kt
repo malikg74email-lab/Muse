@@ -217,7 +217,7 @@ class VectorSearchService(
             return applyMMR(candidates, topK, mmrLambda)
         }
 
-        Logger.d("VectorSearchService", "大库检索(total=$total > $CACHE_THRESHOLD),走流式分批扫描")
+        Logger.d("VectorSearchService", "Large-library search (total=$total > $CACHE_THRESHOLD), using streaming batch scanning")
         // P2-30: 流式路径此前丢弃 scopeDocIds,大库(>CACHE_THRESHOLD)时越界到全库检索
         return searchStreamed(queryVector, queryNorm, topK, threshold, mmrLambda, scopeDocIds, metadataFilter)
     }
@@ -414,7 +414,7 @@ class VectorSearchService(
                 CachedVector(chunk.chunkId, chunk.docId, chunk.docTitle, chunk.content, vector, n, chunk.chunkIndex)
             }
             synchronized(cacheEntries) { cacheEntries[key] = parsed }
-            Logger.d("VectorSearchService", "加载 ${parsed.size} 条向量到缓存(scope=$key)")
+            Logger.d("VectorSearchService", "Loaded ${parsed.size} vectors into the cache (scope=$key)")
             parsed
         }
     }
@@ -435,7 +435,7 @@ class VectorSearchService(
                 ByteBuffer.wrap(blob).asFloatBuffer().get(arr)
                 arr
             }.onError { msg, e ->
-                Logger.w("VectorSearchService", "BLOB 解析失败,尝试 JSON: $msg", e)
+                Logger.w("VectorSearchService", "BLOB parsing failed, trying JSON: $msg", e)
             }.getOrNull()
         }
         // JSON fallback(旧数据)

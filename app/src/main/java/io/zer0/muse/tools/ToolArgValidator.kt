@@ -40,7 +40,7 @@ object ToolArgValidator {
      */
     fun validate(name: String, args: Map<String, String>, def: ToolRegistry.ToolDef?): ValidationResult {
         if (def == null) {
-            return ValidationResult.invalid(listOf("未知工具: $name"), args)
+            return ValidationResult.invalid(listOf("Unknown tool: $name"), args)
         }
         val errors = mutableListOf<String>()
         val coerced = LinkedHashMap<String, String>()
@@ -49,7 +49,7 @@ object ToolArgValidator {
         def.required.forEach { required ->
             val value = args[required]
             if (value.isNullOrBlank()) {
-                errors += "缺少必填参数: $required"
+                errors += "Missing required parameter: $required"
             } else {
                 coerced[required] = value
             }
@@ -63,7 +63,7 @@ object ToolArgValidator {
                 "integer", "int", "long" -> {
                     val normalized = raw.trim().trim('"')
                     if (normalized.toLongOrNull() == null) {
-                        errors += "参数 $param 应为 $typeName,实际值: $raw"
+                        errors += "Parameter $param should be $typeName, actual value: $raw"
                     } else {
                         coerced[param] = normalized
                     }
@@ -71,7 +71,7 @@ object ToolArgValidator {
                 "number", "float", "double" -> {
                     val normalized = raw.trim().trim('"')
                     if (normalized.toDoubleOrNull() == null) {
-                        errors += "参数 $param 应为 $typeName,实际值: $raw"
+                        errors += "Parameter $param should be $typeName, actual value: $raw"
                     } else {
                         coerced[param] = normalized
                     }
@@ -79,7 +79,7 @@ object ToolArgValidator {
                 "boolean", "bool" -> {
                     val normalized = raw.trim().trim('"')
                     if (normalized !in setOf("true", "false", "1", "0", "是", "否", "yes", "no")) {
-                        errors += "参数 $param 应为 boolean,实际值: $raw"
+                        errors += "Parameter $param should be boolean, actual value: $raw"
                     } else {
                         coerced[param] = when (normalized) {
                             "1", "是", "yes" -> "true"

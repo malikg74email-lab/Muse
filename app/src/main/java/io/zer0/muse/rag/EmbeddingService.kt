@@ -197,14 +197,14 @@ class EmbeddingService(
     private fun createLocalProvider(ragConfig: RagConfig): Pair<EmbeddingProvider, BackendState> {
         // v1.134: LOCAL 模式优先尝试 OnnxEmbeddingProvider,不可用时降级到关键词哈希
         val onnxProvider = tryCreateOnnxProvider(ragConfig.localModelPath)
-            ?: return keywordProvider(degraded = true, reason = "本地 ONNX embedding 不可用(未配置模型或文件缺失)")
-        Logger.i("EmbeddingService", "使用本地 ONNX embedding(${onnxProvider.modelName}, ${onnxProvider.dimension}d)")
+            ?: return keywordProvider(degraded = true, reason = "Local ONNX embedding unavailable (model not configured or file missing)")
+        Logger.i("EmbeddingService", "Using local ONNX embedding (${onnxProvider.modelName}, ${onnxProvider.dimension}d)")
         return onnxProvider to stateOf(onnxProvider, degraded = false)
     }
 
     private fun createCloudProvider(ragConfig: RagConfig, target: CloudTarget): Pair<EmbeddingProvider, BackendState> {
         val providerConfig = target.provider
-            ?: return keywordProvider(degraded = true, reason = target.reason ?: "云端 Provider 不可用")
+            ?: return keywordProvider(degraded = true, reason = target.reason ?: "Cloud provider unavailable")
         // v1.103: Anthropic/Gemini 不提供 OpenAI 兼容的 embedding API,未指定 cloudModel 时
         // OpenAIEmbeddingProvider 构造会抛 IllegalStateException,因此在建实例前就拦下来。
         val provider = OpenAIEmbeddingProvider(
@@ -214,7 +214,7 @@ class EmbeddingService(
         )
         Logger.i(
             "EmbeddingService",
-            "使用云端 embedding(provider=${providerConfig.id}, model=${provider.modelName})",
+            "Using cloud embedding (provider=${providerConfig.id}, model=${provider.modelName})",
         )
         return provider to stateOf(provider, degraded = false)
     }
@@ -222,9 +222,9 @@ class EmbeddingService(
     /** 回落本地关键词实现:记 warn(原因写清楚)并打上 degraded 标记。 */
     private fun keywordProvider(degraded: Boolean, reason: String?): Pair<EmbeddingProvider, BackendState> {
         if (degraded) {
-            Logger.w("EmbeddingService", "${reason ?: "云端 embedding 不可用"},降级到本地关键词 embedding,语义检索能力下降")
+            Logger.w("EmbeddingService", "${reason ?: "Cloud embedding unavailable"}, falling back to local keyword embedding; semantic search quality reduced")
         } else {
-            Logger.i("EmbeddingService", "使用本地关键词 embedding(离线模式)")
+            Logger.i("EmbeddingService", "Using local keyword embedding (offline mode)")
         }
         val provider = LocalKeywordEmbeddingProvider()
         return provider to stateOf(provider, degraded = degraded, reason = reason)
@@ -257,18 +257,18 @@ class EmbeddingService(
             providerConfig == null -> CloudTarget(
                 provider = null,
                 reason = if (ragConfig.cloudProviderId.isNotBlank()) {
-                    "RAG 配置指定的 Provider(${ragConfig.cloudProviderId}) 不存在"
+                    "The provider specified in the RAG config (${ragConfig.cloudProviderId}) does not exist"
                 } else {
-                    "未找到可用的云端 Provider"
+                    "No available cloud provider found"
                 },
             )
             !providerConfig.enabled ->
-                CloudTarget(provider = null, reason = "Provider ${providerConfig.displayName} 已停用")
+                CloudTarget(provider = null, reason = "Provider ${providerConfig.displayName} is disabled")
             providerConfig.apiKey.isBlank() ->
-                CloudTarget(provider = null, reason = "Provider ${providerConfig.displayName} 的 API Key 为空")
+                CloudTarget(provider = null, reason = "Provider ${providerConfig.displayName} has an empty API key")
             ragConfig.cloudModel.isBlank() && providerConfig.type !in OPENAI_EMBEDDING_TYPES -> CloudTarget(
                 provider = null,
-                reason = "Provider ${providerConfig.displayName}(${providerConfig.type}) 不兼容 OpenAI embedding API 且未指定模型",
+                reason = "Provider ${providerConfig.displayName} (${providerConfig.type}) is not compatible with the OpenAI embedding API and has no model specified",
             )
             else -> CloudTarget(provider = providerConfig)
         }

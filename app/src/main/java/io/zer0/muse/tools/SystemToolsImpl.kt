@@ -232,7 +232,7 @@ class SystemToolsImpl(private val context: Context) {
         return resultOf {
             context.startActivity(intent)
             context.getString(R.string.tool_url_opened, url)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开 URL 失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open URL failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_open_url_failed, url)
     }
 
@@ -256,7 +256,7 @@ class SystemToolsImpl(private val context: Context) {
                 if (count >= limit) break
             }
             if (count == 0) context.getString(R.string.tool_installed_apps_empty) else sb.toString().trimEnd()
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "列出已安装应用失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "List installed apps failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -268,12 +268,12 @@ class SystemToolsImpl(private val context: Context) {
         val caps = activeNetwork?.let { cm.getNetworkCapabilities(it) }
         val connected = caps?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         val type = when {
-            caps == null -> "无网络"
+            caps == null -> "No network"
             caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "WiFi"
-            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "蜂窝数据"
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular data"
             caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
-            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) -> "以太网"
-            else -> "其他"
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
+            else -> "Other"
         }
         val metered = cm.isActiveNetworkMetered
         return context.getString(
@@ -293,7 +293,7 @@ class SystemToolsImpl(private val context: Context) {
             val total = stat.totalBytes
             val free = stat.freeBytes
             context.getString(R.string.tool_storage_info, formatBytes(total), formatBytes(total - free), formatBytes(free))
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取存储信息失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get storage info failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -310,7 +310,7 @@ class SystemToolsImpl(private val context: Context) {
                 formatBytes(info.threshold),
                 if (info.lowMemory) context.getString(R.string.tool_yes) else context.getString(R.string.tool_no),
             )
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取内存信息失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get memory info failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -330,17 +330,17 @@ class SystemToolsImpl(private val context: Context) {
                 metrics.density,
                 refreshRate,
             )
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取屏幕信息失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get screen info failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
     /** 获取 CPU 型号与核心数。 */
     suspend fun execGetCpuInfo(_args: Map<String, String>): String {
         return resultOf {
-            val processor = readProcCpuField("Hardware") ?: readProcCpuField("Processor") ?: "未知"
+            val processor = readProcCpuField("Hardware") ?: readProcCpuField("Processor") ?: "Unknown"
             val cores = Runtime.getRuntime().availableProcessors()
             context.getString(R.string.tool_cpu_info, processor, cores)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取 CPU 信息失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get CPU info failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -356,7 +356,7 @@ class SystemToolsImpl(private val context: Context) {
                 sb.appendLine(context.getString(R.string.tool_sensors_item, it.name, it.vendor, it.version))
             }
             sb.toString().trimEnd()
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取传感器列表失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get sensor list failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -372,7 +372,7 @@ class SystemToolsImpl(private val context: Context) {
                 context.getString(R.string.tool_brightness_manual)
             }
             context.getString(R.string.tool_brightness_info, brightness, modeLabel)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取亮度失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get brightness failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_brightness_failed, "")
     }
 
@@ -389,7 +389,7 @@ class SystemToolsImpl(private val context: Context) {
                     android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC,
                 )
                 context.getString(R.string.tool_brightness_auto_set)
-            }.onError { msg, _ -> Logger.w("ToolRegistry", "启用自动亮度失败: $msg") }
+            }.onError { msg, _ -> Logger.w("ToolRegistry", "Enable auto brightness failed: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_brightness_failed, "auto")
         }
         val value = args["value"]?.toIntOrNull()?.coerceIn(0, 255)
@@ -401,7 +401,7 @@ class SystemToolsImpl(private val context: Context) {
                 value,
             )
             context.getString(R.string.tool_brightness_set, value)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "设置亮度失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Set brightness failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_brightness_failed, value.toString())
     }
 
@@ -411,7 +411,7 @@ class SystemToolsImpl(private val context: Context) {
         return resultOf {
             val am = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
             context.getString(R.string.tool_volume_info, streamLabel, am.getStreamVolume(streamType), am.getStreamMaxVolume(streamType))
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取音量失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get volume failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -427,7 +427,7 @@ class SystemToolsImpl(private val context: Context) {
             val index = if (isPercent) (rawValue * max / 100).coerceIn(0, max) else rawValue.coerceIn(0, max)
             am.setStreamVolume(streamType, index, android.media.AudioManager.FLAG_SHOW_UI)
             context.getString(R.string.tool_volume_set, streamLabel, index, max)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "设置音量失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Set volume failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -459,7 +459,7 @@ class SystemToolsImpl(private val context: Context) {
                 }
                 else -> context.getString(R.string.tool_flashlight_invalid_action)
             }
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "手电筒操作失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Flashlight operation failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_flashlight_unavailable)
     }
 
@@ -483,7 +483,7 @@ class SystemToolsImpl(private val context: Context) {
                 vibrator.vibrate(duration)
             }
             context.getString(R.string.tool_vibrate, duration)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "振动失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Vibration failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_installed_apps_failed)
     }
 
@@ -496,8 +496,8 @@ class SystemToolsImpl(private val context: Context) {
             val start = end - 60_000
             val stats = usm.queryUsageStats(android.app.usage.UsageStatsManager.INTERVAL_DAILY, start, end)
             val recent = stats?.maxByOrNull { it.lastTimeUsed }
-            context.getString(R.string.tool_foreground_app, recent?.packageName ?: "未知")
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取前台应用失败: $msg") }
+            context.getString(R.string.tool_foreground_app, recent?.packageName ?: "Unknown")
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get foreground app failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_foreground_app_unknown)
     }
 
@@ -509,14 +509,14 @@ class SystemToolsImpl(private val context: Context) {
 
             @Suppress("DEPRECATION")
             val info = wm.connectionInfo
-            val ssid = info.ssid?.removeSurrounding("\"") ?: "未知"
-            val bssid = info.bssid ?: "未知"
+            val ssid = info.ssid?.removeSurrounding("\"") ?: "Unknown"
+            val bssid = info.bssid ?: "Unknown"
             val level = android.net.wifi.WifiManager.calculateSignalLevel(info.rssi, 5)
 
             @Suppress("DEPRECATION")
             val ip = android.text.format.Formatter.formatIpAddress(info.ipAddress)
             context.getString(R.string.tool_wifi_info, ssid, bssid, level, ip)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取 WiFi 信息失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get WiFi info failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_wifi_unavailable)
     }
 
@@ -539,11 +539,11 @@ class SystemToolsImpl(private val context: Context) {
                 sb.appendLine()
                 sb.appendLine(context.getString(R.string.tool_bluetooth_header, devices.size))
                 devices.forEach {
-                    sb.appendLine(context.getString(R.string.tool_bluetooth_item, it.name ?: "未知", it.address))
+                    sb.appendLine(context.getString(R.string.tool_bluetooth_item, it.name ?: "Unknown", it.address))
                 }
                 sb.toString().trimEnd()
             }
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "获取蓝牙设备失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Get Bluetooth devices failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_bluetooth_unsupported)
     }
 
@@ -557,7 +557,7 @@ class SystemToolsImpl(private val context: Context) {
         return resultOf {
             context.startActivity(intent)
             context.getString(R.string.tool_phone_call_opened, phone)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开拨号失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open dialer failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_open_url_failed, phone)
     }
 
@@ -580,7 +580,7 @@ class SystemToolsImpl(private val context: Context) {
         return resultOf {
             context.startActivity(intent)
             context.getString(R.string.tool_maps_opened, uri)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开地图失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open maps failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_open_url_failed, uri)
     }
 

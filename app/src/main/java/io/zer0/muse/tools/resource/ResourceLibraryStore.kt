@@ -96,8 +96,8 @@ class ResourceLibraryStore(private val context: Context) {
             AppJson.decodeFromString(ListSerializer(ResourceItem.serializer()), file.readText())
         } catch (e: Exception) {
             backupCorruptFile()
-            lastError = "资源库文件损坏，已备份原文件并重建"
-            Logger.e(TAG, "读取资源库失败，已备份坏文件: ${e.message}", e)
+            lastError = "The resource library file is corrupted; the original file was backed up and rebuilt"
+            Logger.e(TAG, "Failed to read the resource library; the bad file was backed up: ${e.message}", e)
             emptyList()
         }
     }
@@ -107,9 +107,9 @@ class ResourceLibraryStore(private val context: Context) {
             if (file.exists()) {
                 val backup = java.io.File(file.parentFile, "${file.name}.bak-${System.currentTimeMillis()}")
                 file.copyTo(backup, overwrite = true)
-                Logger.w(TAG, "损坏文件已备份到 ${backup.absolutePath}")
+                Logger.w(TAG, "The corrupted file was backed up to ${backup.absolutePath}")
             }
-        }.onFailure { Logger.w(TAG, "备份损坏文件失败: ${it.message}") }
+        }.onFailure { Logger.w(TAG, "Failed to back up the corrupted file: ${it.message}") }
     }
 
     private fun writeAll(list: List<ResourceItem>) {
@@ -117,7 +117,7 @@ class ResourceLibraryStore(private val context: Context) {
             file.parentFile?.mkdirs()
             file.writeText(AppJson.encodeToString(ListSerializer(ResourceItem.serializer()), list))
         } catch (e: Exception) {
-            Logger.w(TAG, "写入资源库失败: ${e.message}")
+            Logger.w(TAG, "Failed to write the resource library: ${e.message}")
         }
     }
 

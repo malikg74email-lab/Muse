@@ -31,7 +31,7 @@ object ContentSafetyRules {
         ContentSafetyRule(
             toolName = "execute_javascript",
             matcher = { it.contains("rm -rf") || it.contains("ProcessBuilder") || it.contains("Runtime.getRuntime().exec") },
-            reason = "代码执行类危险操作被安全策略拦截",
+            reason = "Dangerous code-execution operation blocked by the safety policy",
             ruleId = "js-dangerous-process",
         ),
         ContentSafetyRule(
@@ -60,14 +60,14 @@ object ContentSafetyRules {
                 hasDangerousProcess || hasCookieExfil ||
                     hasWsExfil || hasBeacon || hasUrlWithSensitive
             },
-            reason = "疑似外传敏感信息被安全策略拦截",
+            reason = "Suspected exfiltration of sensitive information blocked by the safety policy",
             ruleId = "js-exfil-token",
         ),
         // open_url 本地文件
         ContentSafetyRule(
             toolName = "open_url",
             matcher = { it.startsWith("file://") },
-            reason = "不允许打开本地文件链接",
+            reason = "Opening local file links is not allowed",
             ruleId = "url-local-file",
         ),
         // 写文件类工具的路径硬边界在下方 writePathRules 里按工具名展开:只看 path,不碰正文
@@ -86,14 +86,14 @@ object ContentSafetyRules {
             ContentSafetyRule(
                 toolName = toolName,
                 matcher = { it.contains("..") },
-                reason = "路径包含 .. 被安全策略拦截",
+                reason = "Path containing .. blocked by the safety policy",
                 ruleId = "workspace-traversal",
                 targetArg = "path",
             ),
             ContentSafetyRule(
                 toolName = toolName,
                 matcher = { it.startsWith("/") || Regex("^[A-Za-z]:[\\\\/]").containsMatchIn(it) },
-                reason = "绝对路径写入被安全策略拦截(仅允许工作区内相对路径)",
+                reason = "Absolute-path write blocked by the safety policy (only workspace-relative paths are allowed)",
                 ruleId = "workspace-absolute-path",
                 targetArg = "path",
             ),

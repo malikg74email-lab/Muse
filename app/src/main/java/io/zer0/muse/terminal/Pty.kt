@@ -17,7 +17,7 @@ object Pty {
         System.loadLibrary("pty")
         null
     }.getOrElse { t ->
-        val message = "libpty.so 加载失败: ${t.message}"
+        val message = "libpty.so loading failed: ${t.message}"
         runCatching { Logger.w(TAG, message) }
         message
     }

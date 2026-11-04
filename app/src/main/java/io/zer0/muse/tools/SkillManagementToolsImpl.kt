@@ -68,10 +68,10 @@ class SkillManagementToolsImpl(
         if (filtered.isEmpty()) {
             return context.getString(R.string.skill_no_category_skill, category)
         }
-        val header = "共 ${all.size} 个 skill(内置 $builtInCount 个,用户安装 $userCount 个)"
+        val header = "${all.size} skills in total ($builtInCount built-in, $userCount user-installed)"
         val body =
             filtered.joinToString("\n") { s ->
-                val source = if (s.id in builtInIds) "[内置]" else "[用户]"
+                val source = if (s.id in builtInIds) "[Built-in]" else "[User]"
                 "${s.id} | ${s.name} | ${s.category} | ${if (s.enabled) "enabled" else "disabled"} $source"
             }
         return "$header\n$body"
@@ -229,7 +229,7 @@ class SkillManagementToolsImpl(
                 input.isEmpty() -> text
                 hasPlaceholder ->
                     text.replace(PROMPT_INPUT_PLACEHOLDER, input).replace(PROMPT_ARGS_PLACEHOLDER, input)
-                else -> text + "\n\n输入:\n" + input
+                else -> text + "\n\nInput:\n" + input
             }
         return context.getString(R.string.skill_prompt_instruction_result, skill.name, skill.id, rendered)
     }
@@ -252,16 +252,16 @@ class SkillManagementToolsImpl(
             resultOf {
                 AppJson.decodeFromString(JsonObject.serializer(), jsonText)
             }.onError { msg, throwable ->
-                val errorKind = if (throwable is SerializationException) "格式错误" else "非预期异常"
+                val errorKind = if (throwable is SerializationException) "Format error" else "Unexpected exception"
                 jsonErrorMsg = msg
-                Logger.w("SkillManagement", "install_skill JSON 解析失败($errorKind, ${throwable?.javaClass?.simpleName}): $msg")
+                Logger.w("SkillManagement", "install_skill JSON parsing failed ($errorKind, ${throwable?.javaClass?.simpleName}): $msg")
             }.getOrNull()
         if (raw == null) {
-            return "JSON 格式错误: ${jsonErrorMsg ?: "无法解析"}。请检查字段引号、冒号、括号是否匹配。"
+            return "JSON format error: ${jsonErrorMsg ?: "could not parse"}. Please check that field quotes, colons and brackets match."
         }
         for (field in requiredFields) {
             if (field !in raw) {
-                return "缺少必需字段: $field。必需字段: name, description, category, implementationKotlin, parametersJson"
+                return "Missing required field: $field. Required fields: name, description, category, implementationKotlin, parametersJson"
             }
         }
         for (field in requiredFields) {
@@ -269,13 +269,13 @@ class SkillManagementToolsImpl(
             if (element !is JsonPrimitive || !element.isString) {
                 val actualType =
                     when (element) {
-                        is JsonPrimitive -> if (element.isString) "字符串" else "数字/布尔"
-                        is JsonObject -> "对象"
-                        is JsonArray -> "数组"
+                        is JsonPrimitive -> if (element.isString) "String" else "Number/Boolean"
+                        is JsonObject -> "Object"
+                        is JsonArray -> "Array"
                         is JsonNull -> "null"
-                        else -> "未知"
+                        else -> "Unknown"
                     }
-                return "字段 $field 类型错误: 期望字符串,实际为 $actualType"
+                return "Field $field type error: expected a string, actual: $actualType"
             }
         }
         return null

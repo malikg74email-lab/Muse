@@ -112,20 +112,20 @@ class ShizukuAuthorizer(
             if (proxy == null) {
                 shellService = null
                 serviceBound = false
-                Logger.e(TAG, "Shell UserService 连接回调没有返回有效 binder")
+                Logger.e(TAG, "Shell UserService connection callback did not return a valid binder")
                 return
             }
             shellService = proxy
             serviceBound = true
             lastBindFailureAt = 0L
-            Logger.i(TAG, "Shell UserService 已连接")
+            Logger.i(TAG, "Shell UserService connected")
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             shellService = null
             serviceBound = false
             boundArgs = null
-            Logger.w(TAG, "Shell UserService 连接断开")
+            Logger.w(TAG, "Shell UserService connection disconnected")
         }
     }
 
@@ -135,7 +135,7 @@ class ShizukuAuthorizer(
             !Shizuku.isPreV11() && Shizuku.pingBinder()
         } catch (e: Throwable) {
             // 必要容错:Shizuku 未安装时调用 SDK 可能抛异常
-            Logger.w(TAG, "Shizuku.pingBinder 失败: ${e.message}")
+            Logger.w(TAG, "Shizuku.pingBinder failed: ${e.message}")
             false
         }
     }
@@ -147,7 +147,7 @@ class ShizukuAuthorizer(
         return try {
             Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
         } catch (e: Throwable) {
-            Logger.w(TAG, "Shizuku.checkSelfPermission 失败: ${e.message}")
+            Logger.w(TAG, "Shizuku.checkSelfPermission failed: ${e.message}")
             false
         }
     }
@@ -180,13 +180,13 @@ class ShizukuAuthorizer(
                         Shizuku.requestPermission(PERMISSION_REQUEST_CODE)
                     } catch (e: Throwable) {
                         Shizuku.removeRequestPermissionResultListener(listener)
-                        Logger.w(TAG, "Shizuku.requestPermission 失败: ${e.message}")
+                        Logger.w(TAG, "Shizuku.requestPermission failed: ${e.message}")
                         if (cont.isActive) cont.resume(false)
                     }
                 }
             }
         } catch (e: TimeoutCancellationException) {
-            Logger.w(TAG, "Shizuku 授权等待超时")
+            Logger.w(TAG, "Shizuku authorisation wait timed out")
             false
         }
     }
@@ -215,19 +215,19 @@ class ShizukuAuthorizer(
         val installed = ShizukuInstaller(context).isInstalled()
         val suiAvailable = if (!installed) isSuiBackendAvailable() else false
         if (!installed && !suiAvailable) {
-            return ShizukuStatus(ShizukuState.NOT_INSTALLED, "未安装 Shizuku")
+            return ShizukuStatus(ShizukuState.NOT_INSTALLED, "Shizuku not installed")
         }
         if (!isAvailable()) {
             return ShizukuStatus(
                 ShizukuState.NOT_RUNNING,
-                if (suiAvailable) "Sui 已安装,但 Shizuku 服务未运行" else "Shizuku 服务未运行",
+                if (suiAvailable) "Sui is installed, but the Shizuku service is not running" else "Shizuku service not running",
             )
         }
-        if (!checkPermission()) return ShizukuStatus(ShizukuState.NOT_AUTHORIZED, "尚未授权 Muse")
+        if (!checkPermission()) return ShizukuStatus(ShizukuState.NOT_AUTHORIZED, "Shaheen 2 not yet authorised")
         if (!ensureServiceBound()) {
-            return ShizukuStatus(ShizukuState.USER_SERVICE_UNAVAILABLE, "Muse Shell 服务暂不可用")
+            return ShizukuStatus(ShizukuState.USER_SERVICE_UNAVAILABLE, "Shaheen 2 Shell service temporarily unavailable")
         }
-        return ShizukuStatus(ShizukuState.READY, "Shizuku Shell 已就绪")
+        return ShizukuStatus(ShizukuState.READY, "Shizuku Shell ready")
     }
 
     /**
@@ -240,35 +240,35 @@ class ShizukuAuthorizer(
      */
     suspend fun execute(command: String): ShizukuExecResult {
         return withContext(Dispatchers.IO) {
-            if (!checkPermission()) return@withContext ShizukuExecResult(-1, "", "Shizuku 未授权")
-            if (!ensureServiceBound()) return@withContext ShizukuExecResult(-1, "", "Shizuku shell service 绑定失败")
-            val service = shellService ?: return@withContext ShizukuExecResult(-1, "", "Shizuku shell service 不可用")
+            if (!checkPermission()) return@withContext ShizukuExecResult(-1, "", "Shizuku not authorised")
+            if (!ensureServiceBound()) return@withContext ShizukuExecResult(-1, "", "Shizuku shell service binding failed")
+            val service = shellService ?: return@withContext ShizukuExecResult(-1, "", "Shizuku shell service unavailable")
             try {
                 val raw = service.execute(command)
                 parseExecResult(raw)
             } catch (e: android.os.RemoteException) {
-                Logger.e(TAG, "Shizuku 远程调用失败: ${e.message}", e)
+                Logger.e(TAG, "Shizuku remote call failed: ${e.message}", e)
                 // 远程调用失败可能是因为服务进程崩溃,清除引用以便下次重连
                 release()
-                ShizukuExecResult(-1, "", e.message ?: "远程调用异常")
+                ShizukuExecResult(-1, "", e.message ?: "Remote call exception")
             } catch (e: Throwable) {
-                Logger.e(TAG, "Shizuku 执行异常: ${e.message}", e)
-                ShizukuExecResult(-1, "", e.message ?: "执行异常")
+                Logger.e(TAG, "Shizuku execution exception: ${e.message}", e)
+                ShizukuExecResult(-1, "", e.message ?: "Execution exception")
             }
         }
     }
 
     /** Stream device-tool output through a pipe into app-private storage, avoiding Binder String caps. */
     suspend fun executeForTool(command: String): ShizukuExecResult = withContext(Dispatchers.IO) {
-        if (!checkPermission()) return@withContext ShizukuExecResult(-1, "", "Shizuku 未授权")
+        if (!checkPermission()) return@withContext ShizukuExecResult(-1, "", "Shizuku not authorised")
         if (!ensureServiceBound()) {
-            return@withContext ShizukuExecResult(-1, "", "Shizuku shell service 绑定失败")
+            return@withContext ShizukuExecResult(-1, "", "Shizuku shell service binding failed")
         }
-        val service = shellService ?: return@withContext ShizukuExecResult(-1, "", "Shizuku shell service 不可用")
+        val service = shellService ?: return@withContext ShizukuExecResult(-1, "", "Shizuku shell service unavailable")
         val pipe = try {
             ParcelFileDescriptor.createPipe()
         } catch (error: Exception) {
-            return@withContext ShizukuExecResult(-1, "", "创建 Shell 输出管道失败: ${error.message}")
+            return@withContext ShizukuExecResult(-1, "", "Failed to create the Shell output pipe: ${error.message}")
         }
         val readEnd = pipe[0]
         val writeEnd = pipe[1]
@@ -301,11 +301,11 @@ class ShizukuAuthorizer(
         try {
             exitCode = service.executeToPipe(command, writeEnd)
         } catch (error: android.os.RemoteException) {
-            Logger.e(TAG, "Shizuku 流式远程调用失败: ${error.message}", error)
+            Logger.e(TAG, "Shizuku streaming remote call failed: ${error.message}", error)
             remoteFailure = error
             release()
         } catch (error: Throwable) {
-            Logger.e(TAG, "Shizuku 流式执行异常: ${error.message}", error)
+            Logger.e(TAG, "Shizuku streaming execution exception: ${error.message}", error)
             remoteFailure = error
         } finally {
             runCatching { writeEnd.close() }
@@ -317,7 +317,7 @@ class ShizukuAuthorizer(
             remoteFailure = remoteFailure ?: failure
         }
         if (exitCode < 0 && remoteFailure == null) {
-            remoteFailure = IllegalStateException("Shizuku 命令超时或执行失败")
+            remoteFailure = IllegalStateException("Shizuku command timed out or failed to execute")
         }
         val output = if (reader.isAlive) {
             capture.close()
@@ -326,11 +326,11 @@ class ShizukuAuthorizer(
             runCatching {
                 capture.finish(
                     header = if (remoteFailure != null) {
-                        "Shizuku 输出未能完整接收，以下内容可能不完整"
+                        "Shizuku output was not fully received; the content below may be incomplete"
                     } else {
                         ""
                     },
-                    emptyMessage = "(无输出)",
+                    emptyMessage = "(No output)",
                 )
             }
                 .getOrElse {
@@ -355,7 +355,7 @@ class ShizukuAuthorizer(
             try {
                 Shizuku.unbindUserService(args, serviceConnection, true)
             } catch (e: Throwable) {
-                Logger.w(TAG, "unbindUserService 失败: ${e.message}")
+                Logger.w(TAG, "unbindUserService failed: ${e.message}")
             }
         }
         shellService = null
@@ -397,7 +397,7 @@ class ShizukuAuthorizer(
                 true
             } == true
             if (!connected || shellService == null) {
-                Logger.e(TAG, "bindUserService 失败: UserService 连接超时")
+                Logger.e(TAG, "bindUserService failed: UserService connection timed out")
                 lastBindFailureAt = System.currentTimeMillis()
                 clearFailedBinding(args)
                 false
@@ -407,7 +407,7 @@ class ShizukuAuthorizer(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            Logger.e(TAG, "bindUserService 失败: ${e.message}", e)
+            Logger.e(TAG, "bindUserService failed: ${e.message}", e)
             lastBindFailureAt = System.currentTimeMillis()
             boundArgs?.let(::clearFailedBinding)
             false
@@ -428,7 +428,7 @@ class ShizukuAuthorizer(
     /** 绑定失败时撤销待处理连接，避免下一次执行叠加旧 callback。 */
     private fun clearFailedBinding(args: Shizuku.UserServiceArgs) {
         runCatching { Shizuku.unbindUserService(args, serviceConnection, true) }
-            .onFailure { Logger.w(TAG, "清理失败的 UserService 绑定失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Failed to clean up the failed UserService binding: ${it.message}") }
         if (boundArgs === args) {
             boundArgs = null
             shellService = null

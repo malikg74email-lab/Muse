@@ -36,15 +36,15 @@ object PythonScriptTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = TOOL_NAME,
-        description = "在内置 Python 3.14 运行时中执行 Python 脚本(完整标准库:ssl/sqlite3/" +
-            "ctypes/json/re 等;文件读写、网络;可 import 第三方纯 Python 包)。" +
-            "把要返回的结果赋给变量 result。返回 JSON(result/logs/error)。超时默认 30 秒。" +
-            "这是运行 Python 的唯一入口:内置运行时没有 python/python3 命令,别用 " +
-            "terminal_exec/execute_shell 去找解释器或翻 bin 目录(那里是空的);" +
-            "脚本内需要起子进程时用 sys.executable 或 os.environ['MUSE_PYTHON_BIN']。",
+        description = "Execute a Python script in the built-in Python 3.14 runtime (full standard library: ssl/sqlite3/" +
+            "ctypes/json/re, etc.; file reading/writing, network; can import third-party pure-Python packages)." +
+            "Assign the result to return to the variable result. Returns JSON (result/logs/error). Default timeout 30 seconds." +
+            "This is the only entry point for running Python: the built-in runtime has no python/python3 command, so do not use " +
+            "terminal_exec/execute_shell to look for an interpreter or rummage through the bin directory (it is empty);" +
+            "when the script needs to spawn a subprocess, use sys.executable or os.environ['MUSE_PYTHON_BIN'].",
         parameters = mapOf(
-            "code" to "必填,Python 脚本代码(可 import 标准库;结果赋给变量 result)",
-            "timeout_ms" to "可选,超时毫秒数,默认 30000,最大 300000",
+            "code" to "Required, Python script code (may import the standard library; assign the result to the variable result)",
+            "timeout_ms" to "Optional, timeout in milliseconds, default 30000, maximum 300000",
         ),
         required = setOf("code"),
         category = "built-in",
@@ -56,8 +56,8 @@ object PythonScriptTool {
         val code = args["code"].orEmpty()
         val timeoutMs = args["timeout_ms"]?.toLongOrNull()?.coerceIn(1L, MAX_TIMEOUT_MS) ?: DEFAULT_TIMEOUT_MS
         return when {
-            code.isBlank() -> errorJson("参数 code 缺失或为空")
-            code.length > MAX_SCRIPT_CHARS -> errorJson("脚本超过最大长度($MAX_SCRIPT_CHARS 字符)")
+            code.isBlank() -> errorJson("Parameter code is missing or empty")
+            code.length > MAX_SCRIPT_CHARS -> errorJson("Script exceeds the maximum length ($MAX_SCRIPT_CHARS characters)")
             else -> formatResultJson(evaluate(context, code, timeoutMs))
         }
     }
@@ -65,12 +65,12 @@ object PythonScriptTool {
     /** 共享执行路径（供直接脚本工具与手机 Agent 工作流复用）。 */
     suspend fun evaluate(context: Context, code: String, timeoutMs: Long = DEFAULT_TIMEOUT_MS): SkillEngineResult {
         return when {
-            code.isBlank() -> SkillEngineResult.Error("参数 code 缺失或为空")
-            code.length > MAX_SCRIPT_CHARS -> SkillEngineResult.Error("脚本超过最大长度($MAX_SCRIPT_CHARS 字符)")
+            code.isBlank() -> SkillEngineResult.Error("Parameter code is missing or empty")
+            code.length > MAX_SCRIPT_CHARS -> SkillEngineResult.Error("Script exceeds the maximum length ($MAX_SCRIPT_CHARS characters)")
             else -> {
                 // 确保运行时数据（stdlib）已解压；首次调用会解压一次。
                 PythonRuntime.ensureData(context).getOrElse { e ->
-                    return SkillEngineResult.Error("Python 运行时数据未就绪: ${e.message}")
+                    return SkillEngineResult.Error("Python runtime data not ready: ${e.message}")
                 }
                 PythonSkillEngine(context).eval(
                     script = code,

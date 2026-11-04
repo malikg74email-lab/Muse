@@ -80,12 +80,12 @@ class ProactiveScheduler(
     fun start() {
         job?.cancel()
         job = appScope.launch(GlobalCoroutineExceptionHandler) {
-            Logger.i(TAG, "主动消息调度已启动")
+            Logger.i(TAG, "Proactive message scheduling started")
             while (isActive) {
                 // 走 runCycle 而不是 cycle.execute：四路触发源必须落在同一个入口上，
                 // 否则周期路径既拿不到 lastOutcome，也容易在下次改动时被漏掉互斥。
                 val outcome = runCatching { runCycle(TRIGGER_TIMER, force = false) }
-                    .onFailure { e -> Logger.w(TAG, "巡检异常: ${e.message}") }
+                    .onFailure { e -> Logger.w(TAG, "Patrol error:  ${e.message}") }
                     .getOrNull()
                 // 这一轮被别的触发源占着没跑成，账本状态无从得知 ——
                 // 按「没事」睡一小时等于白白错过一次机会，等一小会儿再看。
@@ -104,7 +104,7 @@ class ProactiveScheduler(
     fun stop() {
         job?.cancel()
         job = null
-        Logger.i(TAG, "主动消息调度已停止")
+        Logger.i(TAG, "Proactive message scheduling stopped")
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -133,9 +133,9 @@ class ProactiveScheduler(
             val pending = stores.outcomes.findPendingInSession(sessionId)
             if (pending != null) {
                 stores.outcomes.resolve(pending.id, OutcomeState.REPLIED, now)
-                Logger.i(TAG, "用户回复了主动消息，亲密度更新")
+                Logger.i(TAG, "The user replied to a proactive message; affinity updated")
             }
-        }.onFailure { e -> Logger.w(TAG, "反馈记录失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Failed to record feedback:  ${e.message}") }
     }
 
     /**
@@ -151,7 +151,7 @@ class ProactiveScheduler(
         runCatching {
             val pending = stores.outcomes.findPendingInSession(sessionId) ?: return@runCatching
             stores.outcomes.resolve(pending.id, OutcomeState.OPENED, System.currentTimeMillis())
-        }.onFailure { e -> Logger.w(TAG, "记录主动消息已读失败: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Failed to record the proactive message as read:  ${e.message}") }
     }
 
     /**
@@ -163,8 +163,8 @@ class ProactiveScheduler(
     suspend fun onProactiveDismissed(outcomeId: String) {
         runCatching {
             stores.outcomes.resolve(outcomeId, OutcomeState.DISMISSED, System.currentTimeMillis())
-            Logger.i(TAG, "用户把主动消息标为「这次不用」")
-        }.onFailure { e -> Logger.w(TAG, "记录「这次不用」失败: ${e.message}") }
+            Logger.i(TAG, "The user marked the proactive message as 'not this time'")
+        }.onFailure { e -> Logger.w(TAG, "Failed to record 'not this time':  ${e.message}") }
     }
 
     /**
@@ -175,7 +175,7 @@ class ProactiveScheduler(
      */
     suspend fun startCooldown(assistantId: String, days: Int = 7): String {
         stores.relations.startCooldown(assistantId, System.currentTimeMillis(), days)
-        Logger.i(TAG, "用户请求冷却 $days 天")
-        return "好，这 $days 天我不会主动找你。有事随时叫我。"
+        Logger.i(TAG, "The user requested a cooldown of  $days  days")
+        return "OK, for the next  $days  days I won't reach out to you proactively. Come to me any time you need something."
     }
 }

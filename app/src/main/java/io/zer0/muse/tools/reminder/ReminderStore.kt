@@ -127,7 +127,7 @@ class ReminderStore(private val context: Context) {
     fun rescheduleAll(now: Long = System.currentTimeMillis()): RescheduleSummary {
         // 开机广播与冷启动可能同时触发重排；用进程内互斥避免对同一批过期提醒重复补发。
         if (!rescheduleGuard.compareAndSet(false, true)) {
-            Logger.i(TAG, "已有重排在执行，跳过本次")
+            Logger.i(TAG, "A reschedule is already running; skipping this one")
             return RescheduleSummary(
                 rescheduled = 0,
                 catchUpNotified = 0,
@@ -188,7 +188,7 @@ class ReminderStore(private val context: Context) {
         overdue.forEach { catchUpNotify(it) }
         Logger.i(
             TAG,
-            "提醒重排完成: 成功=$rescheduled, 补发=$caughtUp, 失败=$failed",
+            "Reminder reschedule complete: succeeded=$rescheduled, caughtUp=$caughtUp, failed=$failed",
         )
         return RescheduleSummary(
             rescheduled = rescheduled,
@@ -219,7 +219,7 @@ class ReminderStore(private val context: Context) {
             notificationId = entry.id.hashCode(),
             target = target,
         )
-        Logger.i(TAG, "补发错过的提醒: id=${entry.id}, title=${entry.title}")
+        Logger.i(TAG, "Re-delivering a missed reminder: id=${entry.id}, title=${entry.title}")
     }
 
     /** 内部读取全部提醒(文件不存在时返回空列表)。 */
@@ -229,8 +229,8 @@ class ReminderStore(private val context: Context) {
             AppJson.decodeFromString(ListSerializer(ReminderEntry.serializer()), file.readText())
         } catch (e: Exception) {
             backupCorruptFile()
-            lastError = "提醒列表文件损坏，已备份原文件并重建"
-            Logger.e(TAG, "读取提醒列表失败，已备份坏文件: ${e.message}", e)
+            lastError = "The reminder list file is corrupted; the original file was backed up and rebuilt"
+            Logger.e(TAG, "Failed to read the reminder list; the bad file was backed up: ${e.message}", e)
             emptyList()
         }
     }
@@ -240,9 +240,9 @@ class ReminderStore(private val context: Context) {
             if (file.exists()) {
                 val backup = java.io.File(file.parentFile, "${file.name}.bak-${System.currentTimeMillis()}")
                 file.copyTo(backup, overwrite = true)
-                Logger.w(TAG, "损坏文件已备份到 ${backup.absolutePath}")
+                Logger.w(TAG, "The corrupted file was backed up to ${backup.absolutePath}")
             }
-        }.onFailure { Logger.w(TAG, "备份损坏文件失败: ${it.message}") }
+        }.onFailure { Logger.w(TAG, "Failed to back up the corrupted file: ${it.message}") }
     }
 
     /** 内部写入全部提醒(先写临时文件再改名，避免写到一半崩溃留下损坏文件)。 */
@@ -258,7 +258,7 @@ class ReminderStore(private val context: Context) {
                 tmp.delete()
             }
         } catch (e: Exception) {
-            Logger.w(TAG, "写入提醒列表失败: ${e.message}")
+            Logger.w(TAG, "Failed to write the reminder list: ${e.message}")
         }
     }
 

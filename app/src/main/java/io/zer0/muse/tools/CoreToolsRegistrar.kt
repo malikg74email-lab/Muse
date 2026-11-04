@@ -28,12 +28,12 @@ class CoreToolsRegistrar(
             ToolRegistry.ToolDef(
                 name = "get_current_time",
                 description =
-                "获取当前时间。可指定时区(如 Asia/Shanghai、UTC),自动标注夏令时状态。" +
-                    "系统提示已包含本轮时间及最近两条用户消息的时间锚点；普通当前时间或消息间隔问题请直接引用，" +
-                    "只有用户要求其他时区或明确要求重新取时才调用。",
+                "Get the current time. You can specify a timezone (e.g. Asia/Shanghai, UTC); daylight-saving status is annotated automatically." +
+                    "The system prompt already includes this round's time and the time anchors of the user's two most recent messages; for ordinary current-time or message-interval questions, quote them directly;" +
+                    "call only when the user asks for another timezone or explicitly asks to fetch the time again.",
                 parameters = mapOf(
-                    "timezone" to "可选,IANA 时区(如 Asia/Shanghai、UTC),默认 Asia/Shanghai",
-                    "format" to "可选,自定义格式(SimpleDateFormat 语法),默认 yyyy-MM-dd HH:mm:ss z",
+                    "timezone" to "Optional, IANA timezone (e.g. Asia/Shanghai, UTC), default Asia/Shanghai",
+                    "format" to "Optional, custom format (SimpleDateFormat syntax), default yyyy-MM-dd HH:mm:ss z",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -48,7 +48,7 @@ class CoreToolsRegistrar(
             }
             val pattern = args["format"]?.takeIf { it.isNotBlank() } ?: "yyyy-MM-dd HH:mm:ss z"
             val fmt = resultOf { SimpleDateFormat(pattern, Locale.getDefault()) }
-                .onError { msg, _ -> Logger.w("CoreTools", "时间格式无效: $msg(pattern=$pattern)") }
+                .onError { msg, _ -> Logger.w("CoreTools", "Invalid time format: $msg (pattern=$pattern)") }
                 .getOrNull() ?: SimpleDateFormat("yyyy-MM-dd HH:mm:ss z", Locale.getDefault())
             fmt.timeZone = tz
             val dstLabel = if (tz.inDaylightTime(Date())) {
@@ -62,8 +62,8 @@ class CoreToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "calculator",
-                description = "简易计算器,支持加减乘除和括号。返回 '表达式 = 结果' 文本。仅支持四则运算与括号,不支持幂/取模/单位换算。",
-                parameters = mapOf("expression" to "必填,数学表达式,如 1+2*3"),
+                description = "A simple calculator supporting addition, subtraction, multiplication, division and brackets. Returns 'expression = result' text. Only the four arithmetic operations and brackets; no powers/modulo/unit conversion.",
+                parameters = mapOf("expression" to "Required, mathematical expression, e.g. 1+2*3"),
                 required = setOf("expression"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,
@@ -87,8 +87,8 @@ class CoreToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "echo",
-                description = "回显输入内容(测试用)。",
-                parameters = mapOf("text" to "必填,要回显的文本"),
+                description = "Echo the input content (for testing).",
+                parameters = mapOf("text" to "Required, the text to echo"),
                 required = setOf("text"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,

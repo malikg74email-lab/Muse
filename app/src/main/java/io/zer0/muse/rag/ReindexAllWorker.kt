@@ -63,22 +63,22 @@ class ReindexAllWorker(
     override suspend fun doWork(): Result {
         val koin = resultOf { GlobalContext.get() }.getOrNull()
         if (koin == null) {
-            Logger.w(TAG, "Koin 未初始化(Safe Mode?),稍后重试")
+            Logger.w(TAG, "Koin not initialized (Safe Mode?), retrying later")
             return Result.retry()
         }
         val ragService = resultOf { koin.get<RagService>() }.getOrNull()
-            ?: return Result.retry().also { Logger.w(TAG, "RagService 解析失败,稍后重试") }
+            ?: return Result.retry().also { Logger.w(TAG, "RagService resolution failed, retrying later") }
         val settings = resultOf { koin.get<SettingsRepository>() }.getOrNull()
-            ?: return Result.retry().also { Logger.w(TAG, "SettingsRepository 解析失败,稍后重试") }
+            ?: return Result.retry().also { Logger.w(TAG, "SettingsRepository resolution failed, retrying later") }
         val kbDao = resultOf { koin.get<KnowledgeBaseDao>() }.getOrNull()
-            ?: return Result.retry().also { Logger.w(TAG, "KnowledgeBaseDao 解析失败,稍后重试") }
+            ?: return Result.retry().also { Logger.w(TAG, "KnowledgeBaseDao resolution failed, retrying later") }
         val notifMgr = resultOf { koin.get<MuseNotificationManager>() }.getOrNull()
 
         // 1. 取要重索引的 KB 列表(未指定则全部)
         val kbIds = inputData.getStringArray(KEY_KB_IDS)?.toList()
             ?: kbDao.getAll().map { it.id }
         if (kbIds.isEmpty()) {
-            Logger.i(TAG, "无 KB 需要重索引")
+            Logger.i(TAG, "No KB needs re-indexing")
             notifyNothingToDo()
             return Result.success()
         }
@@ -87,7 +87,7 @@ class ReindexAllWorker(
         val totalCount = resultOf { koin.get<io.zer0.muse.data.knowledge.KnowledgeDocDao>().getByKbIds(kbIds).size }
             .getOrNull() ?: 0
         if (totalCount == 0) {
-            Logger.i(TAG, "无文档需要重索引(kbIds=$kbIds)")
+            Logger.i(TAG, "No documents need re-indexing (kbIds=$kbIds)")
             notifyNothingToDo()
             return Result.success()
         }
@@ -98,7 +98,7 @@ class ReindexAllWorker(
         val ragConfig = resultOf { settings.getRagConfig() }.getOrNull() ?: RagConfig()
 
         // 4. 执行重索引
-        Logger.i(TAG, "开始重索引:$totalCount 篇文档,kbIds=$kbIds")
+        Logger.i(TAG, "Starting re-indexing: $totalCount documents, kbIds=$kbIds")
         val failures = ragService.reindexAllInKbs(
             kbIds = kbIds,
             ragConfig = ragConfig,
@@ -107,11 +107,11 @@ class ReindexAllWorker(
                 setProgressAsync(workDataOf(KEY_PROGRESS to current, KEY_TOTAL to total))
                 // setForeground 是 suspend,在回调里无法直接调用 — 通过 NotificationManager 直接更新通知
                 resultOf { updateProgressNotification(current, total, applicationContext) }
-                    .onError { msg, _ -> Logger.w(TAG, "更新进度通知失败: $msg") }
+                    .onError { msg, _ -> Logger.w(TAG, "Updating the progress notification failed: $msg") }
             },
         )
         val successCount = (totalCount - failures.size).coerceAtLeast(0)
-        Logger.i(TAG, "重索引完成:成功 $successCount/$totalCount,失败 ${failures.size}")
+        Logger.i(TAG, "Re-indexing complete: succeeded $successCount/$totalCount, failed ${failures.size}")
         // UX 复核:前台进度通知随任务结束被撤掉,这里补终态通知 —— 失败必须有用户可见反馈
         notifyResult(successCount, totalCount, failures)
         return Result.success()
@@ -167,7 +167,7 @@ class ReindexAllWorker(
         resultOf {
             MuseNotificationManager(applicationContext).ensureChannels()
             nm.notify(NOTIF_ID_REINDEX_RESULT, notification)
-        }.onError { msg, _ -> Logger.w(TAG, "结果通知发送失败: $msg") }
+        }.onError { msg, _ -> Logger.w(TAG, "Sending the result notification failed: $msg") }
     }
 
     /** 「没有需要重新索引的文档」也要给用户一句回执,否则点完按钮毫无反馈。 */
@@ -187,7 +187,7 @@ class ReindexAllWorker(
         resultOf {
             MuseNotificationManager(applicationContext).ensureChannels()
             nm.notify(NOTIF_ID_REINDEX_RESULT, notification)
-        }.onError { msg, _ -> Logger.w(TAG, "结果通知发送失败: $msg") }
+        }.onError { msg, _ -> Logger.w(TAG, "Sending the result notification failed: $msg") }
     }
 
     /**
@@ -287,7 +287,7 @@ class ReindexAllWorker(
                 androidx.work.ExistingWorkPolicy.REPLACE,
                 request,
             )
-            Logger.i(TAG, "已入队重索引任务,kbIds=$kbIds")
+            Logger.i(TAG, "Re-indexing task enqueued, kbIds=$kbIds")
         }
     }
 }

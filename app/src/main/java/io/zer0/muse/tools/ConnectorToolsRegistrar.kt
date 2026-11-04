@@ -34,8 +34,8 @@ class ConnectorToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_LIST_CONNECTORS,
-                description = "列出已配置的 OAuth 连接器(外部服务授权)及其 id / 名称 / 是否已授权。" +
-                    "调用外部服务前先用本工具获取 connector_id。",
+                description = "List the configured OAuth connectors (external service authorisations) and their id / name / whether authorised." +
+                    "Use this tool to get the connector_id before calling an external service.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -45,13 +45,13 @@ class ConnectorToolsRegistrar(
             runBlocking {
                 val connectors = connectorStore.load()
                 if (connectors.isEmpty()) {
-                    "尚未配置任何连接器。"
+                    "No connectors configured yet."
                 } else {
                     val lines = mutableListOf<String>()
                     for (c in connectors) {
                         val authorized = OAuthManager.getStoredToken("connector_${c.id}") != null
                         lines += "${c.id} | ${c.name.ifBlank { "-" }} | " +
-                            if (authorized) "已授权" else "未授权"
+                            if (authorized) "Authorised" else "Not authorised"
                     }
                     lines.joinToString("\n")
                 }
@@ -61,13 +61,13 @@ class ConnectorToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_CALL_CONNECTOR,
-                description = "用已授权的连接器凭据调用外部服务 HTTP API(自动附带 Bearer token,过期自动刷新)。" +
-                    "先用 connector_list 查询可用连接器 id;url 必须与连接器服务同域。",
+                description = "Call an external service's HTTP API with an authorised connector's credentials (automatically attaches Bearer <redacted>; refreshes automatically on expiry)." +
+                    "First query the available connector ids with connector_list; the url must be on the same domain as the connector service.",
                 parameters = mapOf(
-                    "connector_id" to "必填,连接器 id(见 connector_list)",
-                    "url" to "必填,完整请求 URL(如 https://api.github.com/user)",
-                    "method" to "可选,HTTP 方法:GET(默认)/POST/PUT/PATCH/DELETE",
-                    "body" to "可选,请求体(JSON 文本,POST/PUT/PATCH 时使用)",
+                    "connector_id" to "Required, connector id (see connector_list)",
+                    "url" to "Required, full request URL (e.g. https://api.github.com/user)",
+                    "method" to "Optional, HTTP method: GET (default)/POST/PUT/PATCH/DELETE",
+                    "body" to "Optional, request body (JSON text, used for POST/PUT/PATCH)",
                 ),
                 required = setOf("connector_id", "url"),
                 category = "built-in",
@@ -83,15 +83,15 @@ class ConnectorToolsRegistrar(
         val url = args["url"]?.trim().orEmpty()
         val method = args["method"]?.trim()?.uppercase().orEmpty().ifBlank { "GET" }
         val body = args["body"]
-        if (connectorId.isBlank()) return@withContext "缺少 connector_id"
-        if (url.isBlank()) return@withContext "缺少 url"
-        if (method !in ALLOWED_METHODS) return@withContext "不支持的方法: $method"
+        if (connectorId.isBlank()) return@withContext "Missing connector_id"
+        if (url.isBlank()) return@withContext "Missing url"
+        if (method !in ALLOWED_METHODS) return@withContext "Unsupported method: $method"
         val connector = connectorStore.load().firstOrNull { it.id == connectorId }
-            ?: return@withContext "连接器不存在: $connectorId"
+            ?: return@withContext "Connector does not exist: $connectorId"
         // 同域校验:防止 token 被发送到无关主机
         if (!sameSite(url, connector.tokenUrl)) {
-            return@withContext "拒绝: url 与连接器服务域不一致" +
-                "(${hostOf(url) ?: "?"} 不属于 ${hostOf(connector.tokenUrl) ?: "?"} 站点)"
+            return@withContext "Refused: the url's domain does not match the connector service domain" +
+                "(${hostOf(url) ?: "?"} does not belong to the ${hostOf(connector.tokenUrl) ?: "?"} site)"
         }
         val oauthConfig = OAuthConfig(
             clientId = connector.clientId,
@@ -103,8 +103,8 @@ class ConnectorToolsRegistrar(
         )
         val token = OAuthManager.refreshTokenIfNeeded("connector_${connector.id}", oauthConfig)
             .getOrElse { e ->
-                return@withContext "连接器未授权或 token 刷新失败: ${e.message}" +
-                    "(请先在 设置-连接器 完成授权)"
+                return@withContext "Connector not authorised or token refresh failed: ${e.message}" +
+                    "(Please complete the authorisation in Settings - Connectors first)"
             }
         runCatching {
             val builder = Request.Builder()
@@ -120,7 +120,7 @@ class ConnectorToolsRegistrar(
                 val text = resp.body.string()
                 formatConnectorResponse(resp.code, text)
             }
-        }.getOrElse { e -> "请求失败: ${e.message}" }
+        }.getOrElse { e -> "Request failed: ${e.message}" }
     }
 
     /** 同注册域判定:取末两段域名比较(github.com / api.github.com → github.com)。 */

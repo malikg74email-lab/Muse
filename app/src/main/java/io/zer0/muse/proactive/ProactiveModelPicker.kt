@@ -35,12 +35,12 @@ internal object ProactiveModelPicker {
             ?: readOrNull { settings.selectedModelIdFlow.first() }
 
         if (modelId.isNullOrBlank()) {
-            Logger.w(TAG, "助手与全局都没有绑定模型，退回工具档")
+            Logger.w(TAG, "Neither the assistant nor the global settings have a model bound; falling back to the tool tier")
             return utilityModel(router)
         }
         val resolved = runCatching {
             router.resolveBinding(UtilityModelBinding(providerId = providerId.orEmpty(), modelId = modelId))
-        }.onFailure { e -> Logger.w(TAG, "按聊天模型解析失败，退回工具档: ${e.message}") }
+        }.onFailure { e -> Logger.w(TAG, "Failed to resolve by chat model; falling back to the tool tier:  ${e.message}") }
             .getOrNull()
         return resolved ?: utilityModel(router)
     }

@@ -13,9 +13,9 @@ object RecordExperienceTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "record_experience",
-        description = "把一条经验记进经验库。适用情形:用户指出你的错误、表现出不满或反复强调某事;" +
-            "你试了多种方法后找到有效做法;用户说「以后就这么做」或「别这么做」。" +
-            "每条一句话,写具体。",
+        description = "Record an experience into the experience library. Applicable situations: the user points out your mistake, shows dissatisfaction, or repeatedly emphasises something;" +
+            "you found an effective approach after trying several methods; the user says 'do it this way from now on' or 'don't do it that way'." +
+            "One sentence per entry; be specific.",
         parameters = mapOf(
             "category" to "Required. Category, 2-4 words, e.g. 'tool usage', 'search tips', 'response style'.",
             "content" to "Required. The experience content, concise and direct, one sentence.",

@@ -24,11 +24,11 @@ class ResourceToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "resource_add",
-                description = "向资源库添加一条资源(笔记/提示词/参考内容等)。",
+                description = "Add a resource to the resource library (note/prompt/reference content, etc.).",
                 parameters = mapOf(
-                    "title" to "必填,资源标题",
-                    "content" to "必填,资源正文",
-                    "tags" to "可选,标签,多个用逗号分隔",
+                    "title" to "Required, resource title",
+                    "content" to "Required, resource body",
+                    "tags" to "Optional, tags, multiple separated by commas",
                 ),
                 required = setOf("title", "content"),
                 category = "built-in",
@@ -39,10 +39,10 @@ class ResourceToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "resource_list",
-                description = "列出资源库中的资源,可按关键字过滤。",
+                description = "List the resources in the resource library, filterable by keyword.",
                 parameters = mapOf(
-                    "keyword" to "可选,标题/正文/标签过滤关键字",
-                    "limit" to "可选,最多返回数量,默认 20",
+                    "keyword" to "Optional, title/body/tag filter keyword",
+                    "limit" to "Optional, maximum number to return, default 20",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -54,10 +54,10 @@ class ResourceToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "resource_search",
-                description = "搜索资源库(与 resource_list 关键字过滤行为一致)。",
+                description = "Search the resource library (same behaviour as resource_list's keyword filtering).",
                 parameters = mapOf(
-                    "keyword" to "可选,搜索关键字",
-                    "limit" to "可选,最多返回数量,默认 20",
+                    "keyword" to "Optional, search keyword",
+                    "limit" to "Optional, maximum number to return, default 20",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -69,8 +69,8 @@ class ResourceToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "resource_get",
-                description = "根据 id 获取资源库中的单条资源。",
-                parameters = mapOf("id" to "必填,资源 id"),
+                description = "Get a single resource from the resource library by id.",
+                parameters = mapOf("id" to "Required, resource id"),
                 required = setOf("id"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,
@@ -80,8 +80,8 @@ class ResourceToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "resource_delete",
-                description = "根据 id 删除资源库中的资源。",
-                parameters = mapOf("id" to "必填,资源 id"),
+                description = "Delete a resource from the resource library by id.",
+                parameters = mapOf("id" to "Required, resource id"),
                 required = setOf("id"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.HIGH,

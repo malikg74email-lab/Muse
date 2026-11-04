@@ -30,15 +30,15 @@ class ReminderToolsRegistrar(
             ToolRegistry.ToolDef(
                 name = "schedule_reminder",
                 // v1.0.75 fix (工具审查 02): 与 set_alarm/scheduled_task_create 区分 + 返回说明
-                description = "创建本地定时提醒,到点弹出通知。用户说'提醒我 X 时间做 Y'时调用。" +
-                    "区别于: set_alarm=系统闹钟(响铃), scheduled_task_create=周期 AI 任务(自动执行 prompt)。" +
-                    "time 支持 '2026-08-16 15:30' 或 ISO 8601,必须是未来时间。返回提醒 id,后续可用 cancel_reminder 取消。",
+                description = "Create a local timed reminder; a notification pops up when the time arrives. Call when the user says 'remind me to do Y at time X'." +
+                    "Distinct from: set_alarm = system alarm (rings), scheduled_task_create = periodic AI task (automatically executes a prompt)." +
+                    "time supports '2026-08-16 15:30' or ISO 8601 and must be a future time. Returns the reminder id; cancel later with cancel_reminder.",
                 parameters = mapOf(
-                    "title" to "必填,提醒标题",
-                    "message" to "必填,提醒正文",
+                    "title" to "Required, reminder title",
+                    "message" to "Required, reminder body",
                     // B-08: 示例必须是实现可解析的格式 — "2026-07-21T15:30:00"(无时区偏移)
                     // 过不了 Instant.parse;本地时间格式或带 Z/偏移的 ISO 才可解析。
-                    "time" to "必填,触发时间,如 2026-07-21 15:30 或 2026-07-21T15:30:00Z,必须是未来时间",
+                    "time" to "Required, trigger time, e.g. 2026-07-21 15:30 or 2026-07-21T15:30:00Z; must be a future time",
                 ),
                 required = setOf("title", "message", "time"),
                 category = "built-in",
@@ -91,8 +91,8 @@ class ReminderToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "cancel_reminder",
-                description = "取消一个已创建的定时提醒。",
-                parameters = mapOf("id" to "必填,提醒 id(由 schedule_reminder 返回)"),
+                description = "Cancel a created timed reminder.",
+                parameters = mapOf("id" to "Required, reminder id (returned by schedule_reminder)"),
                 required = setOf("id"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.NORMAL,
@@ -111,8 +111,8 @@ class ReminderToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "list_reminders",
-                description = "列出当前所有未触发的定时提醒。",
-                parameters = mapOf("limit" to "可选,最多返回数量,默认 20"),
+                description = "List all currently untriggered timed reminders.",
+                parameters = mapOf("limit" to "Optional, maximum number to return, default 20"),
                 required = emptySet(),
                 category = "built-in",
                 parameterTypes = mapOf("limit" to "integer"),

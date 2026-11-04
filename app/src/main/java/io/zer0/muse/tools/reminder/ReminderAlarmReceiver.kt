@@ -16,10 +16,10 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getStringExtra(EXTRA_ID) ?: return
-        val title = intent.getStringExtra(EXTRA_TITLE) ?: "muse 提醒"
+        val title = intent.getStringExtra(EXTRA_TITLE) ?: "Shaheen 2 reminder"
         val message = intent.getStringExtra(EXTRA_MESSAGE) ?: ""
 
-        Logger.i(TAG, "提醒触发: id=$id, title=$title")
+        Logger.i(TAG, "Reminder triggered: id=$id, title=$title")
 
         val target = if (
             intent.getStringExtra(EXTRA_TARGET_TYPE) == TARGET_QUICK_NOTE &&

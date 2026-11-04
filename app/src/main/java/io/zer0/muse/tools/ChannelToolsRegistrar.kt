@@ -24,11 +24,11 @@ class ChannelToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_SEND_CHANNEL,
-                description = "向已配置的外部消息渠道(飞书/QQ 等)发送一条文本消息。" +
-                    "先用 channel_list 查询可用渠道及其 id;适合把结果或通知推送到用户的 IM。",
+                description = "Send a text message to a configured external messaging channel (Feishu/QQ, etc.)." +
+                    "First use channel_list to query the available channels and their ids; suitable for pushing results or notifications to the user's IM.",
                 parameters = mapOf(
-                    "channel_id" to "必填,渠道 id(见 channel_list)",
-                    "text" to "必填,要发送的文本内容",
+                    "channel_id" to "Required, channel id (see channel_list)",
+                    "text" to "Required, the text content to send",
                 ),
                 required = setOf("channel_id", "text"),
                 category = "built-in",
@@ -37,19 +37,19 @@ class ChannelToolsRegistrar(
         ) { args ->
             val channelId = args["channel_id"]?.trim().orEmpty()
             val text = args["text"].orEmpty()
-            if (channelId.isBlank()) return@register "缺少 channel_id"
-            if (text.isBlank()) return@register "缺少 text"
+            if (channelId.isBlank()) return@register "Missing channel_id"
+            if (text.isBlank()) return@register "Missing text"
             runBlocking {
                 channelManager.refresh()
                 val result = channelManager.sendText(channelId, text)
-                if (result.ok) result.detail else "发送失败: ${result.detail}"
+                if (result.ok) result.detail else "Send failed: ${result.detail}"
             }
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_LIST_CHANNELS,
-                description = "列出已配置的外部消息渠道(飞书/QQ 等)及其 id / 平台 / 启用状态。",
+                description = "List the configured external messaging channels (Feishu/QQ, etc.) and their id / platform / enabled status.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -60,7 +60,7 @@ class ChannelToolsRegistrar(
                 channelManager.refresh()
                 val list = channelManager.channels.value
                 if (list.isEmpty()) {
-                    "尚未配置任何渠道。"
+                    "No channels configured yet."
                 } else {
                     list.joinToString("\n") { c ->
                         "${c.id} | ${c.platform.name} | ${c.name.ifBlank { "-" }} | " +

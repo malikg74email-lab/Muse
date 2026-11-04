@@ -169,7 +169,7 @@ class OnnxEmbeddingProvider(
             cachedOutputNames = newSession.outputNames.toList()
             Logger.i(
                 "OnnxEmbeddingProvider",
-                "ONNX session 已加载: model=${File(modelPath).name}, vocab=${newVocab.size} tokens, " +
+                "ONNX session loaded: model=${File(modelPath).name}, vocab=${newVocab.size} tokens, " +
                     "inputs=${newSession.inputNames}, outputs=${newSession.outputNames}",
             )
         }
@@ -318,7 +318,7 @@ class OnnxEmbeddingProvider(
             cachedOutputNames = null
             // env 是全局共享的,不关闭
             TimeUnit.MILLISECONDS.sleep(50) // 给 native 资源回收留时间
-        }.onError { msg, e -> Logger.w("OnnxEmbeddingProvider", "close 失败: $msg", e) }
+        }.onError { msg, e -> Logger.w("OnnxEmbeddingProvider", "close failed: $msg", e) }
     }
 
     /** 检查本地 ONNX 是否可用(模型文件 + vocab 都已配置且存在)。 */

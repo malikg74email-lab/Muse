@@ -33,11 +33,11 @@ object NodeScriptTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = TOOL_NAME,
-        description = "在内置 Node.js 运行时中执行 JavaScript 脚本(完整能力:文件读写、网络、子进程;" +
-            "可 require 第三方 npm 模块)。返回 JSON(result/logs/error)。超时默认 30 秒。",
+        description = "Execute a JavaScript script in the built-in Node.js runtime (full capabilities: file reading/writing, network, subprocesses;" +
+            "can require third-party npm modules). Returns JSON (result/logs/error). Default timeout 30 seconds.",
         parameters = mapOf(
-            "code" to "必填,Node 脚本代码(表达式或语句块;可用 require/fs/fetch 等)",
-            "timeout_ms" to "可选,超时毫秒数,默认 30000,最大 300000",
+            "code" to "Required, Node script code (an expression or statement block; may use require/fs/fetch, etc.)",
+            "timeout_ms" to "Optional, timeout in milliseconds, default 30000, maximum 300000",
         ),
         required = setOf("code"),
         category = "built-in",
@@ -49,8 +49,8 @@ object NodeScriptTool {
         val code = args["code"].orEmpty()
         val timeoutMs = args["timeout_ms"]?.toLongOrNull()?.coerceIn(1L, MAX_TIMEOUT_MS) ?: DEFAULT_TIMEOUT_MS
         return when {
-            code.isBlank() -> errorJson("参数 code 缺失或为空")
-            code.length > MAX_SCRIPT_CHARS -> errorJson("脚本超过最大长度($MAX_SCRIPT_CHARS 字符)")
+            code.isBlank() -> errorJson("Parameter code is missing or empty")
+            code.length > MAX_SCRIPT_CHARS -> errorJson("Script exceeds the maximum length ($MAX_SCRIPT_CHARS characters)")
             else -> formatResultJson(evaluate(context, code, timeoutMs))
         }
     }
@@ -58,8 +58,8 @@ object NodeScriptTool {
     /** Shared execution path for the direct script tool and durable phone-agent workflows. */
     suspend fun evaluate(context: Context, code: String, timeoutMs: Long = DEFAULT_TIMEOUT_MS): SkillEngineResult {
         return when {
-            code.isBlank() -> SkillEngineResult.Error("参数 code 缺失或为空")
-            code.length > MAX_SCRIPT_CHARS -> SkillEngineResult.Error("脚本超过最大长度($MAX_SCRIPT_CHARS 字符)")
+            code.isBlank() -> SkillEngineResult.Error("Parameter code is missing or empty")
+            code.length > MAX_SCRIPT_CHARS -> SkillEngineResult.Error("Script exceeds the maximum length ($MAX_SCRIPT_CHARS characters)")
             else ->
                 ProcessSkillEngine(context).eval(
                     script = code,

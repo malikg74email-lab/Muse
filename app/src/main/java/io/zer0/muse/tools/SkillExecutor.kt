@@ -214,7 +214,7 @@ class SkillExecutor(
                     }
             }
         }.onError { msg, t ->
-            Logger.e("SkillExecutor", "skill ${skill.id} 执行失败: $msg", t)
+            Logger.e("SkillExecutor", "skill ${skill.id} execution failed: $msg", t)
         }.getOrNull() ?: context.getString(R.string.skill_exec_exception)
     }
 
@@ -290,7 +290,7 @@ class SkillExecutor(
             ?: DelegationContract.DelegationResult(
                 requestId = request.requestId,
                 success = false,
-                error = "delegateAgent 未配置",
+                error = "delegateAgent not configured",
                 metadata =
                 DelegationContract.DelegationResult.ResultMetadata(
                     startedAt = System.currentTimeMillis(),
@@ -319,7 +319,7 @@ class SkillExecutor(
      *  - 失败时返回错误信息字符串(主 LLM 能看到错误并决定是否重试)
      *  - 不递归(子助手不能再调 delegate_agent,避免无限嵌套)
      */
-    @Deprecated("使用 delegateAgent 替代", ReplaceWith("delegateAgent"))
+    @Deprecated("Use delegateAgent instead", ReplaceWith("delegateAgent"))
     private suspend fun execDelegateAgent(args: Map<String, String>): String {
         // v1.202 改造 1: 统一委派入口 — execDelegateAgent 是 LLM tool_call "delegate_agent" 的入口,
         // 但此前不通知 DelegationChainTracker,导致 LLM 委派在 UI 链路卡片中不可见。
@@ -341,7 +341,7 @@ class SkillExecutor(
         // 构造上下文消息(把可选 context 作为 USER 消息的额外段落)
         val contextMessages: List<UIMessage> =
             if (contextInfo.isNotBlank()) {
-                listOf(UIMessage(role = MessageRole.USER, content = "上下文:\n$contextInfo"))
+                listOf(UIMessage(role = MessageRole.USER, content = "Context: \n$contextInfo"))
             } else {
                 emptyList()
             }
@@ -415,8 +415,8 @@ class SkillExecutor(
             listOf(
                 SkillEntity(
                     id = "read_file",
-                    name = "读取文件",
-                    description = "读取应用沙盒内的文本文件。路径相对于 filesDir；大于 1MB 的文件自动分段返回，使用 offset_chars/length_chars 继续读取，不丢弃后续内容。",
+                    name = "Read file",
+                    description = "Read a text file inside the app sandbox. The path is relative to filesDir; files larger than 1MB are automatically returned in segments — use offset_chars/length_chars to continue reading the rest, without discarding the remaining content.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -427,42 +427,42 @@ class SkillExecutor(
                                     "path",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "相对于 filesDir 的文件路径,如 'notes/todo.txt'")
+                                        put("description", "File path relative to filesDir, e.g. 'notes/todo.txt'")
                                     },
                                 )
                                 put(
                                     "offset",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,起始行号(从 0 开始),默认 0")
+                                        put("description", "Optional, starting line number (0-based), default 0")
                                     },
                                 )
                                 put(
                                     "length",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,读取行数,默认 0=全部")
+                                        put("description", "Optional, number of lines to read, default 0 = all")
                                     },
                                 )
                                 put(
                                     "offset_chars",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,字符分页起点；读取超大文件的下一段时使用上次返回的游标")
+                                        put("description", "Optional, character paging start; when reading the next segment of a very large file, use the cursor returned last time")
                                     },
                                 )
                                 put(
                                     "length_chars",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,字符分页长度；每次最多返回 65536 字符")
+                                        put("description", "Optional, character paging length; returns at most 65536 characters each time")
                                     },
                                 )
                                 put(
                                     "encoding",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,文件编码,默认 utf-8(支持 utf-16)")
+                                        put("description", "Optional, file encoding, default utf-8 (utf-16 supported)")
                                     },
                                 )
                             },
@@ -475,8 +475,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "write_file",
-                    name = "写入文件",
-                    description = "写入文本到应用沙盒内的文件。路径相对于 filesDir。",
+                    name = "Write file",
+                    description = "Write text to a file inside the app sandbox. The path is relative to filesDir.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -487,28 +487,28 @@ class SkillExecutor(
                                     "path",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "相对于 filesDir 的文件路径")
+                                        put("description", "File path relative to filesDir")
                                     },
                                 )
                                 put(
                                     "content",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要写入的文本内容")
+                                        put("description", "The text content to write")
                                     },
                                 )
                                 put(
                                     "append",
                                     buildJsonObject {
                                         put("type", "boolean")
-                                        put("description", "是否追加写入(默认 false 覆盖)")
+                                        put("description", "Whether to append (default false = overwrite)")
                                     },
                                 )
                                 put(
                                     "create_dirs",
                                     buildJsonObject {
                                         put("type", "boolean")
-                                        put("description", "可选,是否自动创建父目录,默认 true")
+                                        put("description", "Optional, whether to create parent directories automatically, default true")
                                     },
                                 )
                             },
@@ -530,7 +530,7 @@ class SkillExecutor(
                 SkillEntity(
                     id = "http_get",
                     name = "HTTP GET",
-                    description = "发起 HTTP GET 请求并返回完整响应;长响应会保存到可分段读取的应用文件。",
+                    description = "Send an HTTP GET request and return the full response; long responses are saved to an app file that can be read in segments.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -541,21 +541,21 @@ class SkillExecutor(
                                     "url",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "请求 URL,http:// 或 https://")
+                                        put("description", "Request URL, http:// or https://")
                                     },
                                 )
                                 put(
                                     "headers",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,请求头 JSON,如 {\"Authorization\":\"Bearer xxx\"}")
+                                        put("description", "Optional, request headers JSON, e.g. {\"Authorization\":\"Bearer xxx\"}")
                                     },
                                 )
                                 put(
                                     "timeout",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,超时秒数,默认 30")
+                                        put("description", "Optional, timeout in seconds, default 30")
                                     },
                                 )
                             },
@@ -569,7 +569,7 @@ class SkillExecutor(
                 SkillEntity(
                     id = "http_post",
                     name = "HTTP POST",
-                    description = "发起 HTTP POST 请求并返回完整响应;长响应会保存到可分段读取的应用文件。",
+                    description = "Send an HTTP POST request and return the full response; long responses are saved to an app file that can be read in segments.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -582,7 +582,7 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "请求 URL",
+                                            "Request URL",
                                         )
                                     },
                                 )
@@ -590,28 +590,28 @@ class SkillExecutor(
                                     "body",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "请求体内容")
+                                        put("description", "Request body content")
                                     },
                                 )
                                 put(
                                     "content_type",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "Content-Type,默认 application/json")
+                                        put("description", "Content-Type, default application/json")
                                     },
                                 )
                                 put(
                                     "headers",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,请求头 JSON")
+                                        put("description", "Optional, request headers JSON")
                                     },
                                 )
                                 put(
                                     "timeout",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,超时秒数,默认 30")
+                                        put("description", "Optional, timeout in seconds, default 30")
                                     },
                                 )
                             },
@@ -633,9 +633,9 @@ class SkillExecutor(
                 // ── v0.24: 搜索与信息获取 ──────────────────────────────────────
                 SkillEntity(
                     id = "web_search",
-                    name = "网页搜索",
+                    name = "Web search",
                     // v1.0.75 fix (工具审查 01): 删冗余 time_period,补 date_range 使用指引
-                    description = "用配置好的搜索引擎(SearXNG/Tavily)搜索网页。返回标题、URL 和摘要。当用户问到需要最新信息的问题时调用此工具。使用时机: 用户问到需要最新/实时信息的问题(价格、版本、政策、行情、天气等),或你知识不确定时。需要限定时间时传 date_range(如用户说'最近一周',传 past_week)。不要使用: 常识性问题或用户已提供足够信息时;搜索结果不全时换关键词重搜,不要编造。",
+                    description = "Search the web with the configured search engine (SearXNG/Tavily). Returns titles, URLs and summaries. Call this tool when the user asks a question that needs the latest information. When to use: the user asks about something needing the latest/real-time information (prices, versions, policies, market data, weather, etc.), or your knowledge is uncertain. When the time must be limited, pass date_range (e.g. if the user says 'the past week', pass past_week). Do not use: for common-knowledge questions or when the user has already provided enough information; if the search results are incomplete, retry with different keywords — do not fabricate.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -646,14 +646,14 @@ class SkillExecutor(
                                     "query",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "必填,搜索关键词。中文用户问题直接用中文关键词,可加关键限定词提高精度")
+                                        put("description", "Required, search keywords. For Chinese-language user questions, use Chinese keywords directly; add key qualifiers to improve precision")
                                     },
                                 )
                                 put(
                                     "max_results",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,最大返回条数(1-10),默认 5")
+                                        put("description", "Optional, maximum number of results (1-10), default 5")
                                     },
                                 )
                                 put(
@@ -662,7 +662,7 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "可选,限定结果时间范围,取值: past_day / past_week / past_month / past_year。用户提到'最近/最新/本周/本月'时填写,无时间要求时不填",
+                                            "Optional, limit the result time range; values: past_day / past_week / past_month / past_year. Fill in when the user mentions 'recent/latest/this week/this month'; leave empty when there is no time requirement",
                                         )
                                     },
                                 )
@@ -676,8 +676,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "web_fetch",
-                    name = "网页抓取",
-                    description = "抓取指定 URL 的网页正文(自动去除 HTML 标签,返回纯文本)。用于读取 web_search 返回的 URL 全文内容。使用时机: 读取 web_search 返回的 URL 全文,或用户给出明确 URL 时。不要使用: 无 URL 时;页面需要登录/交互时说明无法获取,不要猜测内容。",
+                    name = "Fetch web page",
+                    description = "Fetch the body text of the given URL (HTML tags are removed automatically, plain text is returned). Used to read the full content of a URL returned by web_search. When to use: reading the full text of a URL returned by web_search, or when the user gives an explicit URL. Do not use: when there is no URL; if the page needs login/interaction, explain that it cannot be fetched — do not guess the content.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -688,14 +688,14 @@ class SkillExecutor(
                                     "url",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要抓取的网页 URL,http:// 或 https://")
+                                        put("description", "The URL of the web page to fetch, http:// or https://")
                                     },
                                 )
                                 put(
                                     "headers",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,请求头 JSON")
+                                        put("description", "Optional, request headers JSON")
                                     },
                                 )
                             },
@@ -708,10 +708,10 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "knowledge_search",
-                    name = "知识库搜索",
+                    name = "Knowledge base search",
                     // v1.0.75 fix (工具审查 01): 明确与 web_search 的边界,
                     // 原"可能与已导入文档相关时优先调用"太模糊,模型先试本地再退搜索浪费轮次。
-                    description = "在用户主动导入的知识库文档中语义搜索(向量检索 + 标题/内容匹配)。仅当用户知识库中可能有答案时使用(如用户导入过资料、问'我之前存的文档里怎么说的')。通用事实、实时信息、网上能查到的问题一律用 web_search,不要先用本工具试探。用户问 muse app 自身功能(如怎么用深度思考/主动消息怎么设置)时,传 include_internal=true 可检索内置功能文档。",
+                    description = "Semantically search the documents the user has actively imported into the knowledge base (vector retrieval + title/content matching). Use only when the answer may be in the user's knowledge base (e.g. the user imported materials before, or asks 'what did the document I saved say'). For general facts, real-time information, and anything searchable online, always use web_search — do not try this tool first. When the user asks about muse app features themselves (e.g. how to use deep thinking / how to set up proactive messages), pass include_internal=true to also search the built-in feature docs.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -722,21 +722,21 @@ class SkillExecutor(
                                     "query",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "搜索关键词")
+                                        put("description", "Search keywords")
                                     },
                                 )
                                 put(
                                     "top_k",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,返回条数上限,默认 5")
+                                        put("description", "Optional, maximum number of results, default 5")
                                     },
                                 )
                                 put(
                                     "threshold",
                                     buildJsonObject {
                                         put("type", "number")
-                                        put("description", "可选,相似度阈值(0-1 小数制,非满分 100),默认 0.3。低于阈值的过滤掉")
+                                        put("description", "Optional, similarity threshold (0-1 decimal, not a 100-point scale), default 0.3. Results below the threshold are filtered out")
                                     },
                                 )
                                 put(
@@ -745,7 +745,7 @@ class SkillExecutor(
                                         put("type", "boolean")
                                         put(
                                             "description",
-                                            "可选,是否包含 muse app 内置功能文档,默认 false。仅在用户问 muse app 自身功能(如'怎么用深度思考''主动消息怎么设置')时传 true",
+                                            "Optional, whether to include the muse app's built-in feature documentation, default false. Pass true only when the user asks about muse app features themselves (e.g. 'how to use deep thinking' / 'how to set up proactive messages')",
                                         )
                                     },
                                 )
@@ -755,9 +755,9 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "可选,限定检索的文件夹(知识库内路径,如'合同'或'合同/2026')。" +
-                                                "每个文件夹是独立检索域,传入后只在该文件夹及其子文件夹内检索,不会串到其它文件夹。" +
-                                                "用户只想查某个文件夹时传入。",
+                                            "Optional, limit the search to a folder (a path inside the knowledge base, e.g. 'contracts' or 'contracts/2026')." +
+                                                "Each folder is an independent search domain; when passed, the search covers only that folder and its subfolders, never other folders." +
+                                                "Pass this when the user only wants to search a specific folder.",
                                         )
                                     },
                                 )
@@ -771,8 +771,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "arxiv_search",
-                    name = "arXiv 论文搜索",
-                    description = "在 arXiv 搜索学术论文(计算机科学、物理、数学等)。返回论文标题、链接、发表日期和摘要。当用户问到学术研究、论文相关问题时调用。",
+                    name = "arXiv paper search",
+                    description = "Search academic papers on arXiv (computer science, physics, mathematics, etc.). Returns paper titles, links, publication dates and abstracts. Call when the user asks about academic research or papers.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -783,35 +783,35 @@ class SkillExecutor(
                                     "query",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "搜索关键词(英文为佳),如 'transformer attention'")
+                                        put("description", "Search keywords (English works best), e.g. 'transformer attention'")
                                     },
                                 )
                                 put(
                                     "max_results",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,最大返回条数(1-10),默认 5")
+                                        put("description", "Optional, maximum number of results (1-10), default 5")
                                     },
                                 )
                                 put(
                                     "category",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,学科分类,如 cs.AI/cs.CL")
+                                        put("description", "Optional, subject category, e.g. cs.AI/cs.CL")
                                     },
                                 )
                                 put(
                                     "date_from",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,起始日期(YYYY-MM-DD)")
+                                        put("description", "Optional, start date (YYYY-MM-DD)")
                                     },
                                 )
                                 put(
                                     "date_to",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,结束日期(YYYY-MM-DD)")
+                                        put("description", "Optional, end date (YYYY-MM-DD)")
                                     },
                                 )
                             },
@@ -825,8 +825,8 @@ class SkillExecutor(
                 // ── v0.24: 自我扩展 ─────────────────────────────────────────────
                 SkillEntity(
                     id = "install_skill",
-                    name = "安装 Skill",
-                    description = "让助手自己生成新的 skill 定义并安装到用户设备。skill_json 参数为 .skill.json 格式的 JSON 字符串。必填字段: id, name, description, category, implementationKotlin, parametersJson。category 取值: file/http/search/knowledge/system/agent/sticker/custom。implementationKotlin 必须是内置实现之一(read_file/write_file/http_get/http_post/web_search/web_fetch/knowledge_search/arxiv_search),不支持任意代码执行。安装后用户可在设置→Skill 中查看/启停。提示词技能:implementationKotlin 传 \"prompt\",指令文本放 prompt 字段(也接受 \"prompt:<文本>\" 形式;文本受注入黑名单与 8KB 上限约束)。提示词技能可被调用时传可选 input 参数:指令文本中的 {{input}} 占位符会被代入,无占位符时输入追加到指令末尾。",
+                    name = "Install Skill",
+                    description = "Let the assistant generate a new skill definition itself and install it on the user's device.skill_json  parameter is a JSON string in .skill.json format. Required fields: id, name, description, category, implementationKotlin, parametersJson。category values: file/http/search/knowledge/system/agent/sticker/custom。implementationKotlin must be one of the built-in implementations (read_file/write_file/http_get/http_post/web_search/web_fetch/knowledge_search/arxiv_search), arbitrary code execution is not supported.After installation, the user can view/enable/disable it in Settings → Skill.Prompt skills: pass \"prompt\" as implementationKotlin, and put the instruction text in the prompt field (the form \"prompt:<text>\" form; the text is subject to the injection blacklist and an 8KB limit).When a prompt skill is called, an optional input parameter can be passed: the {{input}} placeholder in the instruction text is substituted; when there is no placeholder, the input is appended to the end of the instruction text.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -839,7 +839,7 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "skill 定义 JSON 字符串(.skill.json 格式)。示例: {\"id\":\"fetch_weather\",\"name\":\"查询天气\",\"description\":\"查询城市天气\",\"parametersJson\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"url\\\":{\\\"type\\\":\\\"string\\\"}}}\",\"implementationKotlin\":\"http_get\"}",
+                                            "skill definition JSON string (.skill.json format). Example: {\"id\":\"fetch_weather\",\"name\":\"Get weather\",\"description\":\"Get the weather for a city\",\"parametersJson\":\"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"url\\\":{\\\"type\\\":\\\"string\\\"}}}\",\"implementationKotlin\":\"http_get\"}",
                                         )
                                     },
                                 )
@@ -853,8 +853,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "author_plugin",
-                    name = "编写插件",
-                    description = "让助手自己编写一个带 JS 工具实现的插件。code 是 JS 入口源码（工具实现必须是顶层 function 声明），tools 是工具声明数组（每项含 name/description/parametersJson/requiredJson/functionName），可选 capabilities 只能取 resource.read/ui/ui.mood。本工具只生成【未签名草稿】：草稿已禁用、不可执行，助手不能调用；必须由用户在「设置 → 插件管理」中审阅工具清单与代码，点击「签名并启用」后才会由本机作者密钥签名生效。",
+                    name = "Write plugin",
+                    description = "Let the assistant write a plugin with JS tool implementations. code is the JS entry source (tool implementations must be top-level function declarations), tools is the array of tool declarations (each with name/description/parametersJson/requiredJson/functionName), and optional capabilities may only be resource.read/ui/ui.mood. This tool only generates an UNSIGNED DRAFT: the draft is disabled and not executable, and the assistant cannot call it; the user must review the tool list and code in Settings → Plugin Management and click 'Sign and enable' before it takes effect, signed with the local author key.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -865,28 +865,28 @@ class SkillExecutor(
                                     "id",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "插件 id:小写字母、数字、下划线、连字符,以字母或数字开头,如 'daily_summary'")
+                                        put("description", "Plugin id: lowercase letters, digits, underscores, hyphens, starting with a letter or digit, e.g. 'daily_summary'")
                                     },
                                 )
                                 put(
                                     "name",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "插件显示名,如 '每日总结'")
+                                        put("description", "Plugin display name, e.g. 'Daily summary'")
                                     },
                                 )
                                 put(
                                     "description",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "插件用途说明")
+                                        put("description", "What the plugin is for")
                                     },
                                 )
                                 put(
                                     "version",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "语义化版本,如 '1.0.0'")
+                                        put("description", "Semantic version, e.g. '1.0.0'")
                                     },
                                 )
                                 put(
@@ -895,7 +895,7 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "JS 入口源码(≤256KB)。每个工具的 functionName 必须在源码里有顶层 function 声明,如 'function summarize(args) { return ...; }'",
+                                            "JS entry source (≤256KB). Each tool's functionName must have a top-level function declaration in the source, e.g. 'function summarize(args) { return ...; }'",
                                         )
                                     },
                                 )
@@ -903,7 +903,7 @@ class SkillExecutor(
                                     "tools",
                                     buildJsonObject {
                                         put("type", "array")
-                                        put("description", "工具声明数组,与 manifest 的 tools 字段一致")
+                                        put("description", "Tool declaration array, matching the manifest's tools field")
                                         put(
                                             "items",
                                             buildJsonObject {
@@ -928,7 +928,7 @@ class SkillExecutor(
                                         put("type", "array")
                                         put(
                                             "description",
-                                            "可选能力数组,取自白名单:resource.read / ui / ui.mood 与受控桥接能力(network / storage.read / storage.write / clipboard.read / clipboard.write / notify / device.info)，默认不声明",
+                                            "Optional capabilities array, from the whitelist: resource.read / ui / ui.mood and controlled bridge capabilities (network / storage.read / storage.write / clipboard.read / clipboard.write / notify / device.info); empty by default",
                                         )
                                     },
                                 )
@@ -954,8 +954,8 @@ class SkillExecutor(
                 // ── v0.46: 多 Agent 协作 ────────────────────────────────────────
                 SkillEntity(
                     id = "delegate_agent",
-                    name = "委托子助手",
-                    description = "把任务委托给指定子助手执行,用于多助手协作。传入 assistantId(助手 id)和 task(任务描述),可选 context(上下文)。子助手会用自己的人设和能力独立完成任务并返回结果。",
+                    name = "Delegate to sub-assistant",
+                    description = "Delegate a task to the specified sub-assistant for multi-assistant collaboration. Pass assistantId (assistant id) and task (task description), and optionally context. The sub-assistant completes the task independently with its own persona and capabilities and returns the result.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -966,35 +966,35 @@ class SkillExecutor(
                                     "assistantId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "子助手 id,如 default / researcher / writer 等。可在助手管理页查看")
+                                        put("description", "Sub-assistant id, e.g. default / researcher / writer. Can be viewed on the assistant management page")
                                     },
                                 )
                                 put(
                                     "task",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要委托的任务描述,自然语言")
+                                        put("description", "The task to delegate, in natural language")
                                     },
                                 )
                                 put(
                                     "context",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选的补充上下文信息")
+                                        put("description", "Optional supplementary context")
                                     },
                                 )
                                 put(
                                     "timeout",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,超时秒数,默认 60")
+                                        put("description", "Optional, timeout in seconds, default 60")
                                     },
                                 )
                                 put(
                                     "response_format",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,返回格式,text(默认)或 json")
+                                        put("description", "Optional, return format, text (default) or json")
                                     },
                                 )
                             },
@@ -1016,8 +1016,8 @@ class SkillExecutor(
                 // ── v1.30: 群聊工具 ─────────────────────────────────────────────
                 SkillEntity(
                     id = "channel_reply",
-                    name = "群聊发言",
-                    description = "在指定群聊中作为指定 agent 发送一条消息。传入 chatId(群聊 id)、assistantId(发言 agent id)和 body(消息正文)。消息会保存到群聊历史中,其他成员和用户可见。",
+                    name = "Group chat message",
+                    description = "Send a message as the specified agent in the specified group chat. Pass chatId (group chat id), assistantId (the speaking agent's id) and body (message text). The message is saved to the group chat history and is visible to other members and the user.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1028,21 +1028,21 @@ class SkillExecutor(
                                     "chatId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "群聊 id")
+                                        put("description", "Group chat id")
                                     },
                                 )
                                 put(
                                     "assistantId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "发言的 agent id(assistantId)")
+                                        put("description", "The speaking agent id (assistantId)")
                                     },
                                 )
                                 put(
                                     "body",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "消息正文内容")
+                                        put("description", "Message text content")
                                     },
                                 )
                             },
@@ -1064,8 +1064,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "channel_pass",
-                    name = "群聊跳过本轮",
-                    description = "在群聊轮转中跳过本轮发言(不发送消息)。传入 chatId(群聊 id)和 assistantId(agent id)。当 agent 认为当前无需自己发言时调用。",
+                    name = "Skip group chat turn",
+                    description = "Skip this turn in the group chat rotation (send no message). Pass chatId (group chat id) and assistantId (agent id). Call when the agent thinks it does not need to speak right now.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1076,14 +1076,14 @@ class SkillExecutor(
                                     "chatId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "群聊 id")
+                                        put("description", "Group chat id")
                                     },
                                 )
                                 put(
                                     "assistantId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "跳过发言的 agent id")
+                                        put("description", "The agent id that skips speaking")
                                     },
                                 )
                             },
@@ -1104,8 +1104,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "channel_read_context",
-                    name = "读取群聊上下文",
-                    description = "读取指定群聊的最近消息作为上下文。传入 chatId(群聊 id),可选 limit(条数上限,默认 20)。返回格式化的消息列表,包含发送者名、时间和内容。",
+                    name = "Read group chat context",
+                    description = "Read the recent messages of the specified group chat as context. Pass chatId (group chat id) and optionally limit (maximum number of messages, default 20). Returns a formatted message list including sender name, time and content.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1116,14 +1116,14 @@ class SkillExecutor(
                                     "chatId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "群聊 id")
+                                        put("description", "Group chat id")
                                     },
                                 )
                                 put(
                                     "limit",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,读取条数上限(1-100),默认 20")
+                                        put("description", "Optional, maximum number of messages to read (1-100), default 20")
                                     },
                                 )
                             },
@@ -1137,8 +1137,8 @@ class SkillExecutor(
                 // ── v1.0.53 Phase 5: Agent Phone(主 agent 触发群聊成员私聊) ─────
                 SkillEntity(
                     id = "agent_phone",
-                    name = "Agent 私聊",
-                    description = "在群聊中向指定 agent 发起私聊(whisper)。传入 chatId(群聊 id)、targetAssistantId(目标 agent id)和 message(私聊内容)。私聊消息仅目标 agent 可见,不参与群聊轮转上下文,且会持久化到独立会话账本(App 重启后可续接)。调用后立即返回,目标 agent 的回复异步到达群聊消息流。",
+                    name = "Agent whisper",
+                    description = "Start a private chat (whisper) with the specified agent inside a group chat. Pass chatId (group chat id), targetAssistantId (target agent id) and message (whisper content). Whisper messages are visible only to the target agent, do not join the group chat rotation context, and are persisted to a separate session ledger (resumable after an app restart). Returns immediately; the target agent's reply arrives asynchronously in the group chat message stream.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1149,21 +1149,21 @@ class SkillExecutor(
                                     "chatId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "群聊 id(用于隔离 whisper 上下文)")
+                                        put("description", "Group chat id (used to isolate the whisper context)")
                                     },
                                 )
                                 put(
                                     "targetAssistantId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "目标 agent 的 id(assistantId)")
+                                        put("description", "Target agent id (assistantId)")
                                     },
                                 )
                                 put(
                                     "message",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "私聊消息正文")
+                                        put("description", "Whisper message text")
                                     },
                                 )
                             },
@@ -1186,8 +1186,8 @@ class SkillExecutor(
                 // ── 文件管理类 ─────────────────────────────────────────────────
                 SkillEntity(
                     id = "list_dir",
-                    name = "列出目录",
-                    description = "列出应用沙盒内指定目录下的文件和子目录。每行一个条目,文件夹前缀 [D],文件前缀 [F],末尾标注文件大小。路径相对于 filesDir。",
+                    name = "List directory",
+                    description = "List the files and subdirectories under the given directory inside the app sandbox. One entry per line; folders are prefixed [D], files are prefixed [F], with the file size noted at the end. The path is relative to filesDir.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1198,7 +1198,7 @@ class SkillExecutor(
                                     "path",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "相对于 filesDir 的目录路径,如 'notes' 或 ''(根目录)")
+                                        put("description", "Directory path relative to filesDir, e.g. 'notes' or '' (root)")
                                     },
                                 )
                             },
@@ -1211,8 +1211,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "delete_file",
-                    name = "删除文件",
-                    description = "删除应用沙盒内的文件或空目录。路径相对于 filesDir。删除非空目录会失败。支持批量删除(传 paths)。",
+                    name = "Delete file",
+                    description = "Delete a file or empty directory inside the app sandbox. The path is relative to filesDir. Deleting a non-empty directory fails. Batch deletion is supported (pass paths).",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1223,14 +1223,14 @@ class SkillExecutor(
                                     "path",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "相对于 filesDir 的文件或空目录路径(单个,与 paths 二选一)")
+                                        put("description", "Path of the file or empty directory relative to filesDir (single; choose one of path/paths)")
                                     },
                                 )
                                 put(
                                     "paths",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,批量删除的路径列表,逗号或换行分隔,如 'a.txt,b.txt'。与 path 二选一,优先于 path")
+                                        put("description", "Optional, list of paths to delete in batch, separated by commas or newlines, e.g. 'a.txt,b.txt'. Choose one of this and path; takes precedence over path")
                                     },
                                 )
                             },
@@ -1243,8 +1243,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "file_exists",
-                    name = "判断文件存在",
-                    description = "判断应用沙盒内指定路径的文件或目录是否存在。返回 exists 或 not_exists。路径相对于 filesDir。",
+                    name = "Check file exists",
+                    description = "Check whether the file or directory at the given path inside the app sandbox exists. Returns exists or not_exists. The path is relative to filesDir.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1255,7 +1255,7 @@ class SkillExecutor(
                                     "path",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "相对于 filesDir 的路径")
+                                        put("description", "Path relative to filesDir")
                                     },
                                 )
                             },
@@ -1269,8 +1269,8 @@ class SkillExecutor(
                 // ── 公共目录与文件传输 ─────────────────────────────────────────
                 SkillEntity(
                     id = "file_download",
-                    name = "下载文件",
-                    description = "从 URL 下载文件到应用沙盒。支持指定超时时间(默认 60 秒)。下载的文件保存在 filesDir 下指定相对路径,自动创建父目录。",
+                    name = "Download file",
+                    description = "Download a file from a URL into the app sandbox. A timeout can be specified (default 60 seconds). The downloaded file is saved under the given relative path in filesDir; parent directories are created automatically.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1281,21 +1281,21 @@ class SkillExecutor(
                                     "url",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "下载地址,http:// 或 https://")
+                                        put("description", "Download URL, http:// or https://")
                                     },
                                 )
                                 put(
                                     "path",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "保存到沙盒的相对路径(相对于 filesDir),如 'downloads/file.zip'")
+                                        put("description", "Relative path to save to in the sandbox (relative to filesDir), e.g. 'downloads/file.zip'")
                                     },
                                 )
                                 put(
                                     "timeout",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "可选,超时秒数,默认 60")
+                                        put("description", "Optional, timeout in seconds, default 60")
                                     },
                                 )
                             },
@@ -1316,8 +1316,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "read_public_file",
-                    name = "读取公共文件",
-                    description = "通过 content:// URI 读取公共文件。可读取 list_public_files 返回的 URI(含 MediaStore URI),也可读用户分享/打开方式传入的 URI。返回文本内容(上限 1MB)。注:仅支持文本类文件,二进制文件可能乱码。",
+                    name = "Read public file",
+                    description = "Read a public file via a content:// URI. Can read URIs returned by list_public_files (including MediaStore URIs), as well as URIs passed in by user sharing/open-with. Returns text content (up to 1MB). Note: only text files are supported; binary files may come out garbled.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1330,7 +1330,7 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "文件 URI,如 list_public_files 输出的 uri=content://media/... 或 SAF 传入的 content://...",
+                                            "File URI, e.g. the uri=content://media/... output by list_public_files, or a content://... passed in via SAF",
                                         )
                                     },
                                 )
@@ -1338,7 +1338,7 @@ class SkillExecutor(
                                     "encoding",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,文件编码,默认 utf-8")
+                                        put("description", "Optional, file encoding, default utf-8")
                                     },
                                 )
                             },
@@ -1351,8 +1351,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "save_to_downloads",
-                    name = "保存到下载目录",
-                    description = "保存文本内容或本地沙盒文件到系统 Download 目录。Android 10+ 通过 MediaStore 写入,Android 9 及以下直接写公共 Download 目录。传 file_path 时支持二进制文件转存(无需先 read_file 再写文本)。",
+                    name = "Save to Downloads",
+                    description = "Save text content or a local sandbox file to the system Download directory. On Android 10+ it writes via MediaStore; on Android 9 and below it writes directly to the public Download directory. When file_path is passed, binary files can be copied directly (no need to read_file then write text).",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1363,28 +1363,28 @@ class SkillExecutor(
                                     "content",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要保存的文本内容(与 file_path 二选一)")
+                                        put("description", "The text content to save (choose one of this and file_path)")
                                     },
                                 )
                                 put(
                                     "file_path",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,沙盒内源文件路径(相对 filesDir),直接转存到 Download,支持二进制。与 content 二选一")
+                                        put("description", "Optional, source file path inside the sandbox (relative to filesDir); copied directly to Download, binary supported. Choose one of this and content")
                                     },
                                 )
                                 put(
                                     "filename",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "文件名,如 'notes.txt'")
+                                        put("description", "File name, e.g. 'notes.txt'")
                                     },
                                 )
                                 put(
                                     "mime_type",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,MIME 类型,默认 text/plain。转存二进制时建议显式指定(如 image/png)")
+                                        put("description", "Optional, MIME type, default text/plain. When copying binary files, specifying it explicitly is recommended (e.g. image/png)")
                                     },
                                 )
                             },
@@ -1404,8 +1404,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "list_public_files",
-                    name = "列出公共目录",
-                    description = "列出指定公共目录(Downloads/Documents/Pictures/Music 等)的文件。通过 MediaStore 查询,返回文件名和大小。默认列 Downloads,最多 50 条,按修改时间倒序。",
+                    name = "List public directory",
+                    description = "List the files in the given public directory (Downloads/Documents/Pictures/Music, etc.). Queried via MediaStore; returns file names and sizes. Lists Downloads by default, at most 50 entries, in reverse modification-time order.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1416,7 +1416,7 @@ class SkillExecutor(
                                     "directory",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,目录名,如 Downloads/Documents/Pictures/Music,默认 Downloads")
+                                        put("description", "Optional, directory name, e.g. Downloads/Documents/Pictures/Music, default Downloads")
                                     },
                                 )
                                 put(
@@ -1424,7 +1424,7 @@ class SkillExecutor(
                                     buildJsonObject {
                                         // v1.52: 修正类型为 integer(原 string 与实际 parseIntOrNull 不匹配)
                                         put("type", "integer")
-                                        put("description", "可选,最大返回条数,默认 50")
+                                        put("description", "Optional, maximum number of entries to return, default 50")
                                     },
                                 )
                             },
@@ -1438,8 +1438,8 @@ class SkillExecutor(
                 // ── Skill 管理类 ───────────────────────────────────────────────
                 SkillEntity(
                     id = "list_skills",
-                    name = "列出 Skill",
-                    description = "列出已安装的全部 Skill,每行格式为 'id | name | category | enabled/disabled'。可选按 category 筛选。",
+                    name = "List Skills",
+                    description = "List all installed Skills, one per line in the format 'id | name | category | enabled/disabled'. Optionally filter by category.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1450,7 +1450,7 @@ class SkillExecutor(
                                     "category",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,按分类筛选,如 file/http/search/knowledge/system/agent/skill")
+                                        put("description", "Optional, filter by category, e.g. file/http/search/knowledge/system/agent/skill")
                                     },
                                 )
                             },
@@ -1463,8 +1463,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "uninstall_skill",
-                    name = "卸载 Skill",
-                    description = "卸载(删除)已安装的 Skill。需传入 id 或 name(至少一个),优先用 id。删除后该 Skill 不再可用。",
+                    name = "Uninstall Skill",
+                    description = "Uninstall (delete) an installed Skill. Pass id or name (at least one); id is preferred. After deletion the Skill is no longer available.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1475,14 +1475,14 @@ class SkillExecutor(
                                     "id",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要卸载的 skill id")
+                                        put("description", "The skill id to uninstall")
                                     },
                                 )
                                 put(
                                     "name",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,按名称查找并卸载(id 未传时使用)")
+                                        put("description", "Optional, find by name and uninstall (used when id is not passed)")
                                     },
                                 )
                             },
@@ -1495,8 +1495,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "disable_skill",
-                    name = "禁用 Skill",
-                    description = "禁用已安装的 Skill(不删除,只置为不可用)。后续可通过启用恢复。需传入 id。",
+                    name = "Disable Skill",
+                    description = "Disable an installed Skill (not deleted, just made unavailable). It can be restored later by enabling. Pass the id.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1507,7 +1507,7 @@ class SkillExecutor(
                                     "id",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要禁用的 skill id")
+                                        put("description", "The skill id to disable")
                                     },
                                 )
                             },
@@ -1520,8 +1520,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "enable_skill",
-                    name = "启用 Skill",
-                    description = "启用已安装的 Skill(与 disable_skill 对称)。需传入 id。内置技能允许启用;插件技能随插件启停,应到插件管理页操作,本工具会拒绝。",
+                    name = "Enable Skill",
+                    description = "Enable an installed Skill (the counterpart of disable_skill). Pass the id. Built-in skills may be enabled; plugin skills follow the plugin's enable/disable state and should be managed on the plugin management page — this tool will refuse them.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1532,7 +1532,7 @@ class SkillExecutor(
                                     "id",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要启用的 skill id")
+                                        put("description", "The skill id to enable")
                                     },
                                 )
                             },
@@ -1545,8 +1545,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "update_skill",
-                    name = "更新 Skill",
-                    description = "更新用户自建 skill 的 name / description / parametersJson(JSON Schema 字符串)。提示词技能额外支持用 prompt 参数替换指令文本。只能改用户自己创建的 skill:内置保留 skill 与插件技能一律拒绝;更新内容仍走导入校验(保留 id/category 白名单/注入黑名单),更新后 id 不变且保持启用。",
+                    name = "Update Skill",
+                    description = "Update the name / description / parametersJson (a JSON Schema string) of a user-created skill. Prompt skills additionally support replacing the instruction text with the prompt parameter. Only skills the user created themselves can be changed: built-in reserved skills and plugin skills are always refused; updated content still goes through import validation (reserved id/category whitelist/injection blacklist), and the id stays unchanged and enabled after the update.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1557,35 +1557,35 @@ class SkillExecutor(
                                     "id",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要更新的用户 skill id")
+                                        put("description", "The user skill id to update")
                                     },
                                 )
                                 put(
                                     "name",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,新的显示名")
+                                        put("description", "Optional, new display name")
                                     },
                                 )
                                 put(
                                     "description",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,新的工具描述(模型据此决定是否调用)")
+                                        put("description", "Optional, new tool description (the model uses it to decide whether to call)")
                                     },
                                 )
                                 put(
                                     "parametersJson",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,新的参数 JSON Schema 字符串(提示词技能忽略此参数)")
+                                        put("description", "Optional, new parameter JSON Schema string (ignored for prompt skills)")
                                     },
                                 )
                                 put(
                                     "prompt",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,仅提示词技能:新的指令文本(上限 8KB)")
+                                        put("description", "Optional, prompt skills only: new instruction text (up to 8KB)")
                                     },
                                 )
                             },
@@ -1599,8 +1599,8 @@ class SkillExecutor(
                 // v1.55: Agent 工作流 — 结构化任务计划
                 SkillEntity(
                     id = "task_plan",
-                    name = "创建任务计划",
-                    description = "面对复杂多步骤任务时,先创建一个结构化计划再逐步执行。传入计划标题和步骤列表(每步含标题和描述)。计划会在用户界面显示为可追踪的检查清单。创建后按顺序执行各步骤,每完成一步调用 update_plan_step 更新状态。",
+                    name = "Create task plan",
+                    description = "When facing a complex multi-step task, first create a structured plan and then execute it step by step. Pass a plan title and a list of steps (each with a title and description). The plan is shown in the user interface as a trackable checklist. After creating it, execute the steps in order, calling update_plan_step after each step to update its status.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1611,14 +1611,14 @@ class SkillExecutor(
                                     "title",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "计划标题,简述整体目标")
+                                        put("description", "Plan title, briefly describing the overall goal")
                                     },
                                 )
                                 put(
                                     "steps",
                                     buildJsonObject {
                                         put("type", "array")
-                                        put("description", "步骤列表,按执行顺序排列")
+                                        put("description", "List of steps, in execution order")
                                         put(
                                             "items",
                                             buildJsonObject {
@@ -1630,14 +1630,14 @@ class SkillExecutor(
                                                             "title",
                                                             buildJsonObject {
                                                                 put("type", "string")
-                                                                put("description", "步骤标题(简短)")
+                                                                put("description", "Step title (short)")
                                                             },
                                                         )
                                                         put(
                                                             "description",
                                                             buildJsonObject {
                                                                 put("type", "string")
-                                                                put("description", "步骤详细描述,包括要做什么和预期结果")
+                                                                put("description", "Step details, including what to do and the expected result")
                                                             },
                                                         )
                                                     },
@@ -1657,8 +1657,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "update_plan_step",
-                    name = "更新计划步骤",
-                    description = "更新任务计划中某个步骤的状态。传入 planId 和 stepIndex(从0开始),以及新状态(done/failed/in_progress/skipped)和可选的结果摘要。",
+                    name = "Update plan step",
+                    description = "Update the status of a step in a task plan. Pass planId and stepIndex (0-based) and the new status (done/failed/in_progress/skipped) and an optional result summary.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1669,21 +1669,21 @@ class SkillExecutor(
                                     "planId",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "计划 id(task_plan 返回的 planId)")
+                                        put("description", "Plan id (the planId returned by task_plan)")
                                     },
                                 )
                                 put(
                                     "stepIndex",
                                     buildJsonObject {
                                         put("type", "integer")
-                                        put("description", "步骤索引(从 0 开始)")
+                                        put("description", "Step index (0-based)")
                                     },
                                 )
                                 put(
                                     "status",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "新状态:done(完成)/ failed(失败)/ in_progress(执行中)/ skipped(跳过)")
+                                        put("description", "New status: done / failed / in_progress / skipped")
                                     },
                                 )
                                 put(
@@ -1692,7 +1692,7 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "可选,步骤执行结果摘要",
+                                            "Optional, step result summary",
                                         )
                                     },
                                 )
@@ -1712,8 +1712,8 @@ class SkillExecutor(
                 // ── v1.95: 表情包库工具 ─────────────────────────────────────────
                 SkillEntity(
                     id = "list_stickers",
-                    name = "列出表情包",
-                    description = "列出表情包库中可用的表情包(可按分类筛选)。仅当用户已上传表情包时可用。发送前先判断对话情绪:用户生气/难过时优先筛选安慰、可爱、治愈类分类;开心/兴奋时优先筛选庆祝、搞笑类分类。",
+                    name = "List stickers",
+                    description = "List the stickers available in the sticker library (optionally filtered by category). Only available when the user has uploaded stickers. Before sending, judge the conversation mood first: when the user is angry/sad, prefer comforting, cute, healing categories; when happy/excited, prefer celebration and funny categories.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1724,7 +1724,7 @@ class SkillExecutor(
                                     "category",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,按分类筛选表情包(如 猫猫/狗子)。不传则列出全部;建议结合对话情绪传入合适分类")
+                                        put("description", "Optional, filter stickers by category (e.g. cats/dogs). Leave empty to list all; passing a category suited to the conversation mood is recommended")
                                     },
                                 )
                             },
@@ -1737,8 +1737,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "send_sticker",
-                    name = "发送表情包",
-                    description = "向用户发送一个表情包。先用 list_stickers 查看可用表情包,再用此工具发送。选图原则:匹配对话情绪与语境,生气/难过时发安抚治愈类,开心时发庆祝搞笑类,避免在严肃话题中发过于沙雕的表情包。",
+                    name = "Send sticker",
+                    description = "Send a sticker to the user. First view the available stickers with list_stickers, then send with this tool. Selection principle: match the conversation mood and context — send comforting/healing stickers when angry/sad, celebration/funny ones when happy, and avoid overly silly stickers in serious topics.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1749,7 +1749,7 @@ class SkillExecutor(
                                     "id",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要发送的表情包 id(从 list_stickers 获取)")
+                                        put("description", "The sticker id to send (from list_stickers)")
                                     },
                                 )
                             },
@@ -1763,8 +1763,8 @@ class SkillExecutor(
                 // ── v1.???: 新增工具 ──────────────────────────────────────────────
                 SkillEntity(
                     id = "generate_image",
-                    name = "生成图片",
-                    description = "根据文字描述生成图片。调用 AI 绘图模型(需配置 OpenAI 兼容绘图供应商)。返回图片 URL。使用时机: 用户要求生成图片/海报/封面时。不要使用: 未配置绘图模型时(会失败,应告知用户去设置配置);prompt 尽量用英文描述主体/风格/构图。",
+                    name = "Generate image",
+                    description = "Generate an image from a text description. Calls an AI drawing model (an OpenAI-compatible drawing provider must be configured). Returns the image URL. When to use: the user asks to generate an image/poster/cover. Do not use: when no drawing model is configured (it will fail; tell the user to configure it in Settings); describe the subject/style/composition in English in the prompt where possible.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1775,14 +1775,14 @@ class SkillExecutor(
                                     "prompt",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "图片描述,英文效果更佳,如 'a cute cat sitting on a sofa'")
+                                        put("description", "Image description, English works better, e.g. 'a cute cat sitting on a sofa'")
                                     },
                                 )
                                 put(
                                     "size",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,图片尺寸,如 1024x1024/1792x1024/1024x1792,默认 1024x1024")
+                                        put("description", "Optional, image size, e.g. 1024x1024/1792x1024/1024x1792, default 1024x1024")
                                     },
                                 )
                                 put(
@@ -1791,7 +1791,7 @@ class SkillExecutor(
                                         put("type", "string")
                                         put(
                                             "description",
-                                            "可选,参考图 URL 或 base64(用于图生图/图片编辑);非空时调用图生图端点。注意:LLM 无法访问用户本地相册,本地参考图由用户在工具审批卡片中从相册选择后注入,LLM 调用时无需也无法填入本参数",
+                                            "Optional, reference image URL or base64 (for image-to-image/editing); when non-empty, the image-to-image endpoint is called. Note: the LLM cannot access the user's local photo album; local reference images are injected by the user picking from the album in the tool approval card, so the LLM does not need to and cannot fill in this parameter when calling",
                                         )
                                     },
                                 )
@@ -1805,8 +1805,8 @@ class SkillExecutor(
                 ),
                 SkillEntity(
                     id = "translate",
-                    name = "翻译",
-                    description = "把文本翻译成指定语言。可指定源语言(可选)和目标语言(必填)。使用 AI 模型进行高质量翻译。",
+                    name = "Translate",
+                    description = "Translate text into the specified language. A source language (optional) and target language (required) can be specified. Uses an AI model for high-quality translation.",
                     parametersJson =
                     buildJsonObject {
                         put("type", "object")
@@ -1817,21 +1817,21 @@ class SkillExecutor(
                                     "text",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "要翻译的文本内容")
+                                        put("description", "The text content to translate")
                                     },
                                 )
                                 put(
                                     "target_language",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "目标语言,如 中文/English/日本語/한국어")
+                                        put("description", "Target language, e.g. 中文/English/日本語/한국어")
                                     },
                                 )
                                 put(
                                     "source_language",
                                     buildJsonObject {
                                         put("type", "string")
-                                        put("description", "可选,源语言,如 中文/English/自動検出")
+                                        put("description", "Optional, source language, e.g. 中文/English/自動検出")
                                     },
                                 )
                             },

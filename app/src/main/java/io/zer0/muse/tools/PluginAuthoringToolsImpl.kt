@@ -55,7 +55,7 @@ class PluginAuthoringToolsImpl(
                 )
             },
             onFailure = { error ->
-                Logger.w("PluginAuthoring", "author_plugin 草稿创建失败: ${error.message}", error)
+                Logger.w("PluginAuthoring", "author_plugin draft creation failed: ${error.message}", error)
                 failure(error.message ?: context.getString(R.string.skill_unknown_error))
             },
         )
@@ -66,7 +66,7 @@ class PluginAuthoringToolsImpl(
         if (raw.isNullOrBlank()) return null
         return resultOf {
             AppJson.decodeFromString(JsonArray.serializer(), raw).map { element ->
-                val tool = element as? JsonObject ?: error("工具项必须是对象")
+                val tool = element as? JsonObject ?: error("Tool entries must be objects")
                 ToolDeclaration(
                     name = tool.stringField("name"),
                     description = tool.stringField("description"),

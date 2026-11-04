@@ -135,7 +135,7 @@ class BrowserManager(private val context: Context) {
         // 主线程只消费判定结果;首次解析结果写缓存,后续回调(主线程)直接命中。
         if (!target.startsWith("about:") && !target.startsWith("file:")) {
             if (ssrfGate.isBlockedAsync(target)) {
-                Logger.w(TAG, "navigate 被 SSRF 守卫拦截: $target")
+                Logger.w(TAG, "navigate blocked by the SSRF guard: $target")
                 return Result.failure(
                     java.lang.SecurityException("SSRF blocked: $target"),
                 )
@@ -157,7 +157,7 @@ class BrowserManager(private val context: Context) {
                             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                                 super.onPageStarted(view, url, favicon)
                                 if (isBlockedHttpUrl(url)) {
-                                    Logger.w(TAG, "navigate 重定向被 SSRF 守卫拦截: $url")
+                                    Logger.w(TAG, "navigate redirect blocked by the SSRF guard: $url")
                                     view?.stopLoading()
                                     view?.webViewClient = previousClient
                                     if (cont.isActive) {
@@ -172,7 +172,7 @@ class BrowserManager(private val context: Context) {
                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                                 val requestUrl = request?.url?.toString()
                                 if (isBlockedHttpUrl(requestUrl)) {
-                                    Logger.w(TAG, "navigate URL 重定向被 SSRF 守卫拦截: $requestUrl")
+                                    Logger.w(TAG, "navigate URL redirect blocked by the SSRF guard: $requestUrl")
                                     return true
                                 }
                                 return false
@@ -180,7 +180,7 @@ class BrowserManager(private val context: Context) {
                             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
                                 val requestUrl = request?.url?.toString()
                                 if (isBlockedHttpUrlOffMainThread(requestUrl)) {
-                                    Logger.w(TAG, "navigate 资源请求被 SSRF 守卫拦截: $requestUrl")
+                                    Logger.w(TAG, "navigate resource request blocked by the SSRF guard: $requestUrl")
                                     return blockedResourceResponse()
                                 }
                                 return super.shouldInterceptRequest(view, request)
@@ -203,9 +203,9 @@ class BrowserManager(private val context: Context) {
                                 _isLoading.value = false
                                 if (request?.isForMainFrame != false && cont.isActive) {
                                     val code = error?.errorCode ?: -1
-                                    val desc = error?.description?.toString() ?: "页面加载失败"
+                                    val desc = error?.description?.toString() ?: "Page load failed"
                                     view?.webViewClient = previousClient
-                                    cont.resumeWith(Result.failure(java.io.IOException("页面加载失败($code): $desc")))
+                                    cont.resumeWith(Result.failure(java.io.IOException("Page load failed ($code): $desc")))
                                 }
                             }
                             override fun onReceivedHttpError(
@@ -217,7 +217,7 @@ class BrowserManager(private val context: Context) {
                                 _isLoading.value = false
                                 if (request?.isForMainFrame == true && cont.isActive) {
                                     val code = errorResponse?.statusCode ?: -1
-                                    val reason = errorResponse?.reasonPhrase ?: "HTTP 错误"
+                                    val reason = errorResponse?.reasonPhrase ?: "HTTP error"
                                     view?.webViewClient = previousClient
                                     cont.resumeWith(Result.failure(java.io.IOException("HTTP $code: $reason")))
                                 }
@@ -233,10 +233,10 @@ class BrowserManager(private val context: Context) {
                     // 孤儿状态;显式停止加载 + 还原原 client,终止后台继续加载并清除临时拦截器。
                     webView.stopLoading()
                     webView.webViewClient = previousClient
-                    Logger.w(TAG, "navigate 超时: $target")
-                    Result.failure(java.util.concurrent.TimeoutException("navigate 超时(${DEFAULT_TIMEOUT_MS}ms): $target"))
+                    Logger.w(TAG, "navigate timed out: $target")
+                    Result.failure(java.util.concurrent.TimeoutException("navigate timed out (${DEFAULT_TIMEOUT_MS}ms): $target"))
                 } else {
-                    Logger.i(TAG, "navigate 成功: $target → ${_currentUrl.value} | title=${_currentTitle.value.take(60)}")
+                    Logger.i(TAG, "navigate succeeded: $target → ${_currentUrl.value} | title=${_currentTitle.value.take(60)}")
                     Result.success(Unit)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -244,7 +244,7 @@ class BrowserManager(private val context: Context) {
                 throw e
             } catch (e: Exception) {
                 _isLoading.value = false
-                Logger.e(TAG, "navigate 异常: ${e.message}", e)
+                Logger.e(TAG, "navigate exception: ${e.message}", e)
                 Result.failure(e)
             }
         }
@@ -267,9 +267,9 @@ class BrowserManager(private val context: Context) {
                     }
                 }
             } ?: run {
-                Logger.w(TAG, "evaluateJs 超时(${DEFAULT_TIMEOUT_MS}ms): ${script.take(120)}")
+                Logger.w(TAG, "evaluateJs timed out (${DEFAULT_TIMEOUT_MS}ms): ${script.take(120)}")
                 return@withContext Result.failure(
-                    java.util.concurrent.TimeoutException("evaluateJs 超时(${DEFAULT_TIMEOUT_MS}ms)"),
+                    java.util.concurrent.TimeoutException("evaluateJs timed out (${DEFAULT_TIMEOUT_MS}ms)"),
                 )
             }
             Result.success(raw)
@@ -277,7 +277,7 @@ class BrowserManager(private val context: Context) {
             // B-16b: 协程取消必须原样重抛,不能当作普通异常吞掉,否则破坏结构化并发。
             throw e
         } catch (e: Exception) {
-            Logger.e(TAG, "evaluateJs 异常: ${e.message}", e)
+            Logger.e(TAG, "evaluateJs exception: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -370,7 +370,7 @@ class BrowserManager(private val context: Context) {
             _currentScreenshot.value = base64
             Result.success(base64)
         } catch (e: Exception) {
-            Logger.e(TAG, "captureScreenshot 异常: ${e.message}", e)
+            Logger.e(TAG, "captureScreenshot exception: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -405,7 +405,7 @@ class BrowserManager(private val context: Context) {
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.e(TAG, "showBlankPageIfNeeded 异常: ${e.message}", e)
+            Logger.e(TAG, "showBlankPageIfNeeded exception: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -473,7 +473,7 @@ class BrowserManager(private val context: Context) {
             webViewRef?.clearCache(true)
             android.webkit.WebStorage.getInstance().deleteAllData()
         }.onFailure { e ->
-            Logger.w(TAG, "清除 Cookie 失败: ${e.message}")
+            Logger.w(TAG, "Clear Cookies failed: ${e.message}")
         }
     }
 
@@ -513,7 +513,7 @@ class BrowserManager(private val context: Context) {
                 (webView.parent as? android.view.ViewGroup)?.removeView(webView)
                 webView.destroy()
             } catch (e: Exception) {
-                Logger.w(TAG, "close destroy 异常: ${e.message}")
+                Logger.w(TAG, "close destroy exception: ${e.message}")
             }
             webViewRef = null
             _currentUrl.value = ""
@@ -522,7 +522,7 @@ class BrowserManager(private val context: Context) {
             _currentScreenshot.value = null
             _canGoBack.value = false
             _canGoForward.value = false
-            Logger.i(TAG, "BrowserManager 已关闭")
+            Logger.i(TAG, "BrowserManager closed")
         }
         if (Looper.myLooper() == Looper.getMainLooper()) {
             destroyAction()
@@ -540,7 +540,7 @@ class BrowserManager(private val context: Context) {
     @SuppressLint("SetJavaScriptEnabled")
     private fun ensureWebView(): WebView {
         check(Looper.myLooper() == Looper.getMainLooper()) {
-            "BrowserManager WebView 必须在主线程创建和访问"
+            "BrowserManager WebView must be created and accessed on the main thread"
         }
         webViewRef?.let { return it }
 
@@ -572,7 +572,7 @@ class BrowserManager(private val context: Context) {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     super.onPageStarted(view, url, favicon)
                     if (isBlockedHttpUrl(url)) {
-                        Logger.w(TAG, "页面导航被 SSRF 守卫拦截: $url")
+                        Logger.w(TAG, "Page navigation blocked by the SSRF guard: $url")
                         view?.stopLoading()
                         return
                     }
@@ -582,7 +582,7 @@ class BrowserManager(private val context: Context) {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val requestUrl = request?.url?.toString()
                     if (isBlockedHttpUrl(requestUrl)) {
-                        Logger.w(TAG, "URL 重定向被 SSRF 守卫拦截: $requestUrl")
+                        Logger.w(TAG, "URL redirect blocked by the SSRF guard: $requestUrl")
                         return true
                     }
                     return false
@@ -590,7 +590,7 @@ class BrowserManager(private val context: Context) {
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
                     val requestUrl = request?.url?.toString()
                     if (isBlockedHttpUrlOffMainThread(requestUrl)) {
-                        Logger.w(TAG, "资源请求被 SSRF 守卫拦截: $requestUrl")
+                        Logger.w(TAG, "Resource request blocked by the SSRF guard: $requestUrl")
                         return blockedResourceResponse()
                     }
                     return super.shouldInterceptRequest(view, request)
@@ -617,7 +617,7 @@ class BrowserManager(private val context: Context) {
 
                 /** ROM 兼容:渲染进程崩溃(部分 ROM 的 WebView 不稳定)时销毁重建,下次调用自动恢复。 */
                 override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
-                    Logger.e(TAG, "WebView 渲染进程崩溃: ${detail?.didCrash()}, 销毁重建")
+                    Logger.e(TAG, "WebView rendering process crashed: ${detail?.didCrash()}, destroying and rebuilding")
                     _isLoading.value = false
                     view?.let { v ->
                         (v.parent as? android.view.ViewGroup)?.removeView(v)
@@ -638,7 +638,7 @@ class BrowserManager(private val context: Context) {
         }
 
         webViewRef = wv
-        Logger.i(TAG, "BrowserManager WebView 已初始化")
+        Logger.i(TAG, "BrowserManager WebView initialised")
         return wv
     }
 

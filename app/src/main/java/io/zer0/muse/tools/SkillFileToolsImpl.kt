@@ -173,16 +173,16 @@ class SkillFileToolsImpl(private val context: Context, private val client: OkHtt
         val uri = try {
             java.net.URI(url)
         } catch (e: Exception) {
-            throw java.io.IOException("URL 非法: $url")
+            throw java.io.IOException("Illegal URL: $url")
         }
-        val host = uri.host?.lowercase() ?: throw java.io.IOException("下载目标缺少主机名: $url")
+        val host = uri.host?.lowercase() ?: throw java.io.IOException("Download target is missing a host name: $url")
         val addresses = try {
             java.net.InetAddress.getAllByName(host)
         } catch (e: Exception) {
-            throw java.io.IOException("DNS 解析失败: $host")
+            throw java.io.IOException("DNS resolution failed: $host")
         }
         if (addresses.any { isPrivateAddress(it) }) {
-            throw java.io.IOException("下载目标指向内网地址,已拒绝: $url")
+            throw java.io.IOException("Download target points to an intranet address; refused: $url")
         }
         return addresses.toList()
     }
@@ -248,7 +248,7 @@ class SkillFileToolsImpl(private val context: Context, private val client: OkHtt
             val ok = file.delete()
             if (ok) context.getString(R.string.skill_delete_success, p) else context.getString(R.string.skill_delete_failed, p)
         }
-        val okCount = results.count { it.startsWith("[成功]") }
+        val okCount = results.count { it.startsWith("[Success]") || it.startsWith("[成功]") }
         return context.getString(R.string.skill_batch_delete_result, okCount, paths.size) + results.joinToString("\n")
     }
 
@@ -316,7 +316,7 @@ class SkillFileToolsImpl(private val context: Context, private val client: OkHtt
         val pinnedResolutions = HashMap<String, List<java.net.InetAddress>>()
         while (true) {
             val host = java.net.URI(currentUrl).host
-                ?: throw java.io.IOException("下载目标缺少主机名: $currentUrl")
+                ?: throw java.io.IOException("Download target is missing a host name: $currentUrl")
             val pinned = pinnedResolutions.getOrPut(host) { resolvePublicPinned(currentUrl) }
             // 每跳新建 followRedirects=false 且 DNS 固定到单次解析结果的 client,复用共享连接池与超时配置
             val hopClient = client.newBuilder()
@@ -332,13 +332,13 @@ class SkillFileToolsImpl(private val context: Context, private val client: OkHtt
             resp.close()
             redirects++
             if (redirects > MAX_DOWNLOAD_REDIRECTS) {
-                throw java.io.IOException("重定向次数超过上限($MAX_DOWNLOAD_REDIRECTS),已终止")
+                throw java.io.IOException("Redirect count exceeded the limit ($MAX_DOWNLOAD_REDIRECTS); terminated")
             }
             // 相对 Location 按当前 URL 解析(java.net.URL 兼容 OkHttp URL 的 resolve 语义)
             currentUrl = try {
                 java.net.URL(currentUrl).toURI().resolve(location).toString()
             } catch (e: Exception) {
-                throw java.io.IOException("重定向 Location 无法解析: $location")
+                throw java.io.IOException("Redirect Location could not be parsed: $location")
             }
         }
     }

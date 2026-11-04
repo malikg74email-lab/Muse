@@ -112,7 +112,7 @@ class SessionExecutionRegistry(
             try {
                 registered.cancel?.invoke()
             } catch (error: Exception) {
-                Logger.w(TAG, "执行资源取消信号失败: id=$id kind=${registered.record.kind} reason=$reason", error)
+                Logger.w(TAG, "Execution resource cancellation signal failed: id=$id kind=${registered.record.kind} reason=$reason", error)
             }
         }
         return accepted
@@ -234,7 +234,7 @@ class SessionExecutionRegistry(
                 }
         }
         if (removed > 0) {
-            Logger.d(TAG, "执行历史裁剪: 移除 $removed 条(剩余 ${history.size} 条)")
+            Logger.d(TAG, "Execution history pruned: removed $removed entries (${history.size} remaining)")
         }
         return removed
     }

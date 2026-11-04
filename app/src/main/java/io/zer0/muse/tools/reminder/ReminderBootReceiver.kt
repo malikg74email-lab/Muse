@@ -29,7 +29,7 @@ class ReminderBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         if (action !in HANDLED_ACTIONS) return
-        Logger.i(TAG, "收到 $action，开始重排提醒")
+        Logger.i(TAG, "Received $action; starting to reschedule reminders")
         val appContext = context.applicationContext
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
@@ -40,11 +40,11 @@ class ReminderBootReceiver : BroadcastReceiver() {
                     .onSuccess { summary ->
                         Logger.i(
                             TAG,
-                            "重排完成: 成功=${summary.rescheduled}, 补发=${summary.catchUpNotified}, " +
-                                "失败=${summary.failed}, 精确权限=${summary.exact}",
+                            "Reschedule complete: succeeded=${summary.rescheduled}, caughtUp=${summary.catchUpNotified}, " +
+                                "failed=${summary.failed}, exactPermission=${summary.exact}",
                         )
                     }
-                    .onError { msg, t -> Logger.e(TAG, "重排提醒失败: $msg", t) }
+                    .onError { msg, t -> Logger.e(TAG, "Reminder rescheduling failed: $msg", t) }
             } finally {
                 pendingResult.finish()
             }

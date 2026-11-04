@@ -104,10 +104,10 @@ internal class ToolOutputCapture(
         val previewText = renderPreview()
         return buildString {
             if (header.isNotBlank()) append(header).append('\n')
-            append("[完整输出已保存到: ").append(file.absolutePath).append("]\n")
+            append("[Full output saved to: ").append(file.absolutePath).append("]\n")
             append(
-                "[需要完整内容时用 workspace_read 分段读取: path=$mountPath, " +
-                    "offset_chars=0, length_chars=$TOOL_OUTPUT_READ_PAGE_CHARS；也可用 read_file 读取（path=$TOOL_OUTPUTS_DIR/$fileName）]\n\n",
+                "[When the full content is needed, read it in segments with workspace_read: path=$mountPath, " +
+                    "offset_chars=0, length_chars=$TOOL_OUTPUT_READ_PAGE_CHARS; or read it with read_file (path=$TOOL_OUTPUTS_DIR/$fileName)]\n\n",
             )
             append(previewText)
             append("\n\n")
@@ -138,11 +138,11 @@ internal class ToolOutputCapture(
     private fun previewNotice(shownChars: Int): String {
         val omitted = (totalChars - shownChars).coerceAtLeast(0L)
         return if (keepTail) {
-            "[以上是输出末尾 $shownChars 字的预览；原文共 $totalChars 字，开头 $omitted 字未显示；" +
-                "需要时用 read_file 从 offset_chars=0 读取]"
+            "[The above is a preview of the last $shownChars characters of the output; the original has $totalChars characters in total, with $omitted characters at the start not shown;" +
+                "when needed, read from offset_chars=0 with read_file]"
         } else {
-            "[以上是输出开头 $shownChars 字的预览；原文共 $totalChars 字，其余 $omitted 字未显示；" +
-                "需要时用 read_file 按字符游标继续读取]"
+            "[The above is a preview of the first $shownChars characters of the output; the original has $totalChars characters in total, with the remaining $omitted characters not shown;" +
+                "when needed, continue reading by character cursor with read_file]"
         }
     }
 
@@ -167,7 +167,7 @@ internal class ToolOutputCapture(
 
     private fun startFile() {
         if (!outputDirectory.isDirectory && !outputDirectory.mkdirs() && !outputDirectory.isDirectory) {
-            throw IOException("无法创建工具输出目录: ${outputDirectory.absolutePath}")
+            throw IOException("Could not create the tool output directory: ${outputDirectory.absolutePath}")
         }
         val file = File(outputDirectory, fileName)
         val newWriter = BufferedWriter(OutputStreamWriter(FileOutputStream(file), Charsets.UTF_8))
@@ -230,6 +230,6 @@ internal suspend fun captureLargeToolOutput(context: Context, filePrefix: String
     } catch (error: kotlinx.coroutines.CancellationException) {
         throw error
     } catch (error: Exception) {
-        output + "\n\n[完整输出落盘失败；本次消息仍保留完整原文: ${error.message ?: "存储失败"}]"
+        output + "\n\n[Failed to persist the full output; this message still keeps the full original text: ${error.message ?: "storage failed"}]"
     }
 }

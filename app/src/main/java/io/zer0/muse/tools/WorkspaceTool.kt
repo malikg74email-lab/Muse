@@ -87,17 +87,17 @@ object WorkspaceTool {
     )
 
     /** 路径参数说明，多个工具共用同一句话。 */
-    private const val PATH_HINT = "路径可写 挂载标识:/相对路径；不写前缀则落到默认工作区。先用 workspace_mounts 查可用的挂载标识。"
+    private const val PATH_HINT = "Writable path: mountId:/relative/path; without a prefix it lands in the default workspace. Use workspace_mounts first to check the available mount ids."
 
     /** diff 回执里改动块前后各带几行上下文。 */
     private const val DIFF_CONTEXT_LINES = 3
 
     private fun listToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_LIST,
-        description = "列出工作区某个目录下的文件与子目录（目录在前，文件在后）。" +
-            "返回每行一条：name | type(dir/file) | size | lastModified。" + PATH_HINT,
+        description = "List the files and subdirectories under a workspace directory (directories first, then files)." +
+            "Returns one entry per line: name | type(dir/file) | size | lastModified." + PATH_HINT,
         parameters = mapOf(
-            "path" to "可选,目录路径,空串或 \"/\" 表示默认工作区根目录",
+            "path" to "Optional, directory path; an empty string or \"/\" means the default workspace root",
         ),
         required = emptySet(),
         category = "built-in",
@@ -106,12 +106,12 @@ object WorkspaceTool {
 
     private fun readToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_READ,
-        description = "读取工作区内指定文本文件内容(UTF-8)。大文件自动分段,用 offset_chars/length_chars 继续读。" +
+        description = "Read the content of a text file in the workspace (UTF-8). Large files are paged automatically; continue reading with offset_chars/length_chars." +
             PATH_HINT,
         parameters = mapOf(
-            "path" to "必填,文件路径",
-            "offset_chars" to "可选,字符起始游标;继续读取时使用上次返回的 offset_chars。",
-            "length_chars" to "可选,单页字符数,最大 ${io.zer0.muse.tools.TOOL_OUTPUT_READ_PAGE_CHARS}。",
+            "path" to "Required, file path",
+            "offset_chars" to "Optional, character start cursor; when continuing, use the offset_chars returned last time.",
+            "length_chars" to "Optional, characters per page, at most ${io.zer0.muse.tools.TOOL_OUTPUT_READ_PAGE_CHARS}.",
         ),
         required = setOf("path"),
         category = "built-in",
@@ -120,13 +120,13 @@ object WorkspaceTool {
 
     private fun writeToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_WRITE,
-        description = "写入文本文件到工作区(UTF-8)。默认覆盖;append=true 时追加。单次内容上限 10MB。" +
-            "父目录不存在会自动创建。写长文件请分批:先写首段,后续用 append=true 逐段追加。" +
-            "只读挂载会被拒绝。" + PATH_HINT,
+        description = "Write a text file into the workspace (UTF-8). Overwrites by default; appends when append=true. Single-write content limit 10MB." +
+            "Parent directories are created automatically when missing. For long files write in batches: write the first chunk, then append chunk by chunk with append=true." +
+            "Read-only mounts are rejected." + PATH_HINT,
         parameters = mapOf(
-            "path" to "必填,文件路径",
-            "content" to "必填,要写入的文本内容",
-            "append" to "可选,是否追加写入(默认 false 覆盖)。写长文件建议分批追加",
+            "path" to "Required, file path",
+            "content" to "Required, the text content to write",
+            "append" to "Optional, whether to append (default false = overwrite). For long files, appending in batches is recommended",
         ),
         required = setOf("path", "content"),
         category = "built-in",
@@ -139,16 +139,16 @@ object WorkspaceTool {
     private fun editToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_EDIT,
         description =
-        "局部编辑文件(修改工作区里的文本)：把某段原文替换成另一段(UTF-8)。" +
-            "old_string 必须与文件内容逐字一致,且在整份文件里只出现一次 —— 出现 0 次或多次都会被拒绝," +
-            "本工具不会替你猜改哪一处。要改多处就带着足够上下文分多次调用。new_string 传空串表示删除该片段。" +
-            "成功返回行级 diff(首个改动行 + @@ 块),可直接核对改了哪几行。" +
-            "改文件先用 workspace_read 或 workspace_grep 定位原文,不要整份重写。只读挂载会被拒绝。" + PATH_HINT,
+        "Locally edit a file (modify text in the workspace): replace one passage of the original text with another (UTF-8)." +
+            "old_string must match the file content character for character and occur exactly once in the whole file — 0 or multiple occurrences are both rejected;" +
+            "this tool will not guess which occurrence you mean. To change several places, call it multiple times with enough context. An empty new_string deletes the passage." +
+            "On success it returns a line-level diff (first changed line + @@ hunks) so you can check exactly which lines changed." +
+            "Before editing, locate the original text with workspace_read or workspace_grep; do not rewrite the whole file. Read-only mounts are rejected." + PATH_HINT,
         parameters =
         mapOf(
-            "path" to "必填,文件路径",
-            "old_string" to "必填,要被替换的原文片段;必须逐字匹配且在整个文件中唯一",
-            "new_string" to "必填,替换后的新片段;空串表示删除该片段",
+            "path" to "Required, file path",
+            "old_string" to "Required, the original passage to be replaced; must match character for character and be unique in the whole file",
+            "new_string" to "Required, the new passage after replacement; an empty string deletes the passage",
         ),
         required = setOf("path", "old_string", "new_string"),
         category = "built-in",
@@ -157,9 +157,9 @@ object WorkspaceTool {
 
     private fun deleteToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_DELETE,
-        description = "删除工作区内的文件或目录。目录会递归删除(包含所有子项),不可恢复。只读挂载会被拒绝。" + PATH_HINT,
+        description = "Delete a file or directory in the workspace. Directories are deleted recursively (including all children) and cannot be recovered. Read-only mounts are rejected." + PATH_HINT,
         parameters = mapOf(
-            "path" to "必填,要删除的路径",
+            "path" to "Required, the path to delete",
         ),
         required = setOf("path"),
         category = "built-in",
@@ -168,9 +168,9 @@ object WorkspaceTool {
 
     private fun mkdirToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_MKDIR,
-        description = "在工作区内创建目录(支持多级)。已存在视为成功。只读挂载会被拒绝。" + PATH_HINT,
+        description = "Create a directory in the workspace (multi-level supported). Already existing counts as success. Read-only mounts are rejected." + PATH_HINT,
         parameters = mapOf(
-            "path" to "必填,目录路径",
+            "path" to "Required, directory path",
         ),
         required = setOf("path"),
         category = "built-in",
@@ -179,11 +179,11 @@ object WorkspaceTool {
 
     private fun moveToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_MOVE,
-        description = "移动或重命名工作区内的文件/目录。目标已存在会失败;不能跨挂载移动,跨挂载请用 workspace_copy。" +
+        description = "Move or rename a file/directory in the workspace. Fails if the target already exists; cannot move across mounts — use workspace_copy across mounts." +
             PATH_HINT,
         parameters = mapOf(
-            "from" to "必填,源路径",
-            "to" to "必填,目标路径",
+            "from" to "Required, source path",
+            "to" to "Required, target path",
         ),
         required = setOf("from", "to"),
         category = "built-in",
@@ -192,11 +192,11 @@ object WorkspaceTool {
 
     private fun copyToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_COPY,
-        description = "复制工作区内的文件或目录。目标已存在会失败。" +
-            "同一挂载内可直接复制目录;跨挂载只能复制单个文件。目标挂载需要写权限。" + PATH_HINT,
+        description = "Copy a file or directory in the workspace. Fails if the target already exists." +
+            "Directories can be copied directly within the same mount; across mounts only single files can be copied. The target mount needs write permission." + PATH_HINT,
         parameters = mapOf(
-            "from" to "必填,源路径(需要读权限)",
-            "to" to "必填,目标路径(需要写权限)",
+            "from" to "Required, source path (read permission needed)",
+            "to" to "Required, target path (write permission needed)",
         ),
         required = setOf("from", "to"),
         category = "built-in",
@@ -206,15 +206,15 @@ object WorkspaceTool {
     private fun grepToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_GREP,
         description =
-        "在工作区文件里搜索内容,返回 路径:行号:内容。改文件前先用它定位,不要把整份文件读进上下文。" +
-            "递归搜索,自动跳过二进制与超 2MB 的文件。is_regex=true 时 pattern 按正则解释。" +
-            "命中 100 条即停并标注 truncated。path 为空时搜全部可用挂载。",
+        "Search content in workspace files; returns path:line:content. Use it to locate text before editing instead of reading whole files into context." +
+            "Recursive search; binary files and files over 2MB are skipped automatically. With is_regex=true the pattern is interpreted as a regular expression." +
+            "Stops at 100 hits and marks truncated. When path is empty, all available mounts are searched.",
         parameters =
         mapOf(
-            "pattern" to "必填,要查找的文本;is_regex=true 时为正则表达式",
-            "path" to "可选,搜索起点的路径,默认全部可用挂载",
-            "is_regex" to "可选,是否按正则解释 pattern(默认 false)",
-            "max_results" to "可选,命中数上限,默认 100",
+            "pattern" to "Required, the text to find; a regular expression when is_regex=true",
+            "path" to "Optional, the path to start searching from; default is all available mounts",
+            "is_regex" to "Optional, whether to interpret pattern as a regex (default false)",
+            "max_results" to "Optional, hit limit, default 100",
         ),
         required = setOf("pattern"),
         category = "built-in",
@@ -224,9 +224,9 @@ object WorkspaceTool {
     private fun mountsToolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME_MOUNTS,
         description =
-        "列出当前可用的工作区挂载:标识 | 名称 | 能力 | 来源。" +
-            "路径前缀要写这里的标识,例如 `album:/DCIM/a.jpg`;" +
-            "标识为 main 的是默认挂载,可以不写前缀。只读挂载会标出来。",
+        "List the currently available workspace mounts: id | name | capabilities | source." +
+            "Path prefixes use the ids here, e.g. `album:/DCIM/a.jpg`;" +
+            "The mount with id main is the default mount and its prefix may be omitted. Read-only mounts are marked.",
         parameters = emptyMap(),
         required = emptySet(),
         category = "built-in",
@@ -255,13 +255,13 @@ object WorkspaceTool {
             NAME_MOVE -> executeMove(args, manager, scope)
             NAME_COPY -> executeCopy(args, manager, scope)
             NAME_GREP -> executeGrep(args, manager, scope)
-            else -> "Error: 未知工具名 $name"
+            else -> "Error: unknown tool name $name"
         }
     }
 
     /** 把挂载表渲染成给模型看的一行一条。 */
     private fun renderMounts(mounts: List<WorkspaceMount>): String {
-        if (mounts.isEmpty()) return "(没有任何挂载)"
+        if (mounts.isEmpty()) return "(no mounts at all)"
         return mounts.joinToString("\n") { mount ->
             val caps = buildList {
                 if (mount.canList) add("list")
@@ -269,8 +269,8 @@ object WorkspaceTool {
                 if (mount.canWrite) add("write")
             }.joinToString("+").ifEmpty { "none" }
             val source = when (mount.provider) {
-                io.zer0.muse.workspace.MountProvider.LOCAL -> "本地目录"
-                io.zer0.muse.workspace.MountProvider.SAF -> "系统授权目录"
+                io.zer0.muse.workspace.MountProvider.LOCAL -> "Local directory"
+                io.zer0.muse.workspace.MountProvider.SAF -> "System-authorized directory"
             }
             "${mount.id} | ${mount.label} | $caps | $source"
         }
@@ -297,7 +297,7 @@ object WorkspaceTool {
     /** workspace_read 的执行体。 */
     private suspend fun executeRead(args: Map<String, String>, manager: WorkspaceManager, scope: Set<String>?): String {
         val path = args["path"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 path 必填"
+            ?: return "Error: parameter path is required"
         val offsetChars = args["offset_chars"]?.toIntOrNull()
         val lengthChars = args["length_chars"]?.toIntOrNull()
         return when (val r = manager.readFilePage(path, offsetChars, lengthChars, scope)) {
@@ -309,8 +309,8 @@ object WorkspaceTool {
     /** workspace_write 的执行体。 */
     private suspend fun executeWrite(args: Map<String, String>, manager: WorkspaceManager, scope: Set<String>?): String {
         val path = args["path"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 path 必填"
-        val content = args["content"] ?: return "Error: 参数 content 必填"
+            ?: return "Error: parameter path is required"
+        val content = args["content"] ?: return "Error: parameter content is required"
         val append = args["append"]?.toBoolean() ?: false
         val r = if (append) {
             manager.appendFile(path, content, scope)
@@ -319,7 +319,7 @@ object WorkspaceTool {
         }
         return when (r) {
             is WorkspaceManager.OpResult.Success ->
-                "OK: 已${if (append) "追加" else "写入"} $path(${content.length} 字符)"
+                "OK: ${if (append) "appended to" else "written to"} $path (${content.length} characters)"
             is WorkspaceManager.OpResult.Error -> "Error: ${r.message}"
         }
     }
@@ -339,7 +339,7 @@ object WorkspaceTool {
                 "old_string".takeIf { oldString == null },
                 "new_string".takeIf { newString == null },
             )
-            return "Error: 参数 ${missing.joinToString("/")} 必填"
+            return "Error: parameter ${missing.joinToString("/")} is required"
         }
         // 必须整份读：片段匹配要跑在对全文的一份快照上，分页读到的一半内容匹配不上。
         // 读与写被包在同一把路径锁里完成（[WorkspaceManager.editFile]）：
@@ -360,10 +360,10 @@ object WorkspaceTool {
     private fun renderEdited(path: String, applied: WorkspaceManager.EditResult.Applied): String {
         val diff = diffLines(applied.original, applied.updated)
         return buildString {
-            appendLine("OK: workspace_edit 已更新 $path")
+            appendLine("OK: workspace_edit updated $path")
             appendLine(
-                "改动: 首个改动行 ${diff.firstChangedLine};" +
-                    "原文 ${diff.oldLineCount} 行 → 新内容 ${diff.newLineCount} 行",
+                "Change: first changed line ${diff.firstChangedLine};" +
+                    "original ${diff.oldLineCount} lines → new content ${diff.newLineCount} lines",
             )
             append(diff.hunk)
         }
@@ -383,14 +383,14 @@ object WorkspaceTool {
     internal fun planEdit(original: String, oldString: String, newString: String, path: String): EditPlan {
         val occurrences = countOccurrences(original, oldString)
         val rejection = when {
-            oldString.isEmpty() -> "old_string 不能为空：空片段在任何位置都能匹配,无法确定要改哪里"
-            oldString == newString -> "新旧内容相同，无需修改：new_string 与 old_string 逐字一致"
-            occurrences > 1 -> "old_string 在 $path 中出现 $occurrences 次，请提供更多上下文使其唯一" +
-                "(本工具不会只替换第一处)"
+            oldString.isEmpty() -> "old_string must not be empty: an empty passage matches at any position, so the place to change cannot be determined"
+            oldString == newString -> "Old and new content are identical; no change needed: new_string matches old_string character for character"
+            occurrences > 1 -> "old_string occurs $occurrences times in $path; provide more context to make it unique" +
+                "(this tool does not just replace the first occurrence)"
             occurrences == 0 -> editMissingMessage(original, oldString, path)
             else -> null
         }
-        if (rejection != null) return EditPlan.Rejected("$rejection(文件未改动)")
+        if (rejection != null) return EditPlan.Rejected("$rejection (file unchanged)")
         val at = original.indexOf(oldString)
         val updated = original.replaceRange(at, at + oldString.length, newString)
         return EditPlan.Applied(updated, diffLines(original, updated))
@@ -411,12 +411,12 @@ object WorkspaceTool {
     /** 片段找不到时的提示；文件是 CRLF 换行而 old_string 用 LF 时点明原因。 */
     private fun editMissingMessage(original: String, oldString: String, path: String): String {
         val crlfHint = if (original.contains("\r\n") && original.replace("\r\n", "\n").contains(oldString)) {
-            "；文件使用 CRLF 换行,old_string 里的换行也要写成 CRLF 才能逐字匹配"
+            "; the file uses CRLF line endings, so the line breaks in old_string must also be written as CRLF to match character for character"
         } else {
             ""
         }
-        return "找不到该片段：old_string 在 $path 中不存在,请先用 workspace_read 或 workspace_grep 核对原文" +
-            "(缩进与换行都要逐字一致)$crlfHint"
+        return "Passage not found: old_string does not exist in $path; check the original text first with workspace_read or workspace_grep" +
+            "(indentation and line breaks must match character for character)$crlfHint"
     }
 
     /**
@@ -463,9 +463,9 @@ object WorkspaceTool {
     /** workspace_delete 的执行体。 */
     private suspend fun executeDelete(args: Map<String, String>, manager: WorkspaceManager, scope: Set<String>?): String {
         val path = args["path"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 path 必填"
+            ?: return "Error: parameter path is required"
         return when (val r = manager.delete(path, scope)) {
-            is WorkspaceManager.OpResult.Success -> "OK: 已删除 $path"
+            is WorkspaceManager.OpResult.Success -> "OK: deleted $path"
             is WorkspaceManager.OpResult.Error -> "Error: ${r.message}"
         }
     }
@@ -473,9 +473,9 @@ object WorkspaceTool {
     /** workspace_mkdir 的执行体。 */
     private suspend fun executeMkdir(args: Map<String, String>, manager: WorkspaceManager, scope: Set<String>?): String {
         val path = args["path"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 path 必填"
+            ?: return "Error: parameter path is required"
         return when (val r = manager.mkdir(path, scope)) {
-            is WorkspaceManager.OpResult.Success -> "OK: 目录已创建 $path"
+            is WorkspaceManager.OpResult.Success -> "OK: directory created $path"
             is WorkspaceManager.OpResult.Error -> "Error: ${r.message}"
         }
     }
@@ -483,11 +483,11 @@ object WorkspaceTool {
     /** workspace_move 的执行体。 */
     private suspend fun executeMove(args: Map<String, String>, manager: WorkspaceManager, scope: Set<String>?): String {
         val from = args["from"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 from 必填"
+            ?: return "Error: parameter from is required"
         val to = args["to"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 to 必填"
+            ?: return "Error: parameter to is required"
         return when (val r = manager.move(from, to, scope)) {
-            is WorkspaceManager.OpResult.Success -> "OK: 已移动 $from -> $to"
+            is WorkspaceManager.OpResult.Success -> "OK: moved $from -> $to"
             is WorkspaceManager.OpResult.Error -> "Error: ${r.message}"
         }
     }
@@ -495,11 +495,11 @@ object WorkspaceTool {
     /** workspace_copy 的执行体。 */
     private suspend fun executeCopy(args: Map<String, String>, manager: WorkspaceManager, scope: Set<String>?): String {
         val from = args["from"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 from 必填"
+            ?: return "Error: parameter from is required"
         val to = args["to"]?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 to 必填"
+            ?: return "Error: parameter to is required"
         return when (val r = manager.copy(from, to, scope)) {
-            is WorkspaceManager.OpResult.Success -> "OK: 已复制 $from -> $to"
+            is WorkspaceManager.OpResult.Success -> "OK: copied $from -> $to"
             is WorkspaceManager.OpResult.Error -> "Error: ${r.message}"
         }
     }
@@ -507,7 +507,7 @@ object WorkspaceTool {
     /** workspace_grep 的执行体。 */
     private suspend fun executeGrep(args: Map<String, String>, manager: WorkspaceManager, scope: Set<String>?): String {
         val pattern = args["pattern"]?.takeIf { it.isNotEmpty() }
-            ?: return "Error: 参数 pattern 必填"
+            ?: return "Error: parameter pattern is required"
         val path = args["path"]?.trim() ?: ""
         val isRegex = args["is_regex"]?.toBoolean() ?: false
         val maxResults = args["max_results"]?.toIntOrNull()?.coerceIn(1, 500) ?: 100
@@ -519,13 +519,13 @@ object WorkspaceTool {
 
     /** 把命中渲染成 路径:行号:内容。 */
     private fun renderGrepMatches(result: WorkspaceManager.GrepResult.Success): String {
-        if (result.matches.isEmpty()) return "无命中(已扫描 ${result.scannedFiles} 个文件)"
+        if (result.matches.isEmpty()) return "No hits (${result.scannedFiles} files scanned)"
         return buildString {
             result.matches.forEach { m ->
                 appendLine("${m.path}:${m.lineNumber}:${m.line}")
             }
             if (result.truncated) {
-                append("... 命中数达到上限,结果已截断;请缩小 path 或让 pattern 更精确")
+                append("... hit limit reached, results truncated; narrow the path or make the pattern more precise")
             }
         }.trimEnd()
     }

@@ -62,14 +62,14 @@ class RemoteRerankProvider(
         }
 
         val raw = runCatching { httpPost(url, headers, requestBody) }
-            .onFailure { Logger.w(TAG, "云端 rerank 请求失败，降级本地重排: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Cloud rerank request failed, falling back to local reranking: ${it.message}") }
             .getOrNull() ?: return LocalRerankProvider().rerank(query, candidates, topK)
 
         val parsed = runCatching { parseResponse(raw) }
-            .onFailure { Logger.w(TAG, "云端 rerank 响应解析失败，降级本地重排: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Cloud rerank response parsing failed, falling back to local reranking: ${it.message}") }
             .getOrNull()
         if (parsed.isNullOrEmpty()) {
-            Logger.w(TAG, "云端 rerank 返回空结果，降级本地重排")
+            Logger.w(TAG, "Cloud rerank returned an empty result, falling back to local reranking")
             return LocalRerankProvider().rerank(query, candidates, topK)
         }
 

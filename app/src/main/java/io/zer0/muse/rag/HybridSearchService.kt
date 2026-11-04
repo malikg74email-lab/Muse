@@ -113,7 +113,7 @@ class HybridSearchService(
 
         Logger.d(
             "HybridSearchService",
-            "混合检索:vector=${vectorResults.size}, bm25=${bm25Hits.size}, query=$query",
+            "Hybrid search: vector=${vectorResults.size}, bm25=${bm25Hits.size}, query=$query",
         )
 
         if (vectorResults.isEmpty() && bm25Hits.isEmpty()) return emptyList()

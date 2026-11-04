@@ -71,7 +71,7 @@ class KeepAliveService : Service() {
                     context.startService(intent)
                 }
             }.onFailure { t ->
-                Logger.w(TAG, "启动常驻服务失败: ${t.message}")
+                Logger.w(TAG, "Starting the resident service failed: ${t.message}")
             }
         }
 
@@ -80,7 +80,7 @@ class KeepAliveService : Service() {
             runCatching {
                 context.startService(Intent(context, KeepAliveService::class.java).setAction(ACTION_STOP))
             }.onFailure { t ->
-                Logger.w(TAG, "停止常驻服务失败: ${t.message}")
+                Logger.w(TAG, "Stopping the resident service failed: ${t.message}")
             }
         }
     }
@@ -95,17 +95,17 @@ class KeepAliveService : Service() {
         startForegroundCompat()
         startHeartbeat()
         acquireWakeLockIfEnabled()
-        Logger.i(TAG, "常驻服务已启动")
+        Logger.i(TAG, "Resident service started")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
-                Logger.i(TAG, "收到停止指令")
+                Logger.i(TAG, "Stop command received")
                 stopSelf()
                 return START_NOT_STICKY
             }
-            else -> Logger.d(TAG, "常驻服务运行中")
+            else -> Logger.d(TAG, "Resident service running")
         }
         // START_STICKY: 系统内存回收后自动重建服务（不保留 intent）
         return START_STICKY
@@ -120,7 +120,7 @@ class KeepAliveService : Service() {
      * 这个窗口内重启服务成功率较高。ROM 深度清理时仍会失败，属预期。
      */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Logger.i(TAG, "任务被划掉，尝试重启常驻服务")
+        Logger.i(TAG, "Task was swiped away; trying to restart the resident service")
         val restart = Intent(applicationContext, KeepAliveService::class.java).setAction(ACTION_START)
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -129,7 +129,7 @@ class KeepAliveService : Service() {
                 applicationContext.startService(restart)
             }
         }.onFailure { t ->
-            Logger.w(TAG, "重启常驻服务失败（可能被 ROM 限制）: ${t.message}")
+            Logger.w(TAG, "Restarting the resident service failed (may be restricted by the ROM): ${t.message}")
         }
         super.onTaskRemoved(rootIntent)
     }
@@ -138,7 +138,7 @@ class KeepAliveService : Service() {
         heartbeatJob?.cancel()
         releaseWakeLock()
         serviceScope.cancel()
-        Logger.i(TAG, "常驻服务已停止")
+        Logger.i(TAG, "Resident service stopped")
         super.onDestroy()
     }
 
@@ -159,7 +159,7 @@ class KeepAliveService : Service() {
                 startForeground(NOTIFICATION_ID, notification)
             }
         }.onFailure { t ->
-            Logger.e(TAG, "startForeground 失败，放弃常驻", t)
+            Logger.e(TAG, "startForeground failed, giving up residency", t)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 runCatching {
                     startForeground(
@@ -227,7 +227,7 @@ class KeepAliveService : Service() {
                 delay(HEARTBEAT_INTERVAL_MS)
                 tick++
                 if (tick % 10 == 0L) {
-                    Logger.d(TAG, "常驻心跳存活，已运行 $tick 分钟")
+                    Logger.d(TAG, "Resident heartbeat alive, running for $tick minutes")
                 }
             }
         }
@@ -248,9 +248,9 @@ class KeepAliveService : Service() {
                     setReferenceCounted(false)
                     acquire(24 * 60 * 60 * 1000L) // 最多 24 小时，到期自动释放，避免忘记释放耗电
                 }
-                Logger.i(TAG, "已获取 WakeLock（用户开启）")
+                Logger.i(TAG, "WakeLock acquired (user enabled)")
             }.onFailure { t ->
-                Logger.w(TAG, "获取 WakeLock 失败: ${t.message}")
+                Logger.w(TAG, "Acquiring WakeLock failed: ${t.message}")
             }
         }
     }

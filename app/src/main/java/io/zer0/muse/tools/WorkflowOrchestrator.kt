@@ -49,7 +49,7 @@ class WorkflowOrchestrator {
             // v1.0.53 Phase 3: 预算耗尽则跳过剩余节点
             if (budget?.isExhausted == true) {
                 budgetExhausted = true
-                errors.add("节点被跳过:token 预算耗尽(剩余 ${budget.remaining})")
+                errors.add("Node skipped: token budget exhausted (remaining ${budget.remaining})")
                 continue
             }
             executeStep(step, outputs, errors)

@@ -62,10 +62,10 @@ class PhoneToolsImpl(private val context: Context) {
                 context.startActivity(intent)
                 val repeat = daysStr?.let { context.getString(R.string.tool_alarm_repeat, it) } ?: ""
                 context.getString(R.string.tool_alarm_set, "%02d".format(hour), "%02d".format(minute), label, repeat)
-            }.onError { msg, _ -> Logger.w("ToolRegistry", "设置闹钟失败: $msg") }
+            }.onError { msg, _ -> Logger.w("ToolRegistry", "Set alarm failed: $msg") }
         // v2.x: 失败时加 [失败] 判定标记 — 裸文案"设置闹钟失败"不含标记,此前被 ToolResultJudge 误判为成功
         return alarmResult.getOrNull()
-            ?: "[失败] ${context.getString(R.string.tool_alarm_set_failed)},可改用 add_calendar_event 或提醒用户手动设置"
+            ?: "Error: ${context.getString(R.string.tool_alarm_set_failed)}, you can use add_calendar_event instead or remind the user to set it manually"
     }
 
     /** 设置系统倒计时:通过 AlarmClock.ACTION_SET_TIMER 拉起系统时钟应用。无需运行时权限。 */
@@ -86,10 +86,10 @@ class PhoneToolsImpl(private val context: Context) {
             resultOf {
                 context.startActivity(intent)
                 context.getString(R.string.tool_timer_set, seconds, label)
-            }.onError { msg, _ -> Logger.w("ToolRegistry", "设置倒计时失败: $msg") }
+            }.onError { msg, _ -> Logger.w("ToolRegistry", "Set timer failed: $msg") }
         // v2.x: 失败时加 [失败] 判定标记(同 set_alarm)
         return timerResult.getOrNull()
-            ?: "[失败] ${context.getString(R.string.tool_timer_set_failed)}"
+            ?: "Error: ${context.getString(R.string.tool_timer_set_failed)}"
     }
 
     /** 打开应用:支持 Deep Link(data_uri)、自定义 action,或通过包名启动主界面。 */
@@ -129,7 +129,7 @@ class PhoneToolsImpl(private val context: Context) {
                 context.startActivity(launchIntent)
                 context.getString(R.string.tool_app_opened, packageName)
             }
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开应用失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open app failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_open_app_failed)
     }
 
@@ -155,7 +155,7 @@ class PhoneToolsImpl(private val context: Context) {
         return resultOf {
             context.startActivity(chooser)
             context.getString(R.string.tool_text_shared, text.take(50) + if (text.length > 50) "..." else "")
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "分享失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Share failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_share_failed)
     }
 
@@ -275,7 +275,7 @@ class PhoneToolsImpl(private val context: Context) {
             } else {
                 context.getString(R.string.tool_contacts_count, count)
             }
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "读取联系人失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Read contacts failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_contacts_read_failed)
     }
 
@@ -353,7 +353,7 @@ class PhoneToolsImpl(private val context: Context) {
             } else {
                 sb.toString().trimEnd()
             }
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "读取联系人列表失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Read contact list failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_contacts_list_read_failed)
     }
 
@@ -388,7 +388,7 @@ class PhoneToolsImpl(private val context: Context) {
                         ?: return@resultOf context.getString(R.string.tool_sms_send_failed_no_manager)
                 smsManager.sendTextMessage(phone, null, body, sentIntent, null)
                 context.getString(R.string.tool_sms_sent, phone)
-            }.onError { msg, _ -> Logger.w("ToolRegistry", "发送短信失败: $msg") }
+            }.onError { msg, _ -> Logger.w("ToolRegistry", "Send SMS failed: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_sms_send_failed)
         }
         // 无权限或无 body:打开系统短信应用预填
@@ -402,7 +402,7 @@ class PhoneToolsImpl(private val context: Context) {
                 }
             context.startActivity(intent)
             context.getString(R.string.tool_sms_app_opened, phone)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开短信应用失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open SMS app failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_sms_app_open_failed)
     }
 
@@ -430,7 +430,7 @@ class PhoneToolsImpl(private val context: Context) {
                 }
             context.startActivity(intent)
             context.getString(R.string.tool_contact_form_opened, name)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开新建联系人表单失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open new-contact form failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_contact_form_open_failed)
     }
 
@@ -446,7 +446,7 @@ class PhoneToolsImpl(private val context: Context) {
         return resultOf {
             context.startActivity(intent)
             context.getString(R.string.tool_phone_call_opened, phone)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开拨号失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open dialer failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_open_url_failed, phone)
     }
 
@@ -471,7 +471,7 @@ class PhoneToolsImpl(private val context: Context) {
         return resultOf {
             context.startActivity(intent)
             context.getString(R.string.tool_maps_opened, uri)
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "打开地图失败: $msg") }
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "Open maps failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_open_url_failed, uri)
     }
 }

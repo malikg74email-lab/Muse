@@ -37,7 +37,7 @@ internal object ToolTextFilePager {
         return buildString(content.length + 180) {
             append(content)
             if (hasMore) {
-                append("\n\n[文件还有后续内容；继续调用 ").append(continuationTool).append(": path=\"")
+                append("\n\n[The file has further content; continue calling ").append(continuationTool).append(": path=\"")
                 append(path)
                 append("\", offset_chars=")
                 append(nextOffset)

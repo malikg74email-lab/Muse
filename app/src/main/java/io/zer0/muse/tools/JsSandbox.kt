@@ -258,7 +258,7 @@ object JsSandbox {
         val bodyText = (request["body"] as? JsonPrimitive)?.contentOrNull
         // 审计：沙盒能发任意 HTTP，就得留下「发了什么」的痕迹（host + 方法 + 体量）。
         val host = runCatching { java.net.URI(url).host }.getOrNull() ?: "?"
-        Logger.i(TAG, "沙盒外发请求 | method=$method | host=$host | bodyBytes=${bodyText?.length ?: 0}")
+        Logger.i(TAG, "Sandbox outbound request | method=$method | host=$host | bodyBytes=${bodyText?.length ?: 0}")
         return try {
             val builder = okhttp3.Request.Builder().url(url).method(method, null)
             (request["headers"] as? JsonObject)?.forEach { (name, value) ->
@@ -272,7 +272,7 @@ object JsSandbox {
                 val bytes = response.body?.bytes() ?: ByteArray(0)
                 val truncated = bytes.size > MAX_HTTP_BYTES
                 // 审计（收尾）：记下状态码与体积，脚本侧拿到的就是这份。
-                Logger.i(TAG, "沙盒外发完成 | host=$host | status=${response.code} | bytes=${bytes.size}")
+                Logger.i(TAG, "Sandbox outbound completed | host=$host | status=${response.code} | bytes=${bytes.size}")
                 val text = String(
                     if (truncated) bytes.copyOf(MAX_HTTP_BYTES) else bytes,
                     Charsets.UTF_8,
@@ -291,7 +291,7 @@ object JsSandbox {
                 }.toString()
             }
         } catch (e: Exception) {
-            Logger.w(TAG, "沙盒 HTTP 请求失败: ${e.message}")
+            Logger.w(TAG, "Sandbox HTTP request failed: ${e.message}")
             buildJsonObject {
                 put("error", JsonPrimitive(e.message ?: e::class.java.simpleName))
             }.toString()
@@ -371,7 +371,7 @@ object JsSandbox {
     fun init(context: Context) {
         if (appContext == null) {
             appContext = context.applicationContext
-            Logger.i(TAG, "JsSandbox 已注入 applicationContext")
+            Logger.i(TAG, "JsSandbox applicationContext injected")
         }
     }
 
@@ -400,7 +400,7 @@ object JsSandbox {
                 val state = stateFor(scopeKey)
                 if (System.currentTimeMillis() < state.circuitBrokenUntil) {
                     return@withContext Result.failure(
-                        IllegalStateException("JS 沙盒已熔断，请稍后重试(scope=${scopeKey ?: "default"})"),
+                        IllegalStateException("The JS sandbox has been circuit-broken; please retry later (scope=${scopeKey ?: "default"})"),
                     )
                 }
                 val webView = ensureWebView()
@@ -499,7 +499,7 @@ object JsSandbox {
                         state.circuitBrokenUntil = System.currentTimeMillis() + CIRCUIT_COOLDOWN_MS
                         Logger.e(
                             TAG,
-                            "JS 沙盒超时熔断(scope=${scopeKey ?: "default"}): " +
+                            "JS sandbox timeout circuit-break (scope=${scopeKey ?: "default"}): " +
                                 "consecutive=${state.consecutiveTimeouts} total=${state.totalTimedOutMs}",
                         )
                     }
@@ -508,7 +508,7 @@ object JsSandbox {
                         JsResult(
                             value = null,
                             consoleLogs = logs,
-                            error = "执行超时(${timeoutMs}ms)",
+                            error = "Execution timed out (${timeoutMs}ms)",
                         ),
                     )
                 }
@@ -526,7 +526,7 @@ object JsSandbox {
                 // B-16a: 协程取消信号必须向上传播,不能被 catch(Exception) 吞掉
                 throw e
             } catch (e: Exception) {
-                Logger.e(TAG, "JsSandbox execute 异常: ${e.message}", e)
+                Logger.e(TAG, "JsSandbox execute exception: ${e.message}", e)
                 Result.failure(e)
             }
         }
@@ -553,7 +553,7 @@ object JsSandbox {
         state.circuitBrokenUntil = 0L
         state.consecutiveTimeouts = 0
         state.totalTimedOutMs = 0L
-        Logger.i(TAG, "JsSandbox 熔断已复位(scope=${scopeKey ?: "default"})")
+        Logger.i(TAG, "JsSandbox circuit-breaker reset (scope=${scopeKey ?: "default"})")
     }
 
     /**
@@ -571,7 +571,7 @@ object JsSandbox {
             webView.clearHistory()
         }.onFailure { e ->
             // 清理失败不影响 JS 执行本身(沙盒权限仍有限制),记录日志便于排查
-            Logger.w(TAG, "JsSandbox 每次执行数据清理失败: ${e.message}")
+            Logger.w(TAG, "JsSandbox per-execution data cleanup failed: ${e.message}")
         }
     }
 
@@ -581,7 +581,7 @@ object JsSandbox {
      */
     fun destroy() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
-            Logger.w(TAG, "destroy 必须在主线程调用,已忽略")
+            Logger.w(TAG, "destroy must be called on the main thread; ignored")
             return
         }
         webViewRef?.let { wv ->
@@ -592,7 +592,7 @@ object JsSandbox {
         }
         webViewRef = null
         synchronized(logsLock) { currentLogs.clear() }
-        Logger.i(TAG, "JsSandbox WebView 已销毁")
+        Logger.i(TAG, "JsSandbox WebView destroyed")
     }
 
     // ── 内部实现 ──────────────────────────────────────────────────────
@@ -604,11 +604,11 @@ object JsSandbox {
     @SuppressLint("SetJavaScriptEnabled")
     private suspend fun ensureWebView(): WebView {
         check(Looper.myLooper() == Looper.getMainLooper()) {
-            "JsSandbox WebView 必须在主线程创建和访问"
+            "JsSandbox WebView must be created and accessed on the main thread"
         }
         webViewRef?.let { return it }
         val ctx = appContext
-            ?: error("JsSandbox 未初始化,请先调用 init(context) 注入 Application Context")
+            ?: error("JsSandbox not initialised; please call init(context) first to inject the Application Context")
 
         val wv = WebView(ctx).apply {
             // 异步返回值通道（脚本 return Promise 时用）。只暴露一个回传方法，不提供任何读取能力。
@@ -696,12 +696,12 @@ object JsSandbox {
         }
         val verifiedResult = parseVerificationResult(raw)
         if (!verifiedResult.first) {
-            Logger.w(TAG, "JsSandbox 劫持验证失败: ${verifiedResult.second.joinToString(", ")}")
+            Logger.w(TAG, "JsSandbox hijack verification failed: ${verifiedResult.second.joinToString(", ")}")
             wv.destroy()
-            throw JsSandboxUnavailableException("沙盒环境自检未通过: ${verifiedResult.second.joinToString(", ").ifBlank { "未知原因" }}")
+            throw JsSandboxUnavailableException("Sandbox environment self-check did not pass: ${verifiedResult.second.joinToString(", ").ifBlank { "unknown reason" }}")
         }
         webViewRef = wv
-        Logger.i(TAG, "WebView 沙盒已初始化")
+        Logger.i(TAG, "WebView sandbox initialised")
         return wv
     }
 
@@ -714,7 +714,7 @@ object JsSandbox {
      */
     internal fun parseVerificationResult(raw: String?): Pair<Boolean, List<String>> = runCatching {
         if (raw == null || raw.isBlank() || raw == "null") {
-            return@runCatching false to listOf("自检未返回结果")
+            return@runCatching false to listOf("Self-check returned no result")
         }
         val first = AppJson.parseToJsonElement(raw)
         val elem = if (first is JsonPrimitive && first.isString) {
@@ -722,13 +722,13 @@ object JsSandbox {
         } else {
             first
         }
-        val obj = elem as? JsonObject ?: error("自检返回格式不是对象")
+        val obj = elem as? JsonObject ?: error("Self-check return format is not an object")
         val verified = (obj["verified"] as? JsonPrimitive)?.booleanOrNull == true
         val issues = (obj["issues"] as? JsonArray)
             ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
             ?.filter { it.isNotBlank() } ?: emptyList()
         verified to issues
-    }.getOrElse { false to listOf("自检结果解析失败：${it.message}") }
+    }.getOrElse { false to listOf("Self-check result parsing failed: ${it.message}") }
 
     /**
      * 解析 evaluateJavascript 回调返回的字符串。
@@ -758,11 +758,11 @@ object JsSandbox {
                 (structured ?: valueStr) to null
             } else {
                 val err = (element["error"] as? JsonPrimitive)?.contentOrNull
-                    ?: "未知错误"
+                    ?: "Unknown error"
                 null to err
             }
         } catch (e: Exception) {
-            Logger.w(TAG, "解析 JS 返回值失败: ${e.message}(raw=$raw)")
+            Logger.w(TAG, "Failed to parse the JS return value: ${e.message} (raw=$raw)")
             raw to null
         }
     }

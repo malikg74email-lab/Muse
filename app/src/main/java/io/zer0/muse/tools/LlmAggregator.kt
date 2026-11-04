@@ -60,7 +60,7 @@ class LlmAggregator(
                 )
             }
         }.onError { msg, t ->
-            Logger.w("LlmAggregator", "review 调用异常: $msg", t)
+            Logger.w("LlmAggregator", "review call exception: $msg", t)
         }.getOrNull() ?: return null
 
         val text = completion.text.trim()
@@ -84,7 +84,7 @@ class LlmAggregator(
                 return matched to provider
             }
         }
-        Logger.w("LlmAggregator", "reviewModelId=$modelId 在所有 Provider 中未找到,回退默认模型")
+        Logger.w("LlmAggregator", "reviewModelId=$modelId not found in any Provider, falling back to the default model")
         return null to null
     }
 
@@ -92,27 +92,27 @@ class LlmAggregator(
     private fun buildReviewPrompt(candidates: List<AgentResultAggregator.Candidate>, question: String?): String {
         val candidatesBlock = candidates.mapIndexed { i, c ->
             val meta = buildString {
-                append("来源: ${c.source}")
-                c.confidence?.let { append(", 置信度: $it") }
+                append("Source: ${c.source}")
+                c.confidence?.let { append(", confidence: $it") }
             }
-            "### 候选 ${i + 1} ($meta)\n${c.content}"
+            "### Candidate ${i + 1} ($meta)\n${c.content}"
         }.joinToString("\n\n")
 
         return """
-你是多 Agent 结果评审员。以下是多个助手对同一任务的回复,请综合所有视角,
-标注冲突点,产出最终融合输出。
+You are a multi-agent result reviewer. Below are several assistants' replies to the same task; please synthesise all perspectives,
+mark the conflict points, and produce the final fused output.
 
-## 原始任务
-${question ?: "未提供"}
+## Original task
+${question ?: "Not provided"}
 
-## 候选结果
+## Candidate results
 $candidatesBlock
 
-## 输出要求
-1. 若有冲突,先列出冲突点(简洁)
-2. 然后给出综合后的最终答案(不分段标题,直接内容)
-3. 不要复述候选内容,要融合而不是拼接
-4. 控制在 1500 字以内
+## Output requirements
+1. If there are conflicts, list the conflict points first (concisely)
+2. Then give the synthesised final answer (no section headings, direct content)
+3. Do not restate the candidate content; fuse rather than concatenate
+4. Keep it within 1500 words
         """.trimIndent()
     }
 
@@ -121,6 +121,6 @@ $candidatesBlock
         private const val REVIEW_TEMPERATURE = 0.3f
         private const val REVIEW_MAX_TOKENS = 2000
 
-        private const val SYSTEM_PROMPT = "你是严谨的多 Agent 结果评审员,擅长融合不同视角、消解冲突、产出高质量综合答案。"
+        private const val SYSTEM_PROMPT = "You are a rigorous multi-agent result reviewer, skilled at fusing different perspectives, resolving conflicts, and producing high-quality synthesised answers."
     }
 }

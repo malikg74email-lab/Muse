@@ -26,7 +26,7 @@ class WebViewSkillEngine : SkillEngine {
      */
     override suspend fun eval(script: String, timeoutMs: Long, scopeKey: String?, pluginConfigJson: String?): SkillEngineResult {
         if (JsSandbox.isCircuitBrokenFor(scopeKey)) {
-            return SkillEngineResult.Error(message = "JS 沙盒已熔断，请稍后重试")
+            return SkillEngineResult.Error(message = "The JS sandbox has tripped its circuit breaker; please try again later")
         }
         return executionMutex.withLock {
             val result = JsSandbox.execute(script, timeoutMs, scopeKey, pluginConfigJson)
@@ -45,9 +45,9 @@ class WebViewSkillEngine : SkillEngine {
                     }
                 },
                 onFailure = { e ->
-                    Logger.w(TAG, "SkillEngine eval 失败: ${e.message}")
+                    Logger.w(TAG, "SkillEngine eval failed: ${e.message}")
                     SkillEngineResult.Error(
-                        message = e.message ?: "引擎执行异常",
+                        message = e.message ?: "Engine execution exception",
                     )
                 },
             )
@@ -57,7 +57,7 @@ class WebViewSkillEngine : SkillEngine {
     override fun interrupt() {
         // WebView V8 无法真正中断 JS 执行
         // 超时后 Kotlin 侧返回错误，JS 仍会跑完（但结果被丢弃）
-        Logger.d(TAG, "interrupt() 被调用（WebView V8 无法真正中断，等待超时）")
+        Logger.d(TAG, "interrupt() was called (the WebView V8 cannot truly interrupt; waiting for timeout)")
     }
 
     companion object {

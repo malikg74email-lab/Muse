@@ -26,14 +26,14 @@ object TermuxExecTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = NAME,
-        description = "在 Termux(需用户安装并授权)的完整 Linux 环境中执行单条 bash 命令并返回输出。" +
-            "适合 apt/pip/gcc/ffmpeg 等完整工具链任务;沙盒内轻量命令用 terminal_exec," +
-            "设备级操控(点击/启停应用)用 device_shell。返回完整 exit 码与 stdout/stderr;" +
-            "通道未就绪时返回配置引导。",
+        description = "Execute a single bash command in the full Linux environment of Termux (the user must install and authorise it) and return the output." +
+            "Suitable for full-toolchain tasks such as apt/pip/gcc/ffmpeg; for lightweight in-sandbox commands use terminal_exec;" +
+            "for device-level operations (tapping/starting-stopping apps) use device_shell. Returns the full exit code and stdout/stderr;" +
+            "when the channel is not ready, returns configuration guidance.",
         parameters = mapOf(
-            "command" to "必填。bash 命令,如 pkg list-installed / python myscript.py / ls ~",
-            "timeout_ms" to "可选。超时毫秒,默认 60000,范围 1000-600000",
-            "workdir" to "可选。工作目录(默认 Termux home)",
+            "command" to "Required. A bash command, e.g. pkg list-installed / python myscript.py / ls ~",
+            "timeout_ms" to "Optional. Timeout in milliseconds, default 60000, range 1000-600000",
+            "workdir" to "Optional. Working directory (default Termux home)",
         ),
         required = setOf("command"),
         category = "built-in",
@@ -59,10 +59,10 @@ object TermuxExecTool {
         val result = channel.exec(command, timeoutMs, workdir)
         if (result.error != null) {
             return buildString {
-                append("Termux 执行未完成: ").append(result.error)
-                append("\n如尚未配置 Termux 外部调用,请在 Termux 中执行 ")
-                append("`echo 'allow-external-apps = true' >> ~/.termux/termux.properties` 并重启 Termux,")
-                append("并在 系统设置→应用→Termux→附加权限 授予「运行 Termux 命令」。")
+                append("Termux execution did not complete: ").append(result.error)
+                append("\nIf external calls to Termux are not configured yet, please run the following in Termux: ")
+                append("`echo 'allow-external-apps = true' >> ~/.termux/termux.properties` and restart Termux,")
+                append("and in System Settings → Apps → Termux → Additional permissions, grant 'Run Termux commands'.")
             }
         }
         return buildString {
@@ -72,7 +72,7 @@ object TermuxExecTool {
             }
             val out = result.stdout
             if (out.isBlank()) {
-                append("(无输出)")
+                append("(No output)")
             } else {
                 append(out)
             }
@@ -89,7 +89,7 @@ object TermuxExecTool {
      */
     internal fun boundaryRejection(command: String): String? {
         val reason = ShellCommandBoundary.forbidReason(command, workspaceDir = null) ?: return null
-        Logger.w(TAG, "硬边界拒绝:$reason")
-        return "Error: 命令被安全边界拒绝 — $reason。"
+        Logger.w(TAG, "Hard boundary refusal: $reason")
+        return "Error: command refused by the security boundary — $reason."
     }
 }

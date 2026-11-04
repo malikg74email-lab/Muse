@@ -95,7 +95,7 @@ object MuseRuntime {
                 return@runCatching
             }
 
-            Logger.i(TAG, "解压运行时数据 ($installed -> $RUNTIME_DATA_VERSION)")
+            Logger.i(TAG, "Extracting runtime data ($installed -> $RUNTIME_DATA_VERSION)")
             npmDir(ctx).deleteRecursively()
             ctx.assets.open(ASSETS_ZIP).use { raw ->
                 ZipInputStream(raw.buffered()).use { zip ->
@@ -104,7 +104,7 @@ object MuseRuntime {
                         val target = File(rt, entry.name)
                         val rootPath = rt.canonicalPath + File.separator
                         if (!target.canonicalPath.startsWith(rootPath)) {
-                            throw SecurityException("zip 条目越界: ${entry.name}")
+                            throw SecurityException("zip entry out of bounds: ${entry.name}")
                         }
                         if (entry.isDirectory) {
                             target.mkdirs()
@@ -119,8 +119,8 @@ object MuseRuntime {
             }
             mark.writeText(RUNTIME_DATA_VERSION)
             setupBinLinks(ctx)
-            Logger.i(TAG, "运行时数据解压完成")
-        }.onFailure { Logger.w(TAG, "运行时数据解压失败: ${it.message}", it) }
+            Logger.i(TAG, "Runtime data extraction complete")
+        }.onFailure { Logger.w(TAG, "Runtime data extraction failed: ${it.message}", it) }
     }
 
     /**
@@ -143,7 +143,7 @@ object MuseRuntime {
             runCatching { android.system.Os.lstat(link.absolutePath) }
                 .onSuccess { runCatching { link.delete() } }
             runCatching { android.system.Os.symlink(target.absolutePath, link.absolutePath) }
-                .onFailure { Logger.w(TAG, "bin symlink 创建失败($name): ${it.message}") }
+                .onFailure { Logger.w(TAG, "bin symlink creation failed ($name): ${it.message}") }
         }
         relink("node", nodeBinary(ctx))
         relink("npm", File(npmBin, "npm-cli.js"))
@@ -250,12 +250,12 @@ object MuseRuntime {
         if (tOut.isAlive) {
             runCatching { process.inputStream.close() }
             tOut.join(1_000)
-            captureFailure.compareAndSet(null, IOException("stdout 输出流未能完整排空"))
+            captureFailure.compareAndSet(null, IOException("stdout output stream was not fully drained"))
         }
         if (tErr.isAlive) {
             runCatching { process.errorStream.close() }
             tErr.join(1_000)
-            captureFailure.compareAndSet(null, IOException("stderr 输出流未能完整排空"))
+            captureFailure.compareAndSet(null, IOException("stderr output stream was not fully drained"))
         }
 
         val outputFailure = captureFailure.get()
@@ -263,22 +263,22 @@ object MuseRuntime {
             val partialStdout =
                 runCatching {
                     outCapture.finish(
-                        header = "[stdout 输出未能完整接收]",
+                        header = "[stdout output was not fully received]",
                         emptyMessage = "",
                     )
                 }.getOrElse {
                     outCapture.close()
-                    outCapture.savedFile?.let { "[stdout 部分输出文件: ${it.absolutePath}]" }.orEmpty()
+                    outCapture.savedFile?.let { "[stdout partial output file: ${it.absolutePath}]" }.orEmpty()
                 }
             val partialStderr =
                 runCatching {
                     errCapture.finish(
-                        header = "[stderr 输出未能完整接收]",
+                        header = "[stderr output was not fully received]",
                         emptyMessage = "",
                     )
                 }.getOrElse {
                     errCapture.close()
-                    errCapture.savedFile?.let { "[stderr 部分输出文件: ${it.absolutePath}]" }.orEmpty()
+                    errCapture.savedFile?.let { "[stderr partial output file: ${it.absolutePath}]" }.orEmpty()
                 }
             return@withContext ExecResult(
                 exitCode = if (finished) runCatching { process.exitValue() }.getOrDefault(-1) else -1,

@@ -64,7 +64,7 @@ class AccessibilityProviderInstaller(private val context: Context) {
             true
         } catch (e: Exception) {
             // 必要容错:assets 缺失/FileProvider 未配置/系统拒绝拉起,均需反馈给 UI
-            Logger.e(TAG, "拉起 Provider 安装器失败: ${e.message}", e)
+            Logger.e(TAG, "Failed to launch the Provider installer: ${e.message}", e)
             false
         }
     }
@@ -82,7 +82,7 @@ class AccessibilityProviderInstaller(private val context: Context) {
             true
         } catch (e: Exception) {
             // 必要容错:部分定制 ROM 可能没有标准无障碍设置页
-            Logger.e(TAG, "无法打开无障碍设置: ${e.message}", e)
+            Logger.e(TAG, "Could not open the accessibility settings: ${e.message}", e)
             false
         }
     }

@@ -361,7 +361,7 @@ class ScheduledTaskRunner(
 
     private fun restoreBlocksScheduledWrites(taskId: String, operation: String): Boolean {
         if (!io.zer0.common.ProcessWriteGate.restoring) return false
-        Logger.w(TAG, "备份恢复进行中，跳过定时任务 $taskId 的${operation}写入")
+        Logger.w(TAG, "A backup restore is in progress, skipping the ${operation} write of scheduled task $taskId")
         return true
     }
 
@@ -420,12 +420,12 @@ class ScheduledTaskRunner(
         try {
             // B-25: 后台调度总控 — 关闭时跳过整次巡检(读 DataStore 缓存值,成本低)
             if (!isScheduleWorkEnabled()) {
-                Logger.i(TAG, "后台调度总控已关闭,跳过定时任务巡检")
+                Logger.i(TAG, "Background scheduling master switch is off, skipping the scheduled task inspection")
                 return
             }
             // B-7: 备份恢复(文件级替换 DB)窗口内跳过任务巡检,避免写丢失。
             if (io.zer0.common.ProcessWriteGate.restoring) {
-                Logger.i(TAG, "备份恢复进行中,跳过定时任务巡检")
+                Logger.i(TAG, "A backup restore is in progress, skipping the scheduled task inspection")
                 return
             }
             val now = System.currentTimeMillis()
@@ -439,7 +439,7 @@ class ScheduledTaskRunner(
                 }
             } catch (e: Exception) {
                 if (e is kotlin.coroutines.cancellation.CancellationException) throw e
-                Logger.w(TAG, "哨兵看门狗回收失败: ${e.message}")
+                Logger.w(TAG, "Sentinel watchdog recovery failed: ${e.message}")
             }
             val dueTasks = dao.getDueTasks(now)
             dueTasks.forEach { task ->
@@ -499,7 +499,7 @@ class ScheduledTaskRunner(
             now = now,
         )
         if (recovered > 0) {
-            Logger.w(TAG, "B-26 哨兵看门狗: 回收 $recovered 个卡在哨兵值的任务,已重置为 now 重新调度")
+            Logger.w(TAG, "B-26 sentinel watchdog: recovered $recovered tasks stuck at the sentinel value; reset to now and rescheduled")
         }
     }
 
@@ -539,7 +539,7 @@ class ScheduledTaskRunner(
             Logger.w(TAG, "Chain depth limit reached ($MAX_CHAIN_DEPTH), skip task ${task.id}")
             return
         }
-        if (restoreBlocksScheduledWrites(task.id, "任务执行")) return
+        if (restoreBlocksScheduledWrites(task.id, "Task execution")) return
 
         val now = System.currentTimeMillis()
         // B-12: 抢占式领取 — 执行动作前先做原子 CAS,防止轮询(tickOnce)与 Worker(tickOnceForWorker)
@@ -582,7 +582,7 @@ class ScheduledTaskRunner(
         // 恢复可能在 CAS 领取后开始。此时不再调用模型/工具，避免把结果写进待替换数据集；
         // 领取哨兵由 watchdog 或恢复后的下一轮调度重新接管。
         if (io.zer0.common.ProcessWriteGate.restoring ||
-            restoreBlocksScheduledWrites(task.id, "任务动作")
+            restoreBlocksScheduledWrites(task.id, "Task action")
         ) {
             return
         }
@@ -600,7 +600,7 @@ class ScheduledTaskRunner(
                 // 条件不满足仍推进 schedule,避免任务卡死
             } else {
                 // 2. 执行动作
-                if (restoreBlocksScheduledWrites(task.id, "任务动作")) return
+                if (restoreBlocksScheduledWrites(task.id, "Task action")) return
                 val action = AutomationConfig.Action(
                     type = task.actionType,
                     config = task.actionConfigJson.toAction().config,
@@ -645,7 +645,7 @@ class ScheduledTaskRunner(
         } else {
             emptyList()
         }
-        if (restoreBlocksScheduledWrites(task.id, "任务执行记录")) return
+        if (restoreBlocksScheduledWrites(task.id, "Task execution record")) return
         resultOf {
             // 执行记录 + missed 记录 + 推进 next_run_at 在同一个事务内落库:
             // 要么都在,要么都不在,不会出现「记了 missed 但调度没推进」导致下轮重复计数。
@@ -785,7 +785,7 @@ class ScheduledTaskRunner(
             val calls = current.toolCalls
             if (calls.isNullOrEmpty() || toolDefs.isEmpty()) break
             if (toolRounds >= MAX_TOOL_ROUNDS) {
-                Logger.w(TAG, "定时任务工具轮次达上限 $MAX_TOOL_ROUNDS，停止继续调用")
+                Logger.w(TAG, "Scheduled task tool rounds reached the limit $MAX_TOOL_ROUNDS; stopping further calls")
                 break
             }
             toolRounds++
@@ -814,7 +814,7 @@ class ScheduledTaskRunner(
             ?: error(context.getString(R.string.schedule_err_ai_timeout, LLM_TIMEOUT_MS / 1000))
         // v1.0.74 fix: 剥离 <think> 推理标签,防止思考内容混入任务回复
         val reply = io.zer0.muse.transformer.stripThinkTags(finalCompletion.text)
-        if (restoreBlocksScheduledWrites(task.id, "定时会话")) return ""
+        if (restoreBlocksScheduledWrites(task.id, "Scheduled session")) return ""
         val now = System.currentTimeMillis()
         val sessionId = if (task.dedicatedSessionId.isNotBlank()) {
             task.dedicatedSessionId
@@ -869,20 +869,20 @@ class ScheduledTaskRunner(
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (t: Throwable) {
-            Logger.w(TAG, "装配定时任务工具失败，本轮不提供工具: ${t.message}")
+            Logger.w(TAG, "Assembling scheduled task tools failed; no tools this round: ${t.message}")
             emptyList()
         }
     }
 
     /** v2.6.8: 执行单个工具调用，返回回填给模型的文本。 */
     private suspend fun executeScheduledTool(call: io.zer0.ai.core.ToolCall): String {
-        val registry = toolRegistry ?: return "[工具不可用] ToolRegistry 未初始化"
+        val registry = toolRegistry ?: return "[Tool unavailable] ToolRegistry not initialized"
         val risk = runCatching {
             io.zer0.muse.tools.ToolPermissionResolver.riskLevelFor(call.name)
         }.getOrDefault(io.zer0.muse.tools.ToolRiskLevel.HIGH)
         if (risk == io.zer0.muse.tools.ToolRiskLevel.HIGH) {
-            Logger.w(TAG, "定时任务跳过 HIGH 风险工具: ${call.name}")
-            return "[跳过] ${call.name} 属于高风险工具，定时任务后台执行不授权"
+            Logger.w(TAG, "Scheduled task skipping HIGH-risk tool: ${call.name}")
+            return "[Skipped] ${call.name} is a high-risk tool; background scheduled execution is not authorized"
         }
         return try {
             // ToolCall.arguments 是 JSON 文本，ToolRegistry.execute 需要 Map<String, String>
@@ -894,29 +894,29 @@ class ScheduledTaskRunner(
                 .orEmpty()
             val outcome = registry.execute(call.name, argsMap)
             if (outcome.isError) {
-                "[失败] ${call.name}: ${outcome.content}"
+                "[Failed] ${call.name}: ${outcome.content}"
             } else {
                 outcome.content
             }
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (t: Throwable) {
-            Logger.w(TAG, "定时任务工具 ${call.name} 执行异常: ${t.message}")
-            "[异常] ${call.name}: ${t.message ?: t::class.simpleName}"
+            Logger.w(TAG, "Scheduled task tool ${call.name} execution exception: ${t.message}")
+            "[Exception] ${call.name}: ${t.message ?: t::class.simpleName}"
         }
     }
 
     private suspend fun executeCreateQuickNote(action: AutomationConfig.Action): String {
         val cfg = action.config
         val title = cfg["title"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() }
-            ?: throw IllegalArgumentException("create_quick_note 缺少 title")
+            ?: throw IllegalArgumentException("create_quick_note is missing title")
         val content = cfg["content"]?.toString()?.trim('"') ?: ""
         val tags = cfg["tags"]?.toString()?.trim('"')?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() } ?: emptyList()
-        val dao = quickNoteDao ?: throw IllegalStateException("QuickNoteDao 未初始化")
+        val dao = quickNoteDao ?: throw IllegalStateException("QuickNoteDao not initialized")
         val id = java.util.UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         if (io.zer0.common.ProcessWriteGate.restoring) {
-            Logger.w(TAG, "备份恢复进行中，跳过定时速记写入")
+            Logger.w(TAG, "A backup restore is in progress, skipping the scheduled quick-note write")
             return ""
         }
         dao.upsert(
@@ -938,14 +938,14 @@ class ScheduledTaskRunner(
     private suspend fun executeCallTool(task: ScheduledTaskEntity, action: AutomationConfig.Action): String {
         val cfg = action.config
         val toolId = cfg["toolId"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() }
-            ?: throw IllegalArgumentException("call_tool 缺少 toolId")
+            ?: throw IllegalArgumentException("call_tool is missing toolId")
         val paramsElement = cfg["params"]
         val paramsJson = when (paramsElement) {
             is JsonObject -> AppJson.encodeToString(JsonObject.serializer(), paramsElement)
             else -> paramsElement?.toString()?.trim('"') ?: "{}"
         }
-        val registry = toolRegistry ?: throw IllegalStateException("ToolRegistry 未初始化")
-        if (restoreBlocksScheduledWrites(task.id, "定时工具")) return ""
+        val registry = toolRegistry ?: throw IllegalStateException("ToolRegistry not initialized")
+        if (restoreBlocksScheduledWrites(task.id, "Scheduled tool")) return ""
         // v1.0.17: 定时任务 call_tool 动作增加风险审批,绕过 ToolPermissionResolver 的安全风险修复
         // 定时任务在后台无用户交互执行,无法走会话级权限审批,故在此直接拦截 HIGH 风险工具。
         // P0-3: 风险判定走 ToolPermissionResolver.riskLevelFor(显式表 + 前缀推断的单一真源),
@@ -953,7 +953,7 @@ class ScheduledTaskRunner(
         // 会绕过本拦截,必须以解析器为准
         if (io.zer0.muse.tools.ToolPermissionResolver.riskLevelFor(toolId) == io.zer0.muse.tools.ToolRiskLevel.HIGH) {
             Logger.w(TAG, "call_tool skipped HIGH risk tool '$toolId' in scheduled task '${task.name}'")
-            return "跳过高风险工具: $toolId"
+            return "Skipping high-risk tool: $toolId"
         }
         return io.zer0.muse.tools.ToolRouteExecutionGuard(registry)
             .executeFromJson(toolId, paramsJson)
@@ -963,8 +963,8 @@ class ScheduledTaskRunner(
         val cfg = action.config
         val title = cfg["title"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() } ?: "Shaheen 2"
         val message = cfg["message"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() }
-            ?: throw IllegalArgumentException("notify 缺少 message")
-        if (restoreBlocksScheduledWrites(task.id, "定时通知")) return ""
+            ?: throw IllegalArgumentException("notify is missing message")
+        if (restoreBlocksScheduledWrites(task.id, "Scheduled notification")) return ""
         showNotification(title, message, MuseNotificationTarget.ScheduledTask(task.id))
         return message
     }
@@ -1046,7 +1046,7 @@ class ScheduledTaskRunner(
      */
     private suspend fun deliverPendingMessage(pm: io.zer0.muse.data.schedule.PendingMessage) {
         if (io.zer0.common.ProcessWriteGate.restoring ||
-            restoreBlocksScheduledWrites(pm.id, "待发送消息")
+            restoreBlocksScheduledWrites(pm.id, "Pending message")
         ) {
             return
         }

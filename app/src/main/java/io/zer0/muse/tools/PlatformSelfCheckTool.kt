@@ -25,9 +25,9 @@ object PlatformSelfCheckTool {
 
     fun toolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME,
-        description = "自检 Muse 运行平台:内置 Node 运行时状态 + 各工具通道(无障碍/Shell/Root/Termux)" +
-            "的授权与就绪情况,返回结构化清单。" +
-            "当用户询问「自检」「平台能力」「工具能不能用」「运行时状态」或排查工具调不动时调用。",
+        description = "Self-check Shaheen 2's runtime platform: the built-in Node runtime state + each tool channel's (Accessibility/Shell/Root/Termux)" +
+            "authorisation and readiness, returned as a structured checklist." +
+            "Call it when the user asks about 'self-check', 'platform capability', 'can the tools be used' or 'runtime state', or when troubleshooting tools that will not run.",
         parameters = emptyMap(),
         required = emptySet(),
         category = "built-in",
@@ -42,25 +42,25 @@ object PlatformSelfCheckTool {
      */
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     suspend fun execute(context: Context, permissionStatusProvider: (() -> ToolPermissionStatus?)?): String {
-        val sb = StringBuilder("【平台自检】")
+        val sb = StringBuilder("[Platform self-check]")
 
         // ── 1. 内置 Node 运行时 ──────────────────────────────────────────
-        sb.append("\n■ 内置 Node 运行时")
+        sb.append("\n■ Built-in Node runtime")
         val node = MuseRuntime.nodeBinary(context)
-        sb.append("\n  - Node 二进制: ").append(
-            if (node.isFile) "存在 (${node.length() / 1024 / 1024}MB)" else "缺失",
+        sb.append("\n  - Node binary: ").append(
+            if (node.isFile) "Present (${node.length() / 1024 / 1024}MB)" else "Missing",
         )
         val nodeV = runCatching { MuseRuntime.execNode(context, listOf("-v"), timeoutMs = 20_000) }.getOrNull()
         sb.append("\n  - node -v: ").append(
             when {
-                nodeV == null -> "执行异常"
+                nodeV == null -> "Execution exception"
                 nodeV.exitCode == 0 -> "${nodeV.stdout} ✓"
-                else -> "失败 (exit=${nodeV.exitCode})"
+                else -> "Failed (exit=${nodeV.exitCode})"
             },
         )
         val data = MuseRuntime.ensureData(context)
-        sb.append("\n  - 运行时数据: ").append(
-            if (data.isSuccess) "已就绪 (${MuseRuntime.RUNTIME_DATA_VERSION})" else "解压失败",
+        sb.append("\n  - Runtime data: ").append(
+            if (data.isSuccess) "Ready (${MuseRuntime.RUNTIME_DATA_VERSION})" else "Extraction failed",
         )
         val npmCli = MuseRuntime.npmCli(context)
         if (npmCli.isFile) {
@@ -69,38 +69,38 @@ object PlatformSelfCheckTool {
             }.getOrNull()
             sb.append("\n  - npm -v: ").append(
                 when {
-                    npmV == null -> "执行异常"
+                    npmV == null -> "Execution exception"
                     npmV.exitCode == 0 -> "${npmV.stdout} ✓"
-                    else -> "失败 (exit=${npmV.exitCode})"
+                    else -> "Failed (exit=${npmV.exitCode})"
                 },
             )
         } else {
-            sb.append("\n  - npm: 未就绪")
+            sb.append("\n  - npm: not ready")
         }
-        sb.append("\n  - 结论: ").append(
-            if (nodeV?.exitCode == 0 && MuseRuntime.isReady(context)) "运行时就绪 ✓" else "运行时不完整",
+        sb.append("\n  - Conclusion: ").append(
+            if (nodeV?.exitCode == 0 && MuseRuntime.isReady(context)) "Runtime ready ✓" else "Runtime incomplete",
         )
 
         // ── 2. 工具通道授权/就绪 ─────────────────────────────────────────
-        sb.append("\n■ 工具通道")
+        sb.append("\n■ Tool channels")
         val status = runCatching { permissionStatusProvider?.invoke() }.getOrNull()
         if (status == null) {
-            sb.append("\n  - 无法获取通道状态(授权提供器未就绪)")
+            sb.append("\n  - Unable to get channel status (the authorisation provider is not ready)")
         } else {
-            appendChannel(sb, "无障碍(读屏/点按)", status.accessibility, "开启后可执行屏幕读取与 UI 点击类工具")
-            appendChannel(sb, "Shell / Root", status.shellTier, "开启后可执行命令类与系统级工具")
-            appendChannel(sb, "Termux", status.termux, "开启后可执行 termux 命令通道")
+            appendChannel(sb, "Accessibility (screen reading/tapping)", status.accessibility, "Once enabled, screen-reading and UI-tap tools can be executed")
+            appendChannel(sb, "Shell / Root", status.shellTier, "Once enabled, command-class and system-level tools can be executed")
+            appendChannel(sb, "Termux", status.termux, "Once enabled, the termux command channel can be executed")
         }
 
         // ── 3. 结论指引 ─────────────────────────────────────────────────
-        sb.append("\n■ 结论")
+        sb.append("\n■ Conclusion")
         val allOk = status?.let { it.accessibility && it.shellTier } == true
         sb.append(
             if (allOk) {
-                "\n  主要通道就绪 ✓。如某个工具仍调不动,多半是该工具本身的问题,可提供具体工具名进一步排查。"
+                "\n  Main channels ready ✓. If a particular tool still will not run, it is most likely a problem with that tool itself; provide the specific tool name for further troubleshooting."
             } else {
-                "\n  部分通道未就绪 —— 未就绪的通道对应的工具会不可用,需用户到系统设置授权后才生效。" +
-                    "这属于权限未授予,不是功能故障。"
+                "\n  Some channels are not ready — tools belonging to a not-ready channel will be unavailable and only take effect after the user authorises them in system settings." +
+                    "This is a permission not being granted, not a functional fault."
             },
         )
         return sb.toString()
@@ -108,7 +108,7 @@ object PlatformSelfCheckTool {
 
     private fun appendChannel(sb: StringBuilder, label: String, ready: Boolean, hint: String) {
         sb.append("\n  - ").append(label).append(": ")
-            .append(if (ready) "可用 ✓" else "未授予")
+            .append(if (ready) "Available ✓" else "Not granted")
         if (!ready) sb.append(" —— ").append(hint)
     }
 }

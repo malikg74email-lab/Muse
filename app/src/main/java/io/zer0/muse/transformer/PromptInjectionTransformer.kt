@@ -50,14 +50,14 @@ class PromptInjectionTransformer : Transformer {
             // 单条 content 截断,防撑爆 prompt 预算
             val rawContent = inj.content
             val truncatedContent = if (rawContent.length > MAX_SINGLE_CONTENT) {
-                Logger.w(TAG, "注入条目 '${inj.name}' content 长度 ${rawContent.length} 超过 $MAX_SINGLE_CONTENT,已截断")
+                Logger.w(TAG, "Injection entry '${inj.name}' content length  ${rawContent.length}  exceeds  $MAX_SINGLE_CONTENT, truncated")
                 rawContent.take(MAX_SINGLE_CONTENT)
             } else {
                 rawContent
             }
             // 合计上限:超限跳过后续条目
             if (totalLen + truncatedContent.length > MAX_TOTAL_CONTENT) {
-                Logger.w(TAG, "注入合计已超 $MAX_TOTAL_CONTENT 字符上限,跳过条目 '${inj.name}'")
+                Logger.w(TAG, "Total injection exceeds  $MAX_TOTAL_CONTENT  character limit; skipping entry '${inj.name}'")
                 return@forEach
             }
             totalLen += truncatedContent.length
@@ -72,7 +72,7 @@ class PromptInjectionTransformer : Transformer {
                 POSITION_BEFORE_SYSTEM -> beforeSystem.add(sysMsg)
                 POSITION_AFTER_SYSTEM -> afterSystem.add(sysMsg)
                 else -> {
-                    Logger.w(TAG, "未知 insertionPosition='${inj.insertionPosition}',条目 '${inj.name}' 按 $POSITION_AFTER_SYSTEM 处理")
+                    Logger.w(TAG, "Unknown insertionPosition='${inj.insertionPosition}', entry '${inj.name}' handled as  $POSITION_AFTER_SYSTEM ")
                     afterSystem.add(sysMsg)
                 }
             }

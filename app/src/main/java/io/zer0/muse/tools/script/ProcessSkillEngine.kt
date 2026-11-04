@@ -40,20 +40,20 @@ class ProcessSkillEngine(private val context: Context) : SkillEngine {
             if (r.captureError != null) {
                 val savedOutput = listOf(r.stdout, r.stderr).filter { it.isNotBlank() }.joinToString("\n")
                 return SkillEngineResult.Error(
-                    message = "Node 完整输出保存失败: ${r.captureError}" +
+                    message = "Node full output save failed: ${r.captureError}" +
                         if (savedOutput.isNotBlank()) "\n$savedOutput" else "",
                 )
             }
             if (r.timedOut) {
                 return SkillEngineResult.Error(
-                    message = "执行超时" + listOf(r.stdout, r.stderr).filter { it.isNotBlank() }.joinToString("\n"),
+                    message = "Execution timed out" + listOf(r.stdout, r.stderr).filter { it.isNotBlank() }.joinToString("\n"),
                 )
             }
             r.stdoutFile?.let { return parseLargeNodePayload(it, r.stdout) }
             parseResult(r.stdout, r.stderr, r.exitCode, r.timedOut)
         } catch (e: Exception) {
-            Logger.w(TAG, "Node 脚本执行失败: ${e.message}", e)
-            SkillEngineResult.Error(message = e.message ?: "执行异常")
+            Logger.w(TAG, "Node script execution failed: ${e.message}", e)
+            SkillEngineResult.Error(message = e.message ?: "Execution exception")
         } finally {
             runCatching { tmp.delete() }
         }
@@ -61,7 +61,7 @@ class ProcessSkillEngine(private val context: Context) : SkillEngine {
 
     override fun interrupt() {
         // 尽力而为：Node 子进程由执行侧超时控制负责终止；此处不持有进程引用。
-        Logger.d(TAG, "interrupt() 被调用（等待执行侧超时终止）")
+        Logger.d(TAG, "interrupt() was called (waiting for the execution side to terminate on timeout)")
     }
 
     /**
@@ -120,12 +120,12 @@ class ProcessSkillEngine(private val context: Context) : SkillEngine {
 
     private fun parseResult(stdout: String, stderr: String, exitCode: Int, timedOut: Boolean): SkillEngineResult {
         if (timedOut) {
-            return SkillEngineResult.Error(message = "执行超时")
+            return SkillEngineResult.Error(message = "Execution timed out")
         }
         val line = stdout.lines().lastOrNull { it.trim().startsWith("{") }?.trim()
         return if (line == null) {
             SkillEngineResult.Error(
-                message = "无有效输出(exit=$exitCode)" +
+                message = "No valid output (exit=$exitCode)" +
                     if (stderr.isNotBlank()) ": ${stderr.take(300)}" else "",
             )
         } else {
@@ -137,7 +137,7 @@ class ProcessSkillEngine(private val context: Context) : SkillEngine {
     private fun parseLine(line: String): SkillEngineResult = runCatching {
         val obj = AppJson.parseToJsonElement(line) as? JsonObject
         if (obj == null) {
-            SkillEngineResult.Error(message = "输出解析失败: ${line.take(200)}")
+            SkillEngineResult.Error(message = "Output parsing failed: ${line.take(200)}")
         } else {
             val logs = (obj["logs"] as? JsonArray)
                 ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList()
@@ -149,13 +149,13 @@ class ProcessSkillEngine(private val context: Context) : SkillEngine {
                 )
             } else {
                 SkillEngineResult.Error(
-                    message = (obj["error"] as? JsonPrimitive)?.contentOrNull ?: "未知错误",
+                    message = (obj["error"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error",
                     consoleLogs = logs,
                 )
             }
         }
     }.getOrElse { e ->
-        SkillEngineResult.Error(message = "结果解析异常: ${e.message}")
+        SkillEngineResult.Error(message = "Result parsing exception: ${e.message}")
     }
 
     companion object {
@@ -177,7 +177,7 @@ internal fun parseLargeNodePayload(file: File, outputReference: String): SkillEn
                 }
                 reader.endObject()
             }
-            success ?: error("Node 输出缺少 ok 状态")
+            success ?: error("Node output is missing the ok status")
         }.getOrNull()
 
     return when (succeeded) {
@@ -188,11 +188,11 @@ internal fun parseLargeNodePayload(file: File, outputReference: String): SkillEn
             )
         false ->
             SkillEngineResult.Error(
-                message = "Node 脚本执行失败；完整输出可通过 read_file 分段读取:\n$outputReference",
+                message = "Node script execution failed; the full output can be read in chunks via read_file:\n$outputReference",
             )
         null ->
             SkillEngineResult.Error(
-                message = "Node 输出解析失败；原始输出仍已完整保存:\n$outputReference",
+                message = "Node output parsing failed; the original output is still fully saved:\n$outputReference",
             )
     }
 }

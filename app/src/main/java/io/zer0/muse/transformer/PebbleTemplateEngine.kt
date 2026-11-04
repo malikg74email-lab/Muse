@@ -257,7 +257,7 @@ private class Parser(private val tokens: List<Token>) {
     private fun parseNodes(stopOn: ((String) -> Boolean)?): List<Node> {
         depth++
         if (depth > MAX_NESTING_DEPTH) {
-            throw IllegalStateException("模板嵌套深度超过上限($MAX_NESTING_DEPTH)")
+            throw IllegalStateException("Template nesting depth exceeds the limit ($MAX_NESTING_DEPTH)")
         }
         try {
             val nodes = mutableListOf<Node>()
@@ -288,7 +288,7 @@ private class Parser(private val tokens: List<Token>) {
                                 i++
                                 nodes.add(parseSet(t))
                             }
-                            else -> throw IllegalStateException("未知模板标签: $keyword (行 ${t.line}, 完整内容: ${t.content})")
+                            else -> throw IllegalStateException("Unknown template tag:  $keyword  (line  ${t.line}, full content:  ${t.content})")
                         }
                     }
                 }
@@ -337,7 +337,7 @@ private class Parser(private val tokens: List<Token>) {
     private fun parseFor(forToken: Token): Node.For {
         // 语法: for <var> in <expr>
         val m = FOR_REGEX.matchEntire(forToken.content)
-            ?: throw IllegalStateException("无效 for 语法 (行 ${forToken.line}): ${forToken.content}")
+            ?: throw IllegalStateException("Invalid for syntax (line  ${forToken.line}): ${forToken.content}")
         val item = m.groupValues[1]
         val listExpr = ExprParser(m.groupValues[2].trim()).parse()
         val body = parseNodes(stopOn = { it == "endfor" })
@@ -391,7 +391,7 @@ private class ExprParser(private val src: String) {
         val e = parseOr()
         skipSpace()
         if (pos < src.length) {
-            throw IllegalStateException("表达式未消费完: 剩余 '${src.substring(pos)}'")
+            throw IllegalStateException("Expression not fully consumed: remaining '${src.substring(pos)}'")
         }
         return e
     }
@@ -470,7 +470,7 @@ private class ExprParser(private val src: String) {
 
     private fun parsePrimary(): Expr {
         skipSpace()
-        if (pos >= src.length) throw IllegalStateException("表达式意外结束")
+        if (pos >= src.length) throw IllegalStateException("Expression ended unexpectedly")
         val c = src[pos]
         // 字符串字面量
         if (c == '\'' || c == '"') return Expr.Literal(readString())
@@ -512,7 +512,7 @@ private class ExprParser(private val src: String) {
             }
             return Expr.Var(path)
         }
-        throw IllegalStateException("无法解析表达式: '${src.substring(pos)}'")
+        throw IllegalStateException("Cannot parse expression: '${src.substring(pos)}'")
     }
 
     // ---- 辅助函数 ----
@@ -625,7 +625,7 @@ private class Evaluator(root: Map<String, Any?>) {
     private fun evalNode(n: Node, sb: StringBuilder) {
         depth++
         if (depth > MAX_NESTING_DEPTH) {
-            throw IllegalStateException("模板求值嵌套深度超过上限($MAX_NESTING_DEPTH)")
+            throw IllegalStateException("Template evaluation nesting depth exceeds the limit ($MAX_NESTING_DEPTH)")
         }
         try {
             when (n) {
@@ -657,7 +657,7 @@ private class Evaluator(root: Map<String, Any?>) {
                         // M-TPL2: 限制最大迭代次数,防止 DoS
                         val truncated = totalLen > MAX_ITERATIONS
                         if (truncated) {
-                            Logger.w("PebbleTemplateEngine", "for 循环迭代次数($totalLen)超过上限($MAX_ITERATIONS),已截断")
+                            Logger.w("PebbleTemplateEngine", "for loop iteration count ($totalLen exceeds the limit ($MAX_ITERATIONS), truncated")
                         }
                         val items = if (truncated) allItems.take(MAX_ITERATIONS) else allItems
                         val len = items.size

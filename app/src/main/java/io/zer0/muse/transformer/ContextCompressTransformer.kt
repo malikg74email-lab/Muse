@@ -70,7 +70,7 @@ internal fun isOverContextCompressionBudget(tokens: Int, tokenBudget: Int): Bool
 /** 把改动文件清单渲染成摘要末尾的一节；没有改动就返回空串。 */
 private fun buildFileSection(messages: List<UIMessage>): String {
     val files = collectTouchedFiles(messages)
-    return if (files.isEmpty()) "" else "\n\n改动过的文件:\n" + files.joinToString("\n") { "- $it" }
+    return if (files.isEmpty()) "" else "\n\nFiles changed:\n" + files.joinToString("\n") { "- $it" }
 }
 
 /** 参数里可能承载目标路径的键名。不同工具的叫法不统一，覆盖常见的几种。 */
@@ -175,7 +175,7 @@ class ContextCompressTransformer(
 
         // L-COMP6: threshold < keepRecent 时配置语义失效,告警
         if (threshold < keepRecent) {
-            Logger.w(name, "compress_threshold($threshold) < compress_keep_recent($keepRecent), 压缩可能无法正常触发")
+            Logger.w(name, "compress_threshold($threshold) < compress_keep_recent($keepRecent), compression may not trigger properly")
         }
 
         // prefix（头部连续 SYSTEM）先划出来：预算算的是「历史可用」，
@@ -252,7 +252,7 @@ class ContextCompressTransformer(
         // 历史本身还在,失败的只是"摘要"这一步;用占位文本换掉原文才是真正的失忆。
         // (transform 的入参已由调用方按 contextSize / token 预算裁剪过,保留原文不会无界膨胀。)
         if (outcome !is SummaryOutcome.Ok) {
-            Logger.w(name, "compress 全部块失败, 本轮保留原文不压缩")
+            Logger.w(name, "compress: all chunks failed; keeping the original text uncompressed this round")
             if (forceFallback) return forceFallbackHistory(prefix, adjustedRecent, tokenBudget)
             return messages
         }
@@ -264,7 +264,7 @@ class ContextCompressTransformer(
         val summaryMsg =
             UIMessage(
                 role = MessageRole.SYSTEM,
-                content = "$CONTEXT_COMPRESSED_MARKER 历史对话摘要\n\n$summary$fileSection",
+                content = "$CONTEXT_COMPRESSED_MARKER Conversation history summary\n\n$summary$fileSection",
             )
         val compacted = prefix + listOf(summaryMsg) + adjustedRecent
         // v2.3.2: 净收益校验 —— 工具密集会话(大量保留项)或可压缩区间过短时,摘要可能比被替换掉的
@@ -272,7 +272,7 @@ class ContextCompressTransformer(
         // 避免在管道里跑 BPE 编码),没变小就保留原文。
         val afterTokens = TokenEstimator.estimate(compacted, cache = tokenCache)
         if (afterTokens >= totalTokens) {
-            Logger.i(name, "compress 无净收益($totalTokens → $afterTokens token),保留原文不压缩")
+            Logger.i(name, "compress: no net gain ($totalTokens → $afterTokens  tokens), keeping the original text uncompressed")
             if (forceFallback) return forceFallbackHistory(prefix, adjustedRecent, tokenBudget)
             return messages
         }
@@ -454,7 +454,7 @@ class ContextCompressTransformer(
     ): SummaryOutcome {
         val cached = reusableSummary(CompressionSummaryStore.entry(sessionId), toCompress)
         if (cached != null) {
-            Logger.i(name, "复用缓存摘要(${toCompress.size} 条),跳过压缩调用")
+            Logger.i(name, "Reusing the cached summary (${toCompress.size}  entries), skipping the compression call")
             return SummaryOutcome.Ok(cached)
         }
         val generated =
@@ -489,7 +489,7 @@ class ContextCompressTransformer(
     /** M-COMP4: 降级标记消息 — 告知模型历史被截断(而非静默丢弃全部历史)。 */
     private fun fallbackMessage(): UIMessage = UIMessage(
         role = MessageRole.SYSTEM,
-        content = "(历史暂不可用,仅保留最近消息)",
+        content = "(History temporarily unavailable; keeping only the most recent messages)",
     )
 
     private fun forceFallbackHistory(prefix: List<UIMessage>, recent: List<UIMessage>, tokenBudget: Int): List<UIMessage> {
@@ -501,7 +501,7 @@ class ContextCompressTransformer(
         if (prefixTokens >= budget) {
             Logger.w(
                 name,
-                "forceFallback 放弃：prefix 本身已超预算(prefix=$prefixTokens budget=$budget)，保留原文不截断",
+                "forceFallback aborted: the prefix itself exceeds the budget (prefix=$prefixTokens budget=$budget), keeping the original text without truncation",
             )
             return prefix + recent
         }
@@ -517,23 +517,23 @@ class ContextCompressTransformer(
     private suspend fun compressMessages(oldMessages: List<UIMessage>, instruction: String? = null): String {
         val prompt =
             buildString {
-                appendLine("请把下面的对话历史压缩成简洁的摘要,保留关键信息(事实/决策/用户偏好)。")
-                appendLine("- 用要点形式,每点一行")
-                appendLine("- 不要编造未提及的内容")
-                appendLine("- 总长度不超过 800 字")
+                appendLine("Compress the conversation history below into a concise summary, keeping the key information (facts/decisions/user preferences).")
+                appendLine("- Use bullet points, one point per line")
+                appendLine("- Do not fabricate content that was not mentioned")
+                appendLine("- Total length must not exceed 800 characters")
                 // H10: 手动压缩附加指令(如"重点保留预算讨论"),拼进压缩指令
                 if (!instruction.isNullOrBlank()) {
-                    appendLine("- 附加要求: $instruction")
+                    appendLine("- Additional requirements:  $instruction")
                 }
                 appendLine()
-                appendLine("对话历史:")
+                appendLine("Conversation history:")
                 oldMessages.forEach { msg ->
                     val role =
                         when (msg.role) {
-                            MessageRole.USER -> "用户"
-                            MessageRole.ASSISTANT -> "助手"
-                            MessageRole.SYSTEM -> "系统"
-                            MessageRole.TOOL -> "工具"
+                            MessageRole.USER -> "User"
+                            MessageRole.ASSISTANT -> "Assistant"
+                            MessageRole.SYSTEM -> "System"
+                            MessageRole.TOOL -> "Tool"
                         }
                     // L-COMP5: 截断处加 "…" 标记(而非静默截断)
                     // v1.116 (C1-5): 单条消息截断阈值从 500 提升到 1500 字符,
@@ -555,7 +555,7 @@ class ContextCompressTransformer(
             resultOf {
                 chatService.completeText(messages = request)
             }.onError { msg, t ->
-                Logger.w(name, "completeText 失败,回退 streamChat: $msg", t)
+                Logger.w(name, "completeText failed, falling back to streamChat:  $msg", t)
             }.getOrNull() ?: run {
                 // 兜底: 流式收集(仅对非 CancellationException 错误到达此处)
                 val sb = StringBuilder()
@@ -566,7 +566,7 @@ class ContextCompressTransformer(
             }
         // v1.0.74 fix: 剥离 <think> 推理标签,防止思考内容混入压缩摘要
         return io.zer0.muse.transformer.stripThinkTags(completion.text)
-            .ifBlank { "历史对话已压缩(摘要为空)" }
+            .ifBlank { "Conversation history compressed (summary is empty)" }
     }
 
     /**
@@ -585,12 +585,12 @@ class ContextCompressTransformer(
     ): String? {
         val summaries = compressor!!.compress(oldMessages, instruction, previousSummary) ?: return null
         return when {
-            summaries.isEmpty() -> "历史对话已压缩(摘要为空)"
+            summaries.isEmpty() -> "Conversation history compressed (summary is empty)"
             summaries.size == 1 -> summaries.first()
             else ->
                 buildString {
                     summaries.forEachIndexed { idx, s ->
-                        append("[对话摘要 ${idx + 1}/${summaries.size}]\n")
+                        append("[Conversation summary  ${idx + 1}/${summaries.size}]\n")
                         append(s)
                         if (idx != summaries.lastIndex) append("\n\n")
                     }

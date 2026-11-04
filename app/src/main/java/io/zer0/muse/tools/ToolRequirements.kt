@@ -75,13 +75,13 @@ object ToolRequirements {
     /** 屏幕操作：无障碍或 Shell 任一可用即可。 */
     private val SCREEN = Requirement(
         anyOf = setOf(Channel.ACCESSIBILITY, Channel.SHELL),
-        note = "需要无障碍服务，或 Shizuku/ADB；也可以在设置→无障碍里开启 Muse 服务",
+        note = "Requires the accessibility service, or Shizuku/ADB; you can also enable the Shaheen 2 service in Settings → Accessibility",
     )
 
     /** Shell 级操作：必须是 Shell 或 Root。 */
     private val SHELL_ONLY = Requirement(
         anyOf = setOf(Channel.SHELL, Channel.ROOT),
-        note = "需要 Shizuku 或 Root；Shizuku 需先安装并授权 Muse",
+        note = "Requires Shizuku or Root; Shizuku must be installed and authorised for Shaheen 2 first",
     )
 
     /** 映射表：工具名 → 依赖。未列出的视为 [NONE]。 */
@@ -104,22 +104,22 @@ object ToolRequirements {
         ).forEach { put(it, SHELL_ONLY) }
 
         // ── 单项运行时权限 ──
-        put("screen_time", Requirement(anyOf = setOf(Channel.USAGE_STATS), note = "需要「使用情况访问」权限"))
-        put("get_foreground_app", Requirement(anyOf = setOf(Channel.USAGE_STATS), note = "需要「使用情况访问」权限"))
+        put("screen_time", Requirement(anyOf = setOf(Channel.USAGE_STATS), note = "Requires the 'Usage access' permission"))
+        put("get_foreground_app", Requirement(anyOf = setOf(Channel.USAGE_STATS), note = "Requires the 'Usage access' permission"))
         put(
             "get_recent_notifications",
-            Requirement(anyOf = setOf(Channel.NOTIFICATION_LISTENER), note = "需要「通知使用权」"),
+            Requirement(anyOf = setOf(Channel.NOTIFICATION_LISTENER), note = "Requires the 'Notification access' permission"),
         )
         listOf("get_contacts_list", "get_contacts_count", "add_contact").forEach {
-            put(it, Requirement(anyOf = setOf(Channel.CONTACTS), note = "需要「联系人」权限"))
+            put(it, Requirement(anyOf = setOf(Channel.CONTACTS), note = "Requires the 'Contacts' permission"))
         }
-        put("send_sms", Requirement(allOf = setOf(Channel.SMS), note = "需要「短信」权限"))
-        put("make_phone_call", Requirement(allOf = setOf(Channel.PHONE_CALL), note = "需要「电话」权限"))
+        put("send_sms", Requirement(allOf = setOf(Channel.SMS), note = "Requires the 'SMS' permission"))
+        put("make_phone_call", Requirement(allOf = setOf(Channel.PHONE_CALL), note = "Requires the 'Phone' permission"))
         listOf("add_calendar_event", "calendar_today", "list_reminders").forEach {
-            put(it, Requirement(anyOf = setOf(Channel.CALENDAR), note = "需要「日历」权限"))
+            put(it, Requirement(anyOf = setOf(Channel.CALENDAR), note = "Requires the 'Calendar' permission"))
         }
         listOf("get_location").forEach {
-            put(it, Requirement(anyOf = setOf(Channel.LOCATION), note = "需要「定位」权限"))
+            put(it, Requirement(anyOf = setOf(Channel.LOCATION), note = "Requires the 'Location' permission"))
         }
 
         // ── 明确的 NONE（应用内，写出来是为了让 reader 知道这些已核对过）──

@@ -16,9 +16,9 @@ object SaveMemoryTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "save_memory",
-        description = "把一条事实存入用户长期记忆。当用户明确要求你记住某事,或陈述了重要的长期事实" +
-            "(偏好、身份、目标、健康、重要日期)时使用。每次一句话;" +
-            "闲聊与一次性任务细节不要存。",
+        description = "Save a fact into the user's long-term memory. Use when the user explicitly asks you to remember something, or states an important long-term fact" +
+            "(preference, identity, goal, health, important date). One sentence each time;" +
+            "do not save small talk or one-off task details.",
         parameters = mapOf(
             "content" to "Required. The fact to remember — concise, one sentence, user's language.",
             "tags" to "Optional. Comma-separated keywords for later retrieval.",
@@ -59,7 +59,7 @@ object SaveMemoryTool {
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                Logger.e("SaveMemoryTool", "save_memory 写入失败: ${error.message}", error)
+                Logger.e("SaveMemoryTool", "save_memory write failed: ${error.message}", error)
                 return "Error: failed to save memory: ${error.message ?: "storage error"}"
             }
         return if (id > 0) {

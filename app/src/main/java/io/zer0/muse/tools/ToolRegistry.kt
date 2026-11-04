@@ -335,7 +335,7 @@ class ToolRegistry(
         val builtInNames = toolDefs.values.filter { it.category == "built-in" }.map { it.name }.toSet()
         val uncovered = ToolCategories.assertCoverage(builtInNames)
         if (uncovered.isNotEmpty()) {
-            val msg = "内置工具分类注册表缺失: ${uncovered.joinToString(", ")} (见 ToolCategories.kt)"
+            val msg = "Built-in tool category registry missing: ${uncovered.joinToString(", ")} (see ToolCategories.kt)"
             if (io.zer0.muse.BuildConfig.DEBUG) {
                 throw IllegalStateException(msg)
             } else {
@@ -490,12 +490,12 @@ class ToolRegistry(
         // v1.0.53: 内容级安全规则(执行前硬边界,不受审批模式影响)
         // 传参数表而不是拼好的串：路径类规则只该看 path，不能把正文一起拿去过匹配。
         ContentSafetyRules.checkArgs(name, args)?.let { rule ->
-            Logger.w("ToolRegistry", "内容安全规则命中: ${rule.ruleId} (tool=$name)")
+            Logger.w("ToolRegistry", "Content safety rule hit: ${rule.ruleId} (tool=$name)")
             return ToolOutcome.error("${rule.reason}(${rule.ruleId})")
         }
         // v1.0.53: 取消令牌(停止生成时置 true,长工具尽快返回)
         if (cancellationToken()) {
-            return ToolOutcome.error("工具调用已取消")
+            return ToolOutcome.error("Tool call cancelled")
         }
         // P1: 工具参数 schema 校验 — 缺失/类型错误在执行前拦截,
         // 返回结构化错误给 LLM,避免上游 400 或工具静默失败。
@@ -503,7 +503,7 @@ class ToolRegistry(
         val validation = ToolArgValidator.validate(name, args, def)
         if (!validation.valid) {
             val detail = validation.errors.joinToString("; ")
-            Logger.w("ToolRegistry", "工具参数校验失败: $name -> $detail")
+            Logger.w("ToolRegistry", "Tool argument validation failed: $name -> $detail")
             return ToolOutcome.error(
                 detail,
                 mapOf("errorType" to ToolArgValidator.ERROR_TYPE, "tool" to name, "errors" to validation.errors),
@@ -517,8 +517,8 @@ class ToolRegistry(
             val status = permissionStatusProvider?.invoke()
             if (status != null && !status.satisfiedAny(permissionRequirements)) {
                 return ToolOutcome.error(
-                    "工具 $name 需要 ${status.describe(permissionRequirements)} 授权,当前未就绪;" +
-                        "请先完成授权(设置→权限配置向导)或改用替代工具。",
+                    "Tool $name needs ${status.describe(permissionRequirements)} authorisation, which is not ready yet;" +
+                        "please complete the authorisation first (Settings → Permission configuration wizard) or switch to an alternative tool.",
                     mapOf(
                         "errorType" to "permission_required",
                         "tool" to name,
@@ -530,16 +530,16 @@ class ToolRegistry(
         contextTools[name]?.let { fn ->
             val executionContext =
                 executionContext
-                    ?: return ToolOutcome.error("工具 $name 需要会话执行上下文")
+                    ?: return ToolOutcome.error("Tool $name needs a session execution context")
             return resultOf { fn(validArgs, executionContext) }
-                .onError { msg, _ -> Logger.w("ToolRegistry", "工具 $name 执行异常: $msg") }
+                .onError { msg, _ -> Logger.w("ToolRegistry", "Tool $name execution exception: $msg") }
                 .getOrNull()?.let { ToolOutcome.ok(it) }
                 ?: ToolOutcome.error(this.context.getString(R.string.tool_exec_exception))
         }
         // v1.0.53: 优先结构化通道
         outcomeTools[name]?.let { fn ->
             return resultOf { fn(validArgs) }
-                .onError { msg, _ -> Logger.w("ToolRegistry", "工具 $name 执行异常: $msg") }
+                .onError { msg, _ -> Logger.w("ToolRegistry", "Tool $name execution exception: $msg") }
                 .getOrNull() ?: ToolOutcome.error(context.getString(R.string.tool_exec_exception))
         }
         val fn =
@@ -547,7 +547,7 @@ class ToolRegistry(
                 ?: return ToolOutcome.error(context.getString(R.string.tool_not_found, name, tools.keys.joinToString(", ")))
         // M-TR1: 改用 resultOf{}(正确重抛 CancellationException)
         return resultOf { fn(validArgs) }
-            .onError { msg, _ -> Logger.w("ToolRegistry", "工具 $name 执行异常: $msg") }
+            .onError { msg, _ -> Logger.w("ToolRegistry", "Tool $name execution exception: $msg") }
             .getOrNull()?.let { ToolOutcome.ok(it) }
             ?: ToolOutcome.error(context.getString(R.string.tool_exec_exception))
     }
@@ -571,7 +571,7 @@ class ToolRegistry(
             }.onError { msg, _ ->
                 Logger.w(
                     "ToolRegistry",
-                    "executeFromJson 参数解析失败: $msg " +
+                    "executeFromJson argument parsing failed: $msg " +
                         ToolDataPrivacy.safeArgumentsForPreview(name, argumentsJson),
                 )
             }.getOrNull() ?: return context.getString(
@@ -598,7 +598,7 @@ class ToolRegistry(
             }.onError { msg, _ ->
                 Logger.w(
                     "ToolRegistry",
-                    "executeFromJson 参数转换失败: $msg " +
+                    "executeFromJson argument conversion failed: $msg " +
                         ToolDataPrivacy.safeArgumentsForPreview(name, argumentsJson),
                 )
             }.getOrNull() ?: return context.getString(
@@ -632,10 +632,10 @@ class ToolRegistry(
     ): ToolOutcome {
         val stringArgs = rawArgs.entries.associate { (k, v) -> k to jsonArgValue(v) }
         ContentSafetyRules.checkArgs(name, stringArgs)?.let { rule ->
-            Logger.w("ToolRegistry", "内容安全规则命中: ${rule.ruleId} (tool=$name)")
+            Logger.w("ToolRegistry", "Content safety rule hit: ${rule.ruleId} (tool=$name)")
             return ToolOutcome.error("${rule.reason}(${rule.ruleId})")
         }
-        if (cancellationToken()) return ToolOutcome.error("工具调用已取消")
+        if (cancellationToken()) return ToolOutcome.error("Tool call cancelled")
         // v2.6.2（工具审计）: JSON/MCP 通道补上环境权限预检 —— 旧实现只在普通路径做，
         // 同一工具走 execute(Map) 与 executeFromJson() 会得到不同权限结果，
         // JSON 注册工具可绕过通道就绪检查。
@@ -644,8 +644,8 @@ class ToolRegistry(
             val status = permissionStatusProvider?.invoke()
             if (status != null && !status.satisfiedAny(permissionRequirements)) {
                 return ToolOutcome.error(
-                    "工具 $name 需要 ${status.describe(permissionRequirements)} 授权,当前未就绪;" +
-                        "请先完成授权(设置→权限配置向导)或改用替代工具。",
+                    "Tool $name needs ${status.describe(permissionRequirements)} authorisation, which is not ready yet;" +
+                        "please complete the authorisation first (Settings → Permission configuration wizard) or switch to an alternative tool.",
                     mapOf(
                         "errorType" to "permission_required",
                         "tool" to name,
@@ -658,7 +658,7 @@ class ToolRegistry(
         val validation = ToolArgValidator.validate(name, stringArgs, def)
         if (!validation.valid) {
             val detail = validation.errors.joinToString("; ")
-            Logger.w("ToolRegistry", "工具参数校验失败: $name -> $detail")
+            Logger.w("ToolRegistry", "Tool argument validation failed: $name -> $detail")
             return ToolOutcome.error(
                 detail,
                 mapOf("errorType" to ToolArgValidator.ERROR_TYPE, "tool" to name, "errors" to validation.errors),
@@ -669,7 +669,7 @@ class ToolRegistry(
         } catch (ce: kotlinx.coroutines.CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.w("ToolRegistry", "JSON 工具 $name 执行异常: ${e.message}")
+            Logger.w("ToolRegistry", "JSON tool $name execution exception: ${e.message}")
             ToolOutcome.error(context.getString(R.string.tool_exec_exception))
         }
     }

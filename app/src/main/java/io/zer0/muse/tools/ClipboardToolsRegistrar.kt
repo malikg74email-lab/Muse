@@ -21,7 +21,7 @@ class ClipboardToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "clipboard_read",
-                description = "读取系统剪贴板文本内容。",
+                description = "Read the system clipboard text content.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -34,7 +34,7 @@ class ClipboardToolsRegistrar(
         toolRegistry.registerOutcome(
             ToolRegistry.ToolDef(
                 name = "clipboard_read",
-                description = "读取系统剪贴板文本内容。",
+                description = "Read the system clipboard text content.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -46,10 +46,10 @@ class ClipboardToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "clipboard_write",
-                description = "写入文本到系统剪贴板。",
+                description = "Write text to the system clipboard.",
                 parameters = mapOf(
-                    "text" to "必填,要写入剪贴板的文本",
-                    "label" to "可选,剪贴板标签,如 muse_copy",
+                    "text" to "Required, the text to write to the clipboard",
+                    "label" to "Optional, clipboard label, e.g. muse_copy",
                 ),
                 required = setOf("text"),
                 category = "built-in",

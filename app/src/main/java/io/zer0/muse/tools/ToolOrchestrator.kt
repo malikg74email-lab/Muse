@@ -360,7 +360,7 @@ sealed class StreamRoundResult {
  * 避免它以为那些结果还在、继续引用它们。
  */
 internal const val TRUNCATED_TOOL_CHAIN_MARKER: String =
-    "(较早的工具调用与结果已整理省略,仅保留最近若干条；如需重新获取请再次调用对应工具)"
+    "(Earlier tool calls and their results have been compacted away; only the most recent ones are kept. If you need them again, call the corresponding tool again)"
 
 /**
  * v2.x: 决定工具链该保留多少条尾部消息（0 表示全部丢弃）。
@@ -857,7 +857,7 @@ class ToolOrchestrator(
                 generationId = params.traceId.ifBlank { "generation-$currentAssistantId" },
                 streamId = "stream-${params.traceId.ifBlank { currentAssistantId.toString() }}",
             )
-        Logger.i(TAG, "Agent Loop 开始 | sessionId=${params.sessionId} | 初始最大轮次: $roundLimitLabel")
+        Logger.i(TAG, "Agent Loop started | sessionId=${params.sessionId} | initial max rounds: $roundLimitLabel")
 
         // 每轮都要按"当前历史"算一次 token 占用（给内联输出预算用）。历史每轮只多两条，
         // 共用一份按实例的计数缓存后，第 2 轮起只算新增的那两条，不再整份重跑 BPE。
@@ -866,7 +866,7 @@ class ToolOrchestrator(
         while ((hasToolCalls || forceFinalResponse) && round < execPolicy.maxRounds) {
             round++
             val stepStartedAt = System.currentTimeMillis()
-            Logger.d(TAG, "Agent Loop step $round/$roundLimitLabel 开始 | sessionId=${params.sessionId}")
+            Logger.d(TAG, "Agent Loop step $round/$roundLimitLabel started | sessionId=${params.sessionId}")
 
             // M3.2/P2-7: 每轮开头统一校验剩余预算(总调用数/输出字符/连续失败/时间),
             // 任一项耗尽即提前收尾并注入可见文案,不再浪费一次必然被拦截的模型往返。
@@ -883,9 +883,9 @@ class ToolOrchestrator(
                 terminationReason = ToolLoopTerminationReason.BUDGET_EXHAUSTED
                 Logger.w(
                     TAG,
-                    "Agent Loop 轮次预算耗尽,提前终止 | sessionId=${params.sessionId} | " +
+                    "Agent Loop round budget exhausted, terminating early | sessionId=${params.sessionId} | " +
                         "reason=${roundBudget.reason} | ${roundBudget.detail} | " +
-                        "traceId=${params.traceId} | 已执行调用=${execPolicy.executedCalls}",
+                        "traceId=${params.traceId} | executed calls=${execPolicy.executedCalls}",
                 )
                 break
             }
@@ -961,12 +961,12 @@ class ToolOrchestrator(
                     if (params.nativeWebSearch && !nativeFallbackUsed && !forceFinalResponse) {
                         nativeFallbackUsed = true
                         round--
-                        Logger.w(TAG, "原生搜索请求失败，降级到用户 API/HTTP 搜索链")
+                        Logger.w(TAG, "Native search request failed, falling back to the user API/HTTP search chain")
                         continue
                     }
                     Logger.w(
                         TAG,
-                        "Agent Loop 因流式错误终止 | sessionId=${params.sessionId} | traceId=${params.traceId}" +
+                        "Agent Loop terminated due to a streaming error | sessionId=${params.sessionId} | traceId=${params.traceId}" +
                             " | round=$round | type=${outcome.type} | msg=${outcome.message}",
                     )
                     return ToolLoopResult(
@@ -1006,7 +1006,7 @@ class ToolOrchestrator(
                                 ToolLoopTerminationReason.COMPLETED
                             }
                         forceFinalResponse = false
-                        Logger.d(TAG, "Agent Loop step $round/$roundLimitLabel 结束(无工具调用,循环正常结束)")
+                        Logger.d(TAG, "Agent Loop step $round/$roundLimitLabel ended (no tool calls, loop ended normally)")
                         break
                     }
 
@@ -1018,7 +1018,7 @@ class ToolOrchestrator(
                             outcome.assistantMessage.copy(
                                 toolCalls = emptyList(),
                                 content = outcome.assistantMessage.content.ifBlank {
-                                    "工具调用连续失败，已基于已有结果停止继续调用。"
+                                    "Tool calls kept failing; stopped making further calls based on the results already available."
                                 },
                             )
                         terminationReason = ToolLoopTerminationReason.COMPLETED_AFTER_TOOL_FAILURES
@@ -1047,7 +1047,7 @@ class ToolOrchestrator(
                     if (rawToolCallList.size != toolCallList.size) {
                         Logger.w(
                             TAG,
-                            "过滤无效 toolCalls: ${rawToolCallList.size} -> ${toolCallList.size}" +
+                            "Filtered invalid toolCalls: ${rawToolCallList.size} -> ${toolCallList.size}" +
                                 " | sessionId=${params.sessionId}",
                         )
                     }
@@ -1067,8 +1067,8 @@ class ToolOrchestrator(
                             terminationReason = ToolLoopTerminationReason.COMPLETED
                             Logger.w(
                                 TAG,
-                                "Agent Loop step $round/$roundLimitLabel: toolCalls 不可执行但内容是正文," +
-                                    "已当文本回复收口(raw=$rawCount, chars=${recovered.length})",
+                                "Agent Loop step $round/$roundLimitLabel: toolCalls not executable but the content is body text," +
+                                    "closed it out as a text reply (raw=$rawCount, chars=${recovered.length})",
                             )
                             break
                         }
@@ -1077,9 +1077,9 @@ class ToolOrchestrator(
                         // 给用户和模型一个明确提示,让本轮可观测、下一轮可重试。
                         val hint =
                             if (rawCount > 0) {
-                                "模型发起了 $rawCount 个工具调用,但参数格式异常未能执行。请重新描述你的需求,我会再试一次。"
+                                "The model initiated $rawCount tool calls, but they could not be executed because the argument format was abnormal. Please describe your request again and I will try once more."
                             } else {
-                                "模型未输出有效的工具调用,本轮无工具可执行。如需搜索或其他工具,请重新描述你的需求。"
+                                "The model did not output valid tool calls; no tools could be executed this round. If you need search or other tools, please describe your request again."
                             }
                         finalAssistantMessage =
                             assistantToolMsg.copy(
@@ -1092,7 +1092,7 @@ class ToolOrchestrator(
                         terminationReason = ToolLoopTerminationReason.INVALID_TOOL_CALLS
                         Logger.w(
                             TAG,
-                            "Agent Loop step $round/$roundLimitLabel: toolCalls 清洗后为空(raw=$rawCount),注入提示",
+                            "Agent Loop step $round/$roundLimitLabel: toolCalls empty after cleaning (raw=$rawCount), injecting a hint",
                         )
                         break
                     }
@@ -1104,14 +1104,14 @@ class ToolOrchestrator(
                     if (!progressDecision.allowed) {
                         Logger.w(
                             TAG,
-                            "Agent Loop 检测到连续相同 tool_call(${progressDecision.detail})" +
+                            "Agent Loop detected consecutive identical tool_calls (${progressDecision.detail})" +
                                 " | sessionId=${params.sessionId} | signature=$currentSignature",
                         )
-                        Logger.w(TAG, "Agent Loop 连续相同 tool_call 轮次达上限,判定卡死,提前终止")
+                        Logger.w(TAG, "Agent Loop consecutive identical tool_call rounds reached the cap; judged stuck, terminating early")
                         hasToolCalls = false
                         terminationReason = ToolLoopTerminationReason.REPEATED_TOOL_CALLS
                         // A-07: 记录退出原因,收尾时注入明确文案(否则用户只看到工具卡片无任何回复)
-                        abortReason = "检测到工具调用停滞(连续 ${execPolicy.noProgressRoundsCount} 轮无进展),已自动停止。如需继续,可以让我重新处理。"
+                        abortReason = "Detected a tool-call stall (${execPolicy.noProgressRoundsCount} consecutive rounds with no progress); stopped automatically. If you want to continue, ask me to process it again."
                         // 不把 assistantToolMsg 加入 history,避免遗留无 tool 结果的 assistant 消息
                         break
                     }
@@ -1230,15 +1230,15 @@ class ToolOrchestrator(
                                             "generation_cancelled",
                                         )
                                     }.onFailure { error ->
-                                        Logger.w(TAG, "取消工具后写入 ABORTED 失败: ${tc.id}", error)
+                                        Logger.w(TAG, "Failed to write the ABORTED failure after cancelling the tool: ${tc.id}", error)
                                     }
                                 }
 
                                 // F-07: 中断标记 — 工具执行被流式中断(用户停止/会话切换)。
                                 // 结果不完整, 记录 INTERRUPTED 状态日志与任务卡步骤, 再向上传播取消。
-                                Logger.w(TAG, "工具 ${tc.name} 被中断(INTERRUPTED) | sessionId=${params.sessionId}")
+                                Logger.w(TAG, "Tool ${tc.name} interrupted (INTERRUPTED) | sessionId=${params.sessionId}")
                                 val interruptedAt = System.currentTimeMillis()
-                                val interruptedText = "[中断] 工具 ${tc.name} 执行被取消"
+                                val interruptedText = "[Interrupted] Tool ${tc.name} execution was cancelled"
                                 // Phase 3: 取消是独立终态,不再落成 FAILED(TaskStepStatus.CANCELLED)。
                                 taskCardCoordinator.updateTaskCardStep(taskCardId, idx) { s ->
                                     s.copy(
@@ -1278,14 +1278,14 @@ class ToolOrchestrator(
                                 executionId?.let { id -> executionRegistry?.fail(id) }
                                 // 工具已经可能完成了外部副作用(例如写入记忆),但回调/清理阶段异常
                                 // 不能让整个工具循环直接消失,否则用户只会看到“执行中”。
-                                Logger.e(TAG, "工具结果回传失败: ${tc.name}", e)
+                                Logger.e(TAG, "Tool result callback failed: ${tc.name}", e)
                                 failedToolResult(
                                     taskCardId = taskCardId,
                                     tc = tc,
                                     idx = idx,
                                     host = host,
                                     taskCardCoordinator = taskCardCoordinator,
-                                    reason = e.message ?: "未知错误",
+                                    reason = e.message ?: "Unknown error",
                                 )
                             }
                         }
@@ -1298,7 +1298,7 @@ class ToolOrchestrator(
                     // (TaskCard / PendingToolCallStore / execPolicy / hook / host 回调)经 stateLock 串行化,
                     // 审批提示经 approvalLock 串行化,结果仍按原始 tool-call 顺序回填。
                     if (toolCallList.size > 1 && WeakToolUseDetector.isWeakToolModel(params.model)) {
-                        Logger.i(TAG, "弱工具模型检测到 ${toolCallList.size} 个工具调用,串行执行 | model=${params.model?.id}")
+                        Logger.i(TAG, "Weak-tool model detected ${toolCallList.size} tool calls, executing serially | model=${params.model?.id}")
                     }
                     val parallelRound = !truncatedArgsRound && shouldExecuteRoundInParallel(toolCallList, params)
                     val stateLock = if (parallelRound) Mutex() else null
@@ -1306,8 +1306,8 @@ class ToolOrchestrator(
                     if (parallelRound) {
                         Logger.i(
                             TAG,
-                            "只读工具有限并发执行: ${toolCallList.size} 个调用" +
-                                " | 并发上限=$READ_ONLY_TOOL_MAX_PARALLELISM | sessionId=${params.sessionId}",
+                            "Read-only tools executing with limited concurrency: ${toolCallList.size} calls" +
+                                " | concurrency cap=$READ_ONLY_TOOL_MAX_PARALLELISM | sessionId=${params.sessionId}",
                         )
                     }
                     val execResults: List<ToolExecResult> =
@@ -1322,7 +1322,7 @@ class ToolOrchestrator(
                                     tc = tc,
                                     finalToolResult = truncatedArgumentsToolResult(tc.name),
                                     isSuccess = false,
-                                    displayResult = "工具 ${tc.name} 未执行：参数在生成时被输出长度上限截断",
+                                    displayResult = "Tool ${tc.name} not executed: its arguments were truncated by the output length cap during generation",
                                     status = ToolExecStatus.FAILED,
                                     finishedAt = System.currentTimeMillis(),
                                 )
@@ -1376,7 +1376,7 @@ class ToolOrchestrator(
                         // F-07: 状态日志 — 每工具执行结束记录终态(SUCCESS/FAILED/INTERRUPTED/APPROVAL_PENDING)
                         Logger.d(
                             TAG,
-                            "工具执行结束: ${tc.name} status=${result.status} isSuccess=$isSuccess" +
+                            "Tool execution finished: ${tc.name} status=${result.status} isSuccess=$isSuccess" +
                                 " | sessionId=${params.sessionId}",
                         )
                         // F-08: Agent Run 统一收据 — 内存账本 + 审计日志(可选持久化)。
@@ -1432,11 +1432,11 @@ class ToolOrchestrator(
                             conversationHistory.add(
                                 UIMessage(
                                     role = MessageRole.USER,
-                                    content = "[浏览器截图] 这是你刚调用的 browser_screenshot 返回的当前页面渲染图。",
+                                    content = "[Browser screenshot] This is the current page rendering returned by the browser_screenshot call you just made.",
                                     imageBase64List = listOf(b64),
                                 ),
                             )
-                            Logger.d(TAG, "browser_screenshot 结果已作为带图消息追加 | sessionId=${params.sessionId}")
+                            Logger.d(TAG, "browser_screenshot result appended as an image message | sessionId=${params.sessionId}")
                         }
 
                         val toolDisplay =
@@ -1549,7 +1549,7 @@ class ToolOrchestrator(
                         if (execPolicy.shouldAbortOnConsecutiveFailures()) {
                             Logger.w(
                                 "ToolOrchestrator",
-                                "连续 ${execPolicy.consecutiveFailuresCount} 次工具失败,提前终止工具调用循环 " +
+                                "${execPolicy.consecutiveFailuresCount} consecutive tool failures, terminating the tool-call loop early " +
                                     "(round=$round, tool=${tc.name})",
                             )
                             // 不在这里直接结束：先把本轮所有 TOOL 结果完整回填，
@@ -1592,7 +1592,7 @@ class ToolOrchestrator(
                             }
                             Logger.i(
                                 TAG,
-                                "插入用户插话 ${steeringMessages.size} 条 | sessionId=${params.sessionId} | round=$round",
+                                "Inserted ${steeringMessages.size} user steering messages | sessionId=${params.sessionId} | round=$round",
                             )
                         }
                     }
@@ -1622,8 +1622,8 @@ class ToolOrchestrator(
                     Perf.log("chat-tool-round", stepElapsedMs)
                     Logger.d(
                         TAG,
-                        "Agent Loop step $round/$roundLimitLabel 结束 | 工具=[$toolNames]" +
-                            " | 成功=$successCount 失败=$failCount | 耗时=${stepElapsedMs}ms",
+                        "Agent Loop step $round/$roundLimitLabel ended | tools=[$toolNames]" +
+                            " | succeeded=$successCount failed=$failCount | elapsed=${stepElapsedMs}ms",
                     )
                 }
             }
@@ -1654,7 +1654,7 @@ class ToolOrchestrator(
         // 收尾提示,任务卡悬空、用户以为助手坏了。注入一条明确的收尾消息。
         // A-07: 覆盖全部无收尾退出路径 — 卡死/连续失败早停(hasToolCalls 已置 false
         // 但 abortReason 非空)同样注入,并按退出原因区分文案。
-        val roundLimitText = "[已达到工具调用轮次上限(${execPolicy.maxRounds} 轮),自动停止。如需继续,可以让我接着处理。]"
+        val roundLimitText = "[The tool-call round limit (${execPolicy.maxRounds} rounds) has been reached; stopped automatically. If you want to continue, ask me to carry on.]"
         if (finalAssistantMessage == null) {
             val reasonText = abortReason ?: if (hasToolCalls) roundLimitText else null
             if (reasonText != null) {
@@ -1688,12 +1688,12 @@ class ToolOrchestrator(
                 ToolLoopTerminationReason.COMPLETED -> null
                 ToolLoopTerminationReason.COMPLETED_AFTER_TOOL_FAILURES -> null
                 ToolLoopTerminationReason.ROUND_LIMIT -> roundLimitText
-                else -> abortReason ?: "工具调用循环提前终止(${effectiveReason.name})"
+                else -> abortReason ?: "Tool-call loop terminated early (${effectiveReason.name})"
             }
 
         Logger.i(
             TAG,
-            "Agent Loop 结束 | sessionId=${params.sessionId} | rounds=$round/$roundLimitLabel" +
+            "Agent Loop ended | sessionId=${params.sessionId} | rounds=$round/$roundLimitLabel" +
                 " | toolCalls=${execPolicy.emittedToolCallCount} | chars=${execPolicy.streamedCharCount}" +
                 " | success=$completed | reason=$effectiveReason",
         )
@@ -1728,14 +1728,14 @@ class ToolOrchestrator(
      */
     private fun roundBudgetStopText(reason: ToolExecutionPolicy.StopReason?): String = when (reason) {
         ToolExecutionPolicy.StopReason.MAX_TOTAL_CALLS ->
-            "本轮工具调用次数已达上限,已自动停止。如需继续,可以让我接着处理。"
+            "The tool-call count for this round has reached the cap; stopped automatically. If you want to continue, ask me to carry on."
         ToolExecutionPolicy.StopReason.MAX_TOTAL_OUTPUT_CHARS ->
-            "本轮工具输出已超出预算,已自动停止。如需继续,可以让我接着处理。"
+            "The tool output for this round has exceeded the budget; stopped automatically. If you want to continue, ask me to carry on."
         ToolExecutionPolicy.StopReason.CONSECUTIVE_FAILURES ->
-            "连续多次工具调用失败,已自动停止。如需继续,可以让我重新处理。"
+            "Tool calls failed many times in a row; stopped automatically. If you want to continue, ask me to process it again."
         ToolExecutionPolicy.StopReason.TIME_BUDGET_EXHAUSTED ->
-            "工具循环耗时已超出预算,已自动停止。如需继续,可以让我接着处理。"
-        else -> "工具调用已超出预算,已自动停止。如需继续,可以让我接着处理。"
+            "The tool loop's elapsed time has exceeded the budget; stopped automatically. If you want to continue, ask me to carry on."
+        else -> "Tool calls have exceeded the budget; stopped automatically. If you want to continue, ask me to carry on."
     }
 
     private suspend fun persistToolRoundIncrementally(params: ToolLoopParams, round: Int, startedAt: Long, result: ToolExecResult) {
@@ -1765,7 +1765,7 @@ class ToolOrchestrator(
             )
         resultOf { sessionRepository.upsertToolRound(entity) }
             .onError { msg, t ->
-                Logger.w(TAG, "工具轮增量落盘失败: ${result.tc.name}: $msg", t)
+                Logger.w(TAG, "Incremental tool-round persistence failed: ${result.tc.name}: $msg", t)
             }
     }
 
@@ -1904,7 +1904,7 @@ class ToolOrchestrator(
             abandonedToolCallIds.add(toolCallId)
             Logger.w(
                 TAG,
-                "工具超时,已切断迟到回写 | toolCallId=$toolCallId | timeout=${timeoutMs}ms",
+                "Tool timed out; late write-back cut off | toolCallId=$toolCallId | timeout=${timeoutMs}ms",
             )
             null
         }
@@ -1916,7 +1916,7 @@ class ToolOrchestrator(
      */
     private fun onLateResultDropped(toolCallId: String) {
         lateDroppedResultCount.incrementAndGet()
-        Logger.w(TAG, "丢弃超时工具的迟到结果(已切断回写) | toolCallId=$toolCallId")
+        Logger.w(TAG, "Discarding the timed-out tool's late result (write-back cut off) | toolCallId=$toolCallId")
     }
 
     // M3.2 接线:函数体量/复杂度为本文件历史遗留(审批、Hook、媒体落库、任务卡多路径汇聚),
@@ -1938,7 +1938,7 @@ class ToolOrchestrator(
     ): ToolExecResult {
         if (!params.allowToolExecution) {
             val finishedAt = System.currentTimeMillis()
-            val pausedText = "工具 ${tc.name} 已暂停，本轮未执行真实操作"
+            val pausedText = "Tool ${tc.name} is paused; no real operation was executed this round"
             val safeToolName = tc.name.replace("\\", "\\\\").replace("\"", "\\\"")
             withTurnLock(stateLock) {
                 taskCardCoordinator.updateTaskCardStep(taskCardId, idx) { s ->
@@ -1979,7 +1979,7 @@ class ToolOrchestrator(
         if (!policyDecision.allowed) {
             Logger.w(
                 TAG,
-                "工具调用被预算拦截 | reason=${policyDecision.reason} | ${policyDecision.detail} | " +
+                "Tool call intercepted by the budget | reason=${policyDecision.reason} | ${policyDecision.detail} | " +
                     "sessionId=${params.sessionId} | traceId=${params.traceId} | tool=${tc.name}",
             )
             val blockedResult = """{"error": "tool_execution_policy_blocked", "reason": "${policyDecision.reason}"}"""
@@ -1987,7 +1987,7 @@ class ToolOrchestrator(
                 taskCardCoordinator.updateTaskCardStep(taskCardId, idx) { s ->
                     s.copy(
                         status = TaskStepStatus.FAILED,
-                        result = "工具 ${tc.name} 未执行(${policyDecision.reason})",
+                        result = "Tool ${tc.name} not executed (${policyDecision.reason})",
                         finishedAt = System.currentTimeMillis(),
                     )
                 }
@@ -1997,7 +1997,7 @@ class ToolOrchestrator(
                 tc = tc,
                 finalToolResult = blockedResult,
                 isSuccess = false,
-                displayResult = "工具 ${tc.name} 未执行(${policyDecision.reason})",
+                displayResult = "Tool ${tc.name} not executed (${policyDecision.reason})",
                 status = ToolExecStatus.FAILED,
             )
         }
@@ -2043,13 +2043,13 @@ class ToolOrchestrator(
 
         // 工具审批检查(v1.0.53: 传完整 args 供参数化权限判定)
         // F-07: 审批等待可见化 — 挂起等待用户响应的过程记录 APPROVAL_PENDING 状态日志
-        Logger.d(TAG, "工具 ${tc.name} 等待审批(APPROVAL_PENDING) | sessionId=${params.sessionId}")
+        Logger.d(TAG, "Tool ${tc.name} waiting for approval (APPROVAL_PENDING) | sessionId=${params.sessionId}")
         withTurnLock(stateLock) {
             PendingToolCallStore.updateState(tc.id, PendingToolCallStore.APPROVAL_PENDING)
             // Make the wait visible on the task card: otherwise a pending approval looks
             // identical to a running tool until the 30s timeout silently denies it.
             taskCardCoordinator.updateTaskCardStep(taskCardId, idx) { s ->
-                s.copy(progressText = "等待审批…")
+                s.copy(progressText = "Waiting for approval…")
             }
         }
         // Phase 3: 并发轮中审批提示逐个弹出(approvalLock),避免多个审批对话框同时挂起;
@@ -2061,7 +2061,7 @@ class ToolOrchestrator(
         withTurnLock(stateLock) {
             PendingToolCallStore.updateState(tc.id, PendingToolCallStore.EXECUTING)
             taskCardCoordinator.updateTaskCardStep(taskCardId, idx) { s ->
-                if (s.progressText == "等待审批…") s.copy(progressText = null) else s
+                if (s.progressText == "Waiting for approval…") s.copy(progressText = null) else s
             }
         }
 
@@ -2170,8 +2170,8 @@ class ToolOrchestrator(
             delegateAgentInfo?.assistantId?.takeIf { it.isNotBlank() }?.let { id ->
                 resultOf { assistantRepository.getById(id)?.name }.getOrNull()?.takeIf { it.isNotBlank() } ?: id
             }
-        val stepTitle = if (assistantName != null) "委托给 $assistantName" else tc.name
-        val stepProgress = if (assistantName != null) "正在委托给 $assistantName..." else null
+        val stepTitle = if (assistantName != null) "Delegating to $assistantName" else tc.name
+        val stepProgress = if (assistantName != null) "Delegating to $assistantName..." else null
         val claimedForExecution =
             withTurnLock(stateLock) {
                 taskCardCoordinator.markTaskStepRunningIfNotPaused(
@@ -2226,7 +2226,7 @@ class ToolOrchestrator(
         // 而不是让模型先答应用户再撞墙。宿主未提供通道信息时(null)跳过,维持原行为。
         val preflight = ToolChannelPreflight.checkPreflightable(tc.name, host.availableDeviceChannels())
         if (preflight is ToolChannelPreflight.Result.Blocked) {
-            Logger.w(TAG, "通道预检拦截 ${tc.name}: 缺 ${preflight.missing.joinToString(",")}")
+            Logger.w(TAG, "Channel preflight intercepted ${tc.name}: missing ${preflight.missing.joinToString(",")}")
         }
 
         // 执行工具:skill 走 SkillExecutor(挂起、可取消),本地工具走 ToolRegistry
@@ -2297,7 +2297,7 @@ class ToolOrchestrator(
         val timedOut = rawToolResultOrNull == null
         val rawToolResult =
             rawToolResultOrNull
-                ?: "[超时] 工具 ${tc.name} ${effectiveToolTimeoutMs / 1000} 秒未响应,已终止"
+                ?: "[Timeout] Tool ${tc.name} ${effectiveToolTimeoutMs / 1000} seconds without a response; terminated"
         // 某些只产生外部副作用的工具可能返回空字符串。无论副作用是否已经成功,
         // 都必须给 UI 和下一轮模型一个明确的终态文本,避免卡片看起来像仍在等待。
         val toolResult = normalizeToolResult(tc.name, rawToolResult)
@@ -2335,11 +2335,11 @@ class ToolOrchestrator(
                     abortThreshold = execPolicy.consecutiveFailureAbortThreshold,
                 )
                 "$baseResult\n\n${ToolFailureClassifier.receiptLine(verdict)}\n$budget\n" +
-                    "[工具调用失败引导] 请按以下优先级判断:\n" +
-                    "1. 参数/路径错误 → 修正后重试本工具(最多 1 次)\n" +
-                    "2. 权限/资源不可用 → 换用其他工具或告知用户限制\n" +
-                    "3. 网络超时 → 可重试一次,仍失败则告知用户\n" +
-                    "4. 无法解决 → 直接告知用户失败原因和建议,不要硬撑"
+                    "[Tool call failure guidance] Judge by the following priority:\n" +
+                    "1. Argument/path error → fix it and retry this tool (at most 1 time)\n" +
+                    "2. Permission/resource unavailable → switch to another tool or tell the user about the limitation\n" +
+                    "3. Network timeout → may retry once; if it still fails, tell the user\n" +
+                    "4. Cannot be resolved → tell the user the failure reason and a suggestion directly; do not force it"
             }
         val finalToolResult = llmResult
         // B-09: 展示用纯报错文本,不含 LLM 引导语
@@ -2389,7 +2389,7 @@ class ToolOrchestrator(
         if (wasTruncated) {
             Logger.w(
                 TAG,
-                "工具结果超限截断 | tool=${tc.name} | 原始长度=${finalToolResult.length} | sessionId=${params.sessionId}",
+                "Tool result truncated over the limit | tool=${tc.name} | original length=${finalToolResult.length} | sessionId=${params.sessionId}",
             )
         }
         return ToolExecResult(
@@ -2420,13 +2420,13 @@ class ToolOrchestrator(
                 true
             } ?: false
         if (!cleaned) {
-            Logger.w(TAG, "清理 pending 工具调用超时: $toolCallId")
+            Logger.w(TAG, "Clearing pending tool call timeout: $toolCallId")
         }
     }
 
     /** 工具没有返回可显示文本时的统一可见回执。 */
     private fun normalizeToolResult(toolName: String, result: String): String = if (result.isBlank()) {
-        "工具 $toolName 已执行完成,但没有返回可显示的内容。"
+        "Tool $toolName finished executing, but returned no displayable content."
     } else {
         result
     }
@@ -2447,7 +2447,7 @@ class ToolOrchestrator(
         toolStartAt: Long,
     ): ToolExecResult {
         val finishedAt = System.currentTimeMillis()
-        val pausedText = "工具 ${tc.name} 已暂停，本轮未执行真实操作"
+        val pausedText = "Tool ${tc.name} is paused; no real operation was executed this round"
         val safeToolName = tc.name.replace("\\", "\\\\").replace("\"", "\\\"")
         withTurnLock(stateLock) {
             taskCardCoordinator.updateTaskCardStepByToolCallId(taskCardId, tc.id) { step ->
@@ -2478,7 +2478,7 @@ class ToolOrchestrator(
                     "tool_paused",
                 )
             }.onFailure { error ->
-                Logger.w(TAG, "暂停工具后写入 ABORTED 失败: ${tc.id}", error)
+                Logger.w(TAG, "Failed to write the ABORTED failure after pausing the tool: ${tc.id}", error)
             }
         }
         cleanupPendingToolCall(tc.id)
@@ -2508,7 +2508,7 @@ class ToolOrchestrator(
         taskCardCoordinator: ChatTaskCardCoordinator,
         reason: String,
     ): ToolExecResult {
-        val result = "工具 ${tc.name} 执行完成后回传失败: $reason"
+        val result = "Tool ${tc.name} callback failed after execution completed: $reason"
         taskCardCoordinator.updateTaskCardStep(taskCardId, idx) { step ->
             step.copy(
                 status = TaskStepStatus.FAILED,
@@ -2552,8 +2552,8 @@ class ToolOrchestrator(
     internal fun truncatedArgumentsToolResult(toolName: String): String {
         val safeToolName = toolName.replace("\\", "\\\\").replace("\"", "\\\"")
         return """{"error":"arguments_truncated_by_output_limit","tool":"$safeToolName",""" +
-            """"detail":"这次调用的参数在生成时被输出长度上限截断，未执行；""" +
-            """请用完整参数重新发起该调用，内容过长时拆成多次较小的调用。"}"""
+            """\"detail\":\"This call's arguments were truncated by the output length cap during generation and were not executed;\"""" +
+            """Please re-issue this call with complete arguments; when the content is too long, split it into several smaller calls.\"}"""
     }
 
     /**
@@ -2615,7 +2615,7 @@ class ToolOrchestrator(
             Logger.e("ToolOrchestrator", "upsertMessage(toolCalls) failed", e)
             host.onToolLoopError(
                 ChatErrorType.TOOL_ERROR,
-                "工具调用记录保存失败: ${e.message ?: "未知错误"}",
+                "Tool call record save failed: ${e.message ?: "unknown error"}",
             )
         }
     }
@@ -2645,7 +2645,7 @@ class ToolOrchestrator(
         } catch (ce: kotlin.coroutines.cancellation.CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Logger.w("ToolOrchestrator", "PendingToolCallStore.saveAll 失败: ${e.message}", e)
+            Logger.w("ToolOrchestrator", "PendingToolCallStore.saveAll failed: ${e.message}", e)
         }
     }
 
@@ -2767,33 +2767,33 @@ class ToolOrchestrator(
             if (written == null) {
                 Logger.w(
                     TAG,
-                    "工具输出落盘超时(${toolOutputWriteTimeoutMs}ms),保留完整内存结果" +
-                        " | toolCallId=$toolCallId | 总长=${output.length}",
+                    "Tool output persistence timed out (${toolOutputWriteTimeoutMs}ms), keeping the full in-memory result" +
+                        " | toolCallId=$toolCallId | total length=${output.length}",
                 )
-                return output + "\n\n[完整输出落盘超时；本次消息仍保留完整原文]"
+                return output + "\n\n[Persisting the full output timed out; this message still keeps the complete original text]"
             }
             Logger.i(
                 TAG,
-                "工具输出完整落盘: toolCallId=$toolCallId | 总长=${output.length}" +
-                    " | 完整输出已落盘: ${file.absolutePath}",
+                "Tool output fully persisted: toolCallId=$toolCallId | total length=${output.length}" +
+                    " | full output persisted to: ${file.absolutePath}",
             )
             buildString {
-                append("[完整结果已保存，共 ${output.length} 字符]\n")
+                append("[Full result saved, ${output.length} characters in total]\n")
                 // Emit the absolute path so the UI can render it as an openable attachment
                 // chip; the previous "/tool_outputs/..." form matched no extractor pattern.
-                append("[完整输出已保存到: ${file.absolutePath}]\n")
+                append("[Full output saved to: ${file.absolutePath}]\n")
                 append(
-                    "[需要完整内容时用 workspace_read 分段读取: path=$TOOL_OUTPUTS_DIR:/$fileName, " +
+                    "[When you need the full content, read it in chunks with workspace_read: path=$TOOL_OUTPUTS_DIR:/$fileName, " +
                         "offset_chars=0, length_chars=$TOOL_OUTPUT_READ_PAGE_CHARS；" +
-                        "也可用 read_file 读取（path=$TOOL_OUTPUTS_DIR/$fileName）]\n\n",
+                        "or read it with read_file (path=$TOOL_OUTPUTS_DIR/$fileName)]\n\n",
                 )
                 append(preview)
                 // 尾部预览时明确告知省略的是开头，否则模型会把最后几行当成完整结果的开头。
                 append(
                     if (keepTail) {
-                        "\n\n[以上是结果末尾的预览，不是完整结果；开头部分从 offset_chars=0 分段读取]"
+                        "\n\n[The above is a preview of the end of the result, not the full result; read the beginning in chunks from offset_chars=0]"
                     } else {
-                        "\n\n[以上是预览，不是完整结果；请按字符游标继续读取所需部分]"
+                        "\n\n[The above is a preview, not the full result; continue reading the parts you need by character cursor]"
                     },
                 )
             }
@@ -2801,8 +2801,8 @@ class ToolOrchestrator(
             throw ce
         } catch (e: Exception) {
             // 写盘失败不丢掉仍在内存中的原文；结果随后由上下文预算/模型窗口正常处理。
-            Logger.w(TAG, "工具输出落盘失败,保留完整内存结果: ${e.message}", e)
-            output + "\n\n[完整输出落盘失败；本次消息仍保留完整原文]"
+            Logger.w(TAG, "Tool output persistence failed, keeping the full in-memory result: ${e.message}", e)
+            output + "\n\n[Persisting the full output failed; this message still keeps the complete original text]"
         }
     }
 }
@@ -2825,11 +2825,11 @@ fun cleanupOldToolOutputs(context: Context, retentionMs: Long = TOOL_OUTPUT_RETE
         if (mtime > 0 && mtime < cutoff) {
             runCatching { f.delete() }
                 .onSuccess { deleted++ }
-                .onFailure { Logger.w("ToolOrchestrator", "删除过期工具输出失败: ${f.name}", it) }
+                .onFailure { Logger.w("ToolOrchestrator", "Failed to delete an expired tool output: ${f.name}", it) }
         }
     }
     if (deleted > 0) {
-        Logger.i("ToolOrchestrator", "清理过期工具输出文件: 删除 $deleted 个")
+        Logger.i("ToolOrchestrator", "Cleaning expired tool output files: deleted $deleted")
     }
 }
 

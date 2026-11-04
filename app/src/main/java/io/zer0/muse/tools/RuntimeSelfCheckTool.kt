@@ -20,9 +20,9 @@ object RuntimeSelfCheckTool {
 
     fun toolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME,
-        description = "检查 Muse 内置 Node 运行时(应用沙盒内的运行环境)状态:node 版本、npm 版本、数据解压情况。" +
-            "当用户询问「内置运行时」「运行时自检」「Node 沙盒」「MCP 运行环境」或需要排查内置运行时问题时调用。" +
-            "返回: 分项检查结果文本。",
+        description = "Check the status of Shaheen 2's built-in Node runtime (the runtime environment inside the app sandbox): node version, npm version, and data extraction state." +
+            "Call it when the user asks about the 'built-in runtime', 'runtime self-check', 'Node sandbox' or 'MCP runtime environment', or when troubleshooting built-in runtime problems." +
+            "Returns: the itemised check-result text.",
         parameters = emptyMap(),
         required = emptySet(),
         category = "built-in",
@@ -34,35 +34,35 @@ object RuntimeSelfCheckTool {
         /** v2.6.7: 可选注入。有则补「设备自动化三档通道」段 —— 自检要一次说完。 */
         automation: io.zer0.muse.automation.core.AutomationManager? = null,
     ): String {
-        val sb = StringBuilder("【内置运行时自检】")
+        val sb = StringBuilder("[Built-in runtime self-check]")
 
         val node = MuseRuntime.nodeBinary(context)
-        sb.append("\n- Node 二进制: ").append(
+        sb.append("\n- Node binary: ").append(
             if (node.isFile) {
-                "存在 (${node.length() / 1024 / 1024}MB)"
+                "Present (${node.length() / 1024 / 1024}MB)"
             } else {
-                "缺失 (${MuseRuntime.nativeLibDir(context)})"
+                "Missing (${MuseRuntime.nativeLibDir(context)})"
             },
         )
 
         val nodeV = runCatching { MuseRuntime.execNode(context, listOf("-v"), timeoutMs = 20_000) }.getOrNull()
         sb.append("\n- node -v: ").append(
             when {
-                nodeV == null -> "执行异常"
+                nodeV == null -> "Execution exception"
                 nodeV.exitCode == 0 -> "${nodeV.stdout} ✓"
                 else -> {
                     val detail = if (nodeV.stderr.isNotBlank()) " ${nodeV.stderr.take(120)}" else ""
-                    "失败 (exit=${nodeV.exitCode}$detail)"
+                    "Failed (exit=${nodeV.exitCode}$detail)"
                 }
             },
         )
 
         val data = MuseRuntime.ensureData(context)
-        sb.append("\n- 运行时数据: ").append(
+        sb.append("\n- Runtime data: ").append(
             if (data.isSuccess) {
-                "已就绪 (${MuseRuntime.RUNTIME_DATA_VERSION})"
+                "Ready (${MuseRuntime.RUNTIME_DATA_VERSION})"
             } else {
-                "解压失败 (${data.exceptionOrNull()?.message})"
+                "Extraction failed (${data.exceptionOrNull()?.message})"
             },
         )
 
@@ -73,22 +73,22 @@ object RuntimeSelfCheckTool {
             }.getOrNull()
             sb.append("\n- npm -v: ").append(
                 when {
-                    npmV == null -> "执行异常"
+                    npmV == null -> "Execution exception"
                     npmV.exitCode == 0 -> "${npmV.stdout} ✓"
-                    else -> "失败 (exit=${npmV.exitCode})"
+                    else -> "Failed (exit=${npmV.exitCode})"
                 },
             )
         } else {
-            sb.append("\n- npm: 未就绪")
+            sb.append("\n- npm: not ready")
         }
 
         sb.append(buildCpuSection(probeCpu(context)))
 
-        sb.append("\n- 结论: ").append(
+        sb.append("\n- Conclusion: ").append(
             if (nodeV?.exitCode == 0 && MuseRuntime.isReady(context)) {
-                "运行时就绪 ✓"
+                "Runtime ready ✓"
             } else {
-                "运行时不完整，详见上方明细"
+                "Runtime incomplete; see the details above"
             },
         )
         sb.append("\n\n")
@@ -120,17 +120,17 @@ object RuntimeSelfCheckTool {
 
     /** 渲染 CPU 探测项（纯函数，便于单测）。取不到值时报 warn，不影响整体结论。 */
     internal fun buildCpuSection(probe: CpuProbe?): String {
-        val prefix = "\n- CPU 探测: "
-        if (probe == null) return prefix + "warn（探测未执行成功；沙盒里取不到核数不影响整体结论）"
+        val prefix = "\n- CPU probe: "
+        if (probe == null) return prefix + "warn (the probe did not run successfully; not getting the core count inside the sandbox does not affect the overall conclusion)"
         val entries = probe.entries ?: 0
         val parallelism = probe.parallelism ?: 0
         val detail =
             "os.cpus().length=$entries, os.availableParallelism()=$parallelism, " +
-                "MUSE_CPU_COUNT=${probe.envCount ?: "未注入"}"
+                "MUSE_CPU_COUNT=${probe.envCount ?: "not injected"}"
         return if (entries > 0 && parallelism > 0) {
             prefix + detail + " ✓"
         } else {
-            prefix + detail + " warn（取不到核数；依赖 CPU 数的脚本会退化，但不影响整体结论）"
+            prefix + detail + " warn (core count unavailable; scripts that depend on the CPU count will degrade, but this does not affect the overall conclusion)"
         }
     }
 
@@ -145,40 +145,40 @@ object RuntimeSelfCheckTool {
     /** 设备控制通道段（无障碍 / Shizuku / Root + 单项运行时权限提示）。 */
     private suspend fun appendChannelSection(automation: io.zer0.muse.automation.core.AutomationManager, sb: StringBuilder) {
         val state = automation.refreshPermissions()
-        sb.append("\n\n【设备控制通道自检】")
-        sb.append("\n- 无障碍: ").append(if (state.accessibilityEnabled) "已开启 ✓" else "未开启")
+        sb.append("\n\n[Device control channel self-check]")
+        sb.append("\n- Accessibility: ").append(if (state.accessibilityEnabled) "Enabled ✓" else "Not enabled")
         sb.append("\n- Shizuku/ADB: ").append(
-            if (state.shellEnabled) "已就绪 ✓" else "不可用（${state.shizukuMessage}）",
+            if (state.shellEnabled) "Ready ✓" else "Unavailable (${state.shizukuMessage})",
         )
-        sb.append("\n- Root: ").append(if (state.rootEnabled) "已获取 ✓" else "未获取")
-        sb.append("\n- 最高可用层级: ").append(state.highestLevelName())
-        sb.append("\n- 结论: ").append(
+        sb.append("\n- Root: ").append(if (state.rootEnabled) "Obtained ✓" else "Not obtained")
+        sb.append("\n- Highest available tier: ").append(state.highestLevelName())
+        sb.append("\n- Conclusion: ").append(
             if (state.anyEnabled) {
-                "可执行设备操作；具体哪些工具可用请调 tool_status"
+                "Device operations can be executed; call tool_status to see which tools are available"
             } else {
-                "无任何设备控制通道，屏幕/应用/shell 类工具均不可用；只能做应用内操作"
+                "No device control channel at all; screen/app/shell tools are all unavailable; only in-app operations are possible"
             },
         )
     }
 
     /** v2.7: 追加内置 Python 运行时自检段（拆出以控制单函数长度与复杂度）。 */
     private suspend fun appendPythonSection(context: Context, sb: StringBuilder) {
-        sb.append("【内置 Python 运行时自检】")
+        sb.append("[Built-in Python runtime self-check]")
         val pyBin = PythonRuntime.pythonBinary(context)
         sb.append("\n- Python stub: ").append(
-            if (pyBin.isFile) "存在 (${pyBin.length() / 1024}KB)" else "缺失 (${PythonRuntime.nativeLibDir(context)})",
+            if (pyBin.isFile) "Present (${pyBin.length() / 1024}KB)" else "Missing (${PythonRuntime.nativeLibDir(context)})",
         )
         val pyV = runCatching { PythonRuntime.execPython(context, listOf("-V"), timeoutMs = 30_000) }.getOrNull()
         sb.append("\n- python -V: ").append(
             when {
-                pyV == null -> "执行异常"
+                pyV == null -> "Execution exception"
                 pyV.exitCode == 0 -> "${(pyV.stdout + pyV.stderr).trim()} ✓"
-                else -> "失败 (exit=${pyV.exitCode} ${pyV.stderr.take(120)})"
+                else -> "Failed (exit=${pyV.exitCode} ${pyV.stderr.take(120)})"
             },
         )
         val pyData = PythonRuntime.ensureData(context)
-        sb.append("\n- Python 数据: ").append(
-            if (pyData.isSuccess) "已就绪 (${PythonRuntime.PYTHON_DATA_VERSION})" else "解压失败 (${pyData.exceptionOrNull()?.message})",
+        sb.append("\n- Python data: ").append(
+            if (pyData.isSuccess) "Ready (${PythonRuntime.PYTHON_DATA_VERSION})" else "Extraction failed (${pyData.exceptionOrNull()?.message})",
         )
         if (pyV?.exitCode == 0 && pyData.isSuccess) {
             val probe = runCatching {
@@ -188,12 +188,12 @@ object RuntimeSelfCheckTool {
                     timeoutMs = 30_000,
                 )
             }.getOrNull()
-            sb.append("\n- 标准库扩展: ").append(
-                if (probe?.exitCode == 0 && probe.stdout.contains("ext-ok")) "ssl/sqlite3/zlib/json ✓" else "加载异常",
+            sb.append("\n- Standard library extensions: ").append(
+                if (probe?.exitCode == 0 && probe.stdout.contains("ext-ok")) "ssl/sqlite3/zlib/json ✓" else "Loading exception",
             )
         }
-        sb.append("\n- Python 结论: ").append(
-            if (pyV?.exitCode == 0 && PythonRuntime.isReady(context)) "运行时就绪 ✓" else "运行时不完整，详见上方明细",
+        sb.append("\n- Python conclusion: ").append(
+            if (pyV?.exitCode == 0 && PythonRuntime.isReady(context)) "Runtime ready ✓" else "Runtime incomplete; see the details above",
         )
     }
 }

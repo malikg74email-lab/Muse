@@ -45,7 +45,7 @@ class AssistantManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "assistant_manage_list",
-                description = "列出全部助手（id、名称、描述）。用于修改/删除前确认助手 id。",
+                description = "List all assistants (id, name, description). Used to confirm an assistant id before modifying/deleting.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 riskLevel = ToolRiskLevel.SAFE,
@@ -54,10 +54,10 @@ class AssistantManageTools(
             runBlocking {
                 val all = assistantRepository.getAll()
                 if (all.isEmpty()) {
-                    "没有助手。"
+                    "No assistants."
                 } else {
                     all.joinToString("\n") { a ->
-                        val isDefault = if (a.id == DEFAULT_ASSISTANT_ID) " (默认)" else ""
+                        val isDefault = if (a.id == DEFAULT_ASSISTANT_ID) " (default)" else ""
                         "${a.id} | ${a.name}$isDefault"
                     }
                 }
@@ -69,12 +69,12 @@ class AssistantManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "assistant_manage_create",
-                description = "创建一个新助手（只设置名称和人设文案；工具/模型/绑定由用户在设置页配置）。" +
-                    "id 可省略（自动生成）。",
+                description = "Create a new assistant (only sets the name and persona text; tools/model/bindings are configured by the user on the settings page)." +
+                    "id may be omitted (auto-generated).",
                 parameters = mapOf(
-                    "name" to "必填，助手名称",
-                    "system_prompt" to "可选，人设文案（系统提示词）",
-                    "assistant_id" to "可选，助手 id（省略时自动生成）",
+                    "name" to "Required, assistant name",
+                    "system_prompt" to "Optional, persona text (system prompt)",
+                    "assistant_id" to "Optional, assistant id (auto-generated when omitted)",
                 ),
                 required = setOf("name"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -82,14 +82,14 @@ class AssistantManageTools(
         ) { args ->
             val name = args["name"]?.trim().orEmpty()
             if (name.isBlank()) {
-                errorJson("参数 name 缺失或为空")
+                errorJson("Parameter name is missing or empty")
             } else {
                 runBlocking {
                     val id = args["assistant_id"]?.trim().takeUnless { it.isNullOrBlank() }
                         ?: "assistant-${System.currentTimeMillis()}"
                     val existing = assistantRepository.getById(id)
                     if (existing != null) {
-                        errorJson("助手 id=$id 已存在（名称：${existing.name}）")
+                        errorJson("Assistant id=$id already exists (name: ${existing.name})")
                     } else {
                         val entity = io.zer0.muse.data.assistant.AssistantEntity(
                             id = id,
@@ -97,8 +97,8 @@ class AssistantManageTools(
                             systemPrompt = args["system_prompt"]?.trim().orEmpty(),
                         )
                         assistantRepository.upsert(entity)
-                        Logger.i(TAG, "工具创建助手: $id ($name)")
-                        okJson("已创建助手「$name」（id=$id）。工具/模型/绑定请到助手设置页配置。")
+                        Logger.i(TAG, "Tool created assistant: $id ($name)")
+                        okJson("Created assistant \"$name\" (id=$id). Configure tools/model/bindings on the assistant settings page.")
                     }
                 }
             }
@@ -109,11 +109,11 @@ class AssistantManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "assistant_manage_update_persona",
-                description = "修改一个助手的人设文案（系统提示词）。只允许改人设，" +
-                    "不允许改工具绑定/模型/供应商——那些由用户在设置页管理。",
+                description = "Modify an assistant's persona text (system prompt). Only the persona may be changed;" +
+                    "tool bindings/model/provider may not be changed — those are managed by the user on the settings page.",
                 parameters = mapOf(
-                    "assistant_id" to "必填，助手 id",
-                    "system_prompt" to "必填，新人设文案",
+                    "assistant_id" to "Required, assistant id",
+                    "system_prompt" to "Required, the new persona text",
                 ),
                 required = setOf("assistant_id", "system_prompt"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -122,16 +122,16 @@ class AssistantManageTools(
             val id = args["assistant_id"]?.trim().orEmpty()
             val prompt = args["system_prompt"]?.trim().orEmpty()
             when {
-                id.isBlank() -> errorJson("参数 assistant_id 缺失或为空")
-                prompt.isBlank() -> errorJson("参数 system_prompt 不能为空（清空人设请用空格占位）")
+                id.isBlank() -> errorJson("Parameter assistant_id is missing or empty")
+                prompt.isBlank() -> errorJson("Parameter system_prompt must not be empty (to clear the persona, use a space as a placeholder)")
                 else -> runBlocking {
                     val assistant = assistantRepository.getById(id)
                     if (assistant == null) {
-                        errorJson("未找到助手 $id")
+                        errorJson("Assistant $id not found")
                     } else {
                         assistantRepository.upsert(assistant.copy(systemPrompt = prompt))
-                        Logger.i(TAG, "工具改助手人设: $id (${assistant.name})")
-                        okJson("已修改助手「${assistant.name}」（$id）的人设文案。")
+                        Logger.i(TAG, "Tool changed assistant persona: $id (${assistant.name})")
+                        okJson("Changed the persona text of assistant \"${assistant.name}\" ($id).")
                     }
                 }
             }
@@ -142,10 +142,10 @@ class AssistantManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "assistant_manage_delete",
-                description = "删除一个助手。不可撤销。默认助手不可删除。" +
-                    "删除前应先用 assistant_manage_list 确认助手 id。",
+                description = "Delete an assistant. Irreversible. The default assistant cannot be deleted." +
+                    "Confirm the assistant id with assistant_manage_list before deleting.",
                 parameters = mapOf(
-                    "assistant_id" to "必填，助手 id",
+                    "assistant_id" to "Required, assistant id",
                 ),
                 required = setOf("assistant_id"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -153,16 +153,16 @@ class AssistantManageTools(
         ) { args ->
             val id = args["assistant_id"]?.trim().orEmpty()
             when {
-                id.isBlank() -> errorJson("参数 assistant_id 缺失或为空")
-                id == DEFAULT_ASSISTANT_ID -> errorJson("默认助手不可删除（与 UI 层保护一致）")
+                id.isBlank() -> errorJson("Parameter assistant_id is missing or empty")
+                id == DEFAULT_ASSISTANT_ID -> errorJson("The default assistant cannot be deleted (consistent with the UI-layer protection)")
                 else -> runBlocking {
                     val assistant = assistantRepository.getById(id)
                     if (assistant == null) {
-                        errorJson("未找到助手 $id")
+                        errorJson("Assistant $id not found")
                     } else {
                         assistantRepository.delete(id)
-                        Logger.i(TAG, "工具删除助手: $id (${assistant.name})")
-                        okJson("已删除助手「${assistant.name}」（$id）。")
+                        Logger.i(TAG, "Tool deleted assistant: $id (${assistant.name})")
+                        okJson("Deleted assistant \"${assistant.name}\" ($id).")
                     }
                 }
             }

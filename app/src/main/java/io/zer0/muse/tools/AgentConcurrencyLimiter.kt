@@ -51,7 +51,7 @@ class AgentConcurrencyLimiter(
             totalSpawned++
             if (totalSpawned > maxTotal) {
                 throw IllegalStateException(
-                    "子 agent 累计派发超过上限 $maxTotal(防失控 backstop)",
+                    "Sub-agent cumulative dispatches exceeded the limit $maxTotal (anti-runaway backstop)",
                 )
             }
         }

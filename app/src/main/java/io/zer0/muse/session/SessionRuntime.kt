@@ -130,7 +130,7 @@ class SessionRuntime(val sessionId: String) {
         if (turnId != null && currentTurnId.get() != null && currentTurnId.get() != turnId) {
             io.zer0.common.Logger.w(
                 TAG,
-                "turn id 不匹配,忽略终态 $phase: runtime=${currentTurnId.get()} request=$turnId session=$sessionId",
+                "turn id mismatch, ignoring terminal state $phase: runtime=${currentTurnId.get()} request=$turnId session=$sessionId",
             )
             return
         }
@@ -153,7 +153,7 @@ class SessionRuntime(val sessionId: String) {
         if (current in TERMINAL_PHASES) {
             io.zer0.common.Logger.w(
                 TAG,
-                "turn 已终态($current),忽略迁移到 $target session=$sessionId turn=${currentTurnId.get()}",
+                "turn already terminal ($current), ignoring transition to $target session=$sessionId turn=${currentTurnId.get()}",
             )
             return
         }

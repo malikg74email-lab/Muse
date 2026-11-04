@@ -24,7 +24,7 @@ class TtsToolsImpl(private val context: Context) {
             } else {
                 context.getString(R.string.tool_speak_text_failed)
             }
-        }.onError { msg, _ -> Logger.w("TtsTools", "TTS 失败: $msg") }
+        }.onError { msg, _ -> Logger.w("TtsTools", "TTS failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_speak_text_failed)
     }
 
@@ -88,7 +88,7 @@ class TtsToolsImpl(private val context: Context) {
                     }
                     cont.resume(true) { _, _, _ -> }
                 } catch (e: Exception) {
-                    Logger.w("TtsTools", "TTS 朗读异常: ${e.message}")
+                    Logger.w("TtsTools", "TTS reading exception: ${e.message}")
                     release()
                     if (cont.isActive) cont.resume(false) { _, _, _ -> }
                 }

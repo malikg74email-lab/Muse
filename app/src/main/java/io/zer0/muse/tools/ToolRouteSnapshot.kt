@@ -27,7 +27,7 @@ object RouteTable {
      */
     private const val PROMPT_SKILL_INPUT_SCHEMA =
         "{\"type\":\"object\",\"properties\":{\"input\":{\"type\":\"string\"," +
-            "\"description\":\"传给该技能的输入或请求文本;会代入指令中的 {{input}}/{{args}} 占位符,无占位符时追加到指令末尾\"}},\"required\":[]}"
+            "\"description\":\"The input or request text passed to this skill; substituted into the {{input}}/{{args}} placeholders in the instructions, or appended to the end of the instructions when there are no placeholders\"}},\"required\":[]}"
 
     fun snapshot(localDefinitions: List<ToolDefinition>, skills: Collection<SkillEntity>): ToolRouteSnapshot {
         val localByName = localDefinitions.distinctBy { it.name }.associateBy { it.name }

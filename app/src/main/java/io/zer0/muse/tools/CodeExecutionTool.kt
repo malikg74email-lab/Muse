@@ -46,14 +46,14 @@ object CodeExecutionTool {
     fun toolDef() = ToolRegistry.ToolDef(
         name = TOOL_NAME,
         description =
-            "执行 JavaScript 代码并返回结果。可用 Math/JSON/Array 等标准库;" +
-                "脚本可以 return Promise,工具会等它完成再返回真实结果。" +
-                "网络:fetch/XHR 由宿主原生发起(不是浏览器请求),因此**不受 CORS 限制**," +
-                "http/https 都可以访问;每次外发都会记审计日志。" +
-                "不能跳转页面或读取本地文件。超时 10 秒。",
+            "Execute JavaScript code and return the result. Standard libraries such as Math/JSON/Array are available;" +
+                "the script may return a Promise; the tool waits for it to complete before returning the real result." +
+                "Network: fetch/XHR are issued natively by the host (not browser requests), so they are **not subject to CORS restrictions**;" +
+                "both http/https can be accessed; every outbound request is recorded in an audit log." +
+                "It cannot navigate pages or read local files. 10-second timeout.",
         parameters = mapOf(
-            "code" to "必填,要执行的 JavaScript 代码(如 '1+2*3' / 'Math.max(1,2,3)' / 'JSON.stringify([1,2,3])')",
-            "timeout_ms" to "可选,超时毫秒数,默认 10000(10 秒)",
+            "code" to "Required, the JavaScript code to execute (e.g. '1+2*3' / 'Math.max(1,2,3)' / 'JSON.stringify([1,2,3])')",
+            "timeout_ms" to "Optional, timeout in milliseconds, default 10000 (10 seconds)",
         ),
         required = setOf("code"),
         category = "built-in",
@@ -74,13 +74,13 @@ object CodeExecutionTool {
             ?: return buildResult(
                 result = null,
                 logs = emptyList(),
-                error = "参数 code 缺失或非字符串",
+                error = "Parameter code is missing or not a string",
             )
         if (code.isBlank()) {
             return buildResult(
                 result = null,
                 logs = emptyList(),
-                error = "参数 code 不能为空",
+                error = "Parameter code must not be empty",
             )
         }
 
@@ -91,7 +91,7 @@ object CodeExecutionTool {
             return buildResult(
                 result = null,
                 logs = emptyList(),
-                error = "参数 timeout_ms 须在 1..60000 范围内",
+                error = "Parameter timeout_ms must be within 1..60000",
             )
         }
 
@@ -106,14 +106,14 @@ object CodeExecutionTool {
                 )
             },
             onFailure = { e ->
-                Logger.e("CodeExecutionTool", "JsSandbox 执行失败: ${e.message}", e)
+                Logger.e("CodeExecutionTool", "JsSandbox execution failed: ${e.message}", e)
                 // 环境不可用与代码写错要分开报：前者重试一万次也不会好，
                 // 旧文案把内部类名透给模型，会被当成参数错而白白重试。
                 val msg = if (e is JsSandbox.JsSandboxUnavailableException) {
-                    "JS 执行环堷不可用（环境自检未通过：${e.message}）。这不是代码写法的问题，重试同一段代码不会成功；" +
-                        "请改用 execute_node_script，或告知用户本机 JS 沙盒暂时不可用。"
+                    "The JS execution environment is unavailable (the environment self-check did not pass: ${e.message}). This is not a problem with how the code is written; retrying the same code will not succeed;" +
+                        "please switch to execute_node_script, or tell the user that this device's JS sandbox is temporarily unavailable."
                 } else {
-                    e.message ?: "未知执行错误"
+                    e.message ?: "Unknown execution error"
                 }
                 buildResult(
                     result = null,

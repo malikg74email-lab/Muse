@@ -27,10 +27,10 @@ class PluginMarketToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_MARKET_SEARCH,
-                description = "搜索 Muse 插件市场中的插件（外部工具/声明式皮肤包）。返回插件 id、名称、版本、说明、" +
-                    "发行者与安装/信任状态。找到合适的插件后把关键信息展示给用户，再用 plugin_market_install 安装" +
-                    "（安装会弹审批卡）。",
-                parameters = mapOf("query" to "可选,关键词（匹配 id/名称/说明）；留空列出全部"),
+                description = "Search for plugins in the Shaheen 2 plugin marketplace (external tools/declarative skin packs). Returns the plugin id, name, version, description," +
+                    "publisher and install/trust status. After finding a suitable plugin, show the key information to the user, then install it with plugin_market_install" +
+                    "(installing pops up an approval card).",
+                parameters = mapOf("query" to "Optional, keyword (matches id/name/description); leave empty to list all"),
                 required = emptySet(),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,
@@ -42,13 +42,13 @@ class PluginMarketToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_MARKET_INSTALL,
-                description = "安装插件市场中的插件（plugin_id 用 plugin_market_search 获取）。执行会下载安装包、" +
-                    "校验发行者签名与内容摘要后安装，安装前会弹用户的审批卡片。" +
-                    "发行者尚未受信任时，本工具会返回待确认信息：请先把信息展示给用户，用户确认后带 " +
-                    "trust_publisher=true 再次调用。",
+                description = "Install a plugin from the plugin marketplace (get plugin_id with plugin_market_search). Execution downloads the installation package," +
+                    "verifies the publisher signature and content digest, then installs; an approval card pops up for the user before installing." +
+                    "When the publisher is not yet trusted, this tool returns information to confirm: show the information to the user first; after the user confirms, call again with " +
+                    "trust_publisher=true.",
                 parameters = mapOf(
-                    "plugin_id" to "必填,插件 id（见 plugin_market_search）",
-                    "trust_publisher" to "可选,true/false：用户已确认信任该插件发行者时传 true（首次安装未受信任发行者的插件需要）",
+                    "plugin_id" to "Required, plugin id (see plugin_market_search)",
+                    "trust_publisher" to "Optional, true/false: pass true when the user has confirmed trusting this plugin's publisher (needed for the first install of a plugin from an untrusted publisher)",
                 ),
                 required = setOf("plugin_id"),
                 category = "built-in",
@@ -57,7 +57,7 @@ class PluginMarketToolsRegistrar(
             ),
         ) { args ->
             val pluginId = args["plugin_id"].orEmpty()
-            if (pluginId.isBlank()) return@register "安装失败：缺少 plugin_id。"
+            if (pluginId.isBlank()) return@register "Installation failed: missing plugin_id."
             val trustPublisher = args["trust_publisher"]?.equals("true", ignoreCase = true) == true
             marketService.install(pluginId, trustPublisher)
         }
@@ -65,9 +65,9 @@ class PluginMarketToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_MARKET_UNINSTALL,
-                description = "卸载一个已安装的插件（注册表、插件目录、归属技能与保留版本一并清理，不可恢复）。" +
-                    "plugin_id 可用 plugin_market_search 获取，或让用户从插件管理页确认。执行会弹审批卡。",
-                parameters = mapOf("plugin_id" to "必填,已安装插件的 id"),
+                description = "Uninstall an installed plugin (registry, plugin directory, owned skills and retained versions are all cleaned up; unrecoverable)." +
+                    "Get plugin_id with plugin_market_search, or have the user confirm it on the plugin management page. Execution pops up an approval card.",
+                parameters = mapOf("plugin_id" to "Required, the installed plugin's id"),
                 required = setOf("plugin_id"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.HIGH,
@@ -79,11 +79,11 @@ class PluginMarketToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = TOOL_MARKET_SET_ENABLED,
-                description = "启用或停用已安装的插件。停用（enabled=false）只冻结插件及其技能，安装保留、可随时恢复；" +
-                    "彻底不想要了再用 plugin_market_uninstall。执行会弹审批卡。",
+                description = "Enable or disable an installed plugin. Disabling (enabled=false) only freezes the plugin and its skills; the installation is kept and can be restored at any time;" +
+                    "if you want it gone entirely, use plugin_market_uninstall. Execution pops up an approval card.",
                 parameters = mapOf(
-                    "plugin_id" to "必填,已安装插件的 id",
-                    "enabled" to "必填,true=启用,false=停用",
+                    "plugin_id" to "Required, the installed plugin's id",
+                    "enabled" to "Required, true=enable, false=disable",
                 ),
                 required = setOf("plugin_id", "enabled"),
                 category = "built-in",
@@ -92,7 +92,7 @@ class PluginMarketToolsRegistrar(
             ),
         ) { args ->
             val pluginId = args["plugin_id"].orEmpty()
-            if (pluginId.isBlank()) return@register "操作失败：缺少 plugin_id。"
+            if (pluginId.isBlank()) return@register "Operation failed: missing plugin_id."
             val enabled = args["enabled"]?.equals("true", ignoreCase = true) == true
             marketService.setEnabled(pluginId, enabled)
         }

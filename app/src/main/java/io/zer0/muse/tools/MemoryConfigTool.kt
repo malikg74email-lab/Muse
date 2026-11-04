@@ -21,8 +21,8 @@ object MemoryConfigTool {
     fun getDef() = ToolRegistry.ToolDef(
         name = NAME_GET,
         description =
-        "读取记忆系统的当前参数(token 预算 / 遗忘速度 / 编译阈值等)及其含义。" +
-            "想调整记忆行为前先调它看现状,不要凭猜测改。",
+        "Read the memory system's current parameters (token budget / forgetting speed / compile threshold, etc.) and their meanings." +
+            "Call it to see the current state before adjusting memory behaviour; do not change things by guessing.",
         parameters = emptyMap(),
         required = emptySet(),
         category = "built-in",
@@ -32,20 +32,20 @@ object MemoryConfigTool {
     fun setDef() = ToolRegistry.ToolDef(
         name = NAME_SET,
         description =
-        "调整记忆系统参数。只改传入的字段,其余保持不变;改完会校验合法性,非法则整体拒绝。" +
-            "常用场景:记忆老是忘事→调小 decay_per_day 或调大 hit_bonus;" +
-            "记忆内容太长挤占上下文→调小 token_budget;" +
-            "只想记住重要的事→调大 compile_threshold。",
+        "Adjust memory system parameters. Only the fields passed in are changed; the rest stay unchanged. After changing, validity is checked; if invalid, the whole change is rejected." +
+            "Common scenarios: memory keeps forgetting things → lower decay_per_day or raise hit_bonus;" +
+            "memory content too long and crowding the context → lower token_budget;" +
+            "only want to remember important things → raise compile_threshold.",
         parameters =
         mapOf(
-            "token_budget" to "可选,memory.md 注入 system prompt 的 token 预算,正整数,默认 2500。",
-            "decay_per_day" to "可选,衰减系数 λ(每天),越大忘得越快。0.01≈19天归零 / 0.02=默认 / 0.04≈10天。",
-            "hit_bonus" to "可选,每次被命中的加分,默认 5。调大让常被提起的记忆更难消失。",
-            "base_importance" to "可选,新记忆的初始分,须 > 0,默认 10。",
-            "compile_threshold" to "可选,低于此分不进 memory.md,默认 4.5。调大只保留重要记忆。",
-            "forget_speed" to "可选,遗忘倍率,1.0 正常,2.0 忘得快一倍,默认 1.0。",
+            "token_budget" to "Optional, the token budget for injecting memory.md into the system prompt, a positive integer, default 2500.",
+            "decay_per_day" to "Optional, decay coefficient λ (per day); larger forgets faster. 0.01≈zero in 19 days / 0.02=default / 0.04≈10 days.",
+            "hit_bonus" to "Optional, the bonus points for each hit, default 5. Raising it makes frequently mentioned memories harder to lose.",
+            "base_importance" to "Optional, a new memory's initial score, must be > 0, default 10.",
+            "compile_threshold" to "Optional, scores below this do not enter memory.md, default 4.5. Raising it keeps only important memories.",
+            "forget_speed" to "Optional, forgetting multiplier, 1.0 normal, 2.0 forgets twice as fast, default 1.0.",
             "conversation_recall" to
-                "可选,true/false。是否允许记忆管线回读会话完整原文(而非只看当前窗口)。",
+                "Optional, true/false. Whether the memory pipeline may re-read the full original text of conversations (rather than only the current window).",
         ),
         required = emptySet(),
         category = "built-in",
@@ -55,14 +55,14 @@ object MemoryConfigTool {
     suspend fun get(settings: SettingsRepository): String {
         val c = settings.memoryConfigFlow.first()
         return buildString {
-            appendLine("当前记忆参数:")
-            appendLine("token_budget = ${c.tokenBudget}  (memory.md 注入预算,默认 2500)")
-            appendLine("decay_per_day = ${c.decayPerDay}  (衰减系数,默认 0.02;越大忘得越快)")
-            appendLine("hit_bonus = ${c.hitBonus}  (命中加分,默认 5)")
-            appendLine("base_importance = ${c.baseImportance}  (新记忆初始分,默认 10)")
-            appendLine("compile_threshold = ${c.compileThreshold}  (入 memory.md 的最低分,默认 4.5)")
-            appendLine("forget_speed = ${c.forgetSpeed}  (遗忘倍率,默认 1.0)")
-            append("conversation_recall = ${c.conversationRecallEnabled}  (是否回读会话原文)")
+            appendLine("Current memory parameters:")
+            appendLine("token_budget = ${c.tokenBudget}  (memory.md injection budget, default 2500)")
+            appendLine("decay_per_day = ${c.decayPerDay}  (decay coefficient, default 0.02; larger forgets faster)")
+            appendLine("hit_bonus = ${c.hitBonus}  (hit bonus, default 5)")
+            appendLine("base_importance = ${c.baseImportance}  (new memory initial score, default 10)")
+            appendLine("compile_threshold = ${c.compileThreshold}  (minimum score to enter memory.md, default 4.5)")
+            appendLine("forget_speed = ${c.forgetSpeed}  (forgetting multiplier, default 1.0)")
+            append("conversation_recall = ${c.conversationRecallEnabled}  (whether to re-read conversation originals)")
         }
     }
 
@@ -70,7 +70,7 @@ object MemoryConfigTool {
     private inline fun <T> pick(args: Map<String, String>, key: String, errors: MutableList<String>, parse: (String) -> T?): T? {
         val raw = args[key]?.trim()?.takeIf { it.isNotEmpty() } ?: return null
         val parsed = parse(raw)
-        if (parsed == null) errors.add("$key 取值无法解析: $raw")
+        if (parsed == null) errors.add("$key value could not be parsed: $raw")
         return parsed
     }
 
@@ -129,15 +129,15 @@ object MemoryConfigTool {
 
         return when {
             errors.isNotEmpty() -> "Error: ${errors.joinToString("; ")}"
-            invalid != null -> "Error: 参数组合不合法,未保存 —— $invalid"
-            next == current -> "OK: 参数与当前一致,无需改动。"
+            invalid != null -> "Error: parameter combination is invalid; not saved — $invalid"
+            next == current -> "OK: parameters are identical to the current ones; no change needed."
             else -> {
                 settings.saveMemoryConfig(next)
                 val changes = diff(current, next)
                 buildString {
-                    appendLine("OK: 记忆参数已更新。")
+                    appendLine("OK: memory parameters updated.")
                     changes.forEach { appendLine(it) }
-                    append("参数在下一轮记忆编译时生效。")
+                    append("The parameters take effect at the next memory compilation round.")
                 }
             }
         }

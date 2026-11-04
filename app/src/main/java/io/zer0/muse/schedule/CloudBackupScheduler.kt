@@ -140,13 +140,13 @@ class CloudBackupScheduler(
     private suspend fun checkAndSync() {
         // B-25: 总控关闭时直接跳过(读 DataStore 缓存值,成本低)
         if (!readScheduleWorkEnabledOrFalse { settings.scheduleWorkEnabledFlow.first() }) {
-            Logger.i(TAG, "后台调度总控已关闭,跳过云备份检查")
+            Logger.i(TAG, "Background scheduling master switch is off, skipping the cloud backup check")
             return
         }
         // B-11: 快速抢占检查(未加锁):同窗口已有上传在途则跳过,避免重复触发
         val now = System.currentTimeMillis()
         if (syncStartedAt > 0 && now - syncStartedAt < SYNC_GUARD_MS) {
-            Logger.d(TAG, "云备份已在途(syncStartedAt 抢占),跳过本次检查")
+            Logger.d(TAG, "Cloud backup already in flight (syncStartedAt claimed), skipping this check")
             return
         }
         syncMutex.withLock {

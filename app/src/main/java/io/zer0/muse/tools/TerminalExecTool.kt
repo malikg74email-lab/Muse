@@ -28,13 +28,13 @@ object TerminalExecTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = NAME,
-        description = "在应用沙盒内执行单条 shell 命令(工作目录为应用工作区,App 自身权限)。" +
-            "适合文件处理/脚本/诊断;需要点击、启停应用等设备级操控时改用 device_shell(需 Shizuku/Root 授权)。" +
-            "返回退出码与完整输出;长输出会保存到可分段读取的应用文件;超时命令会被终止。",
+        description = "Execute a single shell command inside the app sandbox (working directory is the app workspace, with the app's own permissions)." +
+            "Suitable for file processing/scripts/diagnostics; for device-level operations such as tapping or starting/stopping apps, use device_shell instead (requires Shizuku/Root authorisation)." +
+            "Returns the exit code and full output; long output is saved to an app file that can be read in chunks; timed-out commands are terminated.",
         parameters = mapOf(
-            "command" to "必填。单条 shell 命令,如 ls -la / cat notes.txt / mkdir -p out(管道与重定向可用;" +
-                "递归删掉整个工作区、写系统分区、下载即执行这类命令会被安全边界拒绝)",
-            "timeout_ms" to "可选。超时毫秒,默认 15000,范围 1000-60000",
+            "command" to "Required. A single shell command, e.g. ls -la / cat notes.txt / mkdir -p out (pipes and redirection are allowed;" +
+                "commands such as recursively deleting the whole workspace, writing to system partitions, or download-and-execute are refused by the security boundary)",
+            "timeout_ms" to "Optional. Timeout in milliseconds, default 15000, range 1000-60000",
         ),
         required = setOf("command"),
         category = "built-in",
@@ -49,12 +49,12 @@ object TerminalExecTool {
         // 放在执行之前、审批之后:TRUSTED 模式与「始终允许本工具」都不能越过它。
         val forbidden = ShellCommandBoundary.forbidReason(command, workspaceDir)
         if (forbidden != null) {
-            Logger.w(TAG, "硬边界拒绝:$forbidden")
-            return "Error: 命令被安全边界拒绝 — ${forbidden}。"
+            Logger.w(TAG, "Hard boundary refusal: $forbidden")
+            return "Error: command refused by the security boundary — ${forbidden}."
         }
         // 第二档:有破坏力但属于正常工作,不在这里拦(由 HIGH 风险的逐次审批承担),只留可回溯的日志。
         ShellCommandBoundary.cautionReason(command)?.let { note ->
-            Logger.w(TAG, "破坏性命令已放行(审批链负责):$note")
+            Logger.w(TAG, "Destructive command allowed through (the approval chain is responsible): $note")
         }
         val timeoutMs = (args["timeout_ms"]?.toIntOrNull() ?: 15_000).coerceIn(1_000, 60_000)
         return withContext(Dispatchers.IO) {
@@ -66,7 +66,7 @@ object TerminalExecTool {
                     .start()
             }.getOrElse {
                 capture.close()
-                return@withContext "启动失败: ${it.message ?: "未知错误"}"
+                return@withContext "Launch failed: ${it.message ?: "unknown error"}"
             }
 
             val readerFailure = java.util.concurrent.atomic.AtomicReference<Throwable?>(null)
@@ -91,20 +91,20 @@ object TerminalExecTool {
                 readerJob.join()
                 readerFailure.get()?.let { error ->
                     capture.close()
-                    return@withContext "命令超时，且完整输出无法保存: ${error.message ?: "存储失败"}"
+                    return@withContext "Command timed out, and the full output could not be saved: ${error.message ?: "storage failed"}"
                 }
                 return@withContext capture.finish(
-                    header = "命令超时(${timeoutMs / 1000}s)已终止",
-                    emptyMessage = "(无输出)",
+                    header = "Command timed out (${timeoutMs / 1000}s); terminated",
+                    emptyMessage = "(No output)",
                 )
             }
             readerJob.join()
             readerFailure.get()?.let { error ->
                 capture.close()
-                return@withContext "命令结束，但完整输出无法保存: ${error.message ?: "存储失败"}"
+                return@withContext "Command finished, but the full output could not be saved: ${error.message ?: "storage failed"}"
             }
             val exit = process.exitValue()
-            capture.finish(header = "exit=$exit", emptyMessage = "(无输出)")
+            capture.finish(header = "exit=$exit", emptyMessage = "(No output)")
         }
     }
 }

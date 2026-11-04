@@ -36,7 +36,7 @@ class RootToolsRegistrar(
         registerAll()
     }
 
-    private fun tierUnavailable(): String = "设备命令通道不可用:需要 Shizuku 或 Root 授权(设置 → 权限配置向导),当前两档均未就绪"
+    private fun tierUnavailable(): String = "Device command channel unavailable: requires Shizuku or Root authorisation (Settings → Permission configuration wizard); neither tier is ready right now"
 
     /** 执行一条设备命令;[tier] 前缀便于模型与用户区分走的是哪档。 */
     private suspend fun runCommand(command: String): Pair<String, io.zer0.muse.automation.executors.ShellExecutor.ExecDetail>? =
@@ -46,14 +46,14 @@ class RootToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "settings_get",
-                description = "按名称读取 Android 系统设置(system / secure / global)。" +
-                    "可查飞行模式、Wi-Fi 状态、定位模式等。" +
-                    "格式为 namespace:name,例如 secure:location_mode。" +
-                    "需要 Shizuku 或 Root 授权。",
+                description = "Read Android system settings by name (system / secure / global)." +
+                    "Can query airplane mode, Wi-Fi state, location mode, etc." +
+                    "Format is namespace:name, e.g. secure:location_mode." +
+                    "Requires Shizuku or Root authorisation.",
                 parameters = mapOf(
                     "name" to
-                        "必填。设置名,可带命名空间前缀(global / secure / system)," +
-                        "例如 secure:location_mode",
+                        "Required. Setting name, may carry a namespace prefix (global / secure / system)," +
+                        "e.g. secure:location_mode",
                 ),
                 required = setOf("name"),
                 category = "built-in",
@@ -67,15 +67,15 @@ class RootToolsRegistrar(
             if (detail.exitCode == 0) {
                 "[$tier] $name = ${detail.output.trim()}"
             } else {
-                formatRootFailureOutput(tier, "读取失败", detail.output, detail.exitCode)
+                formatRootFailureOutput(tier, "Read failed", detail.output, detail.exitCode)
             }
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "network_toggle",
-                description = "通过 svc 命令开关 Wi-Fi 或移动数据。" +
-                    "需要 Shizuku 或 Root 授权。谨慎使用,可能中断网络连接。",
+                description = "Toggle Wi-Fi or mobile data via the svc command." +
+                    "Requires Shizuku or Root authorisation. Use with care; it may interrupt the network connection.",
                 parameters = mapOf(
                     "service" to "Required. Service to toggle: wifi or data",
                     "enabled" to "Required. true to enable, false to disable",
@@ -95,15 +95,15 @@ class RootToolsRegistrar(
             if (detail.exitCode == 0) {
                 "[$tier] $service ${if (enabled) "enabled" else "disabled"}"
             } else {
-                formatRootFailureOutput(tier, "切换失败", detail.output, detail.exitCode)
+                formatRootFailureOutput(tier, "Toggle failed", detail.output, detail.exitCode)
             }
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "settings_put",
-                description = "写入 Android 系统设置(system / secure / global)。" +
-                    "需要 Shizuku 或 Root 授权。谨慎使用,会改变设备行为。",
+                description = "Write Android system settings (system / secure / global)." +
+                    "Requires Shizuku or Root authorisation. Use with care; it changes device behaviour.",
                 parameters = mapOf(
                     "namespace" to "Required. Setting namespace: global, secure, or system",
                     "name" to "Required. Setting name",
@@ -124,16 +124,16 @@ class RootToolsRegistrar(
             if (detail.exitCode == 0) {
                 formatSettingsPutResult(tier, namespace, name)
             } else {
-                formatRootFailureOutput(tier, "写入失败", detail.output, detail.exitCode)
+                formatRootFailureOutput(tier, "Write failed", detail.output, detail.exitCode)
             }
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "am_start",
-                description = "通过 am start 命令启动 Activity。" +
-                    "extras 用 key=value 形式,多项以 | 分隔。" +
-                    "需要 Shizuku 或 Root 授权。",
+                description = "Launch an Activity via the am start command." +
+                    "extras use the key=value form, multiple items separated by |." +
+                    "Requires Shizuku or Root authorisation.",
                 parameters = mapOf(
                     "package" to "Required. Package name, e.g., com.android.settings",
                     "class" to "Optional. Activity class name, e.g., .Settings\$WifiSettingsActivity",
@@ -153,15 +153,15 @@ class RootToolsRegistrar(
             if (detail.exitCode == 0) {
                 "[$tier] Activity started: $pkg${cls?.let { "/$it" }.orEmpty()}"
             } else {
-                formatRootFailureOutput(tier, "启动失败", detail.output, detail.exitCode)
+                formatRootFailureOutput(tier, "Launch failed", detail.output, detail.exitCode)
             }
         }
 
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "list_packages",
-                description = "列出已安装的包名,可按子串过滤。用于查找应用的包名。" +
-                    "需要 Shizuku 或 Root 授权。",
+                description = "List installed package names, filterable by substring. Used to find an app's package name." +
+                    "Requires Shizuku or Root authorisation.",
                 parameters = mapOf(
                     "filter" to "Optional. Substring to filter package names",
                 ),
@@ -175,7 +175,7 @@ class RootToolsRegistrar(
             val result = runCommand(cmd) ?: return@register tierUnavailable()
             val (tier, detail) = result
             if (detail.exitCode != 0) {
-                formatRootFailureOutput(tier, "列表失败", detail.output, detail.exitCode)
+                formatRootFailureOutput(tier, "Listing failed", detail.output, detail.exitCode)
             } else {
                 val packages = detail.output.lineSequence()
                     .mapNotNull { line -> Regex("package:(.+)").find(line)?.groupValues?.get(1) }
@@ -193,8 +193,8 @@ class RootToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "logcat_tail",
-                description = "读取最近 N 行 logcat。用于排查应用崩溃或系统事件。" +
-                    "需要 Shizuku 或 Root 授权。",
+                description = "Read the most recent N lines of logcat. Used to troubleshoot app crashes or system events." +
+                    "Requires Shizuku or Root authorisation.",
                 parameters = mapOf(
                     "lines" to "Optional. Number of lines to read, default 100",
                 ),
@@ -212,9 +212,9 @@ class RootToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "input_inject",
-                description = "向当前焦点输入框注入文本。" +
-                    "遇到特殊字符时比无障碍输入更可靠。" +
-                    "需要 Shizuku 或 Root 授权。",
+                description = "Inject text into the currently focused input field." +
+                    "More reliable than accessibility input when special characters are involved." +
+                    "Requires Shizuku or Root authorisation.",
                 parameters = mapOf(
                     "text" to "Required. Text to inject",
                 ),
@@ -239,7 +239,7 @@ class RootToolsRegistrar(
                 if (pasteResult != null && pasteResult.second.exitCode == 0) {
                     formatInputInjectResult(tier, text.length, viaClipboard = true)
                 } else {
-                    formatRootFailureOutput(tier, "注入失败", detail.output, detail.exitCode)
+                    formatRootFailureOutput(tier, "Injection failed", detail.output, detail.exitCode)
                 }
             }
         }

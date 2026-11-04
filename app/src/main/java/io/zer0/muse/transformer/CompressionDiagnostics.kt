@@ -14,10 +14,10 @@ internal object CompressionDiagnostics {
 
     /** 压缩完成、检查点已写入。 */
     fun checkpointSaved(ratio: String, covered: Int, before: Int, after: Int): String =
-        "Auto-compress 已落检查点: ratio=$ratio, $covered 条并入摘要($before → $after 条)"
+        "Auto-compress checkpoint saved: ratio=$ratio, $covered  entries merged into the summary ($before → $after  entries)"
 
     /** 压缩跑完却没有覆盖记录（水位线为空），本轮不写检查点。 */
-    const val NO_COVERAGE_RECORD: String = "Auto-compress 完成但无覆盖记录(水位线为空),不写检查点"
+    const val NO_COVERAGE_RECORD: String = "Auto-compress finished but there is no coverage record (the watermark is empty); not writing a checkpoint"
 
     /** 摘要不可用，已改用零请求本地重建并落检查点。 */
     fun localRebuildSaved(covered: Int, before: Int): String =
@@ -27,14 +27,14 @@ internal object CompressionDiagnostics {
     const val LOCAL_REBUILD_EMPTY: String = "local rebuild produced nothing; keeping full history"
 
     /** 读取当前会话检查点失败，按"无检查点"继续。 */
-    fun readCheckpointFailed(message: String?): String = "读取会话检查点失败(按无检查点处理): $message"
+    fun readCheckpointFailed(message: String?): String = "Failed to read the session checkpoint (treating as no checkpoint):  $message"
 
     /** 检查点写入失败，本轮按全量历史继续。 */
-    fun writeCheckpointFailed(message: String?): String = "会话检查点写入失败(本轮按全量历史继续): $message"
+    fun writeCheckpointFailed(message: String?): String = "Failed to write the session checkpoint (continuing with full history this round):  $message"
 
     /** 刷新检查点覆盖集合失败。 */
-    fun refreshCoveredIdsFailed(message: String?): String = "刷新检查点覆盖集合失败: $message"
+    fun refreshCoveredIdsFailed(message: String?): String = "Failed to refresh the checkpoint coverage set:  $message"
 
     /** 自动压缩结果已过期（期间用户切走了会话），丢弃。 */
-    fun staleAutoCompressResult(sessionId: String): String = "Auto-compress 结果已过期(会话已切换),丢弃: $sessionId"
+    fun staleAutoCompressResult(sessionId: String): String = "Auto-compress result expired (session switched); discarding:  $sessionId"
 }

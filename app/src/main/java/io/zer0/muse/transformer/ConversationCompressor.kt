@@ -150,8 +150,8 @@ class ConversationCompressor(
         val chunks = chunkMessages(toCompress, budgetChars)
         Logger.i(
             TAG,
-            "compress: ${toCompress.size} 条消息分为 ${chunks.size} 块并行压缩" +
-                "(单块预算 $budgetChars 字符, 窗口 ${model?.contextWindow ?: "未知"})",
+            "compress: ${toCompress.size}  messages split into  ${chunks.size}  chunks, compressing in parallel" +
+                "(per-chunk budget  $budgetChars  chars, window ${model?.contextWindow ?:  "未知"})",
         )
 
         // v1.0.52: 读取用户自定义压缩 prompt(null/空串表示用默认)
@@ -162,7 +162,7 @@ class ConversationCompressor(
                 .getOrNull()
                 ?.takeIf { it.isNotBlank() }
         if (customPrompt != null) {
-            Logger.i(TAG, "compress: 使用自定义压缩指令")
+            Logger.i(TAG, "compress: using a custom compression instruction")
         }
 
         // 并行压缩每块(v1.0.51: 用 Semaphore 限制并发,避免大量块同时调 LLM 轰炸 API)
@@ -182,7 +182,7 @@ class ConversationCompressor(
         // 也不能让模型把"摘要生成失败"占位当成它已经见过的历史摘要(那是静默失忆)。
         val failed = results.count { it == null }
         return if (failed > 0) {
-            Logger.w(TAG, "compress: $failed/${results.size} 块摘要失败, 整体降级(返回 null)")
+            Logger.w(TAG, "compress: $failed/${results.size}  chunk summaries failed; degrading as a whole (returning null)")
             null
         } else {
             results.filterNotNull()
@@ -218,34 +218,34 @@ class ConversationCompressor(
                 appendLine(customPrompt)
             } else {
                 // 默认结构化压缩指令
-                appendLine("请把下面的对话历史压缩成简洁的摘要,保留关键信息(事实/决策/用户偏好)。")
-                appendLine("按以下结构组织摘要(每节用要点形式,每点一行;某节无内容可省略):")
-                appendLine("- Key topics: 讨论了哪些主题,以及为什么重要(粗颗粒,不要流水账)")
-                appendLine("- Decisions: 做出了哪些决策,以及背后的理由")
-                appendLine("- Current work: 正在进行的工作及其当前状态")
-                appendLine("- Next steps: 待办的下一步、未解决的问题、需要后续跟进的事项")
-                appendLine("- User preferences: 用户表现出的偏好或约束(如有)")
-                appendLine("- 不要编造未提及的内容")
-                appendLine("- 总长度不超过 800 字")
+                appendLine("Compress the conversation history below into a concise summary, keeping the key information (facts/decisions/user preferences).")
+                appendLine("Organise the summary in the following structure (bullet points, one point per line for each section; a section may be omitted if it has no content):")
+                appendLine("- Key topics: which topics were discussed, and why they matter (coarse-grained, not a running account)")
+                appendLine("- Decisions: which decisions were made, and the reasoning behind them")
+                appendLine("- Current work: the work in progress and its current state")
+                appendLine("- Next steps: the next steps to do, unresolved questions, and matters needing follow-up")
+                appendLine("- User preferences: preferences or constraints the user has shown (if any)")
+                appendLine("- Do not fabricate content that was not mentioned")
+                appendLine("- Total length must not exceed 800 characters")
             }
             if (!previousSummary.isNullOrBlank()) {
                 appendLine()
-                appendLine("已有摘要(来自更早的压缩,必须在它基础上更新,而不是另起一份):")
+                appendLine("Existing summary (from an earlier compression; you must build on it and update it, rather than starting a new one):")
                 appendLine(previousSummary.trim())
                 appendLine()
-                appendLine("合并要求:")
-                appendLine("- 已有摘要里的事实与决策一律保留,除非新对话明确推翻它")
-                appendLine("- 新对话带来的进展要覆盖旧结论(状态变了就写新的状态)")
-                appendLine("- 两边都有内容不要重复写两遍,合成一条")
+                appendLine("Merging requirements:")
+                appendLine("- Facts and decisions in the existing summary are always kept, unless the new conversation explicitly overturns them")
+                appendLine("- Progress from the new conversation should override old conclusions (if the state changed, write the new state)")
+                appendLine("- Where both sides have content, do not write it twice; merge it into one item")
             }
             appendLine()
-            appendLine("对话历史:")
+            appendLine("Conversation history:")
             chunk.forEach { msg ->
                 val role = when (msg.role) {
-                    MessageRole.USER -> "用户"
-                    MessageRole.ASSISTANT -> "助手"
-                    MessageRole.SYSTEM -> "系统"
-                    MessageRole.TOOL -> "工具"
+                    MessageRole.USER -> "User"
+                    MessageRole.ASSISTANT -> "Assistant"
+                    MessageRole.SYSTEM -> "System"
+                    MessageRole.TOOL -> "Tool"
                 }
                 val raw = msg.content
                 // v2.x: 与 ContextCompressTransformer 口径一致 —— 保头尾，让尾部结论进得了摘要
@@ -255,7 +255,7 @@ class ConversationCompressor(
         }
 
         val messages = listOf(
-            UIMessage(role = MessageRole.SYSTEM, content = "你是对话压缩助手,输出简洁中文摘要。"),
+            UIMessage(role = MessageRole.SYSTEM, content = "You are a conversation compression assistant. Output a concise summary in Chinese."),
             UIMessage(role = MessageRole.USER, content = prompt),
         )
 
@@ -272,7 +272,7 @@ class ConversationCompressor(
                     mode = ChatRequestMode.UTILITY,
                 )
             }.onError { msg, t ->
-                Logger.w(TAG, "completeText 失败,回退 streamChat: $msg", t)
+                Logger.w(TAG, "completeText failed, falling back to streamChat:  $msg", t)
             }.getOrNull() ?: run {
                 // 兜底:流式收集(仅对非 CancellationException 错误到达此处)
                 val sb = StringBuilder()
@@ -296,7 +296,7 @@ class ConversationCompressor(
             // 不吞协程取消,直接传播
             throw e
         } catch (t: Throwable) {
-            Logger.e(TAG, "compressChunk failed (返回 null,由调用方降级)", t)
+            Logger.e(TAG, "compressChunk failed (returned null; the caller degrades)", t)
             null
         }
     }

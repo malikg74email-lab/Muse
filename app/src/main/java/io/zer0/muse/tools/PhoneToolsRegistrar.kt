@@ -22,14 +22,14 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "set_alarm",
-                description = "设置系统闹钟(通过 AlarmClock.ACTION_SET_ALARM,系统时钟应用承接)。",
+                description = "Set a system alarm (via AlarmClock.ACTION_SET_ALARM, handled by the system clock app).",
                 parameters = mapOf(
-                    "hour" to "必填,闹钟小时(0-23)",
-                    "minute" to "必填,闹钟分钟(0-59)",
-                    "label" to "可选,闹钟标签,默认 'muse 闹钟'",
-                    "days_of_week" to "可选,每周重复,如 MON,TUE,WED,THU,FRI",
-                    "weekdays" to "可选,快捷设工作日重复(周一至周五),传 true 即展开为 MON-FRI,优先于 days_of_week",
-                    "weekends" to "可选,快捷设周末重复(周六周日),传 true 即展开为 SAT,SUN,优先于 days_of_week",
+                    "hour" to "Required, alarm hour (0-23)",
+                    "minute" to "Required, alarm minute (0-59)",
+                    "label" to "Optional, alarm label, default 'Shaheen 2 alarm'",
+                    "days_of_week" to "Optional, weekly repeat, e.g. MON,TUE,WED,THU,FRI",
+                    "weekdays" to "Optional, quick workday repeat (Monday to Friday); passing true expands to MON-FRI, taking priority over days_of_week",
+                    "weekends" to "Optional, quick weekend repeat (Saturday and Sunday); passing true expands to SAT,SUN, taking priority over days_of_week",
                 ),
                 required = setOf("hour", "minute"),
                 category = "built-in",
@@ -41,10 +41,10 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "set_timer",
-                description = "设置系统倒计时(通过 AlarmClock.ACTION_SET_TIMER,系统时钟应用承接)。",
+                description = "Set a system countdown timer (via AlarmClock.ACTION_SET_TIMER, handled by the system clock app).",
                 parameters = mapOf(
-                    "seconds" to "必填,倒计时秒数",
-                    "label" to "可选,倒计时标签,默认 'muse 倒计时'",
+                    "seconds" to "Required, countdown seconds",
+                    "label" to "Optional, countdown label, default 'Shaheen 2 timer'",
                 ),
                 required = setOf("seconds"),
                 category = "built-in",
@@ -56,11 +56,11 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "open_app",
-                description = "打开指定应用(通过包名启动其主 Activity),或通过 Deep Link/自定义 action 跳转。",
+                description = "Open the specified app (launch its main Activity by package name), or jump via a Deep Link/custom action.",
                 parameters = mapOf(
-                    "packageName" to "可选,应用包名,如 com.tencent.mm(微信)/com.tencent.mobileqq(QQ)",
-                    "action" to "可选,自定义 action(如 com.example.MY_ACTION)",
-                    "data_uri" to "可选,Deep Link URI,如 myapp://page/123",
+                    "packageName" to "Optional, app package name, e.g. com.tencent.mm (WeChat)/com.tencent.mobileqq (QQ)",
+                    "action" to "Optional, custom action (e.g. com.example.MY_ACTION)",
+                    "data_uri" to "Optional, Deep Link URI, e.g. myapp://page/123",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -71,10 +71,10 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "share_text",
-                description = "通过系统分享面板分享文本(弹出选择器)。",
+                description = "Share text through the system share panel (pops up the chooser).",
                 parameters = mapOf(
-                    "text" to "必填,要分享的文本",
-                    "title" to "可选,分享面板标题",
+                    "text" to "Required, the text to share",
+                    "title" to "Optional, share panel title",
                 ),
                 required = setOf("text"),
                 category = "built-in",
@@ -85,10 +85,10 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_location",
-                description = "获取设备当前位置(经纬度)。需要定位权限。",
+                description = "Get the device's current location (latitude/longitude). Requires location permission.",
                 parameters = mapOf(
-                    "provider" to "可选,gps/network/passive,默认自动",
-                    "timeout" to "可选,超时毫秒数,默认 5000",
+                    "provider" to "Optional, gps/network/passive, default automatic",
+                    "timeout" to "Optional, timeout in milliseconds, default 5000",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -99,7 +99,7 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_device_info",
-                description = "获取设备信息:品牌/型号/Android 版本/屏幕分辨率/电量。",
+                description = "Get device info: brand/model/Android version/screen resolution/battery.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -110,7 +110,7 @@ class PhoneToolsRegistrar(
         toolRegistry.registerOutcome(
             ToolRegistry.ToolDef(
                 name = "get_device_info",
-                description = "获取设备信息(结构化版本)。",
+                description = "Get device info (structured version).",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -121,8 +121,8 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_contacts_count",
-                description = "获取通讯录联系人数量。需要 READ_CONTACTS 权限。",
-                parameters = mapOf("filter" to "可选,按名称过滤"),
+                description = "Get the number of contacts. Requires the READ_CONTACTS permission.",
+                parameters = mapOf("filter" to "Optional, filter by name"),
                 required = emptySet(),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.NORMAL,
@@ -132,10 +132,10 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_contacts_list",
-                description = "获取通讯录联系人列表。需要 READ_CONTACTS 权限。",
+                description = "Get the contact list. Requires the READ_CONTACTS permission.",
                 parameters = mapOf(
-                    "limit" to "可选,返回数量,默认 20",
-                    "filter" to "可选,按名称过滤",
+                    "limit" to "Optional, number to return, default 20",
+                    "filter" to "Optional, filter by name",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -146,10 +146,10 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "send_sms",
-                description = "发送短信。需要 SEND_SMS 权限。",
+                description = "Send an SMS. Requires the SEND_SMS permission.",
                 parameters = mapOf(
-                    "phone" to "必填,目标手机号",
-                    "message" to "必填,短信内容",
+                    "phone" to "Required, target phone number",
+                    "message" to "Required, SMS content",
                 ),
                 required = setOf("phone", "message"),
                 category = "built-in",
@@ -160,11 +160,11 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "add_contact",
-                description = "添加一个联系人。需要 WRITE_CONTACTS 权限。",
+                description = "Add a contact. Requires the WRITE_CONTACTS permission.",
                 parameters = mapOf(
-                    "name" to "必填,联系人姓名",
-                    "phone" to "可选,手机号",
-                    "email" to "可选,邮箱",
+                    "name" to "Required, contact name",
+                    "phone" to "Optional, phone number",
+                    "email" to "Optional, email",
                 ),
                 required = setOf("name"),
                 category = "built-in",
@@ -175,8 +175,8 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "make_phone_call",
-                description = "打开系统拨号界面并预填手机号(不会直接拨出)。",
-                parameters = mapOf("phone" to "必填,目标手机号"),
+                description = "Open the system dialer with the phone number prefilled (does not dial directly).",
+                parameters = mapOf("phone" to "Required, target phone number"),
                 required = setOf("phone"),
                 category = "built-in",
                 // 电话副作用标记为 HIGH,让 ASK / STRICT 模式要求审批；
@@ -188,11 +188,11 @@ class PhoneToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "open_maps",
-                description = "打开地图应用搜索地点或导航到指定经纬度。",
+                description = "Open a maps app to search for a place or navigate to the specified latitude/longitude.",
                 parameters = mapOf(
-                    "query" to "可选,搜索关键词,如 故宫博物院",
-                    "lat" to "可选,纬度",
-                    "lng" to "可选,经度",
+                    "query" to "Optional, search keyword, e.g. Forbidden City Museum",
+                    "lat" to "Optional, latitude",
+                    "lng" to "Optional, longitude",
                 ),
                 required = emptySet(),
                 category = "built-in",

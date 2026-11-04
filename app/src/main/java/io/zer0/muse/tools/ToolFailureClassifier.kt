@@ -54,7 +54,7 @@ object ToolFailureClassifier {
     )
 
     private val TIMEOUT_MARKERS = listOf("[超时]", "超时", "timed out", "timeout")
-    private val CANCELLED_MARKERS = listOf("[中断]", "[取消]", "已取消", "cancelled", "canceled", "aborted")
+    private val CANCELLED_MARKERS = listOf("[中断]", "[取消]", "已取消", "[interrupted]", "cancelled", "canceled", "aborted")
     private val PERMISSION_MARKERS = listOf(
         "权限", "未授权", "permission denied", "unauthorized", "forbidden", "403",
         "shizuku", "root", "无障碍", "通知使用权", "使用情况访问",
@@ -93,27 +93,27 @@ object ToolFailureClassifier {
      * 先判权限会把它误报成「缺权限」。
      */
     private val RULES: List<Rule> = listOf(
-        Rule(FailureKind.TIMEOUT, true, TIMEOUT_MARKERS, "超时：可原样重试一次；仍超时就把超时事实告诉用户，不要换着参数反复试。"),
-        Rule(FailureKind.CANCELLED, false, CANCELLED_MARKERS, "操作已取消，不是失败。不要重试，按用户当前意图继续。"),
+        Rule(FailureKind.TIMEOUT, true, TIMEOUT_MARKERS, "Timeout: you may retry once as-is; if it times out again, tell the user the timeout fact; do not keep retrying with varied parameters."),
+        Rule(FailureKind.CANCELLED, false, CANCELLED_MARKERS, "The operation was cancelled; that is not a failure. Do not retry; continue according to the user's current intent."),
         Rule(
             FailureKind.PERMISSION,
             false,
             PERMISSION_MARKERS,
-            "缺权限/通道未就绪：重试无用。先调 tool_status 看缺什么，再把开通路径告诉用户。",
+            "Missing permission / channel not ready: retrying is useless. First call tool_status to see what is missing, then tell the user the path to enable it.",
         ),
-        Rule(FailureKind.BLOCKED, false, BLOCKED_MARKERS, "被安全策略或审批拦下：不要绕过，向用户说明被拦原因并等指示。"),
+        Rule(FailureKind.BLOCKED, false, BLOCKED_MARKERS, "Blocked by a security policy or approval: do not bypass it; explain to the user why it was blocked and wait for instructions."),
         Rule(
             FailureKind.NOT_FOUND,
             false,
             NOT_FOUND_MARKERS,
-            "目标不存在：先确认路径/id 是否正确（必要时列目录或搜索），不要用同一个值重试。",
+            "Target does not exist: first confirm the path/id is correct (list the directory or search if necessary); do not retry with the same value.",
         ),
-        Rule(FailureKind.TRANSIENT, true, TRANSIENT_MARKERS, "暂时性故障：可重试一次；仍失败就如实告知，不要连续重试消耗时间。"),
+        Rule(FailureKind.TRANSIENT, true, TRANSIENT_MARKERS, "Transient fault: you may retry once; if it still fails, report it truthfully; do not retry repeatedly and waste time."),
         Rule(
             FailureKind.INVALID_ARGUMENT,
             true,
             INVALID_ARGUMENT_MARKERS,
-            "参数问题：按错误原文改参数后重试一次；改不动就问用户，不要盲猜。",
+            "Parameter problem: fix the parameters according to the original error text and retry once; if you cannot fix them, ask the user; do not guess blindly.",
         ),
     )
 
@@ -130,7 +130,7 @@ object ToolFailureClassifier {
     private val UNKNOWN = Verdict(
         kind = FailureKind.UNKNOWN,
         retryable = false,
-        hint = "无法判断原因：不要盲目重试。先看错误原文；确实需要继续时先向用户说明情况。",
+        hint = "Cannot determine the cause: do not retry blindly. Read the original error text first; if you truly need to continue, explain the situation to the user first.",
     )
 
     /**
@@ -154,5 +154,5 @@ object ToolFailureClassifier {
      * 用 key=value 而不是自然语言，方便模型直接读取，也便于日志检索。
      */
     fun receiptLine(verdict: Verdict): String =
-        "[失败分类] kind=${verdict.kind.name.lowercase()} retryable=${verdict.retryable} hint=${verdict.hint}"
+        "[Failure classification] kind=${verdict.kind.name.lowercase()} retryable=${verdict.retryable} hint=${verdict.hint}"
 }

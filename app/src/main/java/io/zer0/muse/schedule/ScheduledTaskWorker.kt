@@ -36,7 +36,7 @@ class ScheduledTaskWorker(
     override suspend fun doWork(): Result {
         val koin = resultOf { GlobalContext.get() }.getOrNull()
         if (koin == null) {
-            Logger.w(TAG, "Koin 未初始化(Safe Mode?),跳过本次 Worker 执行")
+            Logger.w(TAG, "Koin not initialized (Safe Mode?), skipping this Worker run")
             return Result.success()
         }
         // v1.xxx: 后台调度总控 — 关闭时跳过执行体,周期调度本身仍保留,重新打开即恢复
@@ -46,12 +46,12 @@ class ScheduledTaskWorker(
                     .getOrNull(),
             )
         if (!workEnabled) {
-            Logger.i(TAG, "后台调度总控已关闭,跳过本次执行")
+            Logger.i(TAG, "Background scheduling master switch is off, skipping this run")
             return Result.success()
         }
         val runner = resultOf { koin.get<ScheduledTaskRunner>() }.getOrNull()
         if (runner == null) {
-            Logger.w(TAG, "ScheduledTaskRunner 解析失败,跳过本次 Worker 执行")
+            Logger.w(TAG, "ScheduledTaskRunner resolution failed, skipping this Worker run")
             return Result.success()
         }
         resultOf { runner.tickOnceForWorker() }

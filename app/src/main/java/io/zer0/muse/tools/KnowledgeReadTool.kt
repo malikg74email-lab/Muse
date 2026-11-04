@@ -24,12 +24,12 @@ object KnowledgeReadTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = TOOL_NAME,
-        description = "读取知识库文档的全文内容。超长文档按 offset 分段（每次最多 30000 字符），" +
-            "先不传 offset 读第一段，返回末尾会给出剩余字符数和下一次 offset。" +
-            "文档 id 可用 knowledge_list_docs 获取。",
+        description = "Read the full text of a knowledge-base document. Very long documents are segmented by offset (at most 30000 characters each time);" +
+            "first read the first segment without passing offset; the return's end gives the remaining character count and the next offset." +
+            "Document ids can be obtained with knowledge_list_docs.",
         parameters = mapOf(
-            "doc_id" to "必填，文档 id（可用 knowledge_list_docs 获取）",
-            "offset" to "可选，起始字符偏移；省略时从 0 开始",
+            "doc_id" to "Required, document id (obtainable with knowledge_list_docs)",
+            "offset" to "Optional, starting character offset; starts from 0 when omitted",
         ),
         required = setOf("doc_id"),
         category = "built-in",
@@ -44,24 +44,24 @@ object KnowledgeReadTool {
         return runBlocking {
             val doc = docDao.getById(docId)
             when {
-                doc == null -> "Error: 未找到文档 $docId。可用 knowledge_list_docs 查看文档清单。"
-                doc.isInternal -> "Error: 文档 $docId 是内部开发文档，不允许通过本工具读取。"
-                doc.content.isBlank() -> "文档 ${doc.title}（$docId）正文为空。"
+                doc == null -> "Error: document $docId not found. Use knowledge_list_docs to see the document list."
+                doc.isInternal -> "Error: document $docId is an internal development document and may not be read through this tool."
+                doc.content.isBlank() -> "Document ${doc.title} ($docId) has an empty body."
                 else -> {
                     val content = doc.content
                     val total = content.length
                     if (offset >= total) {
-                        "已超出文档末尾（总长 $total 字符，请求 offset=$offset）。"
+                        "Already beyond the end of the document (total length $total characters, requested offset=$offset)."
                     } else {
                         val end = minOf(offset + MAX_CHARS_PER_READ, total)
                         val chunk = content.substring(offset, end)
                         val remaining = total - end
                         buildString {
-                            appendLine("「${doc.title}」（$docId）— 第 ${offset + 1}-$end / $total 字符")
+                            appendLine("'${doc.title}' ($docId) — characters ${offset + 1}-$end / $total")
                             if (remaining > 0) {
-                                appendLine("[还有 $remaining 字符，用 offset=$end 继续读取]")
+                                appendLine("[There are $remaining characters left; continue reading with offset=$end]")
                             } else {
-                                appendLine("[全文完]")
+                                appendLine("[End of document]")
                             }
                             appendLine("---")
                             append(chunk)

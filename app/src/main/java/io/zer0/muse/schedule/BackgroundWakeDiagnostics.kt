@@ -262,7 +262,7 @@ object BackgroundWakeDiagnostics {
             // 让界面能把原因显式说出来。
             val collected = resultOf { collectOnce(appContext, backgroundWorkEnabled) }
                 .onError { message, throwable ->
-                    Logger.w(TAG, "收集后台唤醒状态失败: $message", throwable)
+                    Logger.w(TAG, "Collecting the background wake state failed: $message", throwable)
                 }
             collected.getOrNull() ?: buildDiagnostics(
                 appContext = appContext,
@@ -282,7 +282,7 @@ object BackgroundWakeDiagnostics {
         val backgroundWorkEnabled = resultOf {
             GlobalContext.get().get<SettingsRepository>().scheduleWorkEnabledFlow.first()
         }.onError { message, throwable ->
-            Logger.w(TAG, "读取后台任务总控失败: $message", throwable)
+            Logger.w(TAG, "Reading the background task master switch failed: $message", throwable)
         }.getOrNull()
         return collect(context, backgroundWorkEnabled)
     }
@@ -301,7 +301,7 @@ object BackgroundWakeDiagnostics {
             WorkManager.getInstance(appContext)
         } catch (e: IllegalStateException) {
             error = e.message
-            Logger.w(TAG, "WorkManager 未初始化,无法读取唤醒状态", e)
+            Logger.w(TAG, "WorkManager not initialized; cannot read the wake state", e)
             null
         }
         val entries = coroutineScope {
@@ -338,11 +338,11 @@ object BackgroundWakeDiagnostics {
     } catch (e: InterruptedException) {
         // 保留中断标记:调用方在 IO 协程里,不该把中断吞成一次普通失败
         Thread.currentThread().interrupt()
-        Logger.w(TAG, "读取唤醒状态被中断($uniqueName)", e)
+        Logger.w(TAG, "Reading the wake state was interrupted ($uniqueName)", e)
         null
     } catch (e: ExecutionException) {
         // WorkManager 内部查询失败(数据库/初始化异常)以 ExecutionException 形式回到这里
-        Logger.w(TAG, "读取唤醒状态失败($uniqueName)", e)
+        Logger.w(TAG, "Reading the wake state failed ($uniqueName)", e)
         null
     }
 
@@ -369,7 +369,7 @@ object BackgroundWakeDiagnostics {
      */
     internal fun formatSnapshot(diagnostics: WakeDiagnostics): String {
         val builder = StringBuilder()
-        builder.appendLine("# Muse 后台唤醒快照")
+        builder.appendLine("# Shaheen 2 background wake snapshot")
         builder.appendLine("exported_at=${formatTime(diagnostics.exportedAtMillis)}")
         builder.appendLine("app=${diagnostics.appVersion}")
         builder.appendLine("android=${diagnostics.androidVersion}")

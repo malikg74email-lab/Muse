@@ -77,8 +77,8 @@ internal object ShellCommandBoundary {
 
     private fun cautionForSegment(segment: ShellSegment): String? {
         val verb = segment.verb() ?: return null
-        if (verb == "find" && segment.tokens.contains("-delete")) return "find -delete 批量删除"
-        if (verb == "git" && segment.args().any { it in GIT_DESTRUCTIVE_ARGS }) return "git 破坏性子命令(reset/clean/强推)"
+        if (verb == "find" && segment.tokens.contains("-delete")) return "find -delete batch deletion"
+        if (verb == "git" && segment.args().any { it in GIT_DESTRUCTIVE_ARGS }) return "git destructive subcommand (reset/clean/force-push)"
         return CAUTION_NOTES[verb]
     }
 
@@ -96,10 +96,10 @@ internal object ShellCommandBoundary {
     }
 
     private fun deleteTargetReason(raw: String, target: ShellTarget, recursive: Boolean): String? =
-        unacceptable("删除", target, raw) ?: when {
+        unacceptable("Delete", target, raw) ?: when {
             !recursive -> null
-            target.scope == ShellScope.WORKSPACE_ROOT && target.wholeDirectory -> "递归删除整个应用工作区:$raw"
-            target.scope == ShellScope.STORAGE || target.scope == ShellScope.OUTSIDE -> "递归删除指向工作区之外的路径:$raw"
+            target.scope == ShellScope.WORKSPACE_ROOT && target.wholeDirectory -> "Recursively deleting the entire app workspace: $raw"
+            target.scope == ShellScope.STORAGE || target.scope == ShellScope.OUTSIDE -> "Recursive delete pointing at a path outside the workspace: $raw"
             else -> null
         }
 
@@ -108,9 +108,9 @@ internal object ShellCommandBoundary {
         if (!segment.tokens.contains("-delete")) return null
         val root = segment.pathArgs().firstOrNull() ?: return null
         val target = locator.target(root)
-        unacceptable("find -delete 的扫描根", target, root)?.let { return it }
+        unacceptable("find -delete scan root", target, root)?.let { return it }
         return when (target.scope) {
-            ShellScope.STORAGE, ShellScope.OUTSIDE -> "find -delete 的扫描根在工作区之外:$root"
+            ShellScope.STORAGE, ShellScope.OUTSIDE -> "find -delete scan root is outside the workspace: $root"
             else -> null
         }
     }
@@ -123,7 +123,7 @@ internal object ShellCommandBoundary {
             "cp", "mv", "install", "ln", "truncate" -> listOfNotNull(segment.pathArgs().lastOrNull())
             else -> emptyList()
         }
-        return destinations.firstNotNullOfOrNull { raw -> unacceptable("写入", locator.target(raw), raw) }
+        return destinations.firstNotNullOfOrNull { raw -> unacceptable("Write", locator.target(raw), raw) }
     }
 
     /**
@@ -148,11 +148,11 @@ internal object ShellCommandBoundary {
         worldWritable: Boolean,
         raw: String,
     ): String? = when {
-        scope == ShellScope.DEVICE_ROOT -> "$verb 作用在设备根上:$raw"
-        scope == ShellScope.SYSTEM -> "$verb 作用在系统分区上:$raw"
-        scope == ShellScope.APP_DATA -> "$verb 作用在 /data 下工作区以外的应用私有数据上:$raw"
+        scope == ShellScope.DEVICE_ROOT -> "$verb acting on the device root: $raw"
+        scope == ShellScope.SYSTEM -> "$verb acting on a system partition: $raw"
+        scope == ShellScope.APP_DATA -> "$verb acting on another app's private data under /data outside the workspace: $raw"
         recursive && worldWritable && scope in OUT_OF_SCOPE_STORAGE -> {
-            "递归放开工作区外路径的写权限:$verb $raw"
+            "Recursively opening write permission on a path outside the workspace: $verb $raw"
         }
         else -> null
     }
@@ -160,15 +160,15 @@ internal object ShellCommandBoundary {
     /** 格式化与块设备:这些命令的作用对象不可能是工作区里的文件。 */
     private fun formatReason(segment: ShellSegment): String? {
         val verb = segment.verb() ?: return null
-        if (verb == "mkfs" || verb.startsWith("mkfs.")) return "文件系统格式化命令:$verb"
-        if (verb in BLOCK_DEVICE_VERBS) return "直接操作分区/块设备的命令:$verb"
+        if (verb == "mkfs" || verb.startsWith("mkfs.")) return "Filesystem formatting command: $verb"
+        if (verb in BLOCK_DEVICE_VERBS) return "Command directly operating on a partition/block device: $verb"
         return ddDeviceReason(verb, segment)
     }
 
     private fun ddDeviceReason(verb: String, segment: ShellSegment): String? {
         if (verb != "dd") return null
         val output = segment.args().firstOrNull { it.startsWith("of=") }?.removePrefix("of=").orEmpty()
-        return if (output.startsWith("/dev/") && !ShellCommandLex.isHarmlessSink(output)) "dd 写入设备节点:$output" else null
+        return if (output.startsWith("/dev/") && !ShellCommandLex.isHarmlessSink(output)) "dd writing to a device node: $output" else null
     }
 
     /**
@@ -183,9 +183,9 @@ internal object ShellCommandBoundary {
     }
 
     private fun destructiveSubcommandReason(verb: String, subcommand: String?): String? = when {
-        verb == "pm" && subcommand in PM_DESTRUCTIVE -> "包管理破坏性子命令:pm $subcommand"
-        verb == "am" && subcommand == "force-stop" -> "强停其它应用的命令:am force-stop"
-        verb == "appops" && subcommand == "set" -> "改其它应用权限面的命令:appops set"
+        verb == "pm" && subcommand in PM_DESTRUCTIVE -> "Package-manager destructive subcommand: pm $subcommand"
+        verb == "am" && subcommand == "force-stop" -> "Command force-stopping another app: am force-stop"
+        verb == "appops" && subcommand == "set" -> "Command changing another app's permission surface: appops set"
         else -> null
     }
 
@@ -204,17 +204,17 @@ internal object ShellCommandBoundary {
         val args = segment.args()
         val pipedCode = segment.isPipeInput && verb in INTERPRETERS &&
             ShellCommandLex.stdinIsCommandSource(args, verb in SHELL_INTERPRETERS)
-        if (pipedCode) return "把管道内容当作命令码执行:| $verb ${args.joinToString(" ")}".trim()
+        if (pipedCode) return "Executing piped content as command code:| $verb ${args.joinToString(" ")}".trim()
         if (verb in SCRIPT_SOURCES && args.any(ShellCommandLex::loadsRemoteContent)) {
-            return "$verb 执行来自网络的脚本内容"
+            return "$verb executing script content from the network"
         }
         return null
     }
 
     private fun killReason(segment: ShellSegment): String? = when {
         segment.verb() != "kill" -> null
-        segment.args().any { it == "1" } -> "kill 指向 PID 1(init)"
-        segment.args().any { it == "-1" } -> "kill 指向全部进程"
+        segment.args().any { it == "1" } -> "kill targeting PID 1 (init)"
+        segment.args().any { it == "-1" } -> "kill targeting all processes"
         else -> null
     }
 
@@ -223,13 +223,13 @@ internal object ShellCommandBoundary {
         REDIRECT.findAll(command)
             .map { ShellCommandLex.stripQuotes(it.groupValues[1]) }
             .filter { it.isNotEmpty() && !it.startsWith("&") }
-            .firstNotNullOfOrNull { raw -> unacceptable("重定向写入", locator.target(raw), raw) }
+            .firstNotNullOfOrNull { raw -> unacceptable("Redirect write", locator.target(raw), raw) }
 
     /** 目标落在「绝对不可接受」的区域时的原因;其余区域由调用方按档位判断。 */
     private fun unacceptable(label: String, target: ShellTarget, raw: String): String? = when (target.scope) {
-        ShellScope.DEVICE_ROOT -> "${label}命中设备根($raw)"
-        ShellScope.SYSTEM -> "${label}命中系统分区($raw)"
-        ShellScope.APP_DATA -> "${label}命中 /data 下工作区以外的应用私有数据($raw)"
+        ShellScope.DEVICE_ROOT -> "${label} hits the device root ($raw)"
+        ShellScope.SYSTEM -> "${label} hits a system partition ($raw)"
+        ShellScope.APP_DATA -> "${label} hits another app's private data under /data outside the workspace ($raw)"
         else -> null
     }
 
@@ -237,7 +237,7 @@ internal object ShellCommandBoundary {
 
     private val FORK_BOMB_SPACES = Regex("\\s+")
     private const val FORK_BOMB_SHAPE = ":(){:"
-    private const val FORK_BOMB_REASON = "fork 炸弹的自我复制写法"
+    private const val FORK_BOMB_REASON = "Fork bomb self-replication pattern"
 
     private val REDIRECT = Regex("""\d?>{1,2}\s*("?[^"\s;|&]+)""")
 
@@ -247,19 +247,19 @@ internal object ShellCommandBoundary {
 
     /** 设备级命令:在 App 沙盒终端里没有正当用途,各自有专用工具与审批。 */
     private val DEVICE_ONLY_VERBS = mapOf(
-        "su" to "提权命令",
-        "sudo" to "提权命令",
-        "doas" to "提权命令",
-        "reboot" to "设备电源命令",
-        "poweroff" to "设备电源命令",
-        "shutdown" to "设备电源命令",
-        "halt" to "设备电源命令",
-        "mount" to "挂载与系统运行时命令",
-        "umount" to "挂载与系统运行时命令",
-        "setprop" to "挂载与系统运行时命令",
-        "restorecon" to "挂载与系统运行时命令",
-        "chroot" to "挂载与系统运行时命令",
-        "switch_root" to "挂载与系统运行时命令",
+        "su" to "Privilege-escalation command",
+        "sudo" to "Privilege-escalation command",
+        "doas" to "Privilege-escalation command",
+        "reboot" to "Device power command",
+        "poweroff" to "Device power command",
+        "shutdown" to "Device power command",
+        "halt" to "Device power command",
+        "mount" to "Mount and system-runtime command",
+        "umount" to "Mount and system-runtime command",
+        "setprop" to "Mount and system-runtime command",
+        "restorecon" to "Mount and system-runtime command",
+        "chroot" to "Mount and system-runtime command",
+        "switch_root" to "Mount and system-runtime command",
     )
 
     private val PM_DESTRUCTIVE = setOf("clear", "uninstall", "disable", "delete")
@@ -279,31 +279,31 @@ internal object ShellCommandBoundary {
 
     /** 第二档:有破坏力但属于正常工作,只记日志,不拦。 */
     private val CAUTION_NOTES = mapOf(
-        "rm" to "删除文件",
-        "rmdir" to "删除目录",
-        "unlink" to "删除文件",
-        "shred" to "销毁文件内容",
-        "mv" to "移动/覆盖文件",
-        "truncate" to "截断文件",
-        "dd" to "按块读写",
-        "chmod" to "改文件权限",
-        "chown" to "改文件属主",
-        "chgrp" to "改文件属组",
-        "kill" to "终止进程",
-        "pkill" to "按名批量终止进程",
-        "killall" to "按名批量终止进程",
-        "curl" to "网络下载",
-        "wget" to "网络下载",
-        "pm" to "包管理命令",
-        "am" to "活动管理器命令",
-        "settings" to "系统设置读写",
-        "input" to "注入输入事件",
-        "sh" to "执行脚本文件",
-        "bash" to "执行脚本文件",
-        "python" to "执行脚本文件",
-        "python3" to "执行脚本文件",
-        "node" to "执行脚本文件",
-        "perl" to "执行脚本文件",
-        "ruby" to "执行脚本文件",
+        "rm" to "Delete file",
+        "rmdir" to "Delete directory",
+        "unlink" to "Delete file",
+        "shred" to "Destroy file contents",
+        "mv" to "Move/overwrite file",
+        "truncate" to "Truncate file",
+        "dd" to "Block-level read/write",
+        "chmod" to "Change file permissions",
+        "chown" to "Change file owner",
+        "chgrp" to "Change file group",
+        "kill" to "Terminate process",
+        "pkill" to "Kill processes by name in bulk",
+        "killall" to "Kill processes by name in bulk",
+        "curl" to "Network download",
+        "wget" to "Network download",
+        "pm" to "Package management command",
+        "am" to "Activity manager command",
+        "settings" to "System settings read/write",
+        "input" to "Inject input events",
+        "sh" to "Execute script file",
+        "bash" to "Execute script file",
+        "python" to "Execute script file",
+        "python3" to "Execute script file",
+        "node" to "Execute script file",
+        "perl" to "Execute script file",
+        "ruby" to "Execute script file",
     )
 }

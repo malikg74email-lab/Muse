@@ -30,11 +30,11 @@ class ChannelReplyTool(
      */
     fun toolDef() = ToolRegistry.ToolDef(
         name = "channel_reply",
-        description = "在群聊中发言。你的回复内容将通过此工具发送到群聊频道。" +
-            "这是唯一能让你的消息出现在群聊中的方式。" +
-            "如果你不想发言,请使用 channel_pass。",
+        description = "Speak in the group chat. Your reply content will be sent to the group channel through this tool." +
+            "This is the only way to make your message appear in the group chat." +
+            "If you do not want to speak, use channel_pass.",
         parameters = mapOf(
-            "content" to "必填。你要在群聊中发送的回复内容",
+            "content" to "Required. The reply content you want to send to the group chat",
         ),
         required = setOf("content"),
         category = "built-in",
@@ -50,14 +50,14 @@ class ChannelReplyTool(
     suspend fun execute(args: Map<String, String>): String {
         val content = args["content"]?.trim()
         if (content.isNullOrEmpty()) {
-            return "错误: content 不能为空"
+            return "Error: content must not be empty"
         }
         // groupChatId / senderAssistantId 仅用于绑定上下文,不参与 LLM 可见的逻辑,
         // 但保留校验:若未绑定说明工具被错误构造,直接报错而非静默发送。
         if (groupChatId.isBlank() || senderAssistantId.isBlank()) {
-            return "错误: 群聊工具未正确绑定(chatId/assistantId 为空)"
+            return "Error: group chat tool not bound correctly (chatId/assistantId is empty)"
         }
         onReply(content)
-        return "已发送到群聊"
+        return "Sent to the group chat"
     }
 }

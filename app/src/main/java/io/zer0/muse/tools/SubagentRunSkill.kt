@@ -33,11 +33,11 @@ object SubagentRunSkill {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "subagent_run",
-        description = "把一个自包含的子任务委派给拥有独立上下文的子代理。" +
-            "子代理会跑完整的工具循环(最多 max_tool_calls 次),返回结构化的 XML 结果。" +
-            "适合需要多次工具调用的调研、查找、分析类子任务。" +
-            "把返回的 thread_id 传回来即可续接同一个子代理会话。" +
-            "长时间运行的异步任务请改用 subagent_task。",
+        description = "Delegate a self-contained subtask to a sub-agent with its own independent context." +
+            "The sub-agent runs a full tool loop (at most max_tool_calls calls) and returns a structured XML result." +
+            "Suitable for research, lookup and analysis subtasks that need multiple tool calls." +
+            "Pass the returned thread_id back to continue the same sub-agent session." +
+            "For long-running asynchronous tasks, use subagent_task instead.",
         parameters = mapOf(
             "task" to "Required. The sub-task description to delegate.",
             "context_text" to "Optional. Constraints / acceptance criteria for the sub-task.",
@@ -69,8 +69,8 @@ object SubagentRunSkill {
      */
     suspend fun execute(args: Map<String, String>, subagentRunner: SubagentRunner): String {
         val task = args["task"]?.trim()
-            ?: return errorXml("缺少必填参数 task")
-        if (task.isBlank()) return errorXml("task 参数为空")
+            ?: return errorXml("Missing required parameter task")
+        if (task.isBlank()) return errorXml("The task parameter is empty")
 
         val contextText = args["context_text"]?.trim()?.takeIf { it.isNotBlank() }
         val targetPaths = args["target_paths"]?.trim()?.takeIf { it.isNotBlank() }
@@ -129,7 +129,7 @@ object SubagentRunSkill {
                 appendLine(SubagentXmlRenderer.renderBudgetExhausted(maxToolCalls))
             }
             if (result.tokenBudgetExhausted) {
-                appendLine("[提示] 子 agent 因 token 预算耗尽提前结束,总结基于已有上下文生成。")
+                appendLine("[Note] The sub-agent ended early because its token budget was exhausted; the summary is generated from the context gathered so far.")
             }
             append(result.summary)
         }.trimEnd()

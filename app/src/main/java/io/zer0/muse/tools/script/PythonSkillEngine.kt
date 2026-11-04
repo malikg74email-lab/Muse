@@ -54,8 +54,8 @@ class PythonSkillEngine(private val context: Context) : SkillEngine {
             )
             interpret(r)
         } catch (e: Exception) {
-            Logger.w(TAG, "Python 脚本执行失败: ${e.message}", e)
-            SkillEngineResult.Error(message = e.message ?: "执行异常")
+            Logger.w(TAG, "Python script execution failed: ${e.message}", e)
+            SkillEngineResult.Error(message = e.message ?: "Execution exception")
         } finally {
             runCatching { tmp.delete() }
         }
@@ -98,10 +98,10 @@ class PythonSkillEngine(private val context: Context) : SkillEngine {
         return when {
             r.captureError != null ->
                 SkillEngineResult.Error(
-                    message = "Python 完整输出保存失败: ${r.captureError}" +
+                    message = "Python full output save failed: ${r.captureError}" +
                         if (savedOutput.isNotBlank()) "\n$savedOutput" else "",
                 )
-            r.timedOut -> SkillEngineResult.Error(message = "执行超时" + savedOutput)
+            r.timedOut -> SkillEngineResult.Error(message = "Execution timed out" + savedOutput)
             r.stdoutFile != null -> parseLargePayload(r.stdoutFile, r.stdout)
             else -> parseResult(r.stdout, r.stderr, r.exitCode, r.timedOut)
         }
@@ -109,7 +109,7 @@ class PythonSkillEngine(private val context: Context) : SkillEngine {
 
     override fun interrupt() {
         // 尽力而为：子进程由执行侧超时控制负责终止；此处不持有进程引用。
-        Logger.d(TAG, "interrupt() 被调用（等待执行侧超时终止）")
+        Logger.d(TAG, "interrupt() was called (waiting for the execution side to terminate on timeout)")
     }
 
     /**
@@ -158,7 +158,7 @@ class PythonSkillEngine(private val context: Context) : SkillEngine {
             |exec(compile(__muse_entry, "<muse-plugin>", "exec"), __muse_ns)
             |__muse_fn = __muse_ns.get(__muse_fn_name)
             |if __muse_fn is None:
-            |    raise AttributeError("插件入口未定义函数 %s" % __muse_fn_name)
+            |    raise AttributeError("The plugin entry does not define the function %s" % __muse_fn_name)
             |__muse_args = __json.loads(__muse_args_raw)
             |__muse_arg = __muse_args[0] if __muse_args else {}
             |result = __muse_fn(__muse_arg)
@@ -232,12 +232,12 @@ class PythonSkillEngine(private val context: Context) : SkillEngine {
 
     private fun parseResult(stdout: String, stderr: String, exitCode: Int, timedOut: Boolean): SkillEngineResult {
         if (timedOut) {
-            return SkillEngineResult.Error(message = "执行超时")
+            return SkillEngineResult.Error(message = "Execution timed out")
         }
         val line = stdout.lines().lastOrNull { it.trim().startsWith("{") }?.trim()
         return if (line == null) {
             SkillEngineResult.Error(
-                message = "无有效输出(exit=$exitCode)" +
+                message = "No valid output (exit=$exitCode)" +
                     if (stderr.isNotBlank()) ": ${stderr.take(300)}" else "",
             )
         } else {
@@ -249,7 +249,7 @@ class PythonSkillEngine(private val context: Context) : SkillEngine {
     private fun parseLine(line: String): SkillEngineResult = runCatching {
         val obj = AppJson.parseToJsonElement(line) as? JsonObject
         if (obj == null) {
-            SkillEngineResult.Error(message = "输出解析失败: ${line.take(200)}")
+            SkillEngineResult.Error(message = "Output parsing failed: ${line.take(200)}")
         } else {
             val logs = (obj["logs"] as? JsonArray)
                 ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList()
@@ -261,13 +261,13 @@ class PythonSkillEngine(private val context: Context) : SkillEngine {
                 )
             } else {
                 SkillEngineResult.Error(
-                    message = (obj["error"] as? JsonPrimitive)?.contentOrNull ?: "未知错误",
+                    message = (obj["error"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error",
                     consoleLogs = logs,
                 )
             }
         }
     }.getOrElse { e ->
-        SkillEngineResult.Error(message = "结果解析异常: ${e.message}")
+        SkillEngineResult.Error(message = "Result parsing exception: ${e.message}")
     }
 
     companion object {
@@ -285,11 +285,11 @@ internal fun parseLargePayload(file: File, outputReference: String): SkillEngine
             var success: Boolean? = null
             file.bufferedReader(Charsets.UTF_8).useLines { lines ->
                 val protocolLine = lines.lastOrNull { it.trim().startsWith("{") }
-                    ?: error("Python 输出缺少协议行")
+                    ?: error("Python output is missing the protocol line")
                 val obj = AppJson.parseToJsonElement(protocolLine.trim()) as? JsonObject
                 success = (obj?.get("ok") as? JsonPrimitive)?.content?.toBoolean()
             }
-            success ?: error("Python 输出缺少 ok 状态")
+            success ?: error("Python output is missing the ok status")
         }.getOrNull()
 
     return when (succeeded) {
@@ -300,11 +300,11 @@ internal fun parseLargePayload(file: File, outputReference: String): SkillEngine
             )
         false ->
             SkillEngineResult.Error(
-                message = "Python 脚本执行失败；完整输出可通过 read_file 分段读取:\n$outputReference",
+                message = "Python script execution failed; the full output can be read in chunks via read_file:\n$outputReference",
             )
         null ->
             SkillEngineResult.Error(
-                message = "Python 输出解析失败；原始输出仍已完整保存:\n$outputReference",
+                message = "Python output parsing failed; the original output is still fully saved:\n$outputReference",
             )
     }
 }

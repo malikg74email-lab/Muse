@@ -30,10 +30,10 @@ object ShowCardTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "show_card",
-        description = "展示可视化内容(SVG 图形、图表或交互式 HTML),在沙箱 WebView 里内联渲染成可交互卡片。" +
-            "适用于流程图、仪表盘、数据表、时间线,或任何需要空间布局的内容。" +
-            "不要包含 DOCTYPE、<html>、<head>、<body> 标签,只给内容片段。" +
-            "卡片通过 window.muse.cardId 读取自身身份;本工具不返回 id。",
+        description = "Display visual content (SVG graphics, charts or interactive HTML), rendered inline as an interactive card in a sandboxed WebView." +
+            "Suitable for flowcharts, dashboards, data tables, timelines, or any content needing spatial layout." +
+            "Do not include DOCTYPE, <html>, <head> or <body> tags; give only the content fragment." +
+            "The card reads its own identity via window.muse.cardId; this tool does not return an id.",
         parameters = mapOf(
             "title" to "Required. Short snake_case identifier (e.g. 'q4_revenue_chart').",
             "code" to "Required. HTML or SVG fragment. Use CSS variables for theming.",

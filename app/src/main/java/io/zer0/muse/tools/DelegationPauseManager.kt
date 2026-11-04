@@ -69,10 +69,10 @@ class DelegationPauseManager {
         val isDestructive: Boolean = false,
     ) {
         companion object {
-            val APPROVE = PauseOption("approve", "批准继续", PauseDecision.APPROVE)
-            val REJECT = PauseOption("reject", "拒绝", PauseDecision.REJECT, isDestructive = true)
-            val CANCEL = PauseOption("cancel", "取消委派", PauseDecision.CANCEL, isDestructive = true)
-            val MODIFY = PauseOption("modify", "修改后继续", PauseDecision.MODIFY)
+            val APPROVE = PauseOption("approve", "Approve and continue", PauseDecision.APPROVE)
+            val REJECT = PauseOption("reject", "Reject", PauseDecision.REJECT, isDestructive = true)
+            val CANCEL = PauseOption("cancel", "Cancel delegation", PauseDecision.CANCEL, isDestructive = true)
+            val MODIFY = PauseOption("modify", "Edit then continue", PauseDecision.MODIFY)
         }
     }
 
@@ -130,7 +130,7 @@ class DelegationPauseManager {
                 true
             } else {
                 val previous = pendingResponses.putIfAbsent(request.requestId, deferred)
-                require(previous == null) { "暂停请求已在等待中: ${request.requestId}" }
+                require(previous == null) { "A pause request is already waiting: ${request.requestId}" }
                 if (parentRequestId != null) {
                     activeRequestIdsByParent.computeIfAbsent(parentRequestId) {
                         ConcurrentHashMap.newKeySet<String>()
@@ -142,7 +142,7 @@ class DelegationPauseManager {
             }
         }
         if (cancelledBeforeRegistration) {
-            return cancelledResponse("委派已取消")
+            return cancelledResponse("Delegation cancelled")
         }
 
         return try {
@@ -152,7 +152,7 @@ class DelegationPauseManager {
             } ?: PauseResponse(
                 decision = PauseDecision.REJECT,
                 outcome = PauseOutcome.TIMED_OUT,
-                reason = "暂停等待超时,自动拒绝",
+                reason = "Pause wait timed out; automatically rejected",
             )
         } catch (e: CancellationException) {
             throw e
@@ -179,7 +179,7 @@ class DelegationPauseManager {
             cancelledRequests.add(requestId)
             val requestIds = linkedSetOf(requestId) + collectActiveRequestIds(requestId)
             requestIds.forEach { activeRequestId ->
-                pendingResponses[activeRequestId]?.complete(cancelledResponse("委派已取消"))
+                pendingResponses[activeRequestId]?.complete(cancelledResponse("Delegation cancelled"))
             }
         }
     }
@@ -201,7 +201,7 @@ class DelegationPauseManager {
         synchronized(stateLock) {
             // 先唤醒所有等待者,再清理索引;否则清理 pendingResponses 会让协程永久挂起。
             pendingResponses.values.forEach { deferred ->
-                deferred.complete(cancelledResponse("暂停管理器已清理"))
+                deferred.complete(cancelledResponse("Pause manager cleaned up"))
             }
             _activePauses.value = emptyMap()
             pendingResponses.clear()

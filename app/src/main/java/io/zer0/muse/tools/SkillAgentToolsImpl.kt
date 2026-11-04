@@ -119,7 +119,7 @@ class SkillAgentToolsImpl(
             )
             jsonArray.mapIndexed { idx, element ->
                 val obj = element.jsonObject
-                val stepTitle = obj["title"]?.jsonPrimitive?.content?.trim() ?: "步骤 ${idx + 1}"
+                val stepTitle = obj["title"]?.jsonPrimitive?.content?.trim() ?: "Step ${idx + 1}"
                 val stepDesc = obj["description"]?.jsonPrimitive?.content?.trim() ?: ""
                 AgentPlanStep(
                     id = "step-$idx",
@@ -128,7 +128,7 @@ class SkillAgentToolsImpl(
                 )
             }
         }.onError { msg, _ ->
-            Logger.w("SkillAgentTools", "task_plan steps 解析失败: $msg")
+            Logger.w("SkillAgentTools", "task_plan steps parsing failed: $msg")
         }.getOrNull()
             ?: return context.getString(R.string.skill_steps_invalid)
 
@@ -145,14 +145,14 @@ class SkillAgentToolsImpl(
         activePlans[planId] = plan
 
         val planSummary = buildString {
-            appendLine("计划已创建。planId: $planId")
-            appendLine("标题: $title")
-            appendLine("步骤:")
+            appendLine("Plan created. planId: $planId")
+            appendLine("Title: $title")
+            appendLine("Steps:")
             steps.forEachIndexed { idx, step ->
                 appendLine("  $idx. ${step.title}${if (step.description.isNotBlank()) " — ${step.description.take(80)}" else ""}")
             }
             appendLine()
-            appendLine("请按顺序执行各步骤。每完成一步,调用 update_plan_step(planId=\"$planId\", stepIndex=索引, status=\"done\") 更新进度。")
+            appendLine("Please execute the steps in order. After completing each step, call update_plan_step(planId=\"$planId\", stepIndex=index, status=\"done\") to update progress.")
         }
         return planSummary
     }
@@ -198,7 +198,7 @@ class SkillAgentToolsImpl(
 
         val step = updatedSteps[stepIndex]
         val completedCount = updatedSteps.count { it.status == AgentPlanStepStatus.DONE }
-        return "步骤 $stepIndex「${step.title}」已更新为: ${context.getString(status.labelRes)}。进度: $completedCount/${updatedSteps.size}"
+        return "Step $stepIndex '${step.title}' updated to: ${context.getString(status.labelRes)}. Progress: $completedCount/${updatedSteps.size}"
     }
 
     suspend fun execChannelReply(args: Map<String, String>): String {
@@ -213,7 +213,7 @@ class SkillAgentToolsImpl(
         if (body.isBlank()) return context.getString(R.string.skill_body_blank)
 
         val assistant = resultOf { assistantRepository.getById(assistantId) }
-            .onError { msg, _ -> Logger.w("SkillAgentTools", "channel_reply getById 失败: $msg") }
+            .onError { msg, _ -> Logger.w("SkillAgentTools", "channel_reply getById failed: $msg") }
             .getOrNull()
         val senderName = assistant?.name ?: context.getString(R.string.skill_unknown_agent)
 
@@ -268,7 +268,7 @@ class SkillAgentToolsImpl(
             ?: return context.getString(R.string.skill_agent_phone_not_configured)
 
         val target = resultOf { assistantRepository.getById(targetAssistantId) }
-            .onError { msg, _ -> Logger.w("SkillAgentTools", "agent_phone getById 失败: $msg") }
+            .onError { msg, _ -> Logger.w("SkillAgentTools", "agent_phone getById failed: $msg") }
             .getOrNull()
         if (target == null) return context.getString(R.string.skill_agent_phone_target_not_found)
 

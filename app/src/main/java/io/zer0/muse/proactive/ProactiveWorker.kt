@@ -39,14 +39,14 @@ class ProactiveWorker(
             ?.let { resultOf { it.get<ProactiveScheduler>() }.getOrNull() }
 
         when {
-            koin == null -> Logger.w(TAG, "Koin 未初始化(Safe Mode?)，跳过本次 Worker")
-            !workEnabled -> Logger.i(TAG, "后台调度总控已关闭，跳过本次执行")
-            scheduler == null -> Logger.w(TAG, "ProactiveScheduler 解析失败，跳过本次 Worker")
+            koin == null -> Logger.w(TAG, "Koin not initialised (Safe Mode?); skipping this Worker run")
+            !workEnabled -> Logger.i(TAG, "The background scheduling master switch is off; skipping this run")
+            scheduler == null -> Logger.w(TAG, "Failed to resolve ProactiveScheduler; skipping this Worker run")
             // 进程内正好有一轮在跑时，这次唤醒没有意义：那一轮跑完就会重新判定时机，
             // 本次挤进去只会在「刚说过话」上再判一次，白读一次配置。
-            scheduler.isCycleInFlight -> Logger.i(TAG, "进程内巡检正在进行，跳过本次 Worker")
+            scheduler.isCycleInFlight -> Logger.i(TAG, "An in-process patrol is already running; skipping this Worker run")
             else -> resultOf { scheduler.runCycle(ProactiveScheduler.TRIGGER_WORKER) }
-                .onError { msg, t -> Logger.w(TAG, "巡检失败: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w(TAG, "Patrol failed:  ${t?.message ?: msg}") }
         }
 
         // 一律返回 success：主动消息不是必须送达的任务，

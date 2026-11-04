@@ -27,13 +27,13 @@ object RenderDataTool {
     fun toolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = NAME,
         description =
-        "在聊天中直接展示结构化数据。type=bar/line/donut 时 data 需为 " +
-            "{\"labels\":[...],\"values\":[...]}；type=table 时 data 需为 " +
-            "{\"columns\":[...],\"rows\":[[...]]}。数据仅在本地渲染，不访问网络。",
+        "Display structured data directly in the chat. For type=bar/line/donut, data must be " +
+            "{\"labels\":[...],\"values\":[...]}; for type=table, data must be " +
+            "{\"columns\":[...],\"rows\":[[...]]}. The data is rendered locally only and does not access the network.",
         parameters = mapOf(
-            "type" to "必填:bar | line | donut | table",
-            "title" to "必填,图表或表格标题",
-            "data" to "必填 JSON 数据:图表使用 labels/values,表格使用 columns/rows",
+            "type" to "Required: bar | line | donut | table",
+            "title" to "Required, chart or table title",
+            "data" to "Required JSON data: charts use labels/values, tables use columns/rows",
         ),
         required = setOf("type", "title", "data"),
         category = "built-in",
@@ -51,14 +51,14 @@ object RenderDataTool {
         val data = rawData?.let { runCatching { AppJson.parseToJsonElement(it) as? JsonObject }.getOrNull() }
         val rendered =
             when {
-                type == null -> error("缺少 type")
-                title == null -> error("缺少 title")
-                title.isBlank() -> error("title 不能为空")
-                rawData == null -> error("缺少 data")
-                data == null -> error("data 必须是 JSON 对象")
+                type == null -> error("Missing type")
+                title == null -> error("Missing title")
+                title.isBlank() -> error("title must not be empty")
+                rawData == null -> error("Missing data")
+                data == null -> error("data must be a JSON object")
                 type in CHART_TYPES -> renderChart(type, title, data)
                 type == "table" -> renderTable(title, data)
-                else -> error("type 只支持 bar、line、donut 或 table")
+                else -> error("type only supports bar, line, donut or table")
             }
         return rendered
     }
@@ -69,11 +69,11 @@ object RenderDataTool {
         // 校验分支各自产出错误文案；只有全部通过才产出卡片 JSON。两侧都是 String，
         // 因此不需要额外的类型判断，也不会误把错误文案包进 ```card 代码块。
         return when {
-            labels == null -> error("图表 labels 必须是字符串数组")
-            values == null -> error("图表 values 必须是有限数字数组")
-            labels.isEmpty() || values.isEmpty() -> error("图表数据不能为空")
-            labels.size != values.size -> error("labels 与 values 长度必须一致")
-            labels.size > MAX_ROWS -> error("图表数据最多支持 $MAX_ROWS 个点")
+            labels == null -> error("Chart labels must be a string array")
+            values == null -> error("Chart values must be a finite number array")
+            labels.isEmpty() || values.isEmpty() -> error("Chart data must not be empty")
+            labels.size != values.size -> error("labels and values must have the same length")
+            labels.size > MAX_ROWS -> error("Chart data supports at most $MAX_ROWS points")
             else -> {
                 val cardJson =
                     buildJsonObject {
@@ -101,9 +101,9 @@ object RenderDataTool {
                 .firstOrNull { (_, cells) -> cells == null || cells.size != columns.size }
                 ?.let { (index, cells) ->
                     if (cells == null) {
-                        error("第 ${index + 1} 行必须是字符串/数字数组")
+                        error("Row ${index + 1} must be a string/number array")
                     } else {
-                        error("第 ${index + 1} 行列数与 columns 不一致")
+                        error("Row ${index + 1} has a column count inconsistent with columns")
                     }
                 }
         } else {
@@ -113,17 +113,17 @@ object RenderDataTool {
             shapeError != null -> shapeError
             rowsError != null -> rowsError
             columns != null && normalizedRows != null -> renderTableBody(title, columns, normalizedRows)
-            else -> error("表格数据不完整")
+            else -> error("Table data is incomplete")
         }
     }
 
     /** 表格"形状"层面的校验（列本身、行数），返回 null 表示通过。 */
     private fun validateTableShape(columns: List<String>?, rows: JsonArray?): String? = when {
-        columns == null -> error("表格 columns 必须是字符串数组")
-        columns.isEmpty() -> error("表格至少需要一列")
-        columns.size > MAX_COLUMNS -> error("表格最多支持 $MAX_COLUMNS 列")
-        rows == null -> error("表格 rows 必须是二维数组")
-        rows.size > MAX_ROWS -> error("表格最多支持 $MAX_ROWS 行")
+        columns == null -> error("Table columns must be a string array")
+        columns.isEmpty() -> error("A table needs at least one column")
+        columns.size > MAX_COLUMNS -> error("A table supports at most $MAX_COLUMNS columns")
+        rows == null -> error("Table rows must be a two-dimensional array")
+        rows.size > MAX_ROWS -> error("A table supports at most $MAX_ROWS rows")
         else -> null
     }
 

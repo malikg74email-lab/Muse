@@ -80,7 +80,7 @@ class PromptTemplateLoader(private val context: Context) {
         return try {
             engine.render(templateText, context)
         } catch (e: Exception) {
-            Logger.w(TAG, "模板渲染失败: $name (locale=$locale)", e)
+            Logger.w(TAG, "Template rendering failed:  $name (locale=$locale)", e)
             templateText // 渲染失败时返回原始文本
         }
     }
@@ -122,7 +122,7 @@ class PromptTemplateLoader(private val context: Context) {
             cache[cacheKey] = text
             return text
         }
-        Logger.w(TAG, "模板加载失败: $name (locale=$locale)")
+        Logger.w(TAG, "Template loading failed:  $name (locale=$locale)")
         return null
     }
 

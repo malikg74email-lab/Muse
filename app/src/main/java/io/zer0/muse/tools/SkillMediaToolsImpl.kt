@@ -46,16 +46,16 @@ class SkillMediaToolsImpl(
             val cats = repo.listCategories()
             if (cats.isEmpty()) return context.getString(R.string.skill_sticker_list_empty)
             val sb = StringBuilder()
-            sb.appendLine("共 ${cats.size} 个分类:")
+            sb.appendLine("${cats.size} categories in total:")
             cats.forEach { c ->
                 val cnt = repo.listStickers(c).size
-                sb.appendLine("[$c]( $cnt 个)")
+                sb.appendLine("[$c]( $cnt items)")
             }
             // 助手自审第 16 条：分类名必须严格匹配清单，猜错就失效，而且没有
             // 「这个语境适合什么」的推荐。这里按语境给一份对照，让模型从
             // 「当前对话是什么情绪」直接映射到分类，而不是先猜再回来查。
             appendCategoryGuide(cats, sb)
-            sb.append("请调用 list_stickers 并传入 category 参数查看某个分类的具体表情包,然后调用 send_sticker 发送。")
+            sb.append("Call list_stickers with the category parameter to view the stickers in a category, then call send_sticker to send one.")
             return sb.toString()
         }
         val items = repo.listStickers(category)
@@ -66,9 +66,9 @@ class SkillMediaToolsImpl(
                 context.getString(R.string.skill_sticker_list_empty)
             } else {
                 buildString {
-                    appendLine("分类 \"$category\" 下没有表情包（分类名必须与清单完全一致）。")
-                    appendLine("现有分类: ${cats.joinToString("、")}")
-                    append("请从中选一个准确的分类名重新调用 list_stickers。")
+                    appendLine("No stickers under category \"$category\" (the category name must match the list exactly).")
+                    appendLine("Existing categories: ${cats.joinToString(", ")}")
+                    append("Pick an exact category name from these and call list_stickers again.")
                 }
             }
         }
@@ -76,11 +76,11 @@ class SkillMediaToolsImpl(
         // v1.0.54: 分类列表限制展示前 20 个 — 分类内贴纸可能上百个,全量输出会被截断,
         //   模型看不到完整列表就反复查 list_stickers,死循环不调 send_sticker。
         val shown = items.take(20)
-        sb.appendLine("共 ${items.size} 个表情包(分类: $category),以下为前 ${shown.size} 个:")
+        sb.appendLine("${items.size} stickers in total (category: $category); the first ${shown.size} are below:")
         shown.forEach { item ->
             sb.appendLine("[${item.category}] ${item.fileName} (id=${item.id})")
         }
-        sb.append("请从以上列表中选择一个合适的 id,立即调用 send_sticker 发送,不要重复查询列表。")
+        sb.append("Pick a suitable id from the list above and call send_sticker to send it right away; do not query the list again.")
         return sb.toString()
     }
 
@@ -129,7 +129,7 @@ class SkillMediaToolsImpl(
             )
             if (urls.isEmpty()) return@resultOf context.getString(R.string.skill_image_no_result, prompt)
             context.getString(R.string.skill_image_generated, prompt, urls.joinToString("\n"))
-        }.onError { msg, _ -> Logger.w("SkillExecutor", "generate_image 失败: $msg") }
+        }.onError { msg, _ -> Logger.w("SkillExecutor", "generate_image failed: $msg") }
             .getOrNull() ?: context.getString(R.string.skill_image_failed, prompt)
     }
 
@@ -147,13 +147,13 @@ class SkillMediaToolsImpl(
             }
             bitmap.recycle()
             context.getString(R.string.skill_qr_generated, file.absolutePath)
-        }.onError { msg, _ -> Logger.w("SkillExecutor", "generate_qr 失败: $msg") }
+        }.onError { msg, _ -> Logger.w("SkillExecutor", "generate_qr failed: $msg") }
             .getOrNull() ?: context.getString(R.string.skill_qr_gen_failed)
     }
 
     suspend fun execExecuteJavascript(args: Map<String, String>): String {
         val code = args["code"]?.takeIf { it.isNotBlank() }
-            ?: return """{"result":"","logs":[],"error":"参数 code 缺失或为空"}"""
+            ?: return """{\"result\":\"\",\"logs\":[],\"error\":\"Parameter code is missing or empty\"}"""
         val timeoutMs = args["timeout_ms"]?.toLongOrNull()?.coerceIn(1L, 60_000L) ?: 10000L
         // 初始化 JsSandbox(幂等)— 注入 Application Context
         JsSandbox.init(context)
@@ -169,20 +169,20 @@ class SkillMediaToolsImpl(
 
     suspend fun execPluginTool(skill: SkillEntity, argumentsJson: String): String {
         if (!pluginsGloballyEnabled()) {
-            return "插件已被全局停用（设置 → 工具与扩展 → 插件总开关）"
+            return "The plugin has been globally disabled (Settings → Tools & Extensions → Plugin master switch)"
         }
         val parts = skill.implementationKotlin.split(":")
-        if (parts.size < 3) return "插件工具路由格式错误: ${skill.implementationKotlin}"
+        if (parts.size < 3) return "Plugin tool route format error: ${skill.implementationKotlin}"
         val pluginId = parts[1]
         val functionName = parts[2]
-        val manager = pluginManager ?: return "插件未安装: $pluginId"
-        val plugin = manager.findPlugin(pluginId) ?: return "插件未安装: $pluginId"
-        if (!plugin.enabled) return "插件已禁用: ${plugin.name}"
+        val manager = pluginManager ?: return "Plugin not installed: $pluginId"
+        val plugin = manager.findPlugin(pluginId) ?: return "Plugin not installed: $pluginId"
+        if (!plugin.enabled) return "Plugin disabled: ${plugin.name}"
         // P0: capabilities/tools/entryCode 一律来自磁盘重新验证后的 manifest，
         // 不再信任 InstalledPlugin.capabilities 等注册表缓存；并在进入 JS 沙盒前
         // 拒绝已被新 manifest 移除/改名的 functionName。
         val verified = manager.loadVerifiedFunction(pluginId, functionName)
-            ?: return "插件入口校验失败或工具已移除: $pluginId/$functionName"
+            ?: return "Plugin entry validation failed or the tool has been removed: $pluginId/$functionName"
 
         val configJson = manager.getPluginConfigJson(verified.manifest)
         val argsJson = "[" + argumentsJson.ifBlank { "{}" } + "]"
@@ -244,10 +244,10 @@ class SkillMediaToolsImpl(
             is SkillEngineResult.Error -> {
                 if (JsSandbox.isCircuitBrokenFor(pluginId)) {
                     resultOf { manager.setEnabled(pluginId, false) }
-                        .onError { msg, _ -> Logger.w("SkillMediaToolsImpl", "自动禁用插件失败: $msg") }
-                    "插件已自动禁用: JS 沙盒连续超时，请稍后重试"
+                        .onError { msg, _ -> Logger.w("SkillMediaToolsImpl", "Failed to auto-disable the plugin: $msg") }
+                    "Plugin auto-disabled: the JS sandbox kept timing out; please retry later"
                 } else {
-                    "插件工具执行失败: ${result.message}"
+                    "Plugin tool execution failed: ${result.message}"
                 }
             }
         }
@@ -271,7 +271,7 @@ class SkillMediaToolsImpl(
     ): String {
         val dataReady = io.zer0.muse.runtime.PythonRuntime.ensureData(context)
         if (dataReady.isFailure) {
-            return "Python 运行时未就绪: ${dataReady.exceptionOrNull()?.message}"
+            return "Python runtime not ready: ${dataReady.exceptionOrNull()?.message}"
         }
         return when (
             val result = PythonSkillEngine(context).callPluginFunction(
@@ -287,7 +287,7 @@ class SkillMediaToolsImpl(
             }.getOrElse {
                 result.valueJson.ifBlank { "null" }
             }
-            is SkillEngineResult.Error -> "插件工具执行失败: ${result.message}"
+            is SkillEngineResult.Error -> "Plugin tool execution failed: ${result.message}"
         }
     }
     companion object {
@@ -305,9 +305,9 @@ class SkillMediaToolsImpl(
             val covered = guide.flatMap { it.second }.toSet()
             val rest = categories.filterNot { it in covered }
             return buildString {
-                appendLine("按当前对话情绪挑分类:")
+                appendLine("Pick a category by the current conversation mood:")
                 guide.forEach { (mood, cats) -> appendLine("- $mood → ${cats.joinToString("、")}") }
-                if (rest.isNotEmpty()) appendLine("- 其余分类按名称自行判断: ${rest.joinToString("、")}")
+                if (rest.isNotEmpty()) appendLine("- Judge the remaining categories by name yourself: ${rest.joinToString(", ")}")
                 appendLine()
             }
         }
@@ -321,13 +321,13 @@ class SkillMediaToolsImpl(
  * 没命中就留给模型按名称判断。宁可少给建议，也不要给错映射。
  */
 private val STICKER_MOOD_KEYWORDS: List<Pair<String, List<String>>> = listOf(
-    "开心/庆祝" to listOf("开心", "庆祝", "高兴", "快乐", "happy", "celebration", "party"),
-    "安慰/治愈" to listOf("安慰", "治愈", "抱抱", "温暖", "comfort", "hug", "healing"),
-    "难过/低落" to listOf("难过", "哭", "低落", "伤心", "sad", "cry"),
-    "生气/吐槽" to listOf("生气", "愤怒", "吐槽", "白眼", "angry", "annoyed"),
-    "搞笑/沙雕" to listOf("搞笑", "沙雕", "魔性", "funny", "meme", "silly"),
-    "可爱/卖萌" to listOf("可爱", "卖萌", "萌", "cute", "kawaii"),
-    "鼓励/加油" to listOf("鼓励", "加油", "打气", "cheer", "encourage"),
-    "无奈/摆烂" to listOf("无奈", "摆烂", "躺平", "sigh", "shrug"),
-    "晚安/睡觉" to listOf("晚安", "睡", "困", "goodnight", "sleep"),
+    "Happy/Celebration" to listOf("开心", "庆祝", "高兴", "快乐", "happy", "celebration", "party"),
+    "Comfort/Healing" to listOf("安慰", "治愈", "抱抱", "温暖", "comfort", "hug", "healing"),
+    "Sad/Down" to listOf("难过", "哭", "低落", "伤心", "sad", "cry"),
+    "Angry/Ranting" to listOf("生气", "愤怒", "吐槽", "白眼", "angry", "annoyed"),
+    "Funny/Silly" to listOf("搞笑", "沙雕", "魔性", "funny", "meme", "silly"),
+    "Cute" to listOf("可爱", "卖萌", "萌", "cute", "kawaii"),
+    "Encouragement/Cheer" to listOf("鼓励", "加油", "打气", "cheer", "encourage"),
+    "Helpless/Giving up" to listOf("无奈", "摆烂", "躺平", "sigh", "shrug"),
+    "Goodnight/Sleep" to listOf("晚安", "睡", "困", "goodnight", "sleep"),
 )

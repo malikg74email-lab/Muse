@@ -96,19 +96,19 @@ class TeamWorkflowExecutor(
                 DelegationContract.TeamWorkflowNode(
                     id = "step-$idx",
                     assistantId = assistantId,
-                    name = "团队步骤 $idx",
+                    name = "Team step $idx",
                     taskTemplate = teamTask,
                 )
             }
 
         if (nodes.isEmpty()) {
-            return errorResult(parentRequestId, "团队没有成员,无法执行工作流", startedAt)
+            return errorResult(parentRequestId, "The team has no members; the workflow cannot be executed", startedAt)
         }
 
         // 校验 assistantId
         val invalidNodes = nodes.filter { it.assistantId.isBlank() }
         if (invalidNodes.isNotEmpty()) {
-            return errorResult(parentRequestId, "工作流节点缺少 assistantId: ${invalidNodes.map { it.id }}", startedAt)
+            return errorResult(parentRequestId, "Workflow node is missing assistantId: ${invalidNodes.map { it.id }}", startedAt)
         }
 
         // v1.0.53 Phase 2: 生成/复用 runId,建立 nodeSeq 映射 + 计算 expectedKeys
@@ -152,23 +152,23 @@ class TeamWorkflowExecutor(
                     cachedNodeIds.add(node.id)
                 }
             }
-            Logger.d("TeamWorkflowExecutor", "journal resume runId=$effectiveRunId: ${cachedNodeIds.size}/${nodes.size} 节点命中缓存")
+            Logger.d("TeamWorkflowExecutor", "journal resume runId=$effectiveRunId: ${cachedNodeIds.size}/${nodes.size} nodes hit the cache")
         }
 
         try {
             // v1.201: 团队执行前暂停(pauseBeforeTeam)
             if (pauseManager != null && pausePolicy.pauseBeforeTeam) {
                 if (pauseManager.isCancelled(parentRequestId)) {
-                    return errorResult(parentRequestId, "团队工作流被用户取消", startedAt)
+                    return errorResult(parentRequestId, "Team workflow cancelled by the user", startedAt)
                 }
                 val pauseReq = DelegationPauseManager.PauseRequest(
                     requestId = "pause-$parentRequestId-before-team",
                     taskId = parentRequestId,
-                    taskTitle = "团队工作流执行前确认",
+                    taskTitle = "Team workflow pre-execution confirmation",
                     taskDescription = teamTask,
                     targetType = "team",
                     targetName = parentRequestId,
-                    reason = "团队工作流执行前确认",
+                    reason = "Team workflow pre-execution confirmation",
                     options = listOf(
                         DelegationPauseManager.PauseOption.APPROVE,
                         DelegationPauseManager.PauseOption.REJECT,
@@ -180,7 +180,7 @@ class TeamWorkflowExecutor(
                     DelegationPauseManager.PauseDecision.CANCEL,
                     DelegationPauseManager.PauseDecision.REJECT,
                     ->
-                        return errorResult(parentRequestId, "用户取消团队工作流", startedAt)
+                        return errorResult(parentRequestId, "User cancelled the team workflow", startedAt)
                     DelegationPauseManager.PauseDecision.APPROVE,
                     DelegationPauseManager.PauseDecision.MODIFY,
                     -> { /* 继续 */ }
@@ -197,7 +197,7 @@ class TeamWorkflowExecutor(
                 if (ready.isEmpty()) {
                     return errorResult(
                         parentRequestId,
-                        "工作流存在循环依赖或无法解析的依赖: ${pending.map { it.id }}",
+                        "The workflow has a circular dependency or unresolvable dependencies: ${pending.map { it.id }}",
                         startedAt,
                     )
                 }
@@ -223,7 +223,7 @@ class TeamWorkflowExecutor(
                         } else {
                             errorResult(
                                 childRequestId,
-                                "前置步骤未成功,已阻止执行该节点",
+                                "A preceding step did not succeed; execution of this node was blocked",
                                 startedAt,
                             )
                         }
@@ -239,7 +239,7 @@ class TeamWorkflowExecutor(
                     delegationChainTracker?.onDelegationFinished(
                         requestId = childRequestId,
                         success = blockedResult.success,
-                        resultText = if (inheritedSkip) "(已跳过: 前置条件不满足)" else "",
+                        resultText = if (inheritedSkip) "(Skipped: preconditions not met)" else "",
                         error = blockedResult.error,
                     )
                     recordToJournal(
@@ -261,7 +261,7 @@ class TeamWorkflowExecutor(
                 // v1.201: 每个成员执行前暂停(pauseBeforeEachMember)
                 if (pauseManager != null && pausePolicy.pauseBeforeEachMember) {
                     if (pauseManager.isCancelled(parentRequestId)) {
-                        return errorResult(parentRequestId, "团队工作流被用户取消", startedAt)
+                        return errorResult(parentRequestId, "Team workflow cancelled by the user", startedAt)
                     }
                     executableReady.forEach { node ->
                         val pauseReq = DelegationPauseManager.PauseRequest(
@@ -271,7 +271,7 @@ class TeamWorkflowExecutor(
                             taskDescription = node.taskTemplate.ifBlank { teamTask },
                             targetType = "assistant",
                             targetName = node.assistantId,
-                            reason = "团队成员 ${node.name.ifBlank { node.id }} 执行前确认",
+                            reason = "Team member ${node.name.ifBlank { node.id }} pre-execution confirmation",
                             options = listOf(
                                 DelegationPauseManager.PauseOption.APPROVE,
                                 DelegationPauseManager.PauseOption.REJECT,
@@ -281,12 +281,12 @@ class TeamWorkflowExecutor(
                         val resp = pauseManager.awaitPauseDecision(pauseReq, pausePolicy)
                         when (resp.decision) {
                             DelegationPauseManager.PauseDecision.CANCEL ->
-                                return errorResult(parentRequestId, "用户取消团队工作流", startedAt)
+                                return errorResult(parentRequestId, "User cancelled the team workflow", startedAt)
                             DelegationPauseManager.PauseDecision.REJECT -> {
                                 // 跳过该节点,标记为失败
                                 executed[node.id] = errorResult(
                                     "$parentRequestId/${node.id}",
-                                    "用户拒绝执行该节点",
+                                    "User refused to execute this node",
                                     System.currentTimeMillis(),
                                 )
                                 pending.remove(node)
@@ -346,7 +346,7 @@ class TeamWorkflowExecutor(
                 subResultTree = subResultTree,
             )
         } catch (e: Exception) {
-            return errorResult(parentRequestId, "工作流执行异常: ${e.message}", startedAt)
+            return errorResult(parentRequestId, "Workflow execution exception: ${e.message}", startedAt)
         }
     }
 
@@ -415,7 +415,7 @@ class TeamWorkflowExecutor(
                     delegationChainTracker?.onDelegationFinished(
                         requestId = childRequestId,
                         success = true,
-                        resultText = "(已跳过: 条件不满足)",
+                        resultText = "(Skipped: condition not met)",
                     )
                     // v1.0.53 Phase 2: CONDITIONAL 判定为 NO 属确定性结果(温度=0),记为 llm_deterministic
                     recordToJournal(runId, nodeSeq, task, node, "(skipped)", "done", WorkflowJournal.NODE_KIND_LLM_DETERMINISTIC)
@@ -517,11 +517,11 @@ class TeamWorkflowExecutor(
         if (node.dependsOn.isEmpty()) return base
         val dependencySummary = node.dependsOn.joinToString("\n\n") { depId ->
             val dep = executed[depId]
-            val header = "## 前置步骤 $depId 结果"
+            val header = "## Preceding step $depId result"
             when {
-                dep == null -> "$header: (未执行)"
+                dep == null -> "$header: (not executed)"
                 dep.success -> "$header:\n${dep.resultText.take(2000)}"
-                else -> "$header:\n错误: ${dep.error ?: "未知错误"}"
+                else -> "$header:\nError: ${dep.error ?: "unknown error"}"
             }
         }
         return """$base
@@ -545,7 +545,7 @@ $dependencySummary
                 messages.add(
                     UIMessage(
                         role = MessageRole.SYSTEM,
-                        content = "以下条件成立时继续执行:\n$conditionContext",
+                        content = "Continue executing when the following conditions hold:\n$conditionContext",
                     ),
                 )
             }
@@ -571,15 +571,15 @@ $dependencySummary
         teamTask: String,
     ): String {
         val successful = results.filter { it.success && it.resultText.isNotBlank() }
-        if (successful.isEmpty()) return "(无可用结果)"
+        if (successful.isEmpty()) return "(No usable result)"
 
         return when (strategy) {
             DelegationContract.TeamWorkflow.AggregationStrategy.MERGE -> {
                 buildString {
-                    appendLine("团队执行结果汇总:")
+                    appendLine("Team execution result summary:")
                     successful.forEachIndexed { idx, r ->
                         appendLine()
-                        appendLine("--- 子结果 ${idx + 1} [${r.metadata.assistantName ?: r.metadata.assistantId ?: r.requestId}] ---")
+                        appendLine("--- Sub-result ${idx + 1} [${r.metadata.assistantName ?: r.metadata.assistantId ?: r.requestId}] ---")
                         appendLine(r.resultText)
                     }
                 }.trimEnd()
@@ -588,7 +588,7 @@ $dependencySummary
                 // 简单投票:结果去重后统计频次,返回最高频结果
                 val votes = successful.groupingBy { it.resultText }.eachCount()
                 val best = votes.maxByOrNull { it.value }
-                "投票结果(共 ${successful.size} 票): 最高频结果出现 ${best?.value} 次\n\n${best?.key ?: ""}"
+                "Voting result (${successful.size} votes in total): the most frequent result appeared ${best?.value} times\n\n${best?.key ?: ""}"
             }
             DelegationContract.TeamWorkflow.AggregationStrategy.EXPERT_REVIEW -> {
                 // B3-08: 共识优先 — 先做相似度聚类,多数派直接输出;无共识时调 LLM 综合评审
@@ -602,7 +602,7 @@ $dependencySummary
                 val majority = clusters.maxByOrNull { it.size }
                 if (majority != null && majority.size >= 2) {
                     val consensus = majority.maxByOrNull { it.resultText.length }
-                    "专家共识(${majority.size}/${successful.size}):\n\n${consensus?.resultText ?: ""}"
+                    "Expert consensus (${majority.size}/${successful.size}):\n\n${consensus?.resultText ?: ""}"
                 } else {
                     val candidates = successful.map { r ->
                         AgentResultAggregator.Candidate(
@@ -623,7 +623,7 @@ $dependencySummary
                         aggregation.output
                     } else {
                         val expert = successful.maxByOrNull { it.resultText.length }
-                        "专家评审选定结果:\n\n${expert?.resultText ?: ""}"
+                        "Expert review selected result:\n\n${expert?.resultText ?: ""}"
                     }
                 }
             }
@@ -710,35 +710,35 @@ $dependencySummary
     ): ConditionalDecision {
         val previousResults = node.dependsOn.mapNotNull { depId ->
             executed[depId]?.let { dep ->
-                val status = if (dep.success) "成功" else "失败"
+                val status = if (dep.success) "Success" else "Failed"
                 "[$depId]($status): ${dep.resultText.take(500)}"
             }
         }.joinToString("\n")
         // 无前置结果可参考,阻止执行
         if (previousResults.isBlank()) {
-            return ConditionalDecision.Failed("条件判断缺少前置结果,已阻止执行该节点")
+            return ConditionalDecision.Failed("The condition judgement lacks a preceding result; execution of this node was blocked")
         }
 
         val nodeTask = node.taskTemplate.ifBlank { node.name.ifBlank { node.id } }
-        val prompt = """根据以下前置结果,判断是否应该执行任务"$nodeTask"。回答 YES 或 NO。
+        val prompt = """Based on the preceding results below, decide whether the task "$nodeTask" should be executed. Answer YES or NO.
 
-前置结果:
+Preceding results:
 $previousResults
 
-只回答 YES 或 NO,不要解释。
+Answer only YES or NO; do not explain.
         """.trimIndent()
 
         val messages = listOf(
             UIMessage(
                 role = MessageRole.SYSTEM,
-                content = "你是严谨的工作流条件判断器,只回答 YES 或 NO,不要输出其他内容。",
+                content = "You are a rigorous workflow condition judge; answer only YES or NO and output nothing else.",
             ),
             UIMessage(role = MessageRole.USER, content = prompt),
         )
 
         // resultOf{} 自动重抛 CancellationException,不破坏协程取消语义
         val service = chatService
-            ?: return ConditionalDecision.Failed("条件判断服务不可用,已阻止执行该节点")
+            ?: return ConditionalDecision.Failed("The condition judgement service is unavailable; execution of this node was blocked")
         val completion = resultOf {
             service.completeText(
                 messages = messages,
@@ -746,14 +746,14 @@ $previousResults
                 maxTokens = 10,
             )
         }.onError { msg, t ->
-            Logger.w("TeamWorkflowExecutor", "CONDITIONAL 条件判断 LLM 调用失败,已阻止节点执行: $msg", t)
-        }.getOrNull() ?: return ConditionalDecision.Failed("条件判断调用失败,已阻止执行该节点")
+            Logger.w("TeamWorkflowExecutor", "CONDITIONAL condition judgement LLM call failed; node execution blocked: $msg", t)
+        }.getOrNull() ?: return ConditionalDecision.Failed("Condition judgement call failed; execution of this node was blocked")
 
         val text = completion.text.trim().uppercase()
         return when {
             text.startsWith("NO") -> ConditionalDecision.Skip
             text.startsWith("YES") -> ConditionalDecision.Execute
-            else -> ConditionalDecision.Failed("条件判断返回无法识别的结果,已阻止执行该节点")
+            else -> ConditionalDecision.Failed("The condition judgement returned an unrecognisable result; execution of this node was blocked")
         }
     }
 

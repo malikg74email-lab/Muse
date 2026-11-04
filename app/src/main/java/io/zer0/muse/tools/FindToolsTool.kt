@@ -96,11 +96,11 @@ object FindToolsTool {
         }
         val sections =
             listOf(
-                ToolCategory.CORE to "core 核心",
-                ToolCategory.STANDARD to "standard 常用",
-                ToolCategory.OPTIONAL to "optional 可选",
-                ToolCategory.GLOBAL to "global 高级(需授权/审批)",
-                null to "extension 扩展(插件/MCP/技能)",
+                ToolCategory.CORE to "core (core)",
+                ToolCategory.STANDARD to "standard (commonly used)",
+                ToolCategory.OPTIONAL to "optional (optional)",
+                ToolCategory.GLOBAL to "global (advanced, requires authorisation/approval)",
+                null to "extension (extensions: plugins/MCP/skills)",
             )
         sections.forEach { (category, label) ->
             val items = grouped[category].orEmpty().sortedBy { it.name }
@@ -121,8 +121,8 @@ object FindToolsTool {
         }
         sb.appendLine()
         sb.appendLine(
-            "以上为完整目录。要使用其中某个工具:用它的名称或关键词再次调用 find_tools," +
-                "命中的工具从下一轮起可直接调用。应用层面的功能总览可用 knowledge_search(include_internal=true) 查询。",
+            "The above is the complete catalogue. To use one of these tools: call find_tools again with its name or a keyword;" +
+                "matched tools can be called directly from the next round on. For an application-level feature overview, query with knowledge_search(include_internal=true).",
         )
         return sb.toString().trimEnd()
     }

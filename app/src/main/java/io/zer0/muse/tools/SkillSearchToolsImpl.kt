@@ -93,7 +93,7 @@ class SkillSearchToolsImpl(
             val hopStr = hopUrl.toString()
             if (!validatePublicUrl(hopStr)) {
                 // 抛业务异常,由调用方的 IOException 分支统一兜底(带上跳信息)
-                throw java.io.IOException("重定向目标指向内网地址,已拒绝: $hopStr")
+                throw java.io.IOException("Redirect target points to an intranet address; rejected: $hopStr")
             }
             // 每个 hop 都新建 followRedirects=false 的 client(复用共享 client 的连接配置与超时覆盖)
             val hopClient = clientBuilder.followRedirects(false).build()
@@ -106,12 +106,12 @@ class SkillSearchToolsImpl(
             resp.close() // 手动跟随,关闭本次重定向响应(不读 body,节约连接)
             redirects++
             if (redirects > MAX_REDIRECTS) {
-                throw java.io.IOException("重定向次数超过上限($MAX_REDIRECTS),已终止")
+                throw java.io.IOException("Redirect count exceeded the limit ($MAX_REDIRECTS); terminated")
             }
             // 相对 Location 按当前 URL 解析
             val next =
                 hopUrl.resolve(location)
-                    ?: throw java.io.IOException("重定向 Location 无法解析: $location")
+                    ?: throw java.io.IOException("Redirect Location could not be parsed: $location")
             val nextStr = next.toString()
             // 保留原方法/body/header,仅替换 URL(与 OkHttp 默认重定向语义一致:
             // 307/308 保留 body,301/302/303 由接受 GET 的服务端兼容处理)
@@ -225,7 +225,7 @@ class SkillSearchToolsImpl(
                 (v as? JsonPrimitive)?.content?.let { req.header(k, it) }
             }
         }.onError { msg, _ ->
-            Logger.w("SkillExecutor", "applyHeaders 解析失败: $msg(原始: $headersJson)")
+            Logger.w("SkillExecutor", "applyHeaders parsing failed: $msg (original: $headersJson)")
         }
     }
 
@@ -281,16 +281,16 @@ class SkillSearchToolsImpl(
                 if (t is SearchRateLimitException) {
                     val secs = (t.retryAfterMs / 1000).coerceAtLeast(1)
                     return context.getString(R.string.skill_search_no_result, query) +
-                        "\n（搜索服务被限速，请 $secs 秒后重试）"
+                        "\n(Search service is rate-limited; please retry after $secs seconds)"
                 }
-                Logger.w("SkillExecutor", "web_search 失败: $msg")
+                Logger.w("SkillExecutor", "web_search failed: $msg")
             }.getOrNull() ?: emptyList()
         if (results.isEmpty()) return context.getString(R.string.skill_search_no_result, query)
         val sb = StringBuilder(context.getString(R.string.skill_search_result_header, query, maxResults))
         results.forEachIndexed { idx, r ->
             sb.appendLine("[${idx + 1}] ${r.title}")
             sb.appendLine("    URL: ${r.url}")
-            sb.appendLine("    摘要: ${r.snippet}")
+            sb.appendLine("    Summary: ${r.snippet}")
         }
         // 结果正文只保留搜索事实；回答策略属于模型内部系统提示，不混入用户可见的工具结果。
         return sb.toString().trimEnd()
@@ -299,20 +299,20 @@ class SkillSearchToolsImpl(
     private fun formatCoordinatedSearchResponse(response: io.zer0.muse.web.WebSearchResponse, maxResults: Int): String {
         if (response.status != io.zer0.muse.web.WebSearchStatus.RESULTS || response.results.isEmpty()) {
             return when (response.status) {
-                io.zer0.muse.web.WebSearchStatus.BUDGET_EXCEEDED -> "搜索预算已用尽：本轮最多搜索 ${WebSearchPolicy().maxSearchesPerTurn} 次，请基于已有结果回答。"
-                io.zer0.muse.web.WebSearchStatus.DUPLICATE_QUERY -> "这个搜索词本轮已经搜过了，请不要重复搜索。"
-                io.zer0.muse.web.WebSearchStatus.RATE_LIMITED -> "搜索服务被限速了，请稍后再试。"
-                io.zer0.muse.web.WebSearchStatus.FAILED -> "搜索服务失败：${response.attempts.lastOrNull()?.message ?: "网络异常"}"
-                else -> "搜索“${response.normalizedQuery}”没有找到结果。"
+                io.zer0.muse.web.WebSearchStatus.BUDGET_EXCEEDED -> "Search budget exhausted: at most ${WebSearchPolicy().maxSearchesPerTurn} searches this round; please answer based on the existing results."
+                io.zer0.muse.web.WebSearchStatus.DUPLICATE_QUERY -> "This query has already been searched this round; please do not search it again."
+                io.zer0.muse.web.WebSearchStatus.RATE_LIMITED -> "The search service is rate-limited; please try again later."
+                io.zer0.muse.web.WebSearchStatus.FAILED -> "Search service failed: ${response.attempts.lastOrNull()?.message ?: "network error"}"
+                else -> "No results found for \"${response.normalizedQuery}\"."
             }
         }
         val sb = StringBuilder(context.getString(R.string.skill_search_result_header, response.normalizedQuery, response.results.size))
         response.results.take(maxResults).forEachIndexed { idx, r ->
             sb.appendLine("[${idx + 1}] ${r.title}")
             sb.appendLine("    URL: ${r.url}")
-            sb.appendLine("    摘要: ${r.snippet}")
+            sb.appendLine("    Summary: ${r.snippet}")
         }
-        sb.appendLine("\n搜索来源：${response.provider ?: "未知"}；本轮状态：${response.status}")
+        sb.appendLine("\nSearch source: ${response.provider ?: "unknown"}; this round's status: ${response.status}")
         return sb.toString().trimEnd()
     }
 
@@ -361,11 +361,11 @@ class SkillSearchToolsImpl(
                     append(formatWebFetchResult(resp.code, cleaned))
                     if (captured.savedFile != null) {
                         if (captured.totalChars > WEB_FETCH_PARSE_PREVIEW_CHARS) {
-                            append("\n\n[网页正文解析仅覆盖前 $WEB_FETCH_PARSE_PREVIEW_CHARS 个字符;")
+                            append("\n\n[Web page body parsing only covers the first $WEB_FETCH_PARSE_PREVIEW_CHARS characters;")
                         } else {
-                            append("\n\n[完整网页源码已保存;")
+                            append("\n\n[Full web page source saved;")
                         }
-                        append("完整源码可通过 read_file 分段读取]\n")
+                        append("the full source can be read in chunks via read_file]\n")
                         append(captured.reference)
                     }
                 }
@@ -390,25 +390,25 @@ class SkillSearchToolsImpl(
         val service = webSearchService ?: return null
         val domain =
             resultOf { java.net.URI(url).host }
-                .onError { msg, _ -> Logger.w("SkillExecutor", "降级搜索域名解析失败: $msg") }
+                .onError { msg, _ -> Logger.w("SkillExecutor", "Fallback search DNS resolution failed: $msg") }
                 .getOrNull()?.takeIf { it.isNotBlank() } ?: return null
         val results =
             resultOf { service.search(domain, 3) }
                 .onError { msg, t ->
                     // search-rate-limiter: 降级搜索被限速时仅记录日志，返回 null 让调用方展示原抓取错误
                     if (t is SearchRateLimitException) {
-                        Logger.w("SkillExecutor", "降级搜索被限速: ${t.retryAfterMs}ms")
+                        Logger.w("SkillExecutor", "Fallback search rate-limited: ${t.retryAfterMs}ms")
                     } else {
-                        Logger.w("SkillExecutor", "降级搜索失败: $msg")
+                        Logger.w("SkillExecutor", "Fallback search failed: $msg")
                     }
                 }
                 .getOrNull() ?: return null
         if (results.isEmpty()) return null
         val fallbackMsg =
             if (httpCode > 0) {
-                "网页抓取失败(HTTP $httpCode),以下是该站点相关搜索摘要:"
+                "Web page fetch failed (HTTP $httpCode); below are search summaries related to this site:"
             } else {
-                "网页抓取失败: ${errorMsg.ifBlank { "网络异常" }},以下是该站点相关搜索摘要:"
+                "Web page fetch failed: ${errorMsg.ifBlank { "network error" }}, below are search summaries related to this site:"
             }
         val sb = StringBuilder(fallbackMsg)
         results.forEachIndexed { idx, r ->
@@ -439,7 +439,7 @@ class SkillSearchToolsImpl(
         val folderArg = args["folder"]?.trim()?.takeIf { it.isNotBlank() }
         if (includeInternal) {
             resultOf { builtInKnowledgeDocSeeder?.ensureSeeded() }
-                .onError { msg, error -> Logger.w("SkillExecutor", "内置功能文档 seed 失败: $msg", error) }
+                .onError { msg, error -> Logger.w("SkillExecutor", "Built-in feature doc seed failed: $msg", error) }
         }
 
         // v2.4.6: 文件夹作用域 → docId 集合(路径前缀匹配,含子目录)
@@ -459,7 +459,7 @@ class SkillSearchToolsImpl(
 
         // v2.x: 诊断回显 — 记录各检索阶段结果,未命中时输出附一行诊断,
         // 让"threshold 等参数是否生效"可验证(此前反馈该参数"像摆设")。
-        var vectorDiagnostic = "向量检索未启用"
+        var vectorDiagnostic = "Vector search not enabled"
 
         // v1.54: 优先用向量检索(语义匹配),无索引时降级到 LIKE 子串匹配
         val rs = ragService
@@ -467,13 +467,13 @@ class SkillSearchToolsImpl(
             // H-SE1: 改用 resultOf{}(正确重抛 CancellationException)
             val ragConfig =
                 resultOf { ragConfigProvider() }
-                    .onError { msg, _ -> Logger.w("SkillExecutor", "ragConfigProvider 失败: $msg") }
+                    .onError { msg, _ -> Logger.w("SkillExecutor", "ragConfigProvider failed: $msg") }
                     .getOrNull() ?: io.zer0.muse.rag.RagConfig()
             val vectorResults =
                 resultOf {
                     rs.retrieve(query, topK, threshold, ragConfig, scopeDocIds = folderScopeDocIds)
                 }.onError { msg, _ ->
-                    Logger.w("SkillExecutor", "向量检索失败,降级到 LIKE: $msg")
+                    Logger.w("SkillExecutor", "Vector search failed, falling back to LIKE: $msg")
                 }.getOrNull()
             if (vectorResults != null) {
                 // v1.97: 过滤内部 devdoc(include_internal=false 时排除内部文档)
@@ -499,22 +499,22 @@ class SkillSearchToolsImpl(
                     )
                     filtered.forEachIndexed { idx, r ->
                         sb.appendLine(
-                            "[${idx + 1}] 来源: ${r.docTitle} " +
+                            "[${idx + 1}] Source: ${r.docTitle} " +
                                 "(docId=${r.docId}, chunkId=${r.chunkId.ifBlank { "-" }}, " +
-                                "相似度 ${"%.2f".format(r.score)})",
+                                "similarity ${"%.2f".format(r.score)})",
                         )
-                        sb.appendLine("    片段: ${r.chunkContent.take(300)}")
+                        sb.appendLine("    Snippet: ${r.chunkContent.take(300)}")
                     }
                     return sb.toString().trimEnd()
                 }
                 vectorDiagnostic =
                     if (vectorResults.isEmpty()) {
-                        "向量检索无命中"
+                        "Vector search: no hits"
                     } else {
-                        "向量命中 ${vectorResults.size} 条,过滤内部文档后为空"
+                        "Vector search hit ${vectorResults.size} results; empty after filtering out internal docs"
                     }
             } else {
-                vectorDiagnostic = "向量检索失败,已降级关键词"
+                vectorDiagnostic = "Vector search failed; fell back to keywords"
             }
             // 向量检索无结果,继续尝试 LIKE 搜索(兼容未索引的旧文档)
         }
@@ -563,13 +563,13 @@ class SkillSearchToolsImpl(
             }.filter { it.second >= threshold }
         if (scored.isEmpty()) {
             return context.getString(R.string.skill_knowledge_no_match, query, threshold.toString()) +
-                "\n(诊断: threshold=$threshold, top_k=$topK, include_internal=$includeInternal; " +
-                "$vectorDiagnostic; 关键词匹配 ${visibleResults.size} 条)"
+                "\n(Diagnostics: threshold=$threshold, top_k=$topK, include_internal=$includeInternal; " +
+                "$vectorDiagnostic; keyword matching ${visibleResults.size} results)"
         }
         val results = scored.sortedByDescending { it.second }.take(topK)
         val sb = StringBuilder(context.getString(R.string.skill_knowledge_like_header, query, results.size, threshold.toString(), topK))
         results.forEachIndexed { idx, (doc, score) ->
-            sb.appendLine("[${idx + 1}] ${doc.title} (${doc.fileType}, ${doc.content.length} 字, score=$score)")
+            sb.appendLine("[${idx + 1}] ${doc.title} (${doc.fileType}, ${doc.content.length} chars, score=$score)")
             val matchIdx = doc.content.indexOf(query, ignoreCase = true)
             val snippet =
                 if (matchIdx < 0) {
@@ -579,7 +579,7 @@ class SkillSearchToolsImpl(
                     val end = (matchIdx + query.length + 120).coerceAtMost(doc.content.length)
                     "..." + doc.content.substring(start, end) + "..."
                 }
-            sb.appendLine("    片段: $snippet")
+            sb.appendLine("    Snippet: $snippet")
         }
         return sb.toString().trimEnd()
     }
@@ -601,10 +601,10 @@ class SkillSearchToolsImpl(
         val dateRegex = Regex("^\\d{4}-\\d{2}-\\d{2}$")
         val dateFrom =
             args["date_from"]?.takeIf { it.isNotBlank() }
-                ?.let { if (dateRegex.matches(it)) it else return "date_from 格式错误,应为 YYYY-MM-DD: $it" }
+                ?.let { if (dateRegex.matches(it)) it else return "date_from format error; should be YYYY-MM-DD: $it" }
         val dateTo =
             args["date_to"]?.takeIf { it.isNotBlank() }
-                ?.let { if (dateRegex.matches(it)) it else return "date_to 格式错误,应为 YYYY-MM-DD: $it" }
+                ?.let { if (dateRegex.matches(it)) it else return "date_to format error; should be YYYY-MM-DD: $it" }
         val searchQuery =
             buildString {
                 append("all:").append(encoded)
@@ -643,20 +643,20 @@ class SkillSearchToolsImpl(
                 val title =
                     Regex("""<title>([\s\S]*?)</title>""", RegexOption.IGNORE_CASE)
                         .find(block)?.groupValues?.get(1)?.trim()?.replace(Regex("\\s+"), " ")
-                        ?: "(无标题)"
+                        ?: "(No title)"
                 val summary =
                     Regex("""<summary>([\s\S]*?)</summary>""", RegexOption.IGNORE_CASE)
                         .find(block)?.groupValues?.get(1)?.trim()?.replace(Regex("\\s+"), " ")
-                        ?.take(300) ?: "(无摘要)"
+                        ?.take(300) ?: "(No summary)"
                 val link =
                     Regex("""<link[^>]*href="([^"]+)"[^>]*/>""", RegexOption.IGNORE_CASE)
-                        .find(block)?.groupValues?.get(1) ?: "(无链接)"
+                        .find(block)?.groupValues?.get(1) ?: "(No link)"
                 val published =
                     Regex("""<published>([^<]+)</published>""", RegexOption.IGNORE_CASE)
                         .find(block)?.groupValues?.get(1)?.substringBefore("T") ?: ""
                 sb.appendLine("[${idx + 1}] $title${if (published.isNotBlank()) " ($published)" else ""}")
                 sb.appendLine("    URL: $link")
-                sb.appendLine("    摘要: $summary")
+                sb.appendLine("    Summary: $summary")
             }
             return sb.toString().trimEnd()
         }

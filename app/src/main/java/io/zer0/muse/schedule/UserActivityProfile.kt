@@ -235,7 +235,7 @@ class UserActivityProfile(
             totalRecords = newTotal,
             lastDecayDay = currentDay,
         )
-        Logger.d(TAG, "活跃度画像衰减: elapsedDays=$elapsedDays, factor=$factor, total=$newTotal")
+        Logger.d(TAG, "Activity profile decay: elapsedDays=$elapsedDays, factor=$factor, total=$newTotal")
     }
 
     private fun load(): ProfileState {
@@ -243,7 +243,7 @@ class UserActivityProfile(
         return runCatching {
             json.decodeFromString<ProfileState>(raw)
         }.onFailure { t ->
-            Logger.w(TAG, "加载活跃度画像失败,使用默认值: ${t.message}")
+            Logger.w(TAG, "Loading the activity profile failed, using defaults: ${t.message}")
         }.getOrDefault(ProfileState())
     }
 

@@ -34,7 +34,7 @@ class AutoBackupWorker(
     override suspend fun doWork(): Result {
         val koin = resultOf { GlobalContext.get() }.getOrNull()
         if (koin == null) {
-            Logger.w(TAG, "Koin 未初始化(Safe Mode?),跳过本次 Worker 执行")
+            Logger.w(TAG, "Koin not initialized (Safe Mode?), skipping this Worker run")
             return Result.success()
         }
         // v1.xxx: 后台调度总控 — 关闭时跳过执行体,周期调度本身仍保留,重新打开即恢复
@@ -44,12 +44,12 @@ class AutoBackupWorker(
                     .getOrNull(),
             )
         if (!workEnabled) {
-            Logger.i(TAG, "后台调度总控已关闭,跳过本次执行")
+            Logger.i(TAG, "Background scheduling master switch is off, skipping this run")
             return Result.success()
         }
         val helper = resultOf { koin.get<io.zer0.muse.data.stats.AutoBackupHelper>() }.getOrNull()
         if (helper == null) {
-            Logger.w(TAG, "AutoBackupHelper 解析失败,跳过本次 Worker 执行")
+            Logger.w(TAG, "AutoBackupHelper resolution failed, skipping this Worker run")
             return Result.success()
         }
         val ok = resultOf { helper.backupNow() }

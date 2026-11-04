@@ -89,7 +89,7 @@ object FileAccessRequestBridge {
      * 定义在工具包：它会经 [FileAccessResult.reason] 流进模型回执，是模型面文本，
      * 不该写进 ui/（硬编码中文门禁按目录扫描，会误报为未本地化的界面文案）。
      */
-    const val USER_CANCELLED_PICK = "用户取消了选择"
+    const val USER_CANCELLED_PICK = "The user cancelled the selection"
 
     /** 等用户选择的超时。 */
     private const val PICK_TIMEOUT_MS = 120_000L
@@ -107,7 +107,7 @@ object FileAccessRequestBridge {
         publishHead()
         val result =
             withTimeoutOrNull(PICK_TIMEOUT_MS) { deferred.await() }
-                ?: FileAccessResult.Dismissed("用户没有在 ${PICK_TIMEOUT_MS / 1000} 秒内选择文件")
+                ?: FileAccessResult.Dismissed("The user did not choose a file within ${PICK_TIMEOUT_MS / 1000} seconds")
         waiters.remove(id)
         queue.removeAll { it.id == id }
         publishHead()
@@ -126,7 +126,7 @@ object FileAccessRequestBridge {
     }
 
     /** UI 侧：主动放弃（如页面销毁）。 */
-    fun cancel(id: String, reason: String = "请求已取消") {
+    fun cancel(id: String, reason: String = "Request cancelled") {
         waiters[id]?.complete(FileAccessResult.Dismissed(reason))
     }
 
@@ -156,8 +156,8 @@ object FileAccessRequestBridge {
             val mime = runCatching { resolver.getType(uri) }.getOrNull().orEmpty()
             if (!isTextLike(mime, displayName)) {
                 return FileAccessResult.Dismissed(
-                    "该文件类型（${mime.ifBlank { "未知" }}）不是纯文本，直接按文本读只会得到乱码。" +
-                        "请让用户改用聊天输入栏的附件上传，那条路径会走文档解析。",
+                    "This file type (${mime.ifBlank { "Unknown" }}) is not plain text; reading it directly as text would only produce garbled text." +
+                        "Please ask the user to use the attachment upload in the chat input bar instead; that path goes through document parsing.",
                 )
             }
             val text =
@@ -174,7 +174,7 @@ object FileAccessRequestBridge {
                     String(buffer, 0, total)
                 } ?: ""
             if (text.isEmpty()) {
-                FileAccessResult.Dismissed("文件为空或无法读取")
+                FileAccessResult.Dismissed("The file is empty or could not be read")
             } else {
                 FileAccessResult.Picked(
                     displayName = displayName,
@@ -184,7 +184,7 @@ object FileAccessRequestBridge {
                 )
             }
         }.getOrElse {
-            FileAccessResult.Dismissed("读取失败：${it.message ?: it.javaClass.simpleName}")
+            FileAccessResult.Dismissed("Read failed: ${it.message ?: it.javaClass.simpleName}")
         }
     }
 
@@ -207,9 +207,9 @@ object FileAccessRequestBridge {
      */
     private fun safeDisplayName(raw: String?): String {
         val base = raw?.substringAfterLast('/').orEmpty()
-        if (base.isBlank()) return "未命名文件"
+        if (base.isBlank()) return "Unnamed file"
         val cleaned = base.replace(Regex("[\\r\\n\"'<>]"), "_").trim()
-        return cleaned.ifBlank { "未命名文件" }.take(120)
+        return cleaned.ifBlank { "Unnamed file" }.take(120)
     }
 
     /**

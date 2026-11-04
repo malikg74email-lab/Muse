@@ -25,7 +25,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "screen_time",
-                description = "获取今日各应用屏幕使用时间统计(前 10 名)。需要 PACKAGE_USAGE_STATS 权限。",
+                description = "Get today's per-app screen usage time statistics (top 10). Requires the PACKAGE_USAGE_STATS permission.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -36,8 +36,8 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "open_system_setting",
-                description = "打开系统设置页,支持分类跳转。",
-                parameters = mapOf("category" to "可选,设置分类: wifi/bluetooth/display/sound/app_settings 等,默认 settings"),
+                description = "Open a system settings page, with category jumps supported.",
+                parameters = mapOf("category" to "Optional, settings category: wifi/bluetooth/display/sound/app_settings etc., default settings"),
                 required = emptySet(),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.NORMAL,
@@ -49,8 +49,8 @@ class SystemToolsRegistrar(
                 name = "toggle_wifi",
                 // A-02: 与实现对齐 — enabled 直接指定目标状态;不传则只读查询当前状态
                 // (Android 10+ 无法程序化翻转 WiFi,删除"翻转"承诺)
-                description = "开关 WiFi。enabled 传 true 开启 / false 关闭;不传则查询当前状态。开启/关闭需跳系统设置页由用户确认。",
-                parameters = mapOf("enabled" to "可选,true=开启 / false=关闭;不传则查询当前状态(兼容参数 action: on/off/status)"),
+                description = "Toggle WiFi. Pass enabled=true to turn on / false to turn off; omit it to query the current state. Turning on/off requires jumping to the system settings page for the user to confirm.",
+                parameters = mapOf("enabled" to "Optional, true=on / false=off; omit to query the current state (compatible parameter action: on/off/status)"),
                 required = emptySet(),
                 category = "built-in",
                 // P0-3: 与 ToolPermissionResolver 显式表一致(HIGH)— 不可逆系统状态变更
@@ -62,8 +62,8 @@ class SystemToolsRegistrar(
             ToolRegistry.ToolDef(
                 name = "toggle_bluetooth",
                 // A-02: 与实现对齐,删除"翻转"承诺
-                description = "开关蓝牙。enabled 传 true 开启 / false 关闭;不传则查询当前状态。Android 10+ 需跳系统设置页由用户确认。",
-                parameters = mapOf("enabled" to "可选,true=开启 / false=关闭;不传则查询当前状态(兼容参数 action: on/off/status)"),
+                description = "Toggle Bluetooth. Pass enabled=true to turn on / false to turn off; omit to query the current state. On Android 10+ it requires jumping to the system settings page for the user to confirm.",
+                parameters = mapOf("enabled" to "Optional, true=on / false=off; omit to query the current state (compatible parameter action: on/off/status)"),
                 required = emptySet(),
                 category = "built-in",
                 // P0-3: 与 ToolPermissionResolver 显式表一致(HIGH)— 不可逆系统状态变更
@@ -74,11 +74,11 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "send_email",
-                description = "通过系统邮件应用发送邮件。",
+                description = "Send an email through the system email app.",
                 parameters = mapOf(
-                    "to" to "必填,收件人邮箱,多个用逗号分隔",
-                    "subject" to "可选,主题",
-                    "body" to "可选,正文",
+                    "to" to "Required, recipient email(s), multiple separated by commas",
+                    "subject" to "Optional, subject",
+                    "body" to "Optional, body",
                 ),
                 required = setOf("to"),
                 category = "built-in",
@@ -90,7 +90,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_battery_info",
-                description = "获取电池电量与充电状态。",
+                description = "Get the battery level and charging state.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -101,13 +101,13 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_recent_notifications",
-                description = "获取最近收到的应用通知。需要通知使用权。",
+                description = "Get recently received app notifications. Requires notification access.",
                 parameters = mapOf(
-                    "limit" to "可选,返回数量,默认 20",
-                    "package_name" to "可选,按包名过滤",
-                    "query" to "可选,按应用包名、应用名称、标题、渠道或正文搜索",
-                    "unread_only" to "可选,true/false,只返回 Muse 中尚未查看的通知",
-                    "active_only" to "可选,true/false,只返回当前仍在系统通知栏中的通知",
+                    "limit" to "Optional, number to return, default 20",
+                    "package_name" to "Optional, filter by package name",
+                    "query" to "Optional, search by app package name, app name, title, channel or body",
+                    "unread_only" to "Optional, true/false, only return notifications not yet viewed in Shaheen 2",
+                    "active_only" to "Optional, true/false, only return notifications still in the system notification bar",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -118,8 +118,8 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "open_url",
-                description = "在系统浏览器中打开 URL。",
-                parameters = mapOf("url" to "必填,http/https 链接"),
+                description = "Open a URL in the system browser.",
+                parameters = mapOf("url" to "Required, http/https link"),
                 required = setOf("url"),
                 category = "built-in",
                 // P0-3: 与 ToolPermissionResolver 显式表一致(HIGH)— 外链隐私风险
@@ -130,11 +130,11 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "list_installed_apps",
-                description = "列出已安装应用,支持过滤与数量限制。",
+                description = "List installed apps, with filtering and count limits supported.",
                 parameters = mapOf(
-                    "filter" to "可选,名称过滤关键字",
-                    "limit" to "可选,返回数量,默认 20",
-                    "include_system" to "可选,是否包含系统应用",
+                    "filter" to "Optional, name filter keyword",
+                    "limit" to "Optional, number to return, default 20",
+                    "include_system" to "Optional, whether to include system apps",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -145,7 +145,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_network_info",
-                description = "获取当前网络连接信息。",
+                description = "Get the current network connection info.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -156,7 +156,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_storage_info",
-                description = "获取存储空间使用情况。",
+                description = "Get storage space usage.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -167,7 +167,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_memory_info",
-                description = "获取内存使用情况。",
+                description = "Get memory usage.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -178,7 +178,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_display_info",
-                description = "获取屏幕分辨率与刷新率等信息。",
+                description = "Get screen resolution, refresh rate and similar info.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -189,7 +189,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_cpu_info",
-                description = "获取 CPU 型号与核心数等信息。",
+                description = "Get CPU model, core count and similar info.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -200,7 +200,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_sensors_list",
-                description = "列出设备可用传感器。",
+                description = "List the device's available sensors.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -211,7 +211,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_brightness",
-                description = "获取当前屏幕亮度。",
+                description = "Get the current screen brightness.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -223,10 +223,10 @@ class SystemToolsRegistrar(
             ToolRegistry.ToolDef(
                 name = "set_brightness",
                 // A-03: 实现已支持 auto 分支;required 去掉 value(自动模式不需要)
-                description = "设置屏幕亮度。需要系统设置写入权限。auto=true 启用自动亮度(此时忽略 value);否则传 value(0-255)设置手动亮度。",
+                description = "Set the screen brightness. Requires the system-settings write permission. auto=true enables automatic brightness (value is then ignored); otherwise pass value (0-255) to set manual brightness.",
                 parameters = mapOf(
-                    "value" to "可选(自动模式忽略),手动亮度 0-255",
-                    "auto" to "可选,传 true 启用自动亮度(此时 value 忽略)",
+                    "value" to "Optional (ignored in auto mode), manual brightness 0-255",
+                    "auto" to "Optional, pass true to enable automatic brightness (value is then ignored)",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -238,8 +238,8 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_volume",
-                description = "获取指定音频流音量。",
-                parameters = mapOf("stream" to "可选,music/ring/alarm/notification/call/system"),
+                description = "Get the volume of the specified audio stream.",
+                parameters = mapOf("stream" to "Optional, music/ring/alarm/notification/call/system"),
                 required = emptySet(),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,
@@ -249,10 +249,10 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "set_volume",
-                description = "设置指定音频流音量。",
+                description = "Set the volume of the specified audio stream.",
                 parameters = mapOf(
-                    "value" to "必填,音量 0-100",
-                    "stream" to "可选,music/ring/alarm/notification/call/system",
+                    "value" to "Required, volume 0-100",
+                    "stream" to "Optional, music/ring/alarm/notification/call/system",
                 ),
                 required = setOf("value"),
                 category = "built-in",
@@ -265,8 +265,8 @@ class SystemToolsRegistrar(
             ToolRegistry.ToolDef(
                 name = "toggle_flashlight",
                 // A-02: 与实现对齐 — enabled 直接指定目标状态;不传则查询本会话最后已知状态
-                description = "开关手电筒(需相机权限)。enabled 传 true 开启 / false 关闭;不传则查询当前状态。",
-                parameters = mapOf("enabled" to "可选,true=开启 / false=关闭;不传则查询状态(兼容参数 action: on/off/status)"),
+                description = "Toggle the flashlight (requires camera permission). Pass enabled=true to turn on / false to turn off; omit to query the current state.",
+                parameters = mapOf("enabled" to "Optional, true=on / false=off; omit to query the state (compatible parameter action: on/off/status)"),
                 required = emptySet(),
                 category = "built-in",
                 // P0-3: 与 ToolPermissionResolver 显式表一致(HIGH)— 不可逆系统状态变更
@@ -277,10 +277,10 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "vibrate",
-                description = "触发设备振动。",
+                description = "Trigger device vibration.",
                 parameters = mapOf(
-                    "duration_ms" to "可选,振动时长,默认 500",
-                    "repeat" to "可选,是否重复",
+                    "duration_ms" to "Optional, vibration duration, default 500",
+                    "repeat" to "Optional, whether to repeat",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -291,7 +291,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_foreground_app",
-                description = "获取当前前台应用包名。需要使用统计权限。",
+                description = "Get the current foreground app package name. Requires the usage-stats permission.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -302,7 +302,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_wifi_info",
-                description = "获取当前 WiFi 连接信息。",
+                description = "Get the current WiFi connection info.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",
@@ -313,7 +313,7 @@ class SystemToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_bluetooth_devices",
-                description = "获取已配对蓝牙设备列表。",
+                description = "Get the list of paired Bluetooth devices.",
                 parameters = emptyMap(),
                 required = emptySet(),
                 category = "built-in",

@@ -166,7 +166,7 @@ class ChatGenerationManager(
             // 生成一登记就进入前台服务,避免 ON_STOP 与任务启动之间的竞态。
             appContext?.let { context ->
                 runCatching { ChatGenerationService.start(context) }
-                    .onFailure { Logger.w("ChatGenMgr", "生成开始时启动前台服务失败", it) }
+                    .onFailure { Logger.w("ChatGenMgr", "Starting the foreground service when generation begins failed", it) }
             }
             return job
         }

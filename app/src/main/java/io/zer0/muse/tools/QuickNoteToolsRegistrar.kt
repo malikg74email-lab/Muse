@@ -22,11 +22,11 @@ class QuickNoteToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "quick_note_add",
-                description = "添加一条快速记录(轻量笔记)。模型可在对话中帮用户记下待办/灵感/参考内容。",
+                description = "Add a quick note (lightweight note). The model can note down to-dos/inspiration/reference content for the user during a conversation.",
                 parameters = mapOf(
-                    "title" to "必填,记录标题",
-                    "content" to "可选,记录正文",
-                    "tags" to "可选,标签,多个用逗号分隔",
+                    "title" to "Required, note title",
+                    "content" to "Optional, note body",
+                    "tags" to "Optional, tags, multiple separated by commas",
                 ),
                 required = setOf("title"),
                 category = "built-in",
@@ -39,11 +39,11 @@ class QuickNoteToolsRegistrar(
                 name = "quick_note_list",
                 // v1.0.75 fix (工具审查 01): 原 quick_note_search 与此完全重复已删除,
                 // 模型二选一赌博浪费轮次。此工具统一处理列表/过滤/搜索。
-                description = "列出/搜索快速记录。支持按关键字过滤标题正文标签、按标签精确过滤。需要看单条完整内容用 quick_note_get。",
+                description = "List/search quick notes. Supports filtering title/body/tags by keyword and exact filtering by tag. Use quick_note_get to see a single note's full content.",
                 parameters = mapOf(
-                    "keyword" to "可选,标题/正文/标签过滤关键字",
-                    "tag" to "可选,按标签精确过滤",
-                    "limit" to "可选,最多返回数量,默认 20",
+                    "keyword" to "Optional, title/body/tag filter keyword",
+                    "tag" to "Optional, exact filter by tag",
+                    "limit" to "Optional, maximum number to return, default 20",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -55,8 +55,8 @@ class QuickNoteToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "quick_note_get",
-                description = "根据 id 获取单条快速记录。",
-                parameters = mapOf("id" to "必填,记录 id"),
+                description = "Get a single quick note by id.",
+                parameters = mapOf("id" to "Required, note id"),
                 required = setOf("id"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,
@@ -66,12 +66,12 @@ class QuickNoteToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "quick_note_update",
-                description = "更新指定快速记录。",
+                description = "Update the specified quick note.",
                 parameters = mapOf(
-                    "id" to "必填,记录 id",
-                    "title" to "可选,新标题",
-                    "content" to "可选,新正文",
-                    "tags" to "可选,新标签,多个用逗号分隔",
+                    "id" to "Required, note id",
+                    "title" to "Optional, new title",
+                    "content" to "Optional, new body",
+                    "tags" to "Optional, new tags, multiple separated by commas",
                 ),
                 required = setOf("id"),
                 category = "built-in",
@@ -82,8 +82,8 @@ class QuickNoteToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "quick_note_delete",
-                description = "删除指定快速记录(移入回收站,可在回收站恢复)。",
-                parameters = mapOf("id" to "必填,记录 id"),
+                description = "Delete the specified quick note (moves it to the recycle bin; can be restored from there).",
+                parameters = mapOf("id" to "Required, note id"),
                 required = setOf("id"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.NORMAL,
@@ -93,10 +93,10 @@ class QuickNoteToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "quick_note_pin",
-                description = "置顶/取消置顶某条快速记录。",
+                description = "Pin/unpin a quick note.",
                 parameters = mapOf(
-                    "id" to "必填,记录 id",
-                    "pinned" to "必填,true/false",
+                    "id" to "Required, note id",
+                    "pinned" to "Required, true/false",
                 ),
                 required = setOf("id", "pinned"),
                 category = "built-in",

@@ -379,7 +379,7 @@ class HnswVectorIndex(
 
     override fun save(file: File, fingerprint: String?) = synchronized(saveLock) {
         val parent = checkNotNull(file.absoluteFile.parentFile)
-        check(parent.exists() || parent.mkdirs()) { "无法创建 HNSW 索引目录: ${parent.absolutePath}" }
+        check(parent.exists() || parent.mkdirs()) { "Cannot create the HNSW index directory: ${parent.absolutePath}" }
         // 序列化期间读锁允许检索并行;saveLock 保证临时文件和最终替换串行。
         val tmp = File(parent, "${file.name}.${java.util.UUID.randomUUID()}.tmp")
         try {

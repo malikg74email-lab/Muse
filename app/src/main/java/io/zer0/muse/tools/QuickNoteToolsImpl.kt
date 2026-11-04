@@ -112,7 +112,7 @@ class QuickNoteToolsImpl(private val context: Context) {
                 context.getString(
                     R.string.tool_quick_note_list_item,
                     it.id,
-                    if (it.pinned) "[顶]" else "",
+                    if (it.pinned) "[Pinned]" else "",
                     it.title,
                     it.tags.joinToString(","),
                 ),

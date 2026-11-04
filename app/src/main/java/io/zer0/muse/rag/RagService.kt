@@ -103,7 +103,7 @@ class RagService(
         runCatching {
             marker.parentFile?.mkdirs()
             marker.writeText(reason.take(512))
-        }.onFailure { Logger.e("RagService", "写入 HNSW 重建标记失败: ${it.message}", it) }
+        }.onFailure { Logger.e("RagService", "Writing the HNSW rebuild marker failed: ${it.message}", it) }
     }
 
     /** HNSW is derived data; invalidation forces DB-vector retrieval until a complete reindex. */
@@ -120,10 +120,10 @@ class RagService(
         if (!markerWritten) {
             // If marker persistence fails, a missing index plus remaining DB vectors forces rebuild on next boot.
             indexFile?.let { file ->
-                if (file.exists() && !file.delete()) Logger.e("RagService", "无法使旧 HNSW 索引失效: ${file.absolutePath} ($reason)")
+                if (file.exists() && !file.delete()) Logger.e("RagService", "Cannot invalidate the old HNSW index: ${file.absolutePath} ($reason)")
             }
         }
-        Logger.w("RagService", "HNSW 标记为需全量重建: $reason")
+        Logger.w("RagService", "HNSW marked for a full rebuild: $reason")
     }
 
     /** R-DB-02: FTS 表缺失时先自愈重建再重试(批量插入在 Room 事务外调用,避免 DDL 死锁)。 */
@@ -247,7 +247,7 @@ class RagService(
                 if (now - cachedTitlesAt < TITLES_TTL_MS) return@withLock it
             }
             val titles = resultOf { docTitleProvider() }
-                .onError { msg, e -> Logger.w("RagService", "docTitle 加载失败: $msg", e) }
+                .onError { msg, e -> Logger.w("RagService", "docTitle loading failed: $msg", e) }
                 .getOrNull() ?: emptyMap()
             cachedTitles = titles
             cachedTitlesAt = System.currentTimeMillis()
@@ -283,7 +283,7 @@ class RagService(
             vectorEmbeddingsNeedReindex = false
             indexFile?.let { file ->
                 if (file.exists() && !file.delete()) {
-                    Logger.w("RagService", "备份恢复后删除旧 HNSW 索引失败: ${file.absolutePath}")
+                    Logger.w("RagService", "Deleting the old HNSW index after backup restore failed: ${file.absolutePath}")
                 }
             }
         }
@@ -354,10 +354,10 @@ class RagService(
             vi.load(file, expectedFingerprint)
             true
         }
-            .onSuccess { Logger.i("RagService", "HNSW 索引加载完成:size=${vi.size}") }
+            .onSuccess { Logger.i("RagService", "HNSW index loaded: size=${vi.size}") }
             .onError { msg, error ->
                 fingerprintMismatch = error is HnswEmbeddingFingerprintMismatchException
-                Logger.w("RagService", "HNSW 索引加载失败(将走暴力遍历): $msg", error)
+                Logger.w("RagService", "HNSW index loading failed (falling back to brute-force traversal): $msg", error)
             }
             .getOrNull() == true
         return IndexLoadResult(loaded, fingerprintMismatch)
@@ -387,7 +387,7 @@ class RagService(
         val file = indexFile
         if (vi == null || file == null) return
         if (vectorIndexNeedsFullRebuild || vectorEmbeddingsNeedReindex) {
-            Logger.i("RagService", "Embedding 全库重新索引完成前，暂不持久化部分 HNSW 索引")
+            Logger.i("RagService", "Before the full-library embedding re-index completes, partial HNSW indexes are not persisted")
             return
         }
         resultOf {
@@ -397,11 +397,11 @@ class RagService(
             pendingSaveCount.set(0)
             lastVectorIndexSaveAt.set(System.currentTimeMillis())
             vectorIndexRebuildMarkerFile?.let { marker ->
-                if (marker.exists() && !marker.delete()) Logger.w("RagService", "HNSW 标记文件清理失败: ${marker.absolutePath}")
+                if (marker.exists() && !marker.delete()) Logger.w("RagService", "HNSW marker file cleanup failed: ${marker.absolutePath}")
             }
-            Logger.d("RagService", "HNSW 索引已保存:size=${vi.size}, file=${file.absolutePath}")
+            Logger.d("RagService", "HNSW index saved: size=${vi.size}, file=${file.absolutePath}")
         }.onError { msg, e ->
-            Logger.w("RagService", "HNSW 索引保存失败: $msg", e)
+            Logger.w("RagService", "HNSW index saving failed: $msg", e)
         }
     }
 
@@ -418,7 +418,7 @@ class RagService(
         chunkMetaCache.clear()
         var offset = 0
         var page = resultOf { chunkDao.getPageWithoutEmbedding(CACHE_REBUILD_PAGE_SIZE, offset) }
-            .onError { msg, e -> Logger.w("RagService", "chunkMetaCache 重建失败: $msg", e) }
+            .onError { msg, e -> Logger.w("RagService", "chunkMetaCache rebuild failed: $msg", e) }
             .getOrNull()
         while (!page.isNullOrEmpty()) {
             for (chunk in page) {
@@ -434,10 +434,10 @@ class RagService(
             if (page.size < CACHE_REBUILD_PAGE_SIZE) break
             offset += CACHE_REBUILD_PAGE_SIZE
             page = resultOf { chunkDao.getPageWithoutEmbedding(CACHE_REBUILD_PAGE_SIZE, offset) }
-                .onError { msg, e -> Logger.w("RagService", "chunkMetaCache 分页读取失败: $msg", e) }
+                .onError { msg, e -> Logger.w("RagService", "chunkMetaCache paged read failed: $msg", e) }
                 .getOrNull()
         }
-        Logger.d("RagService", "chunkMetaCache 重建完成:${chunkMetaCache.size()} 条")
+        Logger.d("RagService", "chunkMetaCache rebuild complete: ${chunkMetaCache.size()} entries")
     }
 
     /**
@@ -460,7 +460,7 @@ class RagService(
             resultOf { vi.add(entity.id, vec) }
                 .onError { msg, e ->
                     added = false
-                    Logger.w("RagService", "HNSW add 失败(chunkId=${entity.id}): $msg", e)
+                    Logger.w("RagService", "HNSW add failed (chunkId=${entity.id}): $msg", e)
                 }
             if (added) {
                 chunkMetaCache.put(
@@ -501,7 +501,7 @@ class RagService(
         val dbIds = resultOf { chunkDao.getByDoc(docId).map { it.id } }
             .onError { msg, e ->
                 dbReadFailed = true
-                Logger.e("RagService", "读取待删除文档的 chunkId 失败(docId=$docId): $msg", e)
+                Logger.e("RagService", "Reading the chunkIds of the document to delete failed (docId=$docId): $msg", e)
             }
             .getOrNull()
         val cacheIds = chunkMetaCache.asList().filter { it.docId == docId }.map { it.chunkId }
@@ -517,7 +517,7 @@ class RagService(
                 resultOf { vi.remove(id) }
                     .onError { msg, e ->
                         removeFailed = true
-                        Logger.e("RagService", "HNSW remove 失败(chunkId=$id): $msg", e)
+                        Logger.e("RagService", "HNSW remove failed (chunkId=$id): $msg", e)
                     }
                 chunkMetaCache.remove(id)
             }
@@ -635,7 +635,7 @@ class RagService(
         }
         Logger.d(
             "RagService",
-            "文档 $docId 分块 ${chunks.size} 块(markdownAware=${ragConfig.markdownAware}, chunkByToken=${ragConfig.chunkByToken})",
+            "Document $docId chunked into ${chunks.size} chunks (markdownAware=${ragConfig.markdownAware}, chunkByToken=${ragConfig.chunkByToken})",
         )
         perfTimer.split("chunk")
 
@@ -646,7 +646,7 @@ class RagService(
         for (i in chunks.indices step embedBatchSize) {
             val batch = chunks.subList(i, minOf(i + embedBatchSize, chunks.size))
             val vectors = resultOf { provider.embed(batch.map { it.content }) }
-                .onError { msg, e -> Logger.e("RagService", "Embedding 批次 $i 失败: $msg", e) }
+                .onError { msg, e -> Logger.e("RagService", "Embedding batch $i failed: $msg", e) }
                 .getOrThrow()
             check(vectors.size == batch.size) {
                 "Provider returned ${vectors.size} vectors for ${batch.size} chunks (batch $i)"
@@ -692,13 +692,13 @@ class RagService(
                 )
             }
             resultOf { withFtsSelfHeal { ftsDao.insertAll(ftsRows) } }
-                .onError { msg, e -> Logger.w("RagService", "FTS 同步失败(不影响向量检索): $msg", e) }
+                .onError { msg, e -> Logger.w("RagService", "FTS sync failed (does not affect vector search): $msg", e) }
 
             perfTimer.split("store")
             vectorSearch.invalidateCache()
             invalidateTitlesCache()
 
-            Logger.d("RagService", "文档 $docId 索引完成:${entities.size} 块,维度 ${embeddings.firstOrNull()?.size ?: 0}")
+            Logger.d("RagService", "Document $docId indexing complete: ${entities.size} chunks, dimension ${embeddings.firstOrNull()?.size ?: 0}")
             perfTimer.end()
             return@withContext entities.size
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
@@ -715,17 +715,17 @@ class RagService(
         runCatching { removeDocChunksFromVectorIndex(docId) }
             .onFailure {
                 cleanupFailed = true
-                Logger.e("RagService", "索引替换失败后清理 HNSW 状态失败(docId=$docId)", it)
+                Logger.e("RagService", "Cleaning up HNSW state after index replacement failure failed (docId=$docId)", it)
             }
         runCatching { withFtsSelfHeal { ftsDao.deleteByDoc(docId) } }
             .onFailure {
                 cleanupFailed = true
-                Logger.e("RagService", "索引替换失败后清理 FTS 失败(docId=$docId)", it)
+                Logger.e("RagService", "Cleaning up FTS after index replacement failure failed (docId=$docId)", it)
             }
         runCatching { chunkDao.deleteByDoc(docId) }
             .onFailure {
                 cleanupFailed = true
-                Logger.e("RagService", "索引替换失败后清理 chunk 行失败(docId=$docId)", it)
+                Logger.e("RagService", "Cleaning up chunk rows after index replacement failure failed (docId=$docId)", it)
             }
         // P0-3（审计报告）: 标记为「索引已丢，需重建」而不是静默清零。
         // 中途失败时旧块已被删、新块不完整，文档仍在但检索不到；
@@ -734,12 +734,12 @@ class RagService(
             docDao.markIndexBroken(docId)
         }.onFailure {
             cleanupFailed = true
-            Logger.e("RagService", "索引替换失败后标记文档状态失败(docId=$docId)", it)
+            Logger.e("RagService", "Marking the document state after index replacement failure failed (docId=$docId)", it)
         }
         Logger.w(
             "RagService",
-            "文档 $docId 索引替换中途失败，旧块已清空、新块不完整；已标记为需重建。" +
-                "该文档当前不会被检索命中。",
+            "Document $docId index replacement failed midway; old chunks were cleared and the new chunks are incomplete; marked as needing a rebuild." +
+                "This document will currently not be hit by searches.",
         )
         if (cleanupFailed) markVectorIndexNeedsFullRebuild("cleanup failed for doc $docId")
         vectorSearch.invalidateCache()
@@ -794,15 +794,15 @@ class RagService(
         suspend fun cleanupPartialIndex() {
             if (!destructiveStarted) return
             runCatching { deleteDocIndex(docId) }
-                .onFailure { Logger.e("RagService", "流式索引失败后的部分索引清理失败(docId=$docId)", it) }
+                .onFailure { Logger.e("RagService", "Partial-index cleanup after streaming indexing failure failed (docId=$docId)", it) }
             runCatching { docDao.clearIndexStatus(docId) }
-                .onFailure { Logger.e("RagService", "流式索引失败后清理文档索引状态失败(docId=$docId)", it) }
+                .onFailure { Logger.e("RagService", "Cleaning up the document index state after streaming indexing failure failed (docId=$docId)", it) }
         }
 
         suspend fun storeBatch(batch: List<TextChunker.Chunk>) {
             if (batch.isEmpty()) return
             val vectors = resultOf { provider.embed(batch.map { it.content }) }
-                .onError { msg, e -> Logger.e("RagService", "流式索引 embedding 批次失败(已索引 $totalIndexed 块): $msg", e) }
+                .onError { msg, e -> Logger.e("RagService", "Streaming indexing embedding batch failed ($totalIndexed chunks indexed): $msg", e) }
                 .getOrThrow()
             check(vectors.size == batch.size) {
                 "Provider returned ${vectors.size} vectors for ${batch.size} chunks"
@@ -815,7 +815,7 @@ class RagService(
                     if (existingDim != null && existingDim > 0 && existingDim != newDim) {
                         Logger.e(
                             "RagService",
-                            "Embedding 维度不匹配:库中已有 chunk 维度=$existingDim,新文档 $docId 维度=$newDim。",
+                            "Embedding dimension mismatch: existing chunks in the library have dimension=$existingDim, new document $docId has dimension=$newDim.",
                         )
                         throw IllegalStateException(
                             "Embedding dimension mismatch: existing=$existingDim, new=$newDim (doc=$docId). " +
@@ -855,7 +855,7 @@ class RagService(
                 )
             }
             resultOf { withFtsSelfHeal { ftsDao.insertAll(ftsRows) } }
-                .onError { msg, e -> Logger.w("RagService", "FTS 同步失败(不影响向量检索): $msg", e) }
+                .onError { msg, e -> Logger.w("RagService", "FTS sync failed (does not affect vector search): $msg", e) }
             totalIndexed += entities.size
             onProgress(totalIndexed)
         }
@@ -917,7 +917,7 @@ class RagService(
                 invalidateTitlesCache()
             }
             perfTimer.end()
-            Logger.d("RagService", "文档 $docId 流式索引完成:$totalIndexed 块")
+            Logger.d("RagService", "Document $docId streaming indexing complete: $totalIndexed chunks")
             return@withContext totalIndexed
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             cleanupPartialIndex()
@@ -999,10 +999,10 @@ class RagService(
             withTimeout(EMBED_QUERY_TIMEOUT_MS) { provider.embed(query) }
         }
             .onError { msg, e ->
-                Logger.w("RagService", "Query embedding 失败/超时: $msg", e)
+                Logger.w("RagService", "Query embedding failed/timed out: $msg", e)
                 // v1.0.47: 设熔断 5 分钟,期间 retrieve 直接返回空 → 上层降级本地搜索
                 embeddingFailureUntil = System.currentTimeMillis() + EMBEDDING_CIRCUIT_BREAKER_MS
-                Logger.i("RagService", "embedding 熔断 ${EMBEDDING_CIRCUIT_BREAKER_MS / 1000}s,期间检索降级到本地关键词")
+                Logger.i("RagService", "Embedding circuit breaker open for ${EMBEDDING_CIRCUIT_BREAKER_MS / 1000}s; search degrades to local keywords during this period")
             }
             .getOrNull()
             ?: return emptyList<VectorSearchService.SearchResult>().also { Perf.log("rag-retrieve", System.currentTimeMillis() - start) }
@@ -1014,7 +1014,7 @@ class RagService(
         }
 
         if (vectorEmbeddingsNeedReindex) {
-            Logger.w("RagService", "Embedding 模型与已存储向量不一致，等待全库重新索引后再恢复向量检索")
+            Logger.w("RagService", "The embedding model is inconsistent with the stored vectors; vector search resumes after a full-library re-index")
             return emptyList()
         }
 
@@ -1032,7 +1032,7 @@ class RagService(
                     scopeDocIds = scopeDocIds,
                     metadataFilter = metadataFilter,
                 )
-            }.onError { msg, e -> Logger.w("RagService", "混合检索失败,降级向量: $msg", e) }
+            }.onError { msg, e -> Logger.w("RagService", "Hybrid search failed, degrading to vector: $msg", e) }
                 .getOrNull()
             if (hybrid != null) {
                 Perf.log("rag-retrieve-hybrid", System.currentTimeMillis() - start)
@@ -1061,7 +1061,7 @@ class RagService(
             loadVectorIndexIfNeeded(provider)
             if (!vectorIndexNeedsFullRebuild && vi.size > 0) {
                 val hnswResults = resultOf { vi.search(queryVector, topK) }
-                    .onError { msg, e -> Logger.w("RagService", "HNSW 检索失败,降级暴力遍历: $msg", e) }
+                    .onError { msg, e -> Logger.w("RagService", "HNSW search failed, degrading to brute-force traversal: $msg", e) }
                     .getOrNull()
                 if (hnswResults != null && hnswResults.isNotEmpty()) {
                     val titles = getCachedTitles()
@@ -1114,7 +1114,7 @@ class RagService(
         val docIds = results.map { it.docId }.filter { it.isNotEmpty() }.distinct()
         if (docIds.isEmpty()) return results
         val docs = resultOf { docDao.getByIds(docIds) }
-            .onError { msg, e -> Logger.w("RagService", "文档元数据批量查询失败: $msg", e) }
+            .onError { msg, e -> Logger.w("RagService", "Document metadata batch query failed: $msg", e) }
             .getOrNull()
             ?: return emptyList() // Fail closed: metadata failure must not expose internal documents as user content.
         if (docs.isEmpty()) return emptyList()
@@ -1178,7 +1178,7 @@ class RagService(
                 )
             }
             val reranked = resultOf { activeRerankProvider.rerank(query, candidates, ragConfig.topK) }
-                .onError { msg, e -> Logger.w("RagService", "Rerank 失败,降级原序: $msg", e) }
+                .onError { msg, e -> Logger.w("RagService", "Rerank failed, degrading to the original order: $msg", e) }
                 .getOrNull()
             if (reranked != null) {
                 results = reranked.map { r ->
@@ -1203,7 +1203,7 @@ class RagService(
         if (results.isNotEmpty()) {
             val citations = mutableListOf<RagCitation>()
             val sb = StringBuilder()
-            sb.appendLine("以下是从知识库检索到的相关资料,回答时请参考(相似度仅供参考):")
+            sb.appendLine("The following is relevant material retrieved from the knowledge base; please refer to it when answering (similarity is for reference only):")
             var usedTokens = 0
             val budget = ragConfig.tokenBudget
             // 单块注入上限：远大于旧硬编码 200，保证 chunkSize 调大后内容能真正进上下文。
@@ -1220,11 +1220,11 @@ class RagService(
                 val chunkTokens = TokenEstimator.estimate(chunkSnippet)
                 // token 预算控制(0 = 不限制)
                 if (budget > 0 && usedTokens + chunkTokens > budget) {
-                    Logger.d("RagService", "Token 预算用尽(budget=$budget, used=$usedTokens, 剩余 ${results.size - idx} 条丢弃)")
+                    Logger.d("RagService", "Token budget exhausted (budget=$budget, used=$usedTokens, dropping the remaining ${results.size - idx} entries)")
                     break
                 }
                 usedTokens += chunkTokens
-                sb.appendLine("[${idx + 1}] 来源: ${r.docTitle} (相似度 ${"%.2f".format(r.score)})")
+                sb.appendLine("[${idx + 1}] Source: ${r.docTitle} (similarity ${"%.2f".format(r.score)})")
                 // Keep the actual injected text identical to the budgeted snippet.
                 sb.appendLine(chunkSnippet)
                 sb.appendLine()
@@ -1260,7 +1260,7 @@ class RagService(
         } ?: return RagInjection("", emptyList(), System.currentTimeMillis() - start)
         val allowedDocIds = scopeDocIds?.toSet()
         val fallbackResults = resultOf { fallback(query, ragConfig.topK, scopeDocIds, metadataFilter) }
-            .onError { msg, e -> Logger.w("RagService", "关键词兜底失败: $msg", e) }
+            .onError { msg, e -> Logger.w("RagService", "Keyword fallback failed: $msg", e) }
             .getOrNull().orEmpty()
             // Defend at the final injection boundary too; a fallback provider must not be
             // able to leak internal or out-of-scope documents into automatic prompts.
@@ -1276,7 +1276,7 @@ class RagService(
 
         val citations = mutableListOf<RagCitation>()
         val sb = StringBuilder()
-        sb.appendLine("以下是从知识库检索到的相关资料(关键词匹配),回答时请参考:")
+        sb.appendLine("The following is relevant material retrieved from the knowledge base (keyword matching); please refer to it when answering:")
         var usedTokens = 0
         val budget = ragConfig.tokenBudget
         // P1-3 修复：同向量路径，不再硬编码 200。
@@ -1286,7 +1286,7 @@ class RagService(
             val snippetTokens = TokenEstimator.estimate(snippet)
             if (budget > 0 && usedTokens + snippetTokens > budget) break
             usedTokens += snippetTokens
-            sb.appendLine("[${idx + 1}] 来源: ${result.docTitle}")
+            sb.appendLine("[${idx + 1}] Source: ${result.docTitle}")
             sb.appendLine(snippet)
             sb.appendLine()
             citations.add(
@@ -1406,11 +1406,11 @@ class RagService(
                 null
             } else {
                 resultOf { docDao.getByKbIds(kbIds) }
-                    .onError { msg, e -> Logger.e("RagService", "KB 重索引:加载文档失败: $msg", e) }
+                    .onError { msg, e -> Logger.e("RagService", "KB re-index: loading documents failed: $msg", e) }
                     .getOrNull()
             }
         if (visibleDocs == null) {
-            if (kbIds.isNotEmpty()) Logger.w("RagService", "KB 重索引:无文档可处理")
+            if (kbIds.isNotEmpty()) Logger.w("RagService", "KB re-index: no documents to process")
             return emptyMap()
         }
         val provider = embeddingService.getProvider(ragConfig)
@@ -1424,8 +1424,8 @@ class RagService(
         val total = visibleDocCount
         Logger.i(
             "RagService",
-            "KB 重索引开始:用户文档 $visibleDocCount 篇" +
-                (if (internalDocCount > 0) "（含内建 $internalDocCount 篇，不计入进度）" else "") +
+            "KB re-index started: $visibleDocCount user documents" +
+                (if (internalDocCount > 0) "(including $internalDocCount built-in documents, not counted in progress)" else "") +
                 " (kbIds=$kbIds)",
         )
         var visibleDone = 0
@@ -1433,7 +1433,7 @@ class RagService(
             try {
                 reindexDocument(doc, ragConfig, plan.allowDimensionChange, sourceContentProvider)
             } catch (e: Throwable) {
-                Logger.w("RagService", "KB 重索引:文档 ${doc.id} 失败: ${e.message}", e)
+                Logger.w("RagService", "KB re-index: document ${doc.id} failed: ${e.message}", e)
                 // 内建文档失败不进入用户可见的失败列表
                 if (!doc.isInternal) failures[doc.id] = e.message ?: e.javaClass.simpleName
             }
@@ -1448,7 +1448,7 @@ class RagService(
             vectorEmbeddingsNeedReindex = false
             saveVectorIndex(vectorIndexFingerprint)
         }
-        Logger.i("RagService", "KB 重索引完成:成功 ${total - failures.size}/$total,失败 ${failures.size}")
+        Logger.i("RagService", "KB re-index complete: succeeded ${total - failures.size}/$total, failed ${failures.size}")
         return failures
     }
 
@@ -1623,8 +1623,8 @@ class RagService(
     private fun throwDimensionMismatch(docId: String, existingDim: Int, newDim: Int): Nothing {
         Logger.e(
             "RagService",
-            "Embedding 维度不匹配:库中已有 chunk 维度=$existingDim,新文档 $docId 维度=$newDim。" +
-                "请到知识库管理页点击\"重新索引全部\",用同一 embedding 模型重建索引。",
+            "Embedding dimension mismatch: existing chunks in the library have dimension=$existingDim, new document $docId has dimension=$newDim." +
+                "Please go to the knowledge base management page and click \"Re-index all\" to rebuild the index with the same embedding model.",
         )
         throw IllegalStateException(
             "Embedding dimension mismatch: existing=$existingDim, new=$newDim (doc=$docId). " +
@@ -1642,7 +1642,7 @@ class RagService(
     ): Map<String, String> {
         KnowledgeChunkFtsSelfHealer.repair()
         val kbIds = resultOf { docDao.getAll() }
-            .onError { msg, e -> Logger.e("RagService", "修复 FTS:加载文档失败: $msg", e) }
+            .onError { msg, e -> Logger.e("RagService", "FTS repair: loading documents failed: $msg", e) }
             .getOrNull()
             ?.map { it.kbId }
             ?.distinct()
@@ -1669,7 +1669,7 @@ class RagService(
         // 云端完全没有方案。配置齐全时按需构造，失败自动降级本地。
         if (ragConfig.rerankProvider == "remote") {
             if (ragConfig.rerankBaseUrl.isBlank() || ragConfig.rerankModel.isBlank()) {
-                Logger.w("RagService", "云端 rerank 配置不完整(baseUrl/model 为空)，降级本地重排")
+                Logger.w("RagService", "Cloud rerank configuration incomplete (baseUrl/model empty), degrading to local reranking")
             } else {
                 return RemoteRerankProvider(
                     baseUrl = ragConfig.rerankBaseUrl,
@@ -1693,7 +1693,7 @@ class RagService(
      */
     private suspend fun httpPostJson(url: String, headers: Map<String, String>, body: String): String = withContext(Dispatchers.IO) {
         val client = httpClientProvider?.invoke()
-            ?: error("云端 rerank 不可用：未注入 HTTP client")
+            ?: error("Cloud rerank unavailable: no HTTP client injected")
         val request = okhttp3.Request.Builder()
             .url(url)
             .post(body.toRequestBody("application/json".toMediaType()))
@@ -1737,11 +1737,11 @@ class RagService(
         for (mention in mentions) {
             val escaped = KnowledgeDocDao.escapeLikeQuery(mention)
             val docs = resultOf { docDao.findByTitleKeyword(escaped) }
-                .onError { msg, e -> Logger.w("RagService", "@mention 解析失败 '$mention': $msg", e) }
+                .onError { msg, e -> Logger.w("RagService", "@mention parsing failed '$mention': $msg", e) }
                 .getOrNull() ?: emptyList()
             docs.forEach { docIds.add(it.id) }
         }
-        Logger.d("RagService", "@mention 解析: ${mentions.size} 个 mention → ${docIds.size} 个 docId")
+        Logger.d("RagService", "@mention parsing: ${mentions.size} mentions → ${docIds.size} docIds")
         return docIds.toList()
     }
 
@@ -1754,7 +1754,7 @@ class RagService(
         if (ids.isEmpty()) return emptyList()
         return resultOf { docDao.getByKbIds(ids).map { it.id }.distinct() }
             .onError { msg, throwable ->
-                Logger.w("RagService", "助手绑定知识库展开失败: ${throwable?.message ?: msg}", throwable)
+                Logger.w("RagService", "Expanding the assistant's bound knowledge bases failed: ${throwable?.message ?: msg}", throwable)
             }
             .getOrNull()
             ?: emptyList()
@@ -1783,7 +1783,7 @@ class RagService(
         } else {
             resultOf { docDao.getByKbIds(kbIds) }
                 .onError { msg, throwable ->
-                    Logger.w("RagService", "KB+文件夹作用域展开失败: ${throwable?.message ?: msg}", throwable)
+                    Logger.w("RagService", "KB+folder scope expansion failed: ${throwable?.message ?: msg}", throwable)
                 }
                 .getOrNull()
                 .orEmpty()

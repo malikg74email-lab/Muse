@@ -44,7 +44,7 @@ object RegexTransformer {
         return try {
             AppJson.decodeFromString(serializer, json)
         } catch (e: Exception) {
-            Logger.w(TAG, "解析正则规则失败", e)
+            Logger.w(TAG, "Failed to parse the regex rule", e)
             emptyList()
         }
     }
@@ -87,7 +87,7 @@ object RegexTransformer {
                 val regex = regexCache.getOrPut(rule.findRegex) { Regex(rule.findRegex) }
                 regex.replace(result, rule.replaceString)
             } catch (e: Exception) {
-                Logger.w(TAG, "正则替换失败: ${rule.name}(${rule.findRegex})", e)
+                Logger.w(TAG, "Regex replacement failed:  ${rule.name}(${rule.findRegex})", e)
                 result
             }
         }

@@ -80,7 +80,7 @@ class TerminalSessionManager(private val appContext: Context) {
                     proc.outputStream.write(bytes)
                     proc.outputStream.flush()
                 }
-            }.onFailure { Logger.w(TAG, "stdin 写入失败: ${it.message}") }
+            }.onFailure { Logger.w(TAG, "stdin write failed: ${it.message}") }
         }
     }
 
@@ -91,7 +91,7 @@ class TerminalSessionManager(private val appContext: Context) {
         return runCatching {
             android.os.Process.sendSignal(-pid, SIGNAL_SIGINT)
             true
-        }.onFailure { Logger.w(TAG, "SIGINT 发送失败: ${it.message}") }.getOrDefault(false)
+        }.onFailure { Logger.w(TAG, "Sending SIGINT failed: ${it.message}") }.getOrDefault(false)
     }
 
     /** 同步终端窗口尺寸(PTY 引擎;全屏程序排版依赖)。 */
@@ -125,13 +125,13 @@ class TerminalSessionManager(private val appContext: Context) {
                 preloadLib = preloadLib,
             )
         }.getOrElse {
-            Logger.w(TAG, "PTY 引擎启动失败: ${it.message}")
+            Logger.w(TAG, "PTY engine start failed: ${it.message}")
             -1
         }
         if (fd < 0) return false
         masterFd = fd
         childPid = pidArray[0]
-        Logger.i(TAG, "PTY 会话启动: pid=$childPid fd=$fd")
+        Logger.i(TAG, "PTY session started: pid=$childPid fd=$fd")
         readerJob = scope.launch {
             val buffer = ByteArray(8192)
             try {
@@ -141,7 +141,7 @@ class TerminalSessionManager(private val appContext: Context) {
                     listener?.onOutput(buffer.copyOf(n))
                 }
             } catch (t: Throwable) {
-                Logger.d(TAG, "PTY 读取循环结束: ${t.message}")
+                Logger.d(TAG, "PTY read loop ended: ${t.message}")
             }
             val code = runCatching { Pty.waitFor(childPid) }.getOrDefault(-1)
             if (!suppressExit) listener?.onExit(code)
@@ -166,12 +166,12 @@ class TerminalSessionManager(private val appContext: Context) {
                 .start()
         }
         started.onFailure {
-            Logger.w(TAG, "管道会话启动失败: ${it.message}")
+            Logger.w(TAG, "Pipe session start failed: ${it.message}")
             listener?.onExit(-1)
         }
         val proc = started.getOrNull() ?: return
         process = proc
-        Logger.i(TAG, "管道会话启动(PTY 不可用)")
+        Logger.i(TAG, "Pipe session started (PTY unavailable)")
         readerJob = scope.launch {
             val buffer = ByteArray(8192)
             try {
@@ -182,7 +182,7 @@ class TerminalSessionManager(private val appContext: Context) {
                     listener?.onOutput(buffer.copyOf(n))
                 }
             } catch (e: Exception) {
-                Logger.d(TAG, "读取循环结束: ${e.message}")
+                Logger.d(TAG, "Read loop ended: ${e.message}")
             }
             val code = runCatching { proc.exitValue() }.getOrDefault(-1)
             if (!suppressExit) listener?.onExit(code)

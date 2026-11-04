@@ -143,7 +143,7 @@ object ToolPermissionResolver {
         val effectiveRisk = conservativeRisk(toolName, risk ?: fallbackRiskFor(toolName))
         // 1. 用户显式禁用某工具时,任何模式都拒绝
         if (perToolPolicy == ToolApprovalPolicy.ALWAYS_DENY) {
-            return ToolApprovalState.Denied("工具 $toolName 已被用户禁用")
+            return ToolApprovalState.Denied("Tool $toolName has been disabled by the user")
         }
 
         // 参数级硬拒绝始终生效(例如 file:// URL / 危险 JS);TRUSTED 只绕过确认,

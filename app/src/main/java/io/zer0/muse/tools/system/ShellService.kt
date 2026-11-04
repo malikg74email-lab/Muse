@@ -61,7 +61,7 @@ class ShellService : IShellService.Stub() {
 
     override fun execute(command: String): String {
         return try {
-            Logger.d(TAG, "执行命令 verb=${sanitizeShellCommandForLog(command)}")
+            Logger.d(TAG, "Executing command verb=${sanitizeShellCommandForLog(command)}")
             val proc = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
             // stdout/stderr 必须在 waitFor 的同时持续排空；否则 uiautomator/screencap
             // 等输出稍大的命令会把管道写满，子进程永远等不到退出而被误判超时。
@@ -72,7 +72,7 @@ class ShellService : IShellService.Stub() {
                 proc.destroyForcibly()
                 stdout.cancel(true)
                 stderr.cancel(true)
-                return "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}执行超时(${TIMEOUT_MS / 1000}s)"
+                return "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}Execution timed out (${TIMEOUT_MS / 1000}s)"
             }
             val out = stdout.get(1, TimeUnit.SECONDS)
             val err = stderr.get(1, TimeUnit.SECONDS)
@@ -86,17 +86,17 @@ class ShellService : IShellService.Stub() {
             }
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
-            Logger.e(TAG, "Shell 执行被中断: ${e.message}", e)
-            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "执行被中断"}"
+            Logger.e(TAG, "Shell execution interrupted: ${e.message}", e)
+            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "execution interrupted"}"
         } catch (e: IOException) {
-            Logger.e(TAG, "Shell 执行 IO 异常: ${e.message}", e)
-            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "IO 异常"}"
+            Logger.e(TAG, "Shell execution IO exception: ${e.message}", e)
+            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "IO exception"}"
         } catch (e: SecurityException) {
-            Logger.e(TAG, "Shell 执行权限异常: ${e.message}", e)
-            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "执行权限异常"}"
+            Logger.e(TAG, "Shell execution permission exception: ${e.message}", e)
+            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "execution permission exception"}"
         } catch (e: IllegalArgumentException) {
-            Logger.e(TAG, "Shell 执行异常: ${e.message}", e)
-            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "执行异常"}"
+            Logger.e(TAG, "Shell execution exception: ${e.message}", e)
+            "-1${FIELD_SEPARATOR}${FIELD_SEPARATOR}${e.message ?: "execution exception"}"
         }
     }
 
@@ -109,7 +109,7 @@ class ShellService : IShellService.Stub() {
             var process: Process? = null
             var outputCopy: Future<*>? = null
             return try {
-                Logger.d(TAG, "流式执行命令 verb=${sanitizeShellCommandForLog(command)}")
+                Logger.d(TAG, "Streaming command verb=${sanitizeShellCommandForLog(command)}")
                 val running = ProcessBuilder("sh", "-c", command)
                     .redirectErrorStream(true)
                     .start()
@@ -128,10 +128,10 @@ class ShellService : IShellService.Stub() {
                 val drained = runCatching { copy.get(OUTPUT_DRAIN_TIMEOUT_MS, TimeUnit.MILLISECONDS) }.isSuccess
                 if (!drained) {
                     copy.cancel(true)
-                    sink.write("\n[输出流未能关闭，已终止读取；当前输出可能不完整]".toByteArray(Charsets.UTF_8))
+                    sink.write("\n[The output stream could not be closed; reading was terminated; the current output may be incomplete]".toByteArray(Charsets.UTF_8))
                     -1
                 } else if (!finished) {
-                    sink.write("\n[超时] 命令执行超时(${TIMEOUT_MS / 1000}s),已终止".toByteArray(Charsets.UTF_8))
+                    sink.write("\n[Timeout] Command execution timed out(${TIMEOUT_MS / 1000}s), terminated".toByteArray(Charsets.UTF_8))
                     -1
                 } else {
                     running.exitValue()
@@ -144,7 +144,7 @@ class ShellService : IShellService.Stub() {
             } catch (error: Exception) {
                 process?.destroyForcibly()
                 outputCopy?.cancel(true)
-                Logger.w(TAG, "Shell pipe 执行失败: ${error.javaClass.simpleName}")
+                Logger.w(TAG, "Shell pipe execution failed: ${error.javaClass.simpleName}")
                 -1
             }
         }
@@ -171,7 +171,7 @@ class ShellService : IShellService.Stub() {
             }
         }
         val text = output.toString(Charsets.UTF_8.name())
-        return if (retained >= MAX_OUTPUT_BYTES) "$text\n[输出已截断]" else text
+        return if (retained >= MAX_OUTPUT_BYTES) "$text\n[Output truncated]" else text
     }
 
     /** Shizuku 解绑/版本替换时调用的保留事务，必须结束 UserService 进程。 */

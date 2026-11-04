@@ -20,28 +20,28 @@ class ScheduledTaskToolsImpl(private val context: Context) {
 
     /** 格式化时间戳为可读字符串(<=0 视为已禁用)。 */
     fun formatTimestamp(ts: Long): String {
-        return if (ts > 0) FMT_DATETIME_MIN.get()?.format(Date(ts)) ?: "未知" else "已禁用"
+        return if (ts > 0) FMT_DATETIME_MIN.get()?.format(Date(ts)) ?: "Unknown" else "Disabled"
     }
 
     /** 格式化定时任务为单条摘要。 */
     fun formatScheduledTask(t: ScheduledTaskEntity): String {
         val intervalDesc = when (t.interval) {
-            "once" -> "单次"
-            "hourly" -> "每小时"
-            "daily" -> "每天"
-            "weekly" -> "每周"
+            "once" -> "One-time"
+            "hourly" -> "Hourly"
+            "daily" -> "Daily"
+            "weekly" -> "Weekly"
             "cron" -> "Cron: ${t.cronExpr}"
             else -> t.interval
         }
-        return "• ${t.name}[id=${t.id}]\n  间隔: $intervalDesc | 下次: ${formatTimestamp(t.nextRunAt)} | ${if (t.enabled) "启用" else "禁用"}"
+        return "• ${t.name}[id=${t.id}]\n  Interval: $intervalDesc | Next: ${formatTimestamp(t.nextRunAt)} | ${if (t.enabled) "enabled" else "disabled"}"
     }
 
     /** 创建定时任务。 */
     suspend fun execScheduledTaskCreate(args: Map<String, String>): String {
         val name = args["name"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: name"
+            ?: return "Missing required parameter: name"
         val prompt = args["prompt"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: prompt"
+            ?: return "Missing required parameter: prompt"
         val interval = args["interval"]?.takeIf { it.isNotBlank() } ?: "daily"
         val cronExpr = args["cron_expr"] ?: ""
         val assistantId = args["assistant_id"]?.takeIf { it.isNotBlank() } ?: "default"
@@ -49,7 +49,7 @@ class ScheduledTaskToolsImpl(private val context: Context) {
         val conditionType = args["condition_type"]?.takeIf { it.isNotBlank() } ?: "always"
 
         if (interval == "cron" && cronExpr.isBlank()) {
-            return "interval=cron 时必须提供 cron_expr"
+            return "interval=cron requires cron_expr to be provided"
         }
 
         val conditionJson =
@@ -76,9 +76,7 @@ class ScheduledTaskToolsImpl(private val context: Context) {
             createdBy = "assistant",
         )
         MuseDb.get(context).scheduledTaskDao().upsert(task)
-        return "已创建定时任务: ${task.name}[id=$id] (间隔=$interval, 条件=${describeCondition(
-            conditionJson,
-        )}, 下次执行=${formatTimestamp(task.nextRunAt)})"
+        return "Created scheduled task: ${task.name}[id=$id] (interval=$interval, condition=${describeCondition(conditionJson)}, next run=${formatTimestamp(task.nextRunAt)})"
     }
 
     /** 列出定时任务。 */
@@ -91,8 +89,8 @@ class ScheduledTaskToolsImpl(private val context: Context) {
             false -> all.filter { !it.enabled }
             null -> all
         }.take(limit)
-        if (filtered.isEmpty()) return "暂无定时任务"
-        val sb = StringBuilder("定时任务 (${filtered.size}):\n")
+        if (filtered.isEmpty()) return "No scheduled tasks yet"
+        val sb = StringBuilder("Scheduled tasks (${filtered.size}):\n")
         filtered.forEach { sb.appendLine(formatScheduledTask(it)) }
         return sb.toString().trimEnd()
     }
@@ -100,9 +98,9 @@ class ScheduledTaskToolsImpl(private val context: Context) {
     /** 更新定时任务。仅传需要修改的字段,未传字段保留原值。 */
     suspend fun execScheduledTaskUpdate(args: Map<String, String>): String {
         val id = args["id"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: id"
+            ?: return "Missing required parameter: id"
         val dao = MuseDb.get(context).scheduledTaskDao()
-        val existing = dao.getById(id) ?: return "未找到任务: $id"
+        val existing = dao.getById(id) ?: return "Task not found: $id"
         val name = args["name"] ?: existing.name
         val prompt = args["prompt"] ?: existing.prompt
         val interval = args["interval"] ?: existing.interval
@@ -110,7 +108,7 @@ class ScheduledTaskToolsImpl(private val context: Context) {
         val enabled = args["enabled"]?.let { it.equals("true", ignoreCase = true) } ?: existing.enabled
 
         if (interval == "cron" && cronExpr.isBlank()) {
-            return "interval=cron 时必须提供 cron_expr"
+            return "interval=cron requires cron_expr to be provided"
         }
 
         val now = System.currentTimeMillis()
@@ -135,7 +133,7 @@ class ScheduledTaskToolsImpl(private val context: Context) {
             conditionJson = newConditionJson,
         )
         dao.upsert(updated)
-        return "已更新定时任务: ${updated.name}[id=$id]"
+        return "Updated scheduled task: ${updated.name}[id=$id]"
     }
 
     /** 条件更新的解析结果:要么给出新 JSON,要么给出拒绝原因。 */
@@ -155,41 +153,41 @@ class ScheduledTaskToolsImpl(private val context: Context) {
     /** 删除定时任务。 */
     suspend fun execScheduledTaskDelete(args: Map<String, String>): String {
         val id = args["id"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: id"
+            ?: return "Missing required parameter: id"
         val dao = MuseDb.get(context).scheduledTaskDao()
-        val existing = dao.getById(id) ?: return "未找到任务: $id"
+        val existing = dao.getById(id) ?: return "Task not found: $id"
         dao.delete(id)
-        return "已删除定时任务: ${existing.name}[id=$id]"
+        return "Deleted scheduled task: ${existing.name}[id=$id]"
     }
 
     /** 立即执行一次定时任务(把 next_run_at 设为现在,下一轮轮询执行)。 */
     suspend fun execScheduledTaskExecute(args: Map<String, String>): String {
         val id = args["id"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: id"
+            ?: return "Missing required parameter: id"
         val dao = MuseDb.get(context).scheduledTaskDao()
-        val existing = dao.getById(id) ?: return "未找到任务: $id"
-        if (!existing.enabled) return "任务已禁用,请先启用后再执行: $id"
+        val existing = dao.getById(id) ?: return "Task not found: $id"
+        if (!existing.enabled) return "The task is disabled; please enable it before executing: $id"
         // 触发下一轮轮询执行(最多 60 秒内由 ScheduledTaskRunner 拾取)
         dao.triggerNextTasks(listOf(id))
-        return "已触发任务执行: ${existing.name}[id=$id],将在下一轮轮询中执行"
+        return "Task execution triggered: ${existing.name}[id=$id]; it will run in the next polling round"
     }
 
     /** 查询定时任务执行历史。 */
     suspend fun execScheduledTaskGetHistory(args: Map<String, String>): String {
         val id = args["id"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: id"
+            ?: return "Missing required parameter: id"
         val limit = args["limit"]?.toIntOrNull()?.takeIf { it > 0 } ?: 10
         val dao = MuseDb.get(context).scheduledTaskDao()
-        val existing = dao.getById(id) ?: return "未找到任务: $id"
+        val existing = dao.getById(id) ?: return "Task not found: $id"
         val records = MuseDb.get(context).scheduledTaskExecutionDao().queryByTaskId(id)
-        if (records.isEmpty()) return "任务 ${existing.name}[id=$id] 暂无执行历史"
-        val sb = StringBuilder("执行历史 (任务=${existing.name}):\n")
+        if (records.isEmpty()) return "Task ${existing.name}[id=$id] has no execution history yet"
+        val sb = StringBuilder("Execution history (task=${existing.name}):\n")
         records.take(limit).forEach { e ->
-            val time = FMT_DATETIME_MIN.get()?.format(Date(e.executedAt)) ?: "未知"
+            val time = FMT_DATETIME_MIN.get()?.format(Date(e.executedAt)) ?: "Unknown"
             val detail = when (e.status) {
-                "success" -> "成功: ${e.replySummary.take(80)}"
-                "failed" -> "失败: ${e.errorMessage}"
-                "skipped" -> "跳过(条件不满足)"
+                "success" -> "Success: ${e.replySummary.take(80)}"
+                "failed" -> "Failed: ${e.errorMessage}"
+                "skipped" -> "Skipped (condition not met)"
                 else -> e.status
             }
             sb.appendLine("• [$time] $detail")
@@ -297,25 +295,25 @@ class ScheduledTaskToolsImpl(private val context: Context) {
         /** 条件参数缺失时给模型可执行指引,而不是一句「参数不合法」。 */
         private fun conditionErrorHint(conditionType: String): String = when (conditionType.trim()) {
             A.TIME_RANGE ->
-                "condition_type=time_range 需要 condition_start_hour 与 condition_end_hour(0-23)"
+                "condition_type=time_range requires condition_start_hour and condition_end_hour (0-23)"
             A.CONTAINS ->
-                "condition_type=contains 需要 condition_keyword"
+                "condition_type=contains requires condition_keyword"
             A.QUICK_NOTE_EXISTS ->
-                "condition_type=quick_note_exists 需要 condition_keyword 或 condition_tag 至少一个"
+                "condition_type=quick_note_exists requires at least one of condition_keyword or condition_tag"
             A.BATTERY_LEVEL ->
-                "condition_type=battery_level 需要 condition_min_level(1-100)"
-            else -> "不支持的条件类型: $conditionType(可用: always/network_available/time_range/contains/quick_note_exists/battery_level/charging)"
+                "condition_type=battery_level requires condition_min_level (1-100)"
+            else -> "Unsupported condition type: $conditionType (available: always/network_available/time_range/contains/quick_note_exists/battery_level/charging)"
         }
 
         /** 给用户/模型看的一行条件摘要。 */
         private fun describeCondition(conditionJson: String): String {
-            if (conditionJson.isBlank()) return "总是执行"
+            if (conditionJson.isBlank()) return "Always runs"
             return runCatching {
                 val cond = A.serializer()
                 val parsed = io.zer0.common.AppJson.decodeFromString(cond, conditionJson)
                 val cfg = parsed.config.entries.joinToString(",") { "${it.key}=${it.value.toString().trim('"')}" }
                 if (cfg.isBlank()) parsed.type else "${parsed.type}($cfg)"
-            }.getOrDefault("已配置")
+            }.getOrDefault("Configured")
         }
     }
 }

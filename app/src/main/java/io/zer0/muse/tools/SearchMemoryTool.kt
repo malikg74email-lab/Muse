@@ -33,11 +33,11 @@ object SearchMemoryTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "search_memory",
-        description = "在用户长期记忆里搜索关于他的事实。当答案可能取决于他的偏好、经历、身份、目标" +
-            "或早前对话时使用。多条关键词用空格分开,会先按“全部命中”再按“任一命中”两轮检索;" +
-            "每条结果都带 fact id,可直接传给 delete_memory。" +
-            "部分早期记忆可能已按使用频率退出自动召回(不再自动注入上下文),显式检索仍能找回它们;" +
-            "所以搜不到时不要直接断定记忆里没有。",
+        description = "Search the user's long-term memory for facts about him. Use when the answer may depend on his preferences, experiences, identity, goals" +
+            "or earlier conversations. Separate multiple keywords with spaces; retrieval first runs an 'all keywords hit' round, then an 'any keyword hit' round;" +
+            "each result carries a fact id, which can be passed directly to delete_memory." +
+            "Some early memories may have exited automatic recall by usage frequency (no longer auto-injected into context); explicit search can still find them;" +
+            "so when a search finds nothing, do not directly conclude the memory does not have it.",
         parameters = mapOf(
             "query" to "Required. Keywords to search for in memory facts.",
             "tags" to "Optional. Comma-separated tag names (OR logic).",
@@ -166,10 +166,10 @@ object SearchMemoryTool {
 
     /** 摘要命中的渲染:逐条标出“编译摘要”与所在段,与事实行明确区分。 */
     private fun renderCompiledHits(hits: List<CompiledSectionHit>): String = buildString {
-        appendLine("事实记忆里没有匹配项;以下内容摘自编译摘要(来源标注为“编译摘要·段名”,不是 facts 表里的条目,没有 fact id):")
+        appendLine("The fact memory has no matches; the following content is excerpted from the compiled summary (source labelled 'compiled summary · section name'; these are not entries in the facts table and have no fact id):")
         appendLine()
         hits.forEachIndexed { index, hit ->
-            appendLine("${index + 1}. [编译摘要·${hit.sectionKey}] ${hit.text}")
+            appendLine("${index + 1}. [Compiled summary · ${hit.sectionKey}] ${hit.text}")
             appendLine()
         }
     }.trimEnd()

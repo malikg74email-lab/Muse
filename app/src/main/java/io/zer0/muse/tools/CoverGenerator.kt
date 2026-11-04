@@ -86,7 +86,7 @@ class CoverGenerator(
                 val promptCompletion = chatService.completeText(
                     messages = listOf(
                         UIMessage(role = MessageRole.SYSTEM, content = directive),
-                        UIMessage(role = MessageRole.USER, content = "请生成封面图的英文绘图 prompt。"),
+                        UIMessage(role = MessageRole.USER, content = "Please generate the English drawing prompt for the cover image."),
                     ),
                     model = routed?.second,
                     providerConfig = routed?.first,
@@ -102,7 +102,7 @@ class CoverGenerator(
 
                 // 2. 生图
                 val service = imageService
-                    ?: error("未配置绘图模型")
+                    ?: error("No drawing model configured")
                 val urls = service.generate(
                     prompt = coverPrompt,
                     params = ImageGenParams(
@@ -112,7 +112,7 @@ class CoverGenerator(
                         n = 1,
                     ),
                 )
-                if (urls.isEmpty()) error("生图结果为空")
+                if (urls.isEmpty()) error("The image-generation result is empty")
                 val url = urls.first()
 
                 // 3. 下载到临时文件
@@ -129,7 +129,7 @@ class CoverGenerator(
                 runCatching { tmpFile.delete() }
                 item
             }.onError { msg, t ->
-                Logger.w(TAG, "封面生成失败: $msg", t)
+                Logger.w(TAG, "Cover generation failed: $msg", t)
             }
         }
 
@@ -138,8 +138,8 @@ class CoverGenerator(
         val request = Request.Builder().url(url).build()
         val response = okHttpClient.newCall(request).execute()
         response.use { resp ->
-            if (!resp.isSuccessful) error("下载封面失败: HTTP ${resp.code}")
-            val body = resp.body ?: error("下载封面失败: 空响应体")
+            if (!resp.isSuccessful) error("Failed to download the cover: HTTP ${resp.code}")
+            val body = resp.body ?: error("Failed to download the cover: empty response body")
             val file = File.createTempFile("cover_dl_", ".img", context.cacheDir)
             body.byteStream().use { input ->
                 file.outputStream().use { output ->
@@ -151,7 +151,7 @@ class CoverGenerator(
                         total += read
                         if (total > MAX_DOWNLOAD_BYTES) {
                             runCatching { file.delete() }
-                            error("封面图片超过 ${MAX_DOWNLOAD_BYTES / 1024 / 1024}MB 限制")
+                            error("The cover image exceeds the ${MAX_DOWNLOAD_BYTES / 1024 / 1024}MB limit")
                         }
                         output.write(buf, 0, read)
                     }

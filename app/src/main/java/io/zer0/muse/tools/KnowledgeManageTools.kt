@@ -48,10 +48,10 @@ class KnowledgeManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "knowledge_list_docs",
-                description = "列出指定知识库的全部用户文档（id、标题、分块数、更新时间）。" +
-                    "不传 kb_id 时列出默认知识库。用于删除前确认文档 id。",
+                description = "List all user documents in the specified knowledge base (id, title, chunk count, update time)." +
+                    "When kb_id is not given, lists the default knowledge base. Used to confirm a document id before deleting.",
                 parameters = mapOf(
-                    "kb_id" to "可选，知识库 id；省略时查默认知识库",
+                    "kb_id" to "Optional, knowledge base id; when omitted, queries the default knowledge base",
                 ),
                 required = emptySet(),
                 riskLevel = ToolRiskLevel.SAFE,
@@ -60,10 +60,10 @@ class KnowledgeManageTools(
             val kbId = args["kb_id"]?.trim().takeUnless { it.isNullOrBlank() } ?: "default"
             val docs = kotlinx.coroutines.runBlocking { docDao.getByKbIds(listOf(kbId)) }
             if (docs.isEmpty()) {
-                "知识库 $kbId 中没有用户文档。"
+                "There are no user documents in knowledge base $kbId."
             } else {
                 docs.joinToString("\n") { doc ->
-                    "${doc.id} | ${doc.title} | ${doc.chunkCount} 块 | ${doc.fileType}"
+                    "${doc.id} | ${doc.title} | ${doc.chunkCount} chunks | ${doc.fileType}"
                 }
             }
         }
@@ -74,10 +74,10 @@ class KnowledgeManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "knowledge_delete_doc",
-                description = "从知识库中删除一篇文档（连带其分块与向量索引）。" +
-                    "执行前应先用 knowledge_list_docs 确认文档 id；不可撤销。",
+                description = "Delete a document from the knowledge base (together with its chunks and vector index)." +
+                    "Confirm the document id with knowledge_list_docs before executing; irreversible.",
                 parameters = mapOf(
-                    "doc_id" to "必填，文档 id（可用 knowledge_list_docs 获取）",
+                    "doc_id" to "Required, document id (get it with knowledge_list_docs)",
                 ),
                 required = setOf("doc_id"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -85,17 +85,17 @@ class KnowledgeManageTools(
         ) { args ->
             val docId = args["doc_id"]?.trim().orEmpty()
             if (docId.isBlank()) {
-                errorJson("参数 doc_id 缺失或为空")
+                errorJson("Parameter doc_id is missing or empty")
             } else {
                 kotlinx.coroutines.runBlocking {
                     val doc = docDao.getById(docId)
                     when {
-                        doc == null -> errorJson("未找到文档 $docId")
-                        doc.isInternal -> errorJson("文档 $docId 是内部开发文档，不允许通过工具删除")
+                        doc == null -> errorJson("Document $docId not found")
+                        doc.isInternal -> errorJson("Document $docId is an internal development document; deleting it via tools is not allowed")
                         else -> {
                             ragService.deleteDocument(docId)
-                            Logger.i(TAG, "工具删除知识库文档: $docId (${doc.title})")
-                            okJson("已删除文档 ${doc.title}（$docId），分块与向量索引一并清理。")
+                            Logger.i(TAG, "Tool deleted knowledge-base document: $docId (${doc.title})")
+                            okJson("Deleted document ${doc.title} ($docId); its chunks and vector index were cleaned up together.")
                         }
                     }
                 }
@@ -108,12 +108,12 @@ class KnowledgeManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "knowledge_create_kb",
-                description = "创建一个新的知识库。id 可省略（自动生成）；名称必填。" +
-                    "默认知识库（id=default）不可重复创建。",
+                description = "Create a new knowledge base. id may be omitted (auto-generated); name is required." +
+                    "The default knowledge base (id=default) cannot be created again.",
                 parameters = mapOf(
-                    "name" to "必填，知识库名称",
-                    "kb_id" to "可选，知识库 id（省略时自动生成）",
-                    "description" to "可选，知识库描述",
+                    "name" to "Required, knowledge base name",
+                    "kb_id" to "Optional, knowledge base id (auto-generated when omitted)",
+                    "description" to "Optional, knowledge base description",
                 ),
                 required = setOf("name"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -121,14 +121,14 @@ class KnowledgeManageTools(
         ) { args ->
             val name = args["name"]?.trim().orEmpty()
             if (name.isBlank()) {
-                errorJson("参数 name 缺失或为空")
+                errorJson("Parameter name is missing or empty")
             } else {
                 val id = args["kb_id"]?.trim().takeUnless { it.isNullOrBlank() }
                     ?: "kb-${System.currentTimeMillis()}"
                 kotlinx.coroutines.runBlocking {
                     val existing = kbDao.getById(id)
                     if (existing != null) {
-                        errorJson("知识库 id=$id 已存在（名称：${existing.name}），请换一个 id 或直接使用它")
+                        errorJson("Knowledge base id=$id already exists (name: ${existing.name}); please use another id or use it directly")
                     } else {
                         kbDao.upsert(
                             KnowledgeBaseEntity(
@@ -137,8 +137,8 @@ class KnowledgeManageTools(
                                 description = args["description"]?.trim().orEmpty(),
                             ),
                         )
-                        Logger.i(TAG, "工具创建知识库: $id ($name)")
-                        okJson("已创建知识库「$name」（id=$id）。现在可以往里导入文档了。")
+                        Logger.i(TAG, "Tool created knowledge base: $id ($name)")
+                        okJson("Created knowledge base \"$name\" (id=$id). You can now import documents into it.")
                     }
                 }
             }
@@ -150,10 +150,10 @@ class KnowledgeManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "knowledge_delete_kb",
-                description = "删除一个知识库及其全部文档、文件夹与向量索引。不可撤销。" +
-                    "默认知识库（id=default）不可删除。",
+                description = "Delete a knowledge base and all its documents, folders and vector indexes. Irreversible." +
+                    "The default knowledge base (id=default) cannot be deleted.",
                 parameters = mapOf(
-                    "kb_id" to "必填，知识库 id（可用 knowledge_list_docs 前先确认）",
+                    "kb_id" to "Required, knowledge base id (confirm first with knowledge_list_docs)",
                 ),
                 required = setOf("kb_id"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -161,19 +161,19 @@ class KnowledgeManageTools(
         ) { args ->
             val kbId = args["kb_id"]?.trim().orEmpty()
             when {
-                kbId.isBlank() -> errorJson("参数 kb_id 缺失或为空")
-                kbId == "default" -> errorJson("默认知识库不可删除（与 UI 层保护一致）")
+                kbId.isBlank() -> errorJson("Parameter kb_id is missing or empty")
+                kbId == "default" -> errorJson("The default knowledge base cannot be deleted (consistent with the UI-layer protection)")
                 else -> {
                     kotlinx.coroutines.runBlocking {
                         val kb = kbDao.getById(kbId)
                         if (kb == null) {
-                            errorJson("未找到知识库 $kbId")
+                            errorJson("Knowledge base $kbId not found")
                         } else {
                             val docs = docDao.getByKbIds(listOf(kbId))
                             docs.forEach { doc -> ragService.deleteDocument(doc.id) }
                             kbDao.delete(kbId)
-                            Logger.i(TAG, "工具删除知识库: $kbId (${kb.name}), 文档 ${docs.size} 篇")
-                            okJson("已删除知识库「${kb.name}」（$kbId）及其 ${docs.size} 篇文档。")
+                            Logger.i(TAG, "Tool deleted knowledge base: $kbId (${kb.name}), ${docs.size} documents")
+                            okJson("Deleted knowledge base \"${kb.name}\" ($kbId) and its ${docs.size} documents.")
                         }
                     }
                 }

@@ -125,36 +125,36 @@ object ToolChannelPreflight {
         val labels = missing.joinToString("、") { it.openHint() }
         val alternatives = missing.flatMap { it.alternatives() }.distinct()
         return buildString {
-            append("[通道未就绪] 工具 $toolName 依赖的设备通道当前不可用：$labels。")
-            append("本次未执行，重试不会让它变可用。")
+            append("[Channel not ready] The device channel that tool $toolName depends on is currently unavailable: $labels.")
+            append("It was not executed this time; retrying will not make it available.")
             if (alternatives.isNotEmpty()) {
-                append("可以先改用：${alternatives.joinToString("、")}；")
+                append("You can switch to: ${alternatives.joinToString(", ")} first;")
             }
-            append("或请用户在设置中开通对应通道后重新调用 tool_status 确认。")
+            append("or ask the user to enable the corresponding channel in settings and then call tool_status again to confirm.")
         }
     }
 
     /** 通道 → 面向用户的名称 + 开通路径。 */
     private fun ToolRequirements.Channel.openHint(): String = when (this) {
-        ToolRequirements.Channel.ACCESSIBILITY -> "无障碍服务（设置 → 辅助功能 → 已下载的服务 → Muse）"
-        ToolRequirements.Channel.SHELL -> "Shizuku / ADB 授权（设置 → 高级 → Shizuku）"
-        ToolRequirements.Channel.ROOT -> "Root 权限"
-        ToolRequirements.Channel.USAGE_STATS -> "使用情况访问（设置 → 应用 → 特殊权限）"
-        ToolRequirements.Channel.NOTIFICATION_LISTENER -> "通知使用权（设置 → 通知 → 通知使用权）"
-        ToolRequirements.Channel.CONTACTS -> "联系人权限"
-        ToolRequirements.Channel.SMS -> "短信权限"
-        ToolRequirements.Channel.PHONE_CALL -> "电话权限"
-        ToolRequirements.Channel.CALENDAR -> "日历权限"
-        ToolRequirements.Channel.LOCATION -> "定位权限"
-        ToolRequirements.Channel.RUNTIME -> "运行时权限"
+        ToolRequirements.Channel.ACCESSIBILITY -> "Accessibility service (Settings → Accessibility → Downloaded services → Shaheen 2)"
+        ToolRequirements.Channel.SHELL -> "Shizuku / ADB authorisation (Settings → Advanced → Shizuku)"
+        ToolRequirements.Channel.ROOT -> "Root permission"
+        ToolRequirements.Channel.USAGE_STATS -> "Usage access (Settings → Apps → Special permissions)"
+        ToolRequirements.Channel.NOTIFICATION_LISTENER -> "Notification access (Settings → Notifications → Notification access)"
+        ToolRequirements.Channel.CONTACTS -> "Contacts permission"
+        ToolRequirements.Channel.SMS -> "SMS permission"
+        ToolRequirements.Channel.PHONE_CALL -> "Phone permission"
+        ToolRequirements.Channel.CALENDAR -> "Calendar permission"
+        ToolRequirements.Channel.LOCATION -> "Location permission"
+        ToolRequirements.Channel.RUNTIME -> "Runtime permission"
     }
 
     /** 该通道缺位时模型可用的替代手段（写具体工具名，别说空话）。 */
     private fun ToolRequirements.Channel.alternatives(): List<String> = when (this) {
-        ToolRequirements.Channel.ACCESSIBILITY -> listOf("ui_screenshot（若 Shell 可用）", "shell 系工具（若已授权）")
-        ToolRequirements.Channel.SHELL -> listOf("无障碍系工具（若已开启）")
-        ToolRequirements.Channel.ROOT -> listOf("Shell / 无障碍系工具（若已就绪）")
-        ToolRequirements.Channel.USAGE_STATS -> listOf("current_status（查看前台应用的应用内替代）")
+        ToolRequirements.Channel.ACCESSIBILITY -> listOf("ui_screenshot (if Shell is available)", "shell tools (if authorised)")
+        ToolRequirements.Channel.SHELL -> listOf("accessibility tools (if enabled)")
+        ToolRequirements.Channel.ROOT -> listOf("Shell / accessibility tools (if ready)")
+        ToolRequirements.Channel.USAGE_STATS -> listOf("current_status (the in-app alternative for viewing the foreground app)")
         else -> emptyList()
     }
 }

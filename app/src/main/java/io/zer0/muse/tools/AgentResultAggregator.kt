@@ -103,23 +103,23 @@ object AgentResultAggregator {
         llmReviewer: (suspend (List<Candidate>, String?) -> String?)?,
     ): Aggregation {
         if (llmReviewer == null) {
-            Logger.w("AgentResultAggregator", "llm_review 缺少 llmReviewer,降级为 expert_review")
+            Logger.w("AgentResultAggregator", "llm_review is missing llmReviewer; degrading to expert_review")
             return expertReview(candidates)
         }
         // H-LLM1: 用 resultOf{} 包裹 suspend 调用,正确重抛 CancellationException
         val reviewed = resultOf { llmReviewer(candidates, question) }
             .onError { msg, t ->
-                Logger.w("AgentResultAggregator", "llm_review 调用异常,降级为 expert_review: $msg", t)
+                Logger.w("AgentResultAggregator", "llm_review call exception; degrading to expert_review: $msg", t)
             }
             .getOrNull()
         if (reviewed.isNullOrBlank()) {
-            Logger.w("AgentResultAggregator", "llm_review 返回空结果,降级为 expert_review")
+            Logger.w("AgentResultAggregator", "llm_review returned an empty result; degrading to expert_review")
             return expertReview(candidates)
         }
         return Aggregation(
             output = reviewed.trim(),
             strategy = Strategy.LLM_REVIEW,
-            conflicts = listOf("由 LLM 综合评审(候选 ${candidates.size} 个)"),
+            conflicts = listOf("Comprehensive review by the LLM (${candidates.size} candidates)"),
             candidates = candidates,
         )
     }
@@ -127,10 +127,10 @@ object AgentResultAggregator {
     /** 拼接所有候选,标注来源。 */
     private fun merge(candidates: List<Candidate>): Aggregation {
         val output = buildString {
-            appendLine("多 Agent 结果汇总:")
+            appendLine("Multi-Agent result summary:")
             candidates.forEachIndexed { idx, c ->
                 appendLine()
-                appendLine("--- 来源 ${idx + 1}: ${c.source} ${c.confidence?.let { "(置信度 ${"%.2f".format(it)})" } ?: ""}---")
+                appendLine("--- Source ${idx + 1}: ${c.source} ${c.confidence?.let { "(confidence ${"%.2f".format(it)})" } ?: ""}---")
                 appendLine(c.content)
             }
         }.trimEnd()
@@ -154,22 +154,22 @@ object AgentResultAggregator {
         val winnerRatio = winner.value.size.toFloat() / total
 
         val conflicts = if (winnerRatio < 0.5f) {
-            listOf("投票未形成明显多数:最高票 ${winner.value.size}/$total (${"%.0f".format(winnerRatio * 100)}%)")
+            listOf("The vote did not form a clear majority: highest votes ${winner.value.size}/$total (${"%.0f".format(winnerRatio * 100)}%)")
         } else {
             emptyList()
         }
 
         val output = buildString {
-            appendLine("投票结果(共 $total 票):")
+            appendLine("Voting result ($total votes in total):")
             ranked.forEachIndexed { idx, (answer, votes) ->
-                appendLine("${idx + 1}. [${votes.size} 票] $answer")
+                appendLine("${idx + 1}. [${votes.size} votes] $answer")
             }
             if (conflicts.isNotEmpty()) {
                 appendLine()
-                appendLine("注意: ${conflicts.first()}")
+                appendLine("Note: ${conflicts.first()}")
             }
             appendLine()
-            appendLine("最终采用: ${winner.key}")
+            appendLine("Finally adopted: ${winner.key}")
         }.trimEnd()
 
         return Aggregation(output = output, strategy = Strategy.VOTE, conflicts = conflicts, candidates = candidates)
@@ -184,12 +184,12 @@ object AgentResultAggregator {
         ) ?: candidates.first()
 
         val output = buildString {
-            appendLine("专家评审结果(选自 ${best.source}):")
+            appendLine("Expert review result (selected from ${best.source}):")
             appendLine()
             appendLine(best.content)
             if (candidates.size > 1) {
                 appendLine()
-                appendLine("参考来源: ${candidates.map { it.source }.distinct().joinToString(", ")}")
+                appendLine("Reference sources: ${candidates.map { it.source }.distinct().joinToString(", ")}")
             }
         }.trimEnd()
 
@@ -200,20 +200,20 @@ object AgentResultAggregator {
     private fun confidenceWeighted(candidates: List<Candidate>): Aggregation {
         val withConfidence = candidates.filter { it.confidence != null }
         if (withConfidence.size < 2) {
-            Logger.w("AgentResultAggregator", "confidence_weighted 候选缺少置信度,退化为 merge")
+            Logger.w("AgentResultAggregator", "confidence_weighted candidate is missing confidence; degenerating to merge")
             return merge(candidates)
         }
         val sorted = withConfidence.sortedByDescending { it.confidence }
         val totalConfidence = sorted.sumOf { (it.confidence ?: 0f).toDouble() }.toFloat().coerceAtLeast(0.0001f)
 
         val output = buildString {
-            appendLine("置信度加权汇总(总权重 ${"%.2f".format(totalConfidence)}):")
+            appendLine("Confidence-weighted summary (total weight ${"%.2f".format(totalConfidence)}):")
             sorted.forEach { c ->
                 val weight = ((c.confidence ?: 0f) / totalConfidence * 100).toInt()
-                appendLine("- [${c.source}] 权重 $weight%: ${c.content.take(200)}")
+                appendLine("- [${c.source}] weight $weight%: ${c.content.take(200)}")
             }
             appendLine()
-            appendLine("最高置信度结果(${sorted.first().confidence?.let { "%.2f".format(it) } ?: "-"}):")
+            appendLine("Highest-confidence result (${sorted.first().confidence?.let { "%.2f".format(it) } ?: "-"}):")
             appendLine(sorted.first().content)
         }.trimEnd()
 
@@ -239,7 +239,7 @@ object AgentResultAggregator {
             val conflicts = detectConflicts(candidates)
             val merged = merge(candidates)
             val output = buildString {
-                appendLine("未达成一致,已降级为汇总输出。检测到以下分歧:")
+                appendLine("No consensus reached; degraded to summary output. The following disagreements were detected:")
                 conflicts.forEach { appendLine("- $it") }
                 appendLine()
                 append(merged.output)
@@ -260,7 +260,7 @@ object AgentResultAggregator {
     /** 简单冲突检测:返回候选结果之间的差异摘要。 */
     private fun detectConflicts(candidates: List<Candidate>): List<String> {
         val summaries = candidates.mapIndexed { idx, c ->
-            "来源 ${idx + 1}(${c.source}): ${c.content.take(80)}${if (c.content.length > 80) "..." else ""}"
+            "Source ${idx + 1} (${c.source}): ${c.content.take(80)}${if (c.content.length > 80) "..." else ""}"
         }
         return if (summaries.size <= 1) emptyList() else listOf(summaries.joinToString("\n"))
     }

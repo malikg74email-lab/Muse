@@ -62,18 +62,18 @@ class RootAuthorizer {
                 .start()
             if (!process.waitFor(SU_PROBE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                 process.destroyForcibly()
-                Logger.w(TAG, "su 探测超时(${SU_PROBE_TIMEOUT_MS}ms),按未授权处理")
+                Logger.w(TAG, "su probe timed out (${SU_PROBE_TIMEOUT_MS}ms); treating as unauthorised")
                 return false
             }
             val output = process.inputStream.bufferedReader().use { it.readText() }
             val granted = process.exitValue() == 0 && output.contains("uid=0")
             if (!granted) {
-                Logger.w(TAG, "su 探测未获得 uid=0: exit=${process.exitValue()}, out=${output.take(160)}")
+                Logger.w(TAG, "su probe did not obtain uid=0: exit=${process.exitValue()}, out=${output.take(160)}")
             }
             granted
         } catch (e: Exception) {
             // 必要容错:su 执行可能抛异常(权限拒绝/文件缺失/超时),记录日志
-            Logger.w(TAG, "root 权限验证失败: ${e.message}")
+            Logger.w(TAG, "Root permission verification failed: ${e.message}")
             false
         }
     }
@@ -84,7 +84,7 @@ class RootAuthorizer {
      * @return [RootExecResult] 包含退出码与输出
      */
     fun execute(command: String): RootExecResult {
-        if (!checkPermission()) return RootExecResult(-1, "", "root 未授权")
+        if (!checkPermission()) return RootExecResult(-1, "", "Root not authorised")
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
             val out = process.inputStream.readBytes().toString(Charsets.UTF_8).trim()
@@ -92,8 +92,8 @@ class RootAuthorizer {
             val exitCode = process.waitFor()
             RootExecResult(exitCode, out, err)
         } catch (e: Exception) {
-            Logger.e(TAG, "root 执行失败: ${e.message}", e)
-            RootExecResult(-1, "", e.message ?: "执行异常")
+            Logger.e(TAG, "Root execution failed: ${e.message}", e)
+            RootExecResult(-1, "", e.message ?: "Execution exception")
         }
     }
 

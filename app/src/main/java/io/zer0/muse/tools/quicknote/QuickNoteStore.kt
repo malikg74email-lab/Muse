@@ -134,7 +134,7 @@ class QuickNoteStore(private val context: Context) {
     suspend fun migrateToRoom(dao: QuickNoteDao): Int {
         val notes = readAll()
         if (notes.isEmpty()) {
-            Logger.i(TAG, "migrateToRoom: JSON 文件无数据,跳过迁移")
+            Logger.i(TAG, "migrateToRoom: the JSON file has no data, skipping migration")
             return 0
         }
         var migrated = 0
@@ -155,7 +155,7 @@ class QuickNoteStore(private val context: Context) {
             )
             migrated++
         }
-        Logger.i(TAG, "migrateToRoom: 成功迁移 $migrated 条快速记录到 Room")
+        Logger.i(TAG, "migrateToRoom: successfully migrated $migrated quick notes to Room")
         return migrated
     }
 
@@ -165,8 +165,8 @@ class QuickNoteStore(private val context: Context) {
             AppJson.decodeFromString(ListSerializer(QuickNote.serializer()), file.readText())
         } catch (e: Exception) {
             backupCorruptFile()
-            lastError = "快速记录文件损坏，已备份原文件并重建"
-            Logger.e(TAG, "读取快速记录失败，已备份坏文件: ${e.message}", e)
+            lastError = "The quick-note file is corrupted; the original file was backed up and rebuilt"
+            Logger.e(TAG, "Failed to read the quick notes; the bad file was backed up: ${e.message}", e)
             emptyList()
         }
     }
@@ -177,9 +177,9 @@ class QuickNoteStore(private val context: Context) {
             if (file.exists()) {
                 val backup = java.io.File(file.parentFile, "${file.name}.bak-${System.currentTimeMillis()}")
                 file.copyTo(backup, overwrite = true)
-                Logger.w(TAG, "损坏文件已备份到 ${backup.absolutePath}")
+                Logger.w(TAG, "The corrupted file was backed up to ${backup.absolutePath}")
             }
-        }.onFailure { Logger.w(TAG, "备份损坏文件失败: ${it.message}") }
+        }.onFailure { Logger.w(TAG, "Failed to back up the corrupted file: ${it.message}") }
     }
 
     private fun save(list: List<QuickNote>) {
@@ -187,7 +187,7 @@ class QuickNoteStore(private val context: Context) {
             file.parentFile?.mkdirs()
             file.writeText(AppJson.encodeToString(ListSerializer(QuickNote.serializer()), list))
         } catch (e: Exception) {
-            Logger.w(TAG, "保存快速记录失败: ${e.message}")
+            Logger.w(TAG, "Failed to save the quick notes: ${e.message}")
         }
     }
 

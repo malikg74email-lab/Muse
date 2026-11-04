@@ -54,13 +54,13 @@ object WeakToolUseDetector {
         if (model == null || !isWeakToolModel(model)) return null
         return when {
             model.id.contains(Regex("(?i)deepseek-r1")) ->
-                "DeepSeek R1 系列工具调用不稳定,已降级为串行调用"
+                "The DeepSeek R1 series' tool calling is unstable; degraded to serial calls"
             model.id.contains(Regex("(?i)deepseek")) ->
-                "DeepSeek 早期版本并行工具调用可能异常,已降级为串行调用"
+                "Early DeepSeek versions' parallel tool calls may misbehave; degraded to serial calls"
             model.id.contains(Regex("(?i)qwen")) ->
-                "Qwen 早期版本工具调用格式不稳定,已降级为串行调用"
+                "Early Qwen versions' tool-call format is unstable; degraded to serial calls"
             else ->
-                "当前模型工具调用能力较弱,已降级为串行调用"
+                "The current model's tool-calling ability is weak; degraded to serial calls"
         }
     }
 }

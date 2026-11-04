@@ -133,7 +133,7 @@ object PythonRuntime {
                 return@runCatching
             }
 
-            Logger.i(TAG, "解压 Python 运行时数据 ($installed -> $PYTHON_DATA_VERSION)")
+            Logger.i(TAG, "Extracting Python runtime data ($installed -> $PYTHON_DATA_VERSION)")
             val libRoot = File(rt, "lib")
             libRoot.deleteRecursively()
             ctx.assets.open(ASSETS_ZIP).use { raw ->
@@ -143,7 +143,7 @@ object PythonRuntime {
                         val target = File(rt, entry.name)
                         val rootPath = rt.canonicalPath + File.separator
                         if (!target.canonicalPath.startsWith(rootPath)) {
-                            throw SecurityException("zip 条目越界: ${entry.name}")
+                            throw SecurityException("zip entry out of bounds: ${entry.name}")
                         }
                         if (entry.isDirectory) {
                             target.mkdirs()
@@ -159,8 +159,8 @@ object PythonRuntime {
             mark.writeText(PYTHON_DATA_VERSION)
             setupDynloadLinks(ctx)
             ensureCaBundle(ctx)
-            Logger.i(TAG, "Python 运行时数据解压完成")
-        }.onFailure { Logger.w(TAG, "Python 运行时数据解压失败: ${it.message}", it) }
+            Logger.i(TAG, "Python runtime data extraction complete")
+        }.onFailure { Logger.w(TAG, "Python runtime data extraction failed: ${it.message}", it) }
     }
 
     /**
@@ -193,7 +193,7 @@ object PythonRuntime {
             }.onFailure {
                 // 设备/文件系统不支持 symlink 时的兜底：退化为复制（部分扩展可能 dlopen 失败，
                 // 但纯 Python 能力仍可用）。
-                Logger.w(TAG, "lib-dynload symlink 失败，退化复制: ${it.message}")
+                Logger.w(TAG, "lib-dynload symlink failed, degrading to copy: ${it.message}")
                 runCatching {
                     dynload.mkdirs()
                     nativeDir.listFiles { f -> f.isFile && f.name.contains(".cpython-") }
@@ -232,7 +232,7 @@ object PythonRuntime {
             val bundle = caBundleFile(ctx)
             if (bundle.isFile && bundle.length() > 0) return@runCatching bundle
 
-            val dir = resolveCaCertDir() ?: error("未找到系统 CA 目录")
+            val dir = resolveCaCertDir() ?: error("System CA directory not found")
             bundle.parentFile?.mkdirs()
             bundle.outputStream().bufferedWriter().use { out ->
                 File(dir).listFiles { f -> f.isFile }?.sortedBy { it.name }?.forEach { cert ->
@@ -242,10 +242,10 @@ object PythonRuntime {
                     out.write("\n")
                 }
             }
-            if (bundle.length() == 0L) error("系统 CA 目录无可读证书")
-            Logger.i(TAG, "CA bundle 已生成: ${bundle.length()} bytes")
+            if (bundle.length() == 0L) error("No readable certificates in the system CA directory")
+            Logger.i(TAG, "CA bundle generated: ${bundle.length()} bytes")
             bundle
-        }.onFailure { Logger.w(TAG, "CA bundle 生成失败: ${it.message}") }
+        }.onFailure { Logger.w(TAG, "CA bundle generation failed: ${it.message}") }
     }
 
     // ── pip（第三方包） ────────────────────────────────────────
@@ -266,13 +266,13 @@ object PythonRuntime {
             ensureData(ctx).getOrThrow()
             if (isPipReady(ctx)) return@runCatching
 
-            Logger.i(TAG, "安装 pip（ensurepip）…")
+            Logger.i(TAG, "Installing pip (ensurepip)…")
             val r = execPython(ctx, listOf("-m", "ensurepip", "--upgrade"), timeoutMs = 180_000)
             check(r.exitCode == 0) {
-                "ensurepip 失败(exit=${r.exitCode}): ${(r.stderr.ifBlank { r.stdout }).take(300)}"
+                "ensurepip failed (exit=${r.exitCode}): ${(r.stderr.ifBlank { r.stdout }).take(300)}"
             }
-            Logger.i(TAG, "pip 安装完成")
-        }.onFailure { Logger.w(TAG, "pip 安装失败: ${it.message}") }
+            Logger.i(TAG, "pip installation complete")
+        }.onFailure { Logger.w(TAG, "pip installation failed: ${it.message}") }
     }
 
     /** pip 是否已就绪。 */
@@ -388,29 +388,29 @@ object PythonRuntime {
         if (tOut.isAlive) {
             runCatching { process.inputStream.close() }
             tOut.join(1_000)
-            captureFailure.compareAndSet(null, IOException("stdout 输出流未能完整排空"))
+            captureFailure.compareAndSet(null, IOException("stdout output stream was not fully drained"))
         }
         if (tErr.isAlive) {
             runCatching { process.errorStream.close() }
             tErr.join(1_000)
-            captureFailure.compareAndSet(null, IOException("stderr 输出流未能完整排空"))
+            captureFailure.compareAndSet(null, IOException("stderr output stream was not fully drained"))
         }
 
         val outputFailure = captureFailure.get()
         if (outputFailure != null) {
             val partialStdout =
                 runCatching {
-                    outCapture.finish(header = "[stdout 输出未能完整接收]", emptyMessage = "")
+                    outCapture.finish(header = "[stdout output was not fully received]", emptyMessage = "")
                 }.getOrElse {
                     outCapture.close()
-                    outCapture.savedFile?.let { "[stdout 部分输出文件: ${it.absolutePath}]" }.orEmpty()
+                    outCapture.savedFile?.let { "[stdout partial output file: ${it.absolutePath}]" }.orEmpty()
                 }
             val partialStderr =
                 runCatching {
-                    errCapture.finish(header = "[stderr 输出未能完整接收]", emptyMessage = "")
+                    errCapture.finish(header = "[stderr output was not fully received]", emptyMessage = "")
                 }.getOrElse {
                     errCapture.close()
-                    errCapture.savedFile?.let { "[stderr 部分输出文件: ${it.absolutePath}]" }.orEmpty()
+                    errCapture.savedFile?.let { "[stderr partial output file: ${it.absolutePath}]" }.orEmpty()
                 }
             return@withContext ExecResult(
                 exitCode = if (finished) runCatching { process.exitValue() }.getOrDefault(-1) else -1,

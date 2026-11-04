@@ -53,19 +53,19 @@ internal class SkillBridgeHttpClient(
             val request = try {
                 Request.Builder().url(current).get().build()
             } catch (e: IllegalArgumentException) {
-                throw IOException("URL 无法解析: $current", e)
+                throw IOException("URL could not be parsed: $current", e)
             }
             executePinned(request).use { response ->
                 if (response.code in 300..399) {
                     val location = response.header("Location")?.trim()?.takeIf { it.isNotBlank() }
-                        ?: throw IOException("重定向(${response.code})缺少 Location 头")
+                        ?: throw IOException("Redirect (${response.code}) is missing the Location header")
                     val resolved = try {
                         URI(current).resolve(location).toString()
                     } catch (e: Exception) {
-                        throw IOException("重定向 Location 无法解析: $location", e)
+                        throw IOException("Redirect Location could not be parsed: $location", e)
                     }
                     if (!resolved.startsWith("http://") && !resolved.startsWith("https://")) {
-                        throw IOException("重定向目标协议非法: $resolved")
+                        throw IOException("Redirect target protocol is invalid: $resolved")
                     }
                     current = resolved
                 } else {
@@ -76,7 +76,7 @@ internal class SkillBridgeHttpClient(
                 }
             }
         }
-        throw IOException("重定向超过 $maxRedirects 跳上限")
+        throw IOException("Redirects exceeded the $maxRedirects hop limit")
     }
 
     /** Execute a GET and preserve large UTF-8 response bodies in a paginated app file. */
@@ -86,19 +86,19 @@ internal class SkillBridgeHttpClient(
             val request = try {
                 Request.Builder().url(current).get().build()
             } catch (e: IllegalArgumentException) {
-                throw IOException("URL 无法解析: $current", e)
+                throw IOException("URL could not be parsed: $current", e)
             }
             executePinned(request).use { response ->
                 if (response.code in 300..399) {
                     val location = response.header("Location")?.trim()?.takeIf { it.isNotBlank() }
-                        ?: throw IOException("重定向(${response.code})缺少 Location 头")
+                        ?: throw IOException("Redirect (${response.code}) is missing the Location header")
                     val resolved = try {
                         URI(current).resolve(location).toString()
                     } catch (e: Exception) {
-                        throw IOException("重定向 Location 无法解析: $location", e)
+                        throw IOException("Redirect Location could not be parsed: $location", e)
                     }
                     if (!resolved.startsWith("http://") && !resolved.startsWith("https://")) {
-                        throw IOException("重定向目标协议非法: $resolved")
+                        throw IOException("Redirect target protocol is invalid: $resolved")
                     }
                     current = resolved
                 } else {
@@ -109,7 +109,7 @@ internal class SkillBridgeHttpClient(
                 }
             }
         }
-        throw IOException("重定向超过 $maxRedirects 跳上限")
+        throw IOException("Redirects exceeded the $maxRedirects hop limit")
     }
 
     /**
@@ -124,19 +124,19 @@ internal class SkillBridgeHttpClient(
             val request = try {
                 Request.Builder().url(current).get().build()
             } catch (e: IllegalArgumentException) {
-                throw IOException("URL 无法解析: $current", e)
+                throw IOException("URL could not be parsed: $current", e)
             }
             executePinned(request).use { response ->
                 if (response.code in 300..399) {
                     val location = response.header("Location")?.trim()?.takeIf { it.isNotBlank() }
-                        ?: throw IOException("重定向(${response.code})缺少 Location 头")
+                        ?: throw IOException("Redirect (${response.code}) is missing the Location header")
                     val resolved = try {
                         URI(current).resolve(location).toString()
                     } catch (e: Exception) {
-                        throw IOException("重定向 Location 无法解析: $location", e)
+                        throw IOException("Redirect Location could not be parsed: $location", e)
                     }
                     if (!resolved.startsWith("http://") && !resolved.startsWith("https://")) {
-                        throw IOException("重定向目标协议非法: $resolved")
+                        throw IOException("Redirect target protocol is invalid: $resolved")
                     }
                     current = resolved
                 } else {
@@ -147,7 +147,7 @@ internal class SkillBridgeHttpClient(
                 }
             }
         }
-        throw IOException("重定向超过 $maxRedirects 跳上限")
+        throw IOException("Redirects exceeded the $maxRedirects hop limit")
     }
 
     /**
@@ -163,13 +163,13 @@ internal class SkillBridgeHttpClient(
                 .post(body.toByteArray(Charsets.UTF_8).toRequestBody(contentType.toMediaType()))
                 .build()
         } catch (e: IllegalArgumentException) {
-            throw IOException("URL 无法解析: $startUrl", e)
+            throw IOException("URL could not be parsed: $startUrl", e)
         }
         executePinned(request).use { response ->
             if (response.code in 300..399) {
                 val location = response.header("Location")?.trim().orEmpty()
                 val hint = if (location.isNotEmpty()) ", Location: $location" else ""
-                throw IOException("http_post 不支持重定向(${response.code}$hint);请直接使用最终地址")
+                throw IOException("http_post does not support redirects (${response.code}$hint); please use the final address directly")
             }
             return Result(status = response.code, body = readLimitedBody(response, maxSize))
         }
@@ -183,13 +183,13 @@ internal class SkillBridgeHttpClient(
                 .post(body.toByteArray(Charsets.UTF_8).toRequestBody(contentType.toMediaType()))
                 .build()
         } catch (e: IllegalArgumentException) {
-            throw IOException("URL 无法解析: $startUrl", e)
+            throw IOException("URL could not be parsed: $startUrl", e)
         }
         executePinned(request).use { response ->
             if (response.code in 300..399) {
                 val location = response.header("Location")?.trim().orEmpty()
                 val hint = if (location.isNotEmpty()) ", Location: $location" else ""
-                throw IOException("http_post 不支持重定向(${response.code}$hint);请直接使用最终地址")
+                throw IOException("http_post does not support redirects (${response.code}$hint); please use the final address directly")
             }
             val captured = response.body.byteStream().bufferedReader(Charsets.UTF_8).use { reader ->
                 captureTextStream(reader, outputDirectory, "skill_bridge_http_post", previewLimitChars = 0)
@@ -211,7 +211,7 @@ internal class SkillBridgeHttpClient(
         val addresses = resolveAndValidate(host, url)
         val pinnedDns = Dns { requestedHost ->
             if (!requestedHost.equals(host, ignoreCase = true)) {
-                throw UnknownHostException("DNS 主机与已校验主机不一致: $requestedHost")
+                throw UnknownHostException("DNS host does not match the verified host: $requestedHost")
             }
             // Return the exact pre-validated result; never invoke system DNS again.
             addresses
@@ -235,21 +235,21 @@ internal class SkillBridgeHttpClient(
     private fun rejectConfiguredProxy(url: String) {
         val configuredProxy = baseClient.proxy
         if (configuredProxy != null && configuredProxy.type() != Proxy.Type.DIRECT) {
-            throw PinnedAddressException(url, "拒绝未验证的代理连接: ${configuredProxy.type()}")
+            throw PinnedAddressException(url, "Refusing the unverified proxy connection: ${configuredProxy.type()}")
         }
     }
 
     private fun resolveAndValidate(host: String, url: String): List<InetAddress> {
         if (host == "localhost") {
-            throw PinnedAddressException(url, "localhost 不允许通过 SkillBridge 访问")
+            throw PinnedAddressException(url, "localhost may not be accessed through SkillBridge")
         }
         val addresses = try {
             dns.lookup(host)
         } catch (e: Exception) {
-            throw PinnedAddressException(url, "DNS 解析失败: $host", e)
+            throw PinnedAddressException(url, "DNS resolution failed: $host", e)
         }
         if (addresses.isEmpty() || addresses.any { !addressAllowed(it) }) {
-            throw PinnedAddressException(url, "DNS 地址未通过 SSRF 校验: $host")
+            throw PinnedAddressException(url, "DNS address did not pass the SSRF check: $host")
         }
         return addresses.distinctBy { it.address.contentHashCode() }
     }
@@ -270,17 +270,17 @@ internal class SkillBridgeHttpClient(
 
     private fun connectedAddressOrThrow(chain: Interceptor.Chain, host: String, addresses: List<InetAddress>): InetAddress {
         val connection = chain.connection()
-            ?: throw PinnedAddressException(chain.request().url.toString(), "连接建立后无法取得连接信息")
+            ?: throw PinnedAddressException(chain.request().url.toString(), "Could not obtain connection info after the connection was established")
         val route = connection.route()
         if (route.proxy.type() != Proxy.Type.DIRECT) {
-            throw PinnedAddressException(chain.request().url.toString(), "拒绝未验证的代理连接: $host")
+            throw PinnedAddressException(chain.request().url.toString(), "Refusing the unverified proxy connection: $host")
         }
         val connected = route.socketAddress.address
-            ?: throw PinnedAddressException(chain.request().url.toString(), "连接地址未解析: $host")
+            ?: throw PinnedAddressException(chain.request().url.toString(), "Connection address not resolved: $host")
         if (!addresses.any { sameAddress(it, connected) } || !addressAllowed(connected)) {
             throw PinnedAddressException(
                 chain.request().url.toString(),
-                "实际连接地址未通过 DNS 校验: $host -> ${connected.hostAddress}",
+                "Actual connection address did not pass the DNS check: $host -> ${connected.hostAddress}",
             )
         }
         return connected

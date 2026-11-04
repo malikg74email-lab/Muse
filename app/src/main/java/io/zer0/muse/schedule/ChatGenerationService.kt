@@ -56,7 +56,7 @@ class ChatGenerationService : Service() {
         // MuseApp 跳过 startKoin 的 Safe Mode 进程里; 此处若无防御, 后续 by inject
         // 会抛 "KoinApplication has not been started" 形成崩溃循环。
         if (org.koin.core.context.GlobalContext.getOrNull() == null) {
-            Logger.w("ChatGenService", "Koin 未启动(Safe Mode/进程异常恢复) — 放弃保活")
+            Logger.w("ChatGenService", "Koin not started (Safe Mode/process exception recovery) — giving up keep-alive")
             stopService()
             return
         }
@@ -72,7 +72,7 @@ class ChatGenerationService : Service() {
         } catch (t: Throwable) {
             // 通知构建失败时也必须调 startForeground,否则触发超时崩溃;
             // 用最小通知兜底(若连 NotificationManager 都不可用,直接 stopSelf 放弃保活)。
-            Logger.e("ChatGenService", "onCreate startForeground 失败,放弃保活", t)
+            Logger.e("ChatGenService", "onCreate startForeground failed, giving up keep-alive", t)
             stopSelf()
             return
         }
@@ -83,7 +83,7 @@ class ChatGenerationService : Service() {
         // 前台服务的生命周期就是生成保活生命周期,不使用 10 分钟超时版本。
         // 长 MCP/工具任务可能超过 10 分钟;stopService/onDestroy 会明确释放锁。
         runCatching { wakeLock?.acquire() }
-            .onFailure { Logger.w("ChatGenService", "wakelock acquire 失败", it) }
+            .onFailure { Logger.w("ChatGenService", "wakelock acquire failed", it) }
         Logger.i("ChatGenService", "service created & foreground started & wakelock acquired")
     }
 
@@ -94,7 +94,7 @@ class ChatGenerationService : Service() {
         // 2026-09-27 真机崩溃修复: ChatGenerationService 曾是唯一无 Koin 防御的组件,
         // 缺失时抛 "KoinApplication has not been started" 崩溃。
         if (org.koin.core.context.GlobalContext.getOrNull() == null) {
-            Logger.w("ChatGenService", "Koin 未启动(Safe Mode?) — 停止服务,不进入观察循环")
+            Logger.w("ChatGenService", "Koin not started (Safe Mode?) — stopping the service, not entering the observation loop")
             stopService()
             return START_NOT_STICKY
         }
@@ -104,7 +104,7 @@ class ChatGenerationService : Service() {
             ACTION_STOP -> stopService()
             else -> {
                 // v1.112: 未知 action 兜底也启动观察,确保不会因跳过分支导致服务空转。
-                Logger.w("ChatGenService", "未知 action: $action,按 START 处理")
+                Logger.w("ChatGenService", "Unknown action: $action, treating as START")
                 startObserve()
             }
         }
@@ -131,7 +131,7 @@ class ChatGenerationService : Service() {
             )
             startForegroundCompat(notification)
         } catch (t: Throwable) {
-            Logger.w("ChatGenService", "更新前台通知失败", t)
+            Logger.w("ChatGenService", "Updating the foreground notification failed", t)
         }
 
         // 监听生成状态变化,更新通知内容/进度
@@ -159,7 +159,7 @@ class ChatGenerationService : Service() {
                     System.currentTimeMillis() - generation.lastUpdatedAt > HEARTBEAT_TIMEOUT_MS
                 }
                 if (stale != null) {
-                    Logger.w("ChatGenService", "生成心跳超时,停止该会话(会话: ${stale.sessionTitle})")
+                    Logger.w("ChatGenService", "Generation heartbeat timed out, stopping this session (session: ${stale.sessionTitle})")
                     // 多会话并发时只取消失去心跳的任务,不能把其他正常任务的前台保活
                     // 一起关掉。取消路径会由 ChatViewModel 持久化部分回复/检查点。
                     chatGenerationManager.stop(stale.sessionId)
@@ -192,7 +192,7 @@ class ChatGenerationService : Service() {
         // 通知栏残留一条字数不变的"动态进度条"(用户实测)。
         notificationManager.clearLiveProgress()
         runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
-            .onFailure { Logger.w("ChatGenService", "移除前台状态失败", it) }
+            .onFailure { Logger.w("ChatGenService", "Removing the foreground state failed", it) }
         if (latestStartId > 0) {
             stopSelfResult(latestStartId)
         } else {
@@ -205,12 +205,12 @@ class ChatGenerationService : Service() {
     override fun onTimeout(startId: Int, foregroundServiceType: Int) {
         Logger.w(
             "ChatGenService",
-            "前台服务达到系统时限,取消活跃生成并停止服务 (startId=$startId, type=$foregroundServiceType)",
+            "Foreground service reached the system time limit, cancelling active generations and stopping the service (startId=$startId, type=$foregroundServiceType)",
         )
         runCatching { stopService() }
-            .onFailure { Logger.e("ChatGenService", "系统超时后停止前台服务失败", it) }
+            .onFailure { Logger.e("ChatGenService", "Stopping the foreground service after the system timeout failed", it) }
         runCatching { chatGenerationManager.stop() }
-            .onFailure { Logger.e("ChatGenService", "系统超时后取消生成失败", it) }
+            .onFailure { Logger.e("ChatGenService", "Cancelling generation after the system timeout failed", it) }
     }
 
     /**

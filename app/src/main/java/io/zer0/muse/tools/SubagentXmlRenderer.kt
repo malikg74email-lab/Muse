@@ -77,7 +77,7 @@ object SubagentXmlRenderer {
         val body = if (success) {
             escapeXml(summary)
         } else {
-            val errText = error?.takeIf { it.isNotBlank() } ?: "未知错误"
+            val errText = error?.takeIf { it.isNotBlank() } ?: "Unknown error"
             "[FAILED] ${escapeXml(errText)}" +
                 if (summary.isNotBlank()) "\n[PARTIAL] ${escapeXml(summary)}" else ""
         }
@@ -103,7 +103,7 @@ object SubagentXmlRenderer {
      * 让主 agent 知道子 agent 是被配额截断而非自然完成。
      */
     fun renderBudgetExhausted(maxToolCalls: Int): String {
-        return "[NOTE] 子 agent 已达到工具调用配额上限($maxToolCalls),基于已收集信息输出总结。"
+        return "[NOTE] The sub-agent has reached its tool-call quota limit ($maxToolCalls); the summary is output from the information collected so far."
     }
 
     /** XML 特殊字符转义。 */

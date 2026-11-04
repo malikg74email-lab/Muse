@@ -20,7 +20,7 @@ enum class ToolPermission {
 
 /** 中文短标签(错误提示与日志)。 */
 fun ToolPermission.shortLabel(): String = when (this) {
-    ToolPermission.ACCESSIBILITY -> "无障碍"
+    ToolPermission.ACCESSIBILITY -> "Accessibility"
     ToolPermission.SHELL_TIER -> "Shizuku/Root"
     ToolPermission.TERMUX -> "Termux"
 }
@@ -57,7 +57,7 @@ data class ToolPermissionStatus(
     }
 
     /** 需求集合的中文描述(如"无障碍 或 Shizuku/Root")。 */
-    fun describe(required: Set<ToolPermission>): String = required.joinToString(" 或 ") { it.shortLabel() }
+    fun describe(required: Set<ToolPermission>): String = required.joinToString(" or ") { it.shortLabel() }
 
     /** 英文描述(find_tools 输出)。 */
     fun describeEn(required: Set<ToolPermission>): String = required.joinToString(" or ") { it.enLabel() }

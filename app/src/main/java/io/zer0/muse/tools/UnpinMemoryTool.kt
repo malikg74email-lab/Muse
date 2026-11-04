@@ -11,8 +11,8 @@ object UnpinMemoryTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "unpin_memory",
-        description = "取消一条置顶记忆。用户要求忘掉此前置顶的内容," +
-            "或置顶信息已不再准确时使用。",
+        description = "Unpin a pinned memory. Use when the user asks to forget previously pinned content," +
+            "or when the pinned information is no longer accurate.",
         parameters = mapOf(
             "keyword" to "Optional. Remove the first pinned memory whose content contains this keyword.",
             "id" to "Optional. Remove by exact memory id prefix.",

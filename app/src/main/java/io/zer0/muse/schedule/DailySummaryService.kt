@@ -60,7 +60,7 @@ class DailySummaryService(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "读取每日总结时段失败,跳过前台补偿: ${e.message}", e)
+            Logger.w(TAG, "Reading the daily summary time slots failed, skipping the foreground catch-up: ${e.message}", e)
             return@withLock false
         }
         val dueHour = latestDueDailySummaryHour(currentMinutes, configuredSlots)
@@ -80,7 +80,7 @@ class DailySummaryService(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.w(TAG, "读取每日总结通知开关失败,按关闭通知处理: ${e.message}", e)
+            Logger.w(TAG, "Reading the daily summary notification switch failed, treating notifications as off: ${e.message}", e)
             dailySummaryNotificationsEnabledOrFalse(null)
         }
         generateForSlotLocked(slotKey, summaryDate, notificationsEnabled)
@@ -93,12 +93,12 @@ class DailySummaryService(
 
     private suspend fun generateForSlotLocked(slotKey: String, summaryDate: LocalDate, notificationsEnabled: Boolean): Boolean {
         if (settings.isDailySummarySlotCompleted(slotKey)) {
-            Logger.d(TAG, "每日总结时点已完成,跳过: $slotKey")
+            Logger.d(TAG, "Daily summary slot already completed, skipped: $slotKey")
             return true
         }
         var claimed = resultOf { settings.claimDailySummarySlot(slotKey) }
             .onError { message, throwable ->
-                Logger.w(TAG, "每日总结时点抢占失败($slotKey): ${throwable?.message ?: message}")
+                Logger.w(TAG, "Claiming the daily summary slot failed ($slotKey): ${throwable?.message ?: message}")
             }
             .getOrNull() ?: false
         if (!claimed && slotKey !in activeSlots && !settings.isDailySummarySlotCompleted(slotKey)) {
@@ -108,7 +108,7 @@ class DailySummaryService(
             claimed = resultOf { settings.claimDailySummarySlot(slotKey) }.getOrNull() ?: false
         }
         if (!claimed) {
-            Logger.d(TAG, "每日总结时点正在执行或已抢占,跳过: $slotKey")
+            Logger.d(TAG, "Daily summary slot is running or already claimed, skipped: $slotKey")
             return false
         }
         activeSlots += slotKey
@@ -116,13 +116,13 @@ class DailySummaryService(
             val generated = resultOf {
                 generateAndDeliver(slotKey, summaryDate, notificationsEnabled)
             }.onError { message, throwable ->
-                Logger.w(TAG, "每日总结生成失败($slotKey): ${throwable?.message ?: message}")
+                Logger.w(TAG, "Daily summary generation failed ($slotKey): ${throwable?.message ?: message}")
             }.getOrNull() == true
             if (!generated) {
                 // 只有未保存成功时才释放占位，避免一次瞬时错误永久吞掉该时点。
                 resultOf { settings.releaseDailySummarySlot(slotKey) }
                     .onError { message, throwable ->
-                        Logger.w(TAG, "释放每日总结时点失败($slotKey): ${throwable?.message ?: message}")
+                        Logger.w(TAG, "Releasing the daily summary slot failed ($slotKey): ${throwable?.message ?: message}")
                     }
             }
             generated
@@ -148,7 +148,7 @@ class DailySummaryService(
             .sortedByDescending { it.createdAt }
             .take(30)
             .mapNotNull { fact ->
-                val timePart = fact.time?.takeIf { it.isNotBlank() }?.let { " (时间:$it)" } ?: ""
+                val timePart = fact.time?.takeIf { it.isNotBlank() }?.let { " (time: $it)" } ?: ""
                 "${fact.fact}$timePart"
             }
 
@@ -160,12 +160,12 @@ class DailySummaryService(
         ) {
             generateSummary(chatService, todayMessages, todayFacts)
         } else {
-            Logger.i(TAG, "每日总结素材不足(有效消息=$effectiveUserCount, facts=${todayFacts.size}),使用轻量问候")
+            Logger.i(TAG, "Daily summary material insufficient (effective messages=$effectiveUserCount, facts=${todayFacts.size}), using the light greeting")
             lightGreeting()
         }
 
         if (summary.isNullOrBlank()) {
-            Logger.w(TAG, "每日总结生成结果为空,跳过")
+            Logger.w(TAG, "Daily summary generation result is empty, skipped")
             return false
         }
 
@@ -174,15 +174,15 @@ class DailySummaryService(
         settings.completeDailySummarySlot(slotKey)
         val manager = notificationManager
         if (manager == null) {
-            Logger.w(TAG, "MuseNotificationManager 未就绪,每日总结已保存但未发送通知")
+            Logger.w(TAG, "MuseNotificationManager not ready; the daily summary was saved but no notification was sent")
             return true
         }
         if (manager.isAppForeground()) {
-            Logger.d(TAG, "每日总结:应用在前台,跳过通知(内容已保存,首页问候语可见)")
+            Logger.d(TAG, "Daily summary: app is in the foreground, skipping the notification (content saved; visible in the home greeting)")
             return true
         }
         if (!notificationsEnabled) {
-            Logger.d(TAG, "每日总结已保存,推送开关关闭,首页问候语可见")
+            Logger.d(TAG, "Daily summary saved; push switch is off; visible in the home greeting")
             return true
         }
         manager.notifyReminder(
@@ -191,7 +191,7 @@ class DailySummaryService(
             notificationId = DailySummaryWorker.NOTIF_ID_DAILY_SUMMARY,
             target = io.zer0.muse.notification.MuseNotificationTarget.Home,
         )
-        Logger.i(TAG, "每日总结已保存并推送: ${summary.take(40)}...")
+        Logger.i(TAG, "Daily summary saved and pushed: ${summary.take(40)}...")
         return true
     }
 
@@ -200,31 +200,31 @@ class DailySummaryService(
         val hasContent = todayMessages.isNotEmpty() || facts.isNotEmpty()
         val systemPrompt = if (hasContent) {
             """
-你是用户的陪伴助手。请根据真实素材写一条晚间今日小结。
-规则:口语、像朋友复盘;只挑 1 个最重要的重点;不编造未发生的事;输出 18-40 字;
-只输出一行正文,不要标题、前缀、引号、MOOD、反思或换行;
-不要提及聊天次数、消息条数等统计信息,不要用“记下”“记录”之类的词,直接说事情本身。
-素材不足以提炼重点时,只写一句自然的晚间问候,不要强行总结、不要复述素材原句。
+You are the user's companion assistant. Based on the real material, write an evening recap of today in Chinese.
+Rules: colloquial, like a friend recapping; pick only the 1 most important point; do not fabricate things that did not happen; output 18-40 characters;
+output exactly one line of body text, with no title, prefix, quotes, MOOD, reflection or line breaks;
+Do not mention statistics such as chat counts or message counts; do not use words like “noted down” or “recorded”; state the matter itself directly.
+When the material is insufficient to extract a key point, write only one natural evening greeting; do not force a summary and do not repeat the material verbatim.
             """.trimIndent()
         } else {
             """
-你是用户的陪伴助手。用户今天没有留下可用素材,请写一句自然的晚间问候。
-不要编造今天发生的事;可以问候或轻轻问一句过得怎么样;16 字以内;只输出一行正文。
+You are the user's companion assistant. The user left no usable material today; please write one natural evening greeting in Chinese.
+Do not fabricate things that happened today; you may greet them or gently ask how their day went; within 16 characters; output exactly one line of body text.
             """.trimIndent()
         }
         val userContent = buildString {
             appendLine("<summary_material>")
             if (todayMessages.isNotEmpty()) {
-                appendLine("今天用户说的话(按时间顺序):")
+                appendLine("What the user said today (in time order):")
                 todayMessages.forEach { message ->
                     appendLine("- ${message.content.replace('\n', ' ').take(120)}")
                 }
             }
             if (facts.isNotEmpty()) {
-                appendLine("用户近期事项(只有与今天相关或明确临近的事项才可提):")
+                appendLine("The user's recent items (mention only items relevant to today or clearly imminent):")
                 facts.take(10).forEach { appendLine("- $it") }
             }
-            if (!hasContent) appendLine("没有可用素材。")
+            if (!hasContent) appendLine("No material available.")
             appendLine("</summary_material>")
         }
         return resultOf {
@@ -251,7 +251,7 @@ class DailySummaryService(
                 }
             }
         }.onError { message, throwable ->
-            Logger.w(TAG, "每日总结 LLM 调用失败: ${throwable?.message ?: message}")
+            Logger.w(TAG, "Daily summary LLM call failed: ${throwable?.message ?: message}")
         }.getOrNull()?.let { raw ->
             // v2.7: 只归一化 + 宽松安全上限，不做 24 字硬截断（长度由提示词/maxTokens 控制）。
             GreetingHelper.normalizeGreetingText(raw, SUMMARY_MAX_CHARS)
@@ -267,7 +267,7 @@ class DailySummaryService(
      *
      * 摘要是一次生成、长期复用的，不该携带会过期的时段信息，只给内容本身。
      */
-    private fun lightGreeting(): String = "今天还没聊什么，想到什么随时找我。"
+    private fun lightGreeting(): String = "We haven't chatted yet today — come to me whenever something comes to mind."
 
     private fun buildLocalSummary(todayMessages: List<UIMessage>, facts: List<String>): String {
         // v1.0.92: 问候区定位为"助手快速提醒空间" —
@@ -279,10 +279,10 @@ class DailySummaryService(
             ?.take(20)
         val raw = when {
             !firstFact.isNullOrBlank() -> firstFact
-            todayMessages.any { it.content.isNotBlank() } -> "今天辛苦了，早点休息。"
-            else -> "今天还没有新的对话。"
+            todayMessages.any { it.content.isNotBlank() } -> "You worked hard today; get some rest early."
+            else -> "No new conversations yet today."
         }
-        return GreetingHelper.normalizeGreetingText(raw, SUMMARY_MAX_CHARS) ?: "今天还没有新的对话。"
+        return GreetingHelper.normalizeGreetingText(raw, SUMMARY_MAX_CHARS) ?: "No new conversations yet today."
     }
 
     companion object {
@@ -303,11 +303,11 @@ class DailySummaryService(
         /** v2.x: 硬写总结所需的最少有效用户消息数(低于此值且无 fact 时走轻量问候)。 */
         private const val MIN_MESSAGES_FOR_SUMMARY = 3
         private val SUMMARY_TITLES = listOf(
-            "今日小结",
-            "今天过得怎么样",
-            "睡前复盘一下",
-            "今天你聊了不少",
-            "今日回顾",
+            "Today's summary",
+            "How was your day",
+            "A quick review before bed",
+            "You chatted quite a bit today",
+            "Today's recap",
         )
     }
 }

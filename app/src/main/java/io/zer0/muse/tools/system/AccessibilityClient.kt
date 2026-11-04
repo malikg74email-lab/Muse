@@ -117,7 +117,7 @@ class AccessibilityClient(private val context: Context) {
                         },
                         0,
                     )
-                }.onFailure { Logger.w(TAG, "监听 Provider binder 死亡失败: ${it.message}") }
+                }.onFailure { Logger.w(TAG, "Failed to watch the Provider binder death: ${it.message}") }
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
@@ -147,7 +147,7 @@ class AccessibilityClient(private val context: Context) {
                 runCatching {
                     context.bindService(intent, providerConnection, Context.BIND_AUTO_CREATE)
                 }.onFailure {
-                    Logger.w(TAG, "绑定独立 Provider 失败: ${it.message}")
+                    Logger.w(TAG, "Failed to bind the standalone Provider: ${it.message}")
                 }.getOrDefault(false)
             if (ok) providerBindRequested = true
         }
@@ -172,7 +172,7 @@ class AccessibilityClient(private val context: Context) {
                     } == true
             }.onFailure {
                 // 部分定制 ROM 对无障碍服务列表访问会抛异常,继续走 Secure 设置回退。
-                Logger.w(TAG, "读取系统无障碍服务列表失败: ${it.message}")
+                Logger.w(TAG, "Failed to read the system accessibility service list: ${it.message}")
             }.getOrDefault(false)
         if (managerResult) return true
 
@@ -183,7 +183,7 @@ class AccessibilityClient(private val context: Context) {
                     Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                 )
             }.onFailure {
-                Logger.w(TAG, "读取已启用无障碍服务设置失败: ${it.message}")
+                Logger.w(TAG, "Failed to read the enabled accessibility services setting: ${it.message}")
             }.getOrNull()
         return containsEnabledService(rawEnabledServices, packageName, className)
     }
@@ -249,13 +249,13 @@ class AccessibilityClient(private val context: Context) {
                 // binder 死亡/远程异常:清空以便下次重绑,回落应用内服务
                 providerProxy = null
                 providerBindRequested = false
-                Logger.w(TAG, "Provider 调用失败,回落应用内服务: ${result.exceptionOrNull()?.message}")
+                Logger.w(TAG, "Provider call failed, falling back to the in-app service: ${result.exceptionOrNull()?.message}")
             }
         }
 
         val service = MuseAccessibilityService.instance ?: return defaultOnError
         return runCatching { block(LocalOps(service)) }.getOrElse { e ->
-            Logger.w(TAG, "服务调用失败: ${e.message}")
+            Logger.w(TAG, "Service call failed: ${e.message}")
             defaultOnError
         }
     }

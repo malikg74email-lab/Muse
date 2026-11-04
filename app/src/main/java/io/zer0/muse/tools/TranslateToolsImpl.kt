@@ -20,9 +20,9 @@ class TranslateToolsImpl {
 
     suspend fun execTranslate(args: Map<String, String>): String {
         val text = args["text"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: text"
+            ?: return "Missing required parameter: text"
         val targetLanguage = args["target_language"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: target_language"
+            ?: return "Missing required parameter: target_language"
         val sourceLanguage = args["source_language"]?.takeIf { it.isNotBlank() }
         val style = args["style"]?.takeIf { it.isNotBlank() } ?: "通用"
 
@@ -40,9 +40,9 @@ class TranslateToolsImpl {
 
         // ChatService 通过 Koin 获取(Safe Mode 下 Koin 可能未初始化,走 resultOf 兜底)
         val koin = resultOf { GlobalContext.get() }.getOrNull()
-            ?: return "翻译服务不可用(Koin 未初始化)"
+            ?: return "Translation service unavailable (Koin not initialised)"
         val chatService = resultOf { koin.get<ChatService>() }.getOrNull()
-            ?: return "翻译服务不可用(ChatService 未注册)"
+            ?: return "Translation service unavailable (ChatService not registered)"
 
         return resultOf {
             // 优先 completeText(一次性返回,速度快)
@@ -57,12 +57,12 @@ class TranslateToolsImpl {
                 throw e
             } catch (e: Exception) {
                 // 其他错误也降级流式(网络抖动等)
-                Logger.w("ToolRegistry", "translate completeText 失败,降级 streamChat", e)
+                Logger.w("ToolRegistry", "translate completeText failed, degrading to streamChat", e)
                 collectTranslateStream(chatService, messages)
             }
-            if (translated.isEmpty()) "翻译结果为空,请检查原文或目标语言。" else translated
-        }.onError { msg, _ -> Logger.w("ToolRegistry", "translate 失败: $msg") }
-            .getOrNull() ?: "翻译失败,请稍后重试。"
+            if (translated.isEmpty()) "The translation result is empty; please check the source text or target language." else translated
+        }.onError { msg, _ -> Logger.w("ToolRegistry", "translate failed: $msg") }
+            .getOrNull() ?: "Translation failed, please try again later."
     }
 
     /** 流式收集翻译结果(completeText 不可用时的降级路径)。 */

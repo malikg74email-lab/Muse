@@ -60,10 +60,10 @@ object BrowserAutomationTool {
         ToolRegistry.ToolDef(
             name = TOOL_NAVIGATE,
             // v1.0.75 fix (工具审查 02): 补时序依赖声明
-            description = "浏览器自动化:导航到指定 URL。必须先调用本工具完成导航,再使用 browser_click/browser_type/browser_extract 操作页面。所有浏览器工具返回 JSON,含 success 与 data/error。" +
-                "URL 可省略 scheme(如 example.com 自动补 https://)。超时 10 秒。",
+            description = "Browser automation: navigate to the specified URL. You must call this tool to navigate first, then use browser_click/browser_type/browser_extract on the page. All browser tools return JSON containing success and data/error." +
+                "The URL may omit the scheme (e.g. example.com automatically gets https://). 10-second timeout.",
             parameters = mapOf(
-                "url" to "必填,目标 URL,如 https://example.com 或 example.com",
+                "url" to "Required, target URL, e.g. https://example.com or example.com",
             ),
             required = setOf("url"),
             category = "built-in",
@@ -71,12 +71,12 @@ object BrowserAutomationTool {
         ),
         ToolRegistry.ToolDef(
             name = TOOL_CLICK,
-            description = "浏览器自动化:点击目标元素。两种定位方式二选一:" +
-                "① selector(CSS 选择器,语法同 document.querySelector);" +
-                "② numberId(browser_snapshot 返回的元素编号,推荐——无需了解页面结构)。",
+            description = "Browser automation: click the target element. Two positioning methods, choose one:" +
+                "1) selector (CSS selector, same syntax as document.querySelector);" +
+                "2) numberId (the element number returned by browser_snapshot, recommended — no need to know the page structure).",
             parameters = mapOf(
-                "selector" to "可选,CSS 选择器,如 '#login-btn' 或 'button.submit'",
-                "numberId" to "可选,快照元素编号(与 selector 二选一,提供时优先)",
+                "selector" to "Optional, CSS selector, e.g. '#login-btn' or 'button.submit'",
+                "numberId" to "Optional, snapshot element number (alternative to selector; takes priority when provided)",
             ),
             required = emptySet(),
             category = "built-in",
@@ -84,13 +84,13 @@ object BrowserAutomationTool {
         ),
         ToolRegistry.ToolDef(
             name = TOOL_TYPE,
-            description = "浏览器自动化:向目标 input/textarea 输入文本。" +
-                "定位方式二选一:selector(CSS 选择器)或 numberId(快照编号,推荐)。" +
-                "自动触发 input + change 事件以兼容 React/Vue 等框架。",
+            description = "Browser automation: type text into the target input/textarea." +
+                "Positioning, choose one: selector (CSS selector) or numberId (snapshot number, recommended)." +
+                "Automatically fires input + change events for compatibility with frameworks such as React/Vue.",
             parameters = mapOf(
-                "selector" to "可选,CSS 选择器,如 '#search-input'",
-                "numberId" to "可选,快照元素编号(与 selector 二选一,提供时优先)",
-                "text" to "必填,要输入的文本内容",
+                "selector" to "Optional, CSS selector, e.g. '#search-input'",
+                "numberId" to "Optional, snapshot element number (alternative to selector; takes priority when provided)",
+                "text" to "Required, the text content to input",
             ),
             required = setOf("text"),
             category = "built-in",
@@ -99,11 +99,11 @@ object BrowserAutomationTool {
         ToolRegistry.ToolDef(
             name = TOOL_EXTRACT,
             // v1.0.75 fix (工具审查 02): 与 parse_link 区分
-            description = "浏览器自动化:提取 CSS 选择器命中元素的 textContent。" +
-                "未命中返回空串。可用于抓取商品价格、文章正文、列表项等。" +
-                "区别于 parse_link: 本工具读浏览器当前已加载页面,parse_link 从 URL 抓取独立页面。",
+            description = "Browser automation: extract the textContent of elements matched by a CSS selector." +
+                "Returns an empty string when nothing matches. Can be used to grab product prices, article bodies, list items, etc." +
+                "Different from parse_link: this tool reads the browser's currently loaded page; parse_link fetches a standalone page from a URL.",
             parameters = mapOf(
-                "selector" to "必填,CSS 选择器,如 '.price' 或 'article h1'",
+                "selector" to "Required, CSS selector, e.g. '.price' or 'article h1'",
             ),
             required = setOf("selector"),
             category = "built-in",
@@ -111,7 +111,7 @@ object BrowserAutomationTool {
         ),
         ToolRegistry.ToolDef(
             name = TOOL_SCROLL_BOTTOM,
-            description = "浏览器自动化:滚动到页面底部。常用于无限滚动场景加载更多内容(如商品列表、动态流)。",
+            description = "Browser automation: scroll to the bottom of the page. Often used in infinite-scroll scenarios to load more content (e.g. product lists, feeds).",
             parameters = emptyMap(),
             required = emptySet(),
             category = "built-in",
@@ -119,8 +119,8 @@ object BrowserAutomationTool {
         ),
         ToolRegistry.ToolDef(
             name = TOOL_GET_HTML,
-            description = "浏览器自动化:获取当前页面的完整 HTML 源码。" +
-                "可用于分析页面结构、提取表单字段等;长结果会提供分段读取入口。",
+            description = "Browser automation: get the current page's full HTML source." +
+                "Can be used to analyse page structure, extract form fields, etc.; long results offer a paged-reading entry.",
             parameters = emptyMap(),
             required = emptySet(),
             category = "built-in",
@@ -133,9 +133,9 @@ object BrowserAutomationTool {
     /** 页面结构快照工具定义。 */
     private fun snapshotToolDef() = ToolRegistry.ToolDef(
         name = TOOL_SNAPSHOT,
-        description = "浏览器自动化:提取当前页面的结构化快照 — 标题/URL/可交互元素" +
-            "(链接/按钮/输入框,带连续编号)/正文预览。用它了解页面结构,再用 " +
-            "browser_click/browser_type 的 numberId 按编号操作。",
+        description = "Browser automation: extract a structured snapshot of the current page — title/URL/interactive elements" +
+            "(links/buttons/input fields, with sequential numbers)/body preview. Use it to understand the page structure, then operate by number with" +
+            "browser_click/browser_type's numberId.",
         parameters = emptyMap(),
         required = emptySet(),
         category = "built-in",
@@ -148,9 +148,9 @@ object BrowserAutomationTool {
      */
     private fun screenshotToolDef() = ToolRegistry.ToolDef(
         name = TOOL_SCREENSHOT,
-        description = "浏览器自动化:截取当前页面的可视渲染图(真实像素,含图片/CSS 布局)," +
-            "以图片形式回传给模型。当页面内容需要“看”(如图片、图表、验证码、排版效果、" +
-            "canvas/地图/视频帧)而不只是看 HTML 结构时使用。",
+        description = "Browser automation: capture the visible rendering of the current page (real pixels, including images/CSS layout)," +
+            "and return it to the model as an image. Use it when the page content needs to be 'seen' (e.g. images, charts, captchas, layout effects," +
+            "canvas/maps/video frames) rather than just the HTML structure.",
         parameters = emptyMap(),
         required = emptySet(),
         category = "built-in",
@@ -174,10 +174,10 @@ object BrowserAutomationTool {
             when (toolName) {
                 TOOL_NAVIGATE -> {
                     val url = args["url"]?.takeIf { it.isNotBlank() }
-                        ?: return@runBlocking buildResult(success = false, error = "参数 url 缺失或为空")
+                        ?: return@runBlocking buildResult(success = false, error = "Parameter url is missing or empty")
                     browserManager.navigate(url).fold(
-                        onSuccess = { buildResult(success = true, data = "已导航到: $url") },
-                        onFailure = { e -> buildResult(success = false, error = e.message ?: "导航失败") },
+                        onSuccess = { buildResult(success = true, data = "Navigated to: $url") },
+                        onFailure = { e -> buildResult(success = false, error = e.message ?: "Navigation failed") },
                     )
                 }
                 TOOL_CLICK -> {
@@ -189,61 +189,61 @@ object BrowserAutomationTool {
                                 val ok = raw.contains("OK")
                                 buildResult(
                                     success = true,
-                                    data = if (ok) "已点击编号 $numberId 元素" else "编号 $numberId 未找到(页面可能已刷新,请重新 browser_snapshot)",
+                                    data = if (ok) "Clicked element number $numberId" else "Number $numberId not found (the page may have refreshed; run browser_snapshot again)",
                                 )
                             },
-                            onFailure = { e -> buildResult(success = false, error = e.message ?: "点击失败") },
+                            onFailure = { e -> buildResult(success = false, error = e.message ?: "Click failed") },
                         )
                         selector != null -> browserManager.click(selector).fold(
-                            onSuccess = { hit -> buildResult(success = true, data = if (hit) "已点击元素: $selector" else "未命中元素: $selector") },
-                            onFailure = { e -> buildResult(success = false, error = e.message ?: "点击失败") },
+                            onSuccess = { hit -> buildResult(success = true, data = if (hit) "Clicked element: $selector" else "No element matched: $selector") },
+                            onFailure = { e -> buildResult(success = false, error = e.message ?: "Click failed") },
                         )
-                        else -> buildResult(success = false, error = "参数 selector 或 numberId 至少需要一个")
+                        else -> buildResult(success = false, error = "Parameter selector or numberId: at least one is required")
                     }
                 }
                 TOOL_TYPE -> {
                     val numberId = args["numberId"]?.trim()?.toIntOrNull()
                     val selector = args["selector"]?.takeIf { it.isNotBlank() }
-                    val text = args["text"] ?: return@runBlocking buildResult(success = false, error = "参数 text 缺失")
+                    val text = args["text"] ?: return@runBlocking buildResult(success = false, error = "Parameter text is missing")
                     when {
                         numberId != null -> browserManager.evaluateJs(buildNumberedTypeJs(numberId, text)).fold(
                             onSuccess = { raw ->
                                 val ok = raw.contains("OK")
                                 buildResult(
                                     success = true,
-                                    data = if (ok) "已向编号 $numberId 元素输入文本" else "编号 $numberId 未找到(页面可能已刷新,请重新 browser_snapshot)",
+                                    data = if (ok) "Text entered into element number $numberId" else "Number $numberId not found (the page may have refreshed; run browser_snapshot again)",
                                 )
                             },
-                            onFailure = { e -> buildResult(success = false, error = e.message ?: "输入失败") },
+                            onFailure = { e -> buildResult(success = false, error = e.message ?: "Input failed") },
                         )
                         selector != null -> browserManager.type(selector, text).fold(
-                            onSuccess = { hit -> buildResult(success = true, data = if (hit) "已输入文本到: $selector" else "未命中元素: $selector") },
-                            onFailure = { e -> buildResult(success = false, error = e.message ?: "输入失败") },
+                            onSuccess = { hit -> buildResult(success = true, data = if (hit) "Text entered into: $selector" else "No element matched: $selector") },
+                            onFailure = { e -> buildResult(success = false, error = e.message ?: "Input failed") },
                         )
-                        else -> buildResult(success = false, error = "参数 selector 或 numberId 至少需要一个")
+                        else -> buildResult(success = false, error = "Parameter selector or numberId: at least one is required")
                     }
                 }
                 TOOL_EXTRACT -> {
                     val selector = args["selector"]?.takeIf { it.isNotBlank() }
-                        ?: return@runBlocking buildResult(success = false, error = "参数 selector 缺失或为空")
+                        ?: return@runBlocking buildResult(success = false, error = "Parameter selector is missing or empty")
                     browserManager.extractText(selector).fold(
                         onSuccess = { text -> buildResult(success = true, data = text) },
                         onFailure = { e ->
-                            Logger.w(TAG, "extractText 失败: selector=$selector | url=${browserManager.currentUrl.value} | err=${e.message}")
-                            buildResult(success = false, error = e.message ?: "提取失败")
+                            Logger.w(TAG, "extractText failed: selector=$selector | url=${browserManager.currentUrl.value} | err=${e.message}")
+                            buildResult(success = false, error = e.message ?: "Extraction failed")
                         },
                     )
                 }
                 TOOL_SCROLL_BOTTOM -> {
                     browserManager.scrollToBottom().fold(
-                        onSuccess = { buildResult(success = true, data = "已滚动到底部") },
-                        onFailure = { e -> buildResult(success = false, error = e.message ?: "滚动失败") },
+                        onSuccess = { buildResult(success = true, data = "Scrolled to the bottom") },
+                        onFailure = { e -> buildResult(success = false, error = e.message ?: "Scroll failed") },
                     )
                 }
                 TOOL_SNAPSHOT -> {
                     browserManager.evaluateJs(SNAPSHOT_JS).fold(
                         onSuccess = { json -> buildResult(success = true, data = json) },
-                        onFailure = { e -> buildResult(success = false, error = e.message ?: "快照提取失败") },
+                        onFailure = { e -> buildResult(success = false, error = e.message ?: "Snapshot extraction failed") },
                     )
                 }
                 TOOL_GET_HTML -> {
@@ -254,26 +254,26 @@ object BrowserAutomationTool {
                     browserManager.captureScreenshot().fold(
                         onSuccess = { base64 ->
                             if (base64.isBlank()) {
-                                buildResult(success = false, error = "截图内容为空（页面可能尚未渲染完成）")
+                                buildResult(success = false, error = "Screenshot content is empty (the page may not have finished rendering)")
                             } else {
                                 // v2.6.0: 截图 results 以特殊字段承载，编排器据此追加一条带图的
                                 // 用户消息（工具结果本身无法携带图片给模型，见 ToolOrchestrator）。
                                 // data 只给模型一个占位提示，实际图片走 screenshot 字段。
                                 val sizeKb = base64.length / 1024
                                 buildScreenshotResult(
-                                    data = "已截取当前页面（约 ${sizeKb}KB，图片已随附）",
+                                    data = "Captured the current page (about ${sizeKb}KB, image attached)",
                                     screenshotBase64 = base64,
                                 )
                             }
                         },
-                        onFailure = { e -> buildResult(success = false, error = e.message ?: "截图失败") },
+                        onFailure = { e -> buildResult(success = false, error = e.message ?: "Screenshot failed") },
                     )
                 }
-                else -> buildResult(success = false, error = "未知工具: $toolName")
+                else -> buildResult(success = false, error = "Unknown tool: $toolName")
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "executeFromArgs 异常: toolName=$toolName, msg=${e.message}", e)
-            buildResult(success = false, error = e.message ?: "执行异常")
+            Logger.e(TAG, "executeFromArgs exception: toolName=$toolName, msg=${e.message}", e)
+            buildResult(success = false, error = e.message ?: "Execution exception")
         }
     }
 

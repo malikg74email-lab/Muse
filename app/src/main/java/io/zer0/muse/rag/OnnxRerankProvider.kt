@@ -144,7 +144,7 @@ class OnnxRerankProvider(
             cachedOutputNames = newSession.outputNames.toList()
             Logger.i(
                 "OnnxRerankProvider",
-                "ONNX rerank session 已加载: model=${File(modelPath).name}, vocab=${newVocab.size} tokens",
+                "ONNX rerank session loaded: model=${File(modelPath).name}, vocab=${newVocab.size} tokens",
             )
         }
     }
@@ -262,7 +262,7 @@ class OnnxRerankProvider(
             vocab = null
             cachedInputNames = null
             cachedOutputNames = null
-        }.onError { msg, e -> Logger.w("OnnxRerankProvider", "close 失败: $msg", e) }
+        }.onError { msg, e -> Logger.w("OnnxRerankProvider", "close failed: $msg", e) }
     }
 
     /** 检查本地 ONNX rerank 是否可用。 */

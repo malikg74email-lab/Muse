@@ -18,8 +18,8 @@ object SubagentCloseTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "subagent_close",
-        description = "关闭一个子代理线程,释放它的会话记账。之后这个 thread_id 不能再用于续接。" +
-            "不再需要该子代理会话时使用。",
+        description = "Close a sub-agent thread and release its session bookkeeping. Afterwards this thread_id can no longer be used to continue." +
+            "Use when the sub-agent session is no longer needed.",
         parameters = mapOf(
             "thread_id" to "Required. The thread id to close (returned by subagent_task launch or subagent_run).",
             "reason" to "Optional. Reason for closing (recorded in logs).",

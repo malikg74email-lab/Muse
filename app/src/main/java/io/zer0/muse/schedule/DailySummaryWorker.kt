@@ -50,13 +50,13 @@ class DailySummaryWorker(
     override suspend fun doWork(): Result {
         val koin = resultOf { GlobalContext.get() }.getOrNull()
         if (koin == null) {
-            Logger.w(TAG, "Koin 未初始化,跳过本次执行")
+            Logger.w(TAG, "Koin not initialized, skipping this run")
             scheduleNext(applicationContext)
             return Result.success()
         }
         val settings = resultOf { koin.get<SettingsRepository>() }.getOrNull()
         if (settings == null) {
-            Logger.w(TAG, "SettingsRepository 解析失败,跳过")
+            Logger.w(TAG, "SettingsRepository resolution failed, skipped")
             scheduleNext(applicationContext)
             return Result.success()
         }
@@ -66,7 +66,7 @@ class DailySummaryWorker(
                 resultOf { settings.scheduleWorkEnabledFlow.first() }.getOrNull(),
             )
         if (!workEnabled) {
-            Logger.i(TAG, "后台调度总控已关闭,跳过每日总结执行体")
+            Logger.i(TAG, "Background scheduling master switch is off, skipping the daily summary body")
             scheduleNext(applicationContext)
             return Result.success()
         }
@@ -89,7 +89,7 @@ class DailySummaryWorker(
         // 关闭时仍保留每日总结生成与首页展示,只按配置时段严格执行。
         val configuredSlotsResult = resultOf { settings.dailySummarySlotsFlow.first() }
             .onError { msg, t ->
-                Logger.w(TAG, "每日总结时段读取失败,跳过本次执行: ${t?.message ?: msg}")
+                Logger.w(TAG, "Reading the daily summary time slots failed, skipping this run: ${t?.message ?: msg}")
             }
         if (configuredSlotsResult.isError) {
             // DataStore 的瞬时读取失败不应让当前唯一任务永久脱链；
@@ -102,7 +102,7 @@ class DailySummaryWorker(
             readFailed = false,
         )
         if (!shouldContinueForConfiguredSlot(slotHour, configuredSlots)) {
-            Logger.i(TAG, "时点 ${slotHour.toString().padStart(2, '0')}:$slotMinute 不在已配置时段内,跳过生成: $slotKey")
+            Logger.i(TAG, "Slot ${slotHour.toString().padStart(2, '0')}:$slotMinute is not within the configured slots, skipping generation: $slotKey")
             // 配置已移除时不要把旧小时重新排到下一天；scheduleNext 会在下次启动/
             // 保存设置时清理对应的唯一任务。
             return Result.success()
@@ -110,10 +110,10 @@ class DailySummaryWorker(
 
         // Worker 与首页前台补偿共用同一个服务；服务内部负责 DataStore 抢占、生成和失败释放。
         val summaryService = resultOf { koin.get<DailySummaryService>() }
-            .onError { msg, t -> Logger.w(TAG, "DailySummaryService 解析失败: ${t?.message ?: msg}") }
+            .onError { msg, t -> Logger.w(TAG, "DailySummaryService resolution failed: ${t?.message ?: msg}") }
             .getOrNull()
         if (summaryService == null) {
-            Logger.w(TAG, "DailySummaryService 未就绪,跳过本次执行: $slotKey")
+            Logger.w(TAG, "DailySummaryService not ready, skipping this run: $slotKey")
         } else {
             resultOf {
                 summaryService.generateForSlot(
@@ -121,7 +121,7 @@ class DailySummaryWorker(
                     summaryDate = summaryDateForTarget(targetDate, slotHour),
                     notificationsEnabled = enabled,
                 )
-            }.onError { msg, t -> Logger.w(TAG, "每日总结生成失败: ${t?.message ?: msg}") }
+            }.onError { msg, t -> Logger.w(TAG, "Daily summary generation failed: ${t?.message ?: msg}") }
         }
 
         // 无论成败都自续期到下一次同一时点
@@ -215,7 +215,7 @@ class DailySummaryWorker(
             }
             val workManager = WorkManager.getInstance(context)
             resultOf { workManager.cancelUniqueWork(UNIQUE_WORK_NAME) }
-                .onError { msg, t -> Logger.w(TAG, "清理旧版每日总结任务失败: ${t?.message ?: msg}") }
+                .onError { msg, t -> Logger.w(TAG, "Cleaning up the legacy daily summary task failed: ${t?.message ?: msg}") }
             // v1.xxx: 旧版本按小时拆分 unique work；配置减少或重排时，必须逐个清理
             // 不再需要的小时，否则它们会在 Worker 中不断自续期。
             val previouslyScheduled = readPersistedScheduledSlots(context)
@@ -225,7 +225,7 @@ class DailySummaryWorker(
                     .onError { msg, t ->
                         Logger.w(
                             TAG,
-                            "清理旧每日总结任务失败(${hour.toString().padStart(2, '0')}:00): ${t?.message ?: msg}",
+                            "Cleaning up the old daily summary task failed (${hour.toString().padStart(2, '0')}:00): ${t?.message ?: msg}",
                         )
                     }
             }
@@ -246,7 +246,7 @@ class DailySummaryWorker(
             val settings = resultOf {
                 GlobalContext.get().get<SettingsRepository>()
             }.getOrNull() ?: run {
-                Logger.w(TAG, "SettingsRepository 未就绪,暂停每日总结进程内调度")
+                Logger.w(TAG, "SettingsRepository not ready, pausing in-process daily summary scheduling")
                 return@launch
             }
             // 单一 collectLatest 负责生命周期：DataStore 时段变更会取消旧的长 delay，
@@ -254,7 +254,7 @@ class DailySummaryWorker(
             val configuredSlotsFlow: Flow<List<Int>?> = settings.dailySummarySlotsFlow.map { slots -> slots }
             configuredSlotsFlow
                 .catch { error ->
-                    Logger.w(TAG, "每日总结时段 Flow 读取失败,暂停进程内调度: ${error.message}", error)
+                    Logger.w(TAG, "Daily summary slot Flow read failed, pausing in-process scheduling: ${error.message}", error)
                     emit(null)
                 }
                 .collectLatest { rawConfigured ->
@@ -283,7 +283,7 @@ class DailySummaryWorker(
                 val koin = org.koin.core.context.GlobalContext.get()
                 koin.get<io.zer0.muse.data.SettingsRepository>().dailySummarySlotsFlow.first()
             }.onError { msg, t ->
-                Logger.w(TAG, "每日总结时段读取失败,暂停自动调度: ${t?.message ?: msg}")
+                Logger.w(TAG, "Reading the daily summary time slots failed, pausing automatic scheduling: ${t?.message ?: msg}")
             }
             val rawConfigured = configuredResult.getOrNull()
             val configured = slotsAfterRead(
@@ -294,7 +294,7 @@ class DailySummaryWorker(
                 return emptyList()
             }
             if (rawConfigured.isNullOrEmpty()) {
-                Logger.w(TAG, "每日总结时段为空或读取失败,回退默认 ${DEFAULT_SUMMARY_SLOTS.size} 时点")
+                Logger.w(TAG, "Daily summary slots are empty or failed to read, falling back to the default ${DEFAULT_SUMMARY_SLOTS.size} slots")
             }
             return configured
         }
@@ -330,7 +330,7 @@ class DailySummaryWorker(
                     ExistingWorkPolicy.KEEP,
                     request,
                 )
-            }.onError { msg, t -> Logger.w(TAG, "进程内每日总结触发失败($key): ${t?.message ?: msg}") }
+            }.onError { msg, t -> Logger.w(TAG, "In-process daily summary trigger failed ($key): ${t?.message ?: msg}") }
         }
 
         /**
@@ -351,7 +351,7 @@ class DailySummaryWorker(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    Logger.w(TAG, "前台补触发读取每日总结时段失败,跳过本次: ${error.message}")
+                    Logger.w(TAG, "Foreground catch-up trigger failed to read the daily summary time slots, skipping this time: ${error.message}")
                     return
                 }
             val due = (dueSlots.ifEmpty { DEFAULT_SUMMARY_SLOTS })
@@ -364,10 +364,10 @@ class DailySummaryWorker(
                 .toString()
             val key = slotKey(targetDate, due, DEFAULT_MINUTE)
             if (!settings.isDailySummarySlotCompleted(key)) {
-                Logger.i(TAG, "前台补触发每日总结: $key")
+                Logger.i(TAG, "Foreground catch-up daily summary trigger: $key")
                 enqueueDueSlot(context, due, DEFAULT_MINUTE)
             } else {
-                Logger.d(TAG, "前台补触发跳过已完成时点: $key")
+                Logger.d(TAG, "Foreground catch-up skipping the completed slot: $key")
             }
         }
 
@@ -398,7 +398,7 @@ class DailySummaryWorker(
                     policy,
                     request,
                 )
-            }.onError { msg, t -> Logger.w(TAG, "每日总结调度失败($key): ${t?.message ?: msg}") }
+            }.onError { msg, t -> Logger.w(TAG, "Daily summary scheduling failed ($key): ${t?.message ?: msg}") }
         }
 
         fun uniqueWorkName(targetHour: Int, targetMinute: Int): String =

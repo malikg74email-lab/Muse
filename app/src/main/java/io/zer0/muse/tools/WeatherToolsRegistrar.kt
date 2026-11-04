@@ -26,8 +26,8 @@ class WeatherToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "get_weather",
-                description = "获取天气信息。通过城市名查询当前天气、温度、湿度、风速等。",
-                parameters = mapOf("location" to "必填,城市名,支持中英文,如 Beijing/上海/London"),
+                description = "Get weather information. Query the current weather, temperature, humidity, wind speed, etc. by city name.",
+                parameters = mapOf("location" to "Required, city name, Chinese and English supported, e.g. Beijing/上海/London"),
                 required = setOf("location"),
                 category = "built-in",
                 riskLevel = ToolRiskLevel.SAFE,
@@ -62,7 +62,7 @@ class WeatherToolsRegistrar(
                     R.string.tool_weather_result,
                     areaName, desc, temp, feelsLike, humidity, windSpeed,
                 )
-            }.onError { msg, _ -> Logger.w("WeatherTools", "查天气失败: $msg") }
+            }.onError { msg, _ -> Logger.w("WeatherTools", "Weather query failed: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_weather_failed, location)
         }
     }

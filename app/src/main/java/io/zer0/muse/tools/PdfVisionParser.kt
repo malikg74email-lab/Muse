@@ -73,10 +73,10 @@ class PdfVisionParser(
         withContext(Dispatchers.IO) {
             val file = File(pdfPath)
             if (!file.exists() || !file.isFile) {
-                return@withContext ParseResult(false, "", 0, 0, "PDF 文件不存在: $pdfPath")
+                return@withContext ParseResult(false, "", 0, 0, "PDF file does not exist: $pdfPath")
             }
             if (!file.canRead()) {
-                return@withContext ParseResult(false, "", 0, 0, "PDF 文件不可读: $pdfPath")
+                return@withContext ParseResult(false, "", 0, 0, "PDF file is not readable: $pdfPath")
             }
 
             // 检查视觉模型可用性(早失败,避免渲染一半才发现无视觉模型)
@@ -86,21 +86,21 @@ class PdfVisionParser(
                     text = "",
                     pagesProcessed = 0,
                     pageCount = 0,
-                    error = "未配置支持视觉的 AI 模型,请在设置中配置支持 vision 的模型(如 GPT-4o / Gemini / Claude)",
+                    error = "No vision-capable AI model configured; please configure a vision-capable model in settings (e.g. GPT-4o / Gemini / Claude)",
                 )
             }
 
             val pfd: ParcelFileDescriptor = runCatching {
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
             }.getOrElse {
-                return@withContext ParseResult(false, "", 0, 0, "打开 PDF 失败: ${it.message}")
+                return@withContext ParseResult(false, "", 0, 0, "Failed to open the PDF: ${it.message}")
             }
 
             val renderer = PdfRenderer(pfd)
             try {
                 val pageCount = renderer.pageCount
                 if (pageCount <= 0) {
-                    return@withContext ParseResult(false, "", 0, 0, "PDF 页数为 0")
+                    return@withContext ParseResult(false, "", 0, 0, "The PDF has 0 pages")
                 }
 
                 // 每页 OCR 结果按 pageIndex 索引存放,保证拼接顺序与原 PDF 一致
@@ -117,7 +117,7 @@ class PdfVisionParser(
                                     val ocrText = ocrClient.ocr(base64)
                                     results[pageIndex] = ocrText
                                 } catch (t: Throwable) {
-                                    Logger.w(TAG, "OCR 第 ${pageIndex + 1} 页失败", t)
+                                    Logger.w(TAG, "OCR failed on page ${pageIndex + 1}", t)
                                     errors[pageIndex] = t.message ?: t.javaClass.simpleName
                                 } finally {
                                     // 每页完成(无论成功失败)都回调进度
@@ -142,20 +142,20 @@ class PdfVisionParser(
 
                 // 全部失败 → success=false
                 if (pagesProcessed == 0) {
-                    val firstError = errors.firstOrNull { it != null } ?: "未知错误"
+                    val firstError = errors.firstOrNull { it != null } ?: "Unknown error"
                     return@withContext ParseResult(
                         success = false,
                         text = "",
                         pagesProcessed = 0,
                         pageCount = pageCount,
-                        error = "所有页面 OCR 失败,首张错误: $firstError",
+                        error = "OCR failed on all pages; first error: $firstError",
                     )
                 }
 
                 // 部分成功也算成功,但拼接错误信息到正文末尾(便于 LLM 知道哪些页失败)
                 val finalText = if (pagesProcessed < pageCount) {
                     val failedPages = errors.indices.filter { errors[it] != null }.joinToString(",") { (it + 1).toString() }
-                    "$text\n\n[注意: 第 $failedPages 页 OCR 失败,内容可能缺失]"
+                    "$text\n\n[Note: OCR failed on page $failedPages; content may be missing]"
                 } else {
                     text
                 }
@@ -220,8 +220,8 @@ class PdfVisionParser(
         const val DEFAULT_TARGET_PAGE_WIDTH = 1024
 
         /** 单次 OCR 提示词(要求模型尽量完整提取文字与结构,不总结)。 */
-        const val OCR_PROMPT = "尽量完整提取本页可见文字与结构,保留标题、列表、表格顺序,不做总结。" +
-            "若是扫描版页面,做 OCR 还原文字。若页面为纯图片(非文字),描述图片主要内容。"
+        const val OCR_PROMPT = "Extract this page's visible text and structure as completely as possible, preserving the order of titles, lists and tables; do not summarise." +
+            "If it is a scanned page, OCR-restore the text. If the page is a pure image (non-text), describe the image's main content."
     }
 }
 
@@ -273,7 +273,7 @@ class DefaultVisionOcrClient(
     }
 
     override suspend fun ocr(imageBase64: String): String {
-        if (imageBase64.isBlank()) return "[OCR 输入为空]"
+        if (imageBase64.isBlank()) return "[OCR input is empty]"
 
         val message = UIMessage(
             role = MessageRole.USER,
@@ -291,12 +291,12 @@ class DefaultVisionOcrClient(
                 mode = ChatRequestMode.UTILITY,
             )
         }.getOrElse {
-            return "[OCR 调用失败: ${it.message}]"
+            return "[OCR call failed: ${it.message}]"
         }
 
         // 优先用 text;空时降级 reasoningContent(推理模型可能把 OCR 内容放 reasoning_content)
         return completion.text.takeIf { it.isNotBlank() }
             ?: completion.reasoningContent?.takeIf { it.isNotBlank() }
-            ?: "[OCR 返回空内容]"
+            ?: "[OCR returned empty content]"
     }
 }

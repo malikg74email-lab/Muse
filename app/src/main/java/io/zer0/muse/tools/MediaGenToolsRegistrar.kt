@@ -26,15 +26,15 @@ class MediaGenToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "generate_image",
-                description = "根据用户描述生成图片。仅在用户明确要求画图、设计、头像、海报等场景调用。会消耗绘图 API 额度。",
+                description = "Generate an image from the user's description. Call only when the user explicitly asks for drawing, design, an avatar, a poster, etc. Consumes drawing API quota.",
                 parameters = mapOf(
-                    "prompt" to "必填。写清主体/风格/构图,英文效果更佳,如 'a cute cat on a sofa, watercolor style'",
-                    "model" to "可选,绘图模型 ID(如 dall-e-3 / gpt-image-1);默认用供应商默认模型",
-                    "size" to "可选,尺寸,如 1024x1024 / 1792x1024 / 1024x1792;Agnes 支持比例 1:1 / 16:9 / 3:2",
-                    "quality" to "可选,如 standard / hd",
-                    "style" to "可选,如 vivid / natural",
-                    "n" to "可选,生成数量,默认 1",
-                    "reference_image" to "可选,参考图 URL 或 base64(图生图/编辑)。本地参考图由用户在审批卡片中选择后注入,LLM 无需填写",
+                    "prompt" to "Required. Describe the subject/style/composition clearly; English works better, e.g. 'a cute cat on a sofa, watercolor style'",
+                    "model" to "Optional, drawing model ID (e.g. dall-e-3 / gpt-image-1); default uses the provider's default model",
+                    "size" to "Optional, size, e.g. 1024x1024 / 1792x1024 / 1024x1792; Agnes supports ratios 1:1 / 16:9 / 3:2",
+                    "quality" to "Optional, e.g. standard / hd",
+                    "style" to "Optional, e.g. vivid / natural",
+                    "n" to "Optional, number to generate, default 1",
+                    "reference_image" to "Optional, reference image URL or base64 (image-to-image/editing). Local reference images are injected after the user selects them on the approval card; the LLM does not need to fill this in",
                 ),
                 required = setOf("prompt"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -46,13 +46,13 @@ class MediaGenToolsRegistrar(
             ToolRegistry.ToolDef(
                 name = "generate_video",
                 // v1.0.75 fix (工具审查 02): 补 prompt 示例与返回说明
-                description = "根据用户描述生成短视频。仅在用户明确要求视频/动画时调用。自动选择支持视频输出的供应商/模型,返回视频 URL。",
+                description = "Generate a short video from the user's description. Call only when the user explicitly asks for a video/animation. Automatically selects a provider/model that supports video output and returns the video URL.",
                 parameters = mapOf(
-                    "prompt" to "必填,视频内容描述,英文或中文均可",
-                    "model" to "可选,视频模型 ID;未指定时自动选择第一个支持视频输出的模型",
-                    "provider_id" to "可选,供应商 ID;未指定时自动选择第一个支持视频输出的供应商",
-                    "duration" to "可选,视频时长(秒),仅支持 5 或 10,默认 5",
-                    "resolution" to "可选,分辨率,如 720p / 1080p,默认 720p",
+                    "prompt" to "Required, video content description; English or Chinese are both fine",
+                    "model" to "Optional, video model ID; when unspecified, automatically selects the first model that supports video output",
+                    "provider_id" to "Optional, provider ID; when unspecified, automatically selects the first provider that supports video output",
+                    "duration" to "Optional, video duration (seconds), only 5 or 10 supported, default 5",
+                    "resolution" to "Optional, resolution, e.g. 720p / 1080p, default 720p",
                 ),
                 required = setOf("prompt"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -63,10 +63,10 @@ class MediaGenToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "generate_qr_code",
-                description = "把任意文本(如链接、WiFi 密码、联系方式)转换为二维码图片,并在对话中展示。",
+                description = "Convert arbitrary text (e.g. a link, a WiFi password, contact details) into a QR code image and display it in the conversation.",
                 parameters = mapOf(
-                    "content" to "必填,要编码成二维码的文本",
-                    "size" to "可选,二维码边长像素,默认 400,范围 128-1024",
+                    "content" to "Required, the text to encode into the QR code",
+                    "size" to "Optional, QR code side length in pixels, default 400, range 128-1024",
                 ),
                 required = setOf("content"),
                 riskLevel = ToolRiskLevel.SAFE,
@@ -83,14 +83,14 @@ class MediaGenToolsRegistrar(
                 name = "send_voice",
                 // 描述里的「发语音 / 语音 / 朗读 / voice」都是 find_tools 的搜索词，别随便删
                 description =
-                "发语音：把一段文字合成为语音消息（发语音 / 朗读给用户听），直接在对话里发出。" +
-                    "每条语音只放一段话；一次回复可以调用多次，按顺序逐段发出，不要一次塞整篇。" +
-                    "只放需要朗读的台词，不要放旁白、动作描写、英文原文或 Markdown。" +
-                    "适合语气、情绪、陪伴性内容；描述、代码、长文本仍用文字回答。" +
-                    "会消耗 TTS 额度；没有中文的段落不会生成语音，单次回复最多 5 条。",
+                "Send voice: synthesize a passage of text into a voice message (send voice / read aloud to the user), sent directly in the conversation." +
+                    "Put only one passage in each voice message; one reply may call it multiple times, sent segment by segment in order — do not cram a whole article into one." +
+                    "Only put the lines that need to be read aloud; do not put narration, action descriptions, English original text or Markdown." +
+                    "Suited to tone, emotion and companionship content; descriptions, code and long texts should still be answered in text." +
+                    "Consumes TTS quota; passages without Chinese will not generate voice; at most 5 per reply.",
                 parameters = mapOf(
-                    "text" to "必填,要念出来的纯文本(一段话,口语化,不要 Markdown / 代码块 / 链接)",
-                    "emotion" to "可选,情绪语气,如 happy / sad / calm / excited;留空用设置里的默认情绪",
+                    "text" to "Required, the plain text to read aloud (one passage, colloquial, no Markdown / code blocks / links)",
+                    "emotion" to "Optional, emotional tone, e.g. happy / sad / calm / excited; leave empty to use the default emotion from settings",
                 ),
                 required = setOf("text"),
                 riskLevel = ToolRiskLevel.NORMAL,

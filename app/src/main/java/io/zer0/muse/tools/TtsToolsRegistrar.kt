@@ -22,11 +22,11 @@ class TtsToolsRegistrar(
             ToolRegistry.ToolDef(
                 name = "speak_text",
                 // v1.0.75 fix (工具审查 02): 补触发场景与返回说明
-                description = "用系统 TTS 把文本朗读出来(用户要求'读出来/念一下/播报'时调用)。返回朗读是否成功的文字确认,不返回音频文件。",
+                description = "Read text aloud with the system TTS (call when the user asks to 'read it out / say it / announce it'). Returns a text confirmation of whether reading succeeded; does not return an audio file.",
                 parameters = mapOf(
-                    "text" to "必填,要朗读的文本",
-                    "language" to "可选,语言代码,如 zh-CN/en-US,默认跟随系统",
-                    "rate" to "可选,语速倍率,如 0.8/1.0/1.5,默认 1.0",
+                    "text" to "Required, the text to read aloud",
+                    "language" to "Optional, language code, e.g. zh-CN/en-US, default follows the system",
+                    "rate" to "Optional, speech-rate multiplier, e.g. 0.8/1.0/1.5, default 1.0",
                 ),
                 required = setOf("text"),
                 category = "built-in",

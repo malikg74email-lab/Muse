@@ -258,7 +258,7 @@ class ToolExecutionPolicy(
     fun clampOutput(output: String): Pair<String, Boolean> {
         if (output.length <= limits.maxOutputChars) return output to false
         val head = output.take(limits.maxOutputChars)
-        return head + "\n\n[输出已截断: 原始 ${output.length} 字符, 上限 ${limits.maxOutputChars}]" to true
+        return head + "\n\n[Output truncated: original ${output.length} characters, limit ${limits.maxOutputChars}]" to true
     }
 
     /**

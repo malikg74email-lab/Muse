@@ -29,10 +29,10 @@ class ChannelReadContextTool(
      */
     fun toolDef() = ToolRegistry.ToolDef(
         name = "channel_read_context",
-        description = "读取更多群聊历史消息,帮助你理解当前对话的完整上下文。" +
-            "默认你只能看到最近几条消息,如果需要更多上下文请调用此工具。",
+        description = "Read more group chat history to help you understand the full context of the current conversation." +
+            "By default you can only see the most recent few messages; if you need more context, call this tool.",
         parameters = mapOf(
-            "limit" to "可选。要读取的历史消息数量,范围 1-50,默认 20",
+            "limit" to "Optional. Number of history messages to read, range 1-50, default 20",
         ),
         required = emptySet(),
         category = "built-in",
@@ -48,7 +48,7 @@ class ChannelReadContextTool(
      */
     suspend fun execute(args: Map<String, String>): String {
         if (groupChatId.isBlank()) {
-            return "错误: 群聊工具未正确绑定(chatId 为空)"
+            return "Error: group chat tool not bound correctly (chatId is empty)"
         }
         val limit = args["limit"]?.toIntOrNull()?.coerceIn(1, 50) ?: 20
         return contextProvider(limit)

@@ -157,7 +157,7 @@ class MediaGenToolsImpl(
      */
     suspend fun execGenerateImage(args: Map<String, String>): String {
         val prompt = args["prompt"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: prompt"
+            ?: return "Missing required parameter: prompt"
         // P2-23: 原实现在缺失参数时回退 ChatViewModel._state.imageGenParams(会话内临时覆盖),
         // 现改为回退「设置→图片生成」的持久化默认值,后台进程同样可读。
         val genConfig = settings.imageGenConfigFlow.first()
@@ -174,9 +174,9 @@ class MediaGenToolsImpl(
             val providerConfig = genConfig.providerId.takeIf { it.isNotBlank() }
                 ?.let { settings.getProviderById(it) }
                 ?: settings.get()
-                ?: return "未配置图片生成供应商,请先添加支持绘图的 Provider(如 OpenAI / Agnes)"
+                ?: return "No image generation provider configured; please add a Provider that supports drawing first (e.g. OpenAI / Agnes)"
             if (providerConfig.apiKey.isBlank() && !providerConfig.allowMissingApiKey) {
-                return "图片生成供应商的 API Key 为空"
+                return "The image generation provider's API Key is empty"
             }
             val model = args["model"]?.takeIf { it.isNotBlank() }
                 ?: genConfig.modelId.takeIf { it.isNotBlank() }
@@ -193,22 +193,22 @@ class MediaGenToolsImpl(
             )
             val urls = imageService.generate(prompt, params, providerConfig)
             if (urls.isEmpty()) {
-                slot.safeReport(MediaGenResult.Failure("未返回结果"))
-                return "图片生成失败: 未返回结果"
+                slot.safeReport(MediaGenResult.Failure("No result returned"))
+                return "Image generation failed: no result returned"
             }
             // A-13: 图片生成可达数十秒,期间可能已发新消息 — 代际令牌失效时媒体不得写入任何消息
             if (slot != null && !slot.isActive()) {
-                Logger.w(TAG, "A-13: 图片生成完成但生成已失效(新一轮生成),跳过媒体写入")
-                return "图片已生成,但当前生成已失效,结果未展示(如需可重新请求)"
+                Logger.w(TAG, "A-13: image generation completed but the generation has expired (a new round of generation), skipping media write")
+                return "The image was generated, but the current generation has expired; the result was not shown (request again if needed)"
             }
             if (slot != null) {
                 slot.safeReport(MediaGenResult.Success(imageUrls = urls))
                 // v1.0.75 fix (用户反馈): 返回给模型的字符串不再包含 URL —
                 //   图片已渲染进对话,模型复述 URL 只会造成"聊天页里塞链接"的体验。
-                "图片已生成并展示在对话中"
+                "Image generated and shown in the conversation"
             } else {
                 // P2-23: 无 UI 会话(定时任务/群聊/子代理)——媒体不进对话,把可访问位置给模型转述
-                "图片已生成(当前无对话界面,未展示),结果位置:\n" +
+                "Image generated (no conversation UI right now, not shown), result location:\n" +
                     externalizeMedia(urls, "img").joinToString("\n")
             }
         } catch (e: CancellationException) {
@@ -217,7 +217,7 @@ class MediaGenToolsImpl(
         } catch (e: Exception) {
             val msg = e.message ?: context.getString(R.string.err_chat_unknown)
             slot.safeReport(MediaGenResult.Failure(msg))
-            "图片生成失败: $msg"
+            "Image generation failed: $msg"
         } finally {
             safeFinish(MediaGenKind.IMAGE)
         }
@@ -235,7 +235,7 @@ class MediaGenToolsImpl(
     @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod")
     suspend fun execGenerateVideo(args: Map<String, String>): String {
         val prompt = args["prompt"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: prompt"
+            ?: return "Missing required parameter: prompt"
         val duration = args["duration"]?.toIntOrNull()?.let { if (it == 5 || it == 10) it else 5 } ?: 5
         val resolution = args["resolution"]?.takeIf { it.isNotBlank() } ?: "720p"
         val requestedModelId = args["model"]?.takeIf { it.isNotBlank() }
@@ -248,33 +248,33 @@ class MediaGenToolsImpl(
         val (providerConfig, videoModel) = when {
             requestedProviderId != null -> {
                 val config = providers.firstOrNull { it.id == requestedProviderId }
-                    ?: return "未找到供应商: $requestedProviderId"
+                    ?: return "Provider not found: $requestedProviderId"
                 val model = requestedModelId?.let { id ->
                     config.models.firstOrNull { it.id == id && it.supportsVideoOutput() }
                 } ?: config.models.firstOrNull { it.supportsVideoOutput() }
-                    ?: return "供应商 ${config.displayName} 没有支持视频输出的模型"
+                    ?: return "Provider ${config.displayName} has no model that supports video output"
                 config to model
             }
             requestedModelId != null -> {
                 val config = providers.firstOrNull { p ->
                     p.models.any { it.id == requestedModelId && it.supportsVideoOutput() }
-                } ?: return "未找到支持模型 $requestedModelId 的供应商"
+                } ?: return "No provider found that supports model $requestedModelId"
                 val model = config.models.first { it.id == requestedModelId && it.supportsVideoOutput() }
                 config to model
             }
             // 优先使用用户配置的视频供应商(VideoGenConfig.providerId)
             videoGenConfig.providerId.isNotBlank() -> {
                 val config = providers.firstOrNull { it.id == videoGenConfig.providerId }
-                    ?: return "未找到视频生成供应商: ${videoGenConfig.providerId}"
+                    ?: return "Video generation provider not found: ${videoGenConfig.providerId}"
                 val model = videoGenConfig.modelId.takeIf { it.isNotBlank() }?.let { id ->
                     config.models.firstOrNull { it.id == id && it.supportsVideoOutput() }
                 } ?: config.models.firstOrNull { it.supportsVideoOutput() }
-                    ?: return "供应商 ${config.displayName} 没有支持视频输出的模型"
+                    ?: return "Provider ${config.displayName} has no model that supports video output"
                 config to model
             }
             else -> {
                 val config = providers.firstOrNull { p -> p.models.any { it.supportsVideoOutput() } }
-                    ?: return "未配置支持视频生成的供应商。请在「设置→模型与服务」中为某个模型开启「视频输出」能力。"
+                    ?: return "No provider that supports video generation is configured. In 'Settings → Models & Services', enable the 'Video output' capability for some model."
                 val model = config.models.first { it.supportsVideoOutput() }
                 config to model
             }
@@ -304,14 +304,14 @@ class MediaGenToolsImpl(
             val videoUrl = videoGenerationService.generateVideo(providerConfig, request).getOrThrow()
             // A-13: 视频生成耗时可观,校验本轮生成仍活跃,避免跨会话污染
             if (slot != null && !slot.isActive()) {
-                Logger.w(TAG, "A-13: 视频生成完成但生成已失效(新一轮生成),跳过媒体写入")
-                return "视频已生成,但当前生成已失效,结果未展示(如需可重新请求)"
+                Logger.w(TAG, "A-13: video generation completed but the generation has expired (a new round of generation), skipping media write")
+                return "The video was generated, but the current generation has expired; the result was not shown (request again if needed)"
             }
             if (slot != null) {
                 slot.safeReport(MediaGenResult.Success(videoFileUri = videoUrl))
-                "视频已生成并展示在对话中"
+                "Video generated and shown in the conversation"
             } else {
-                "视频已生成(当前无对话界面,未展示),结果位置:\n$videoUrl"
+                "Video generated (no conversation UI right now, not shown), result location:\n$videoUrl"
             }
         } catch (e: CancellationException) {
             slot.safeReport(MediaGenResult.Cancelled)
@@ -319,7 +319,7 @@ class MediaGenToolsImpl(
         } catch (e: Exception) {
             val msg = e.message ?: context.getString(R.string.err_chat_unknown)
             slot.safeReport(MediaGenResult.Failure(msg))
-            "视频生成失败: $msg"
+            "Video generation failed: $msg"
         } finally {
             progressJob?.cancel()
             safeFinish(MediaGenKind.VIDEO)
@@ -333,13 +333,13 @@ class MediaGenToolsImpl(
      */
     suspend fun execGenerateQrCode(args: Map<String, String>): String {
         val content = args["content"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: content"
+            ?: return "Missing required parameter: content"
         val size = args["size"]?.toIntOrNull()?.coerceIn(128, 1024) ?: 400
         val slot = currentHost()?.begin(MediaGenKind.QR_CODE)
 
         return try {
             val bitmap = QrCodeGenerator.generateQrBitmap(content, size)
-                ?: return "二维码生成失败"
+                ?: return "QR code generation failed"
             val bytes = java.io.ByteArrayOutputStream().apply {
                 bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, this)
             }.toByteArray()
@@ -348,18 +348,18 @@ class MediaGenToolsImpl(
                 android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
             // A-13: 校验本轮生成仍活跃,避免跨会话污染
             if (slot != null && !slot.isActive()) {
-                Logger.w(TAG, "A-13: 二维码生成完成但生成已失效(新一轮生成),跳过媒体写入")
-                return "二维码已生成,但当前生成已失效,结果未展示(如需可重新请求)"
+                Logger.w(TAG, "A-13: QR code generation completed but the generation has expired (a new round of generation), skipping media write")
+                return "The QR code was generated, but the current generation has expired; the result was not shown (request again if needed)"
             }
             if (slot != null) {
                 slot.safeReport(MediaGenResult.Success(imageUrls = listOf(dataUri)))
-                "二维码生成成功"
+                "QR code generated successfully"
             } else {
                 val path = writePngToCache(bytes, "qr")
-                if (path == null) "二维码生成失败: 结果无法保存" else "二维码已生成: $path"
+                if (path == null) "QR code generation failed: result could not be saved" else "QR code generated: $path"
             }
         } catch (e: Exception) {
-            "二维码生成失败: ${e.message ?: "未知错误"}"
+            "QR code generation failed: ${e.message ?: "unknown error"}"
         } finally {
             safeFinish(MediaGenKind.QR_CODE)
         }
@@ -385,7 +385,7 @@ class MediaGenToolsImpl(
      */
     suspend fun execSendVoice(args: Map<String, String>, turnKey: String? = null): String {
         val text = args["text"]?.takeIf { it.isNotBlank() }
-            ?: return "缺少必填参数: text"
+            ?: return "Missing required parameter: text"
         voiceBlockReason(text, turnKey)?.let { return it }
         val emotion = args["emotion"]?.takeIf { it.isNotBlank() }
         val slot = currentHost()?.begin(MediaGenKind.VOICE)
@@ -407,7 +407,7 @@ class MediaGenToolsImpl(
         } catch (e: Exception) {
             val msg = e.message ?: context.getString(R.string.err_chat_unknown)
             slot.safeReport(MediaGenResult.Failure(msg))
-            "语音消息发送失败: $msg"
+            "Voice message send failed: $msg"
         } finally {
             // 成功/失败/取消三条路径都要删临时文件（存档已经是独立副本）
             tempFile.delete()
@@ -425,7 +425,7 @@ class MediaGenToolsImpl(
     private fun voiceBlockReason(text: String, turnKey: String?): String? {
         if (!containsChinese(text)) return VOICE_SKIPPED_NO_CHINESE
         if (!voiceQuota.tryConsume(turnKey)) {
-            return "本轮语音条数已达上限（$VOICE_TURN_LIMIT 条），这条未生成语音"
+            return "The voice count for this round has reached the limit ($VOICE_TURN_LIMIT); this one was not turned into voice"
         }
         return null
     }
@@ -460,19 +460,19 @@ class MediaGenToolsImpl(
     ): String {
         // key 稳定 → 同文本同情绪重复合成命中同一存档文件，不会堆出多份等价音频
         val voiceUri = voiceMessageStore.persist(tempFile, text + VOICE_KEY_SEPARATOR + (emotion ?: ""))
-            ?: return reportFailure(slot, "语音文件保存失败")
+            ?: return reportFailure(slot, "Voice file save failed")
         // 时长只给 UI 显示用，探测不出来（0）也照常投递
         val durationMs = voiceMessageStore.probeDurationMs(tempFile)
         if (slot == null || !slot.isActive()) {
             // A-13 代际失效 / 无 UI 进程：这条语音不会被任何消息引用，删掉免得留孤儿存档
             voiceMessageStore.delete(voiceUri)
-            return "语音已合成,但没有可投递的消息,语音消息未发出"
+            return "Voice was synthesized, but there is no deliverable message; the voice message was not sent"
         }
         slot.safeReport(MediaGenResult.Success(voiceUri = voiceUri, voiceDurationMs = durationMs))
         return if (fallbackReason == null) {
-            "已发出语音消息"
+            "Voice message sent"
         } else {
-            "已发出语音消息，但当前用的是手机自带音色（云端 TTS 未生效：$fallbackReason）"
+            "Voice message sent, but it currently uses the phone's built-in voice (cloud TTS not in effect: $fallbackReason)"
         }
     }
 
@@ -491,14 +491,14 @@ class MediaGenToolsImpl(
     private suspend fun MediaGenSlot?.safeReport(result: MediaGenResult) {
         val slot = this ?: return
         runCatching { withContext(NonCancellable) { slot.report(result) } }
-            .onFailure { Logger.w(TAG, "媒体结果投递失败: ${it.message}") }
+            .onFailure { Logger.w(TAG, "Media result delivery failed: ${it.message}") }
     }
 
     /** 结束生成(清理 UI 占位状态),失败不影响工具返回值。 */
     private suspend fun safeFinish(kind: MediaGenKind) {
         val target = currentHost() ?: return
         runCatching { withContext(NonCancellable) { target.finish(kind) } }
-            .onFailure { Logger.w(TAG, "媒体生成收尾失败(kind=$kind): ${it.message}") }
+            .onFailure { Logger.w(TAG, "Media generation wrap-up failed (kind=$kind): ${it.message}") }
     }
 
     /**
@@ -546,7 +546,7 @@ class MediaGenToolsImpl(
             url.startsWith("data:") -> writeDataUriToCache(url, prefix)
             else -> url
         }
-    }.ifEmpty { listOf("(无可访问的结果位置)") }
+    }.ifEmpty { listOf("(No accessible result location)") }
 
     /** 把 base64 data URI 解码落盘;失败返回 null。 */
     private fun writeDataUriToCache(dataUri: String, prefix: String): String? {
@@ -589,10 +589,10 @@ class MediaGenToolsImpl(
 
         /** 正文里没有汉字时的工具结果：说明原因，并提示改用文字。 */
         const val VOICE_SKIPPED_NO_CHINESE =
-            "这段没有中文，未生成语音（英文等内容请用文字回复，别念出来）"
+            "This passage has no Chinese, so no voice was generated (reply to content such as English in text; do not read it aloud)"
 
         /** 云端与系统 TTS 都没合成出来时的工具结果（文案与改造前一致）。 */
-        const val VOICE_SYNTH_FAILED = "语音合成失败"
+        const val VOICE_SYNTH_FAILED = "Voice synthesis failed"
 
         /** 汉字码位：CJK 统一表意文字（4E00–9FFF）及其扩展 A / 兼容 / 扩展 B 区。 */
         val CJK_UNIFIED_RANGE = 0x4E00..0x9FFF

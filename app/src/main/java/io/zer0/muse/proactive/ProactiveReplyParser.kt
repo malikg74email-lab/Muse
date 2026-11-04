@@ -41,7 +41,7 @@ object ProactiveReplyParser {
     fun parse(raw: String): Result {
         val text = stripFences(raw).trim()
         val parsed = when {
-            text.isEmpty() -> Result.Failed("模型返回空内容")
+            text.isEmpty() -> Result.Failed("The model returned empty content")
             else -> extractJsonObject(text)?.let { parseJson(it) } ?: fallbackToProse(text)
         }
         return if (parsed is Result.Message) validate(parsed) else parsed
@@ -57,12 +57,12 @@ object ProactiveReplyParser {
     private fun validate(message: Result.Message): Result {
         val content = message.content.trim()
         if (content.count { it.isLetterOrDigit() } < MIN_CONTENT_CHARS) {
-            Logger.w(TAG, "正文过短，按跳过处理 | len=${content.length}")
-            return Result.Skip("正文过短（${content.length} 字）")
+            Logger.w(TAG, "Body too short; treating as a skip | len=${content.length}")
+            return Result.Skip("Body too short (${content.length}  chars)")
         }
         if (content.length <= MAX_CONTENT_CHARS) return message.copy(content = content)
         val truncated = truncateToSentence(content)
-        Logger.i(TAG, "正文超长已截断 | from=${content.length} | to=${truncated.length}")
+        Logger.i(TAG, "Body too long and truncated | from=${content.length} | to=${truncated.length}")
         return message.copy(content = truncated)
     }
 
@@ -96,7 +96,7 @@ object ProactiveReplyParser {
             .orEmpty()
 
         return when {
-            skipValue == true -> Result.Skip(reason.ifBlank { "模型判断现在不适合说" })
+            skipValue == true -> Result.Skip(reason.ifBlank { "The model judged that now is not a good time to speak" })
             content.isNotBlank() -> {
                 val thoughtId = Regex("\"thought_id\"\\s*:\\s*\"([^\"]*)\"").find(json)
                     ?.groupValues?.get(1)
@@ -106,13 +106,13 @@ object ProactiveReplyParser {
                 Result.Message(thoughtId, content, tone)
             }
             // JSON 里既没 skip=true 也没 content：当成失败，让上层重试
-            else -> Result.Failed("JSON 缺 content 字段")
+            else -> Result.Failed("JSON is missing the content field")
         }
     }
 
     private fun fallbackToProse(text: String): Result {
-        if (!looksLikeProse(text)) return Result.Failed("输出无法解析")
-        Logger.w(TAG, "模型未按 JSON 返回，按纯文本正文接受")
+        if (!looksLikeProse(text)) return Result.Failed("The output could not be parsed")
+        Logger.w(TAG, "The model did not return JSON; accepting it as plain-text body")
         return Result.Message(null, text, "")
     }
 

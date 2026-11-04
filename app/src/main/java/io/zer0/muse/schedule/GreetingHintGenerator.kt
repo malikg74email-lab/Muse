@@ -52,16 +52,16 @@ class GreetingHintGenerator(
                 )
             }
         }.onError { msg, t ->
-            Logger.w(tag, "问候语提醒 LLM 生成失败: ${t?.message ?: msg},回退规则版")
+            Logger.w(tag, "Greeting hint LLM generation failed: ${t?.message ?: msg}, falling back to the rule-based version")
         }.getOrNull()?.text?.let { io.zer0.muse.transformer.stripThinkTags(it) }
 
         if (llmHint.isNullOrBlank()) {
-            Logger.d(tag, "LLM 结果为空,使用规则版")
+            Logger.d(tag, "LLM result is empty, using the rule-based version")
             return fallback
         }
         val compactHint = GreetingHelper.compactGreetingText(llmHint, maxHintLength)
         if (llmHint.length > maxHintLength) {
-            Logger.d(tag, "LLM 结果过长(${llmHint.length}字),已压缩到${maxHintLength}字")
+            Logger.d(tag, "LLM result too long (${llmHint.length} characters), compressed to ${maxHintLength} characters")
         }
         return compactHint ?: fallback
     }
@@ -70,9 +70,9 @@ class GreetingHintGenerator(
         val system = UIMessage(
             role = MessageRole.SYSTEM,
             content = buildString {
-                appendLine("你正在给用户的问候语补一句近期事项提醒。")
-                appendLine("只依据给出的事项,不要推测;保留事项中的相对时间,不要重复时间词。")
-                appendLine("只保留一个最重要的事项,输出 8-14 字的一句话,用\"你\"称呼用户,自然口语,不要引号、前缀、解释或分段。")
+                appendLine("You are adding a recent-item reminder to the user's greeting.")
+                appendLine("Rely only on the given items, do not speculate; keep the relative time in the items and do not repeat time words.")
+                appendLine("Keep only the single most important item; output one sentence of 8-14 characters, addressing the user as \"you\", natural and colloquial, with no quotes, prefix, explanation or line breaks.")
             },
         )
         val user = UIMessage(

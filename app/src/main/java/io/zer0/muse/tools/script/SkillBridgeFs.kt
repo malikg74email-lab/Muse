@@ -38,13 +38,13 @@ internal object SkillBridgeFs {
         val cleaned = path.trim().replace('\\', '/')
         if (cleaned.isEmpty()) return root.canonicalFile
         if (cleaned.startsWith("/") || cleaned.split('/').any { it == ".." }) {
-            throw BridgeFsException("非法路径(仅允许沙盒内相对路径): $path")
+            throw BridgeFsException("Illegal path (only sandbox-relative paths are allowed): $path")
         }
         val rootPath = root.canonicalFile
         val target = File(root, cleaned).canonicalFile
         val rootPrefix = rootPath.path + File.separator
         if (target != rootPath && !target.path.startsWith(rootPrefix)) {
-            throw BridgeFsException("路径越界: $path")
+            throw BridgeFsException("Path out of bounds: $path")
         }
         return target
     }
@@ -52,7 +52,7 @@ internal object SkillBridgeFs {
     /** 列目录(最多 [MAX_LIST_ENTRIES] 条)。 */
     fun list(root: File, path: String): List<Entry> {
         val dir = resolve(root, path)
-        if (!dir.isDirectory) throw BridgeFsException("不是目录: $path")
+        if (!dir.isDirectory) throw BridgeFsException("Not a directory: $path")
         return dir.listFiles().orEmpty()
             .sortedBy { it.name }
             .take(MAX_LIST_ENTRIES)
@@ -62,7 +62,7 @@ internal object SkillBridgeFs {
     /** 读文本文件(UTF-8);大文件按字符游标分页。 */
     fun read(root: File, path: String, offsetChars: Int? = null, lengthChars: Int? = null): String {
         val file = resolve(root, path)
-        if (!file.isFile) throw BridgeFsException("不是文件: $path")
+        if (!file.isFile) throw BridgeFsException("Not a file: $path")
         if (offsetChars != null || lengthChars != null || file.length() > MAX_READ_BYTES) {
             return ToolTextFilePager.readPage(
                 file = file,
@@ -80,7 +80,7 @@ internal object SkillBridgeFs {
     fun write(root: File, path: String, content: String): Int {
         val bytes = content.toByteArray(Charsets.UTF_8)
         if (bytes.size > MAX_WRITE_BYTES) {
-            throw BridgeFsException("内容超过写入上限(${MAX_WRITE_BYTES / 1024}KB)")
+            throw BridgeFsException("Content exceeds the write limit (${MAX_WRITE_BYTES / 1024}KB)")
         }
         val file = resolve(root, path)
         file.parentFile?.mkdirs()
@@ -91,10 +91,10 @@ internal object SkillBridgeFs {
     /** 删除文件或空目录;拒绝删除沙盒根目录。 */
     fun delete(root: File, path: String): Boolean {
         val file = resolve(root, path)
-        if (file == root.canonicalFile) throw BridgeFsException("不允许删除沙盒根目录")
-        if (!file.exists()) throw BridgeFsException("不存在: $path")
+        if (file == root.canonicalFile) throw BridgeFsException("Deleting the sandbox root directory is not allowed")
+        if (!file.exists()) throw BridgeFsException("Does not exist: $path")
         if (file.isDirectory && (file.listFiles()?.isNotEmpty() == true)) {
-            throw BridgeFsException("目录非空,不能删除: $path")
+            throw BridgeFsException("Directory is not empty, cannot delete: $path")
         }
         return file.delete()
     }

@@ -61,7 +61,7 @@ object ReminderAlarmScheduler {
         for (intent in candidates) {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             val ok = resultOf { context.startActivity(intent) }
-                .onError { msg, _ -> Logger.w(TAG, "打开精确闹钟设置页失败: $msg") }
+                .onError { msg, _ -> Logger.w(TAG, "Failed to open the exact-alarm settings page: $msg") }
                 .isSuccess
             if (ok) return true
         }
@@ -129,7 +129,7 @@ object ReminderAlarmScheduler {
                 exact = exactAvailable,
                 needsExactPermission = !exactAvailable,
             )
-        }.onError { msg, _ -> Logger.w(TAG, "排期提醒失败: id=$id, $msg") }
+        }.onError { msg, _ -> Logger.w(TAG, "Failed to schedule the reminder: id=$id, $msg") }
             .getOrNull()
             ?: ScheduleResult(
                 scheduled = false,
@@ -152,6 +152,6 @@ object ReminderAlarmScheduler {
             val pi = PendingIntent.getBroadcast(context, id.hashCode(), intent, flags)
             am.cancel(pi)
             pi.cancel()
-        }.onError { msg, _ -> Logger.w(TAG, "取消提醒闹钟失败: id=$id, $msg") }
+        }.onError { msg, _ -> Logger.w(TAG, "Failed to cancel the reminder alarm: id=$id, $msg") }
     }
 }

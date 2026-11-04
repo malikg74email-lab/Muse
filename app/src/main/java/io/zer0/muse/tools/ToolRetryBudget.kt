@@ -36,13 +36,13 @@ object ToolRetryBudget {
         val remaining = (MAX_RETRIES - (used - 1)).coerceAtLeast(0)
         return when {
             !retryable ->
-                "[重试预算] $toolName 第 $used 次失败；本次失败不可重试（见上方 kind），不要再调用同一工具。"
+                "[Retry budget] $toolName has failed $used times; this failure is not retryable (see the kind above), do not call the same tool again."
             remaining > 0 ->
-                "[重试预算] $toolName 第 $used 次失败；还剩 $remaining 次重试机会 —— " +
-                    "确认能改对再试，不要把同一次失败重放。"
+                "[Retry budget] $toolName has failed $used times; $remaining retries remain — " +
+                    "only retry when you are sure you can fix it; do not replay the same failure."
             else ->
-                "[重试预算] $toolName 第 $used 次失败；重试机会已用尽 —— " +
-                    "不要再调用同一工具，把真实原因和已尝试的做法告诉用户。"
+                "[Retry budget] $toolName has failed $used times; the retries are exhausted — " +
+                    "do not call the same tool again; tell the user the real reason and what was tried."
         }
     }
 
@@ -67,9 +67,9 @@ object ToolRetryBudget {
         if (abortThreshold <= 0) return perTool
         val left = (abortThreshold - consecutiveFailures).coerceAtLeast(0)
         val roundLine = if (left <= 0) {
-            "[轮次预算] 本轮已连续失败 $consecutiveFailures 次（上限 $abortThreshold），不会再执行更多工具。"
+            "[Turn budget] This turn has failed $consecutiveFailures times in a row (limit $abortThreshold); no more tools will be executed."
         } else {
-            "[轮次预算] 本轮已连续失败 $consecutiveFailures/$abortThreshold 次，再失败 $left 次将结束本轮。"
+            "[Turn budget] This turn has failed $consecutiveFailures/$abortThreshold times in a row; $left more failures will end this turn."
         }
         return "$perTool\n$roundLine"
     }

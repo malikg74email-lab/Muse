@@ -10,11 +10,11 @@ import io.zer0.ai.core.ToolDefinition
 class ToolRouteExecutionGuard(private val registry: ToolRegistry) {
     fun validateLocal(name: String, snapshot: ToolRouteSnapshot? = null): String? {
         val current = registry.listTools().firstOrNull { it.name == name }
-            ?: return "工具不存在或已注销: $name"
+            ?: return "Tool does not exist or has been deregistered: $name"
         if (snapshot != null) {
             when (val route = snapshot.routeFor(name)) {
-                null -> return "工具未在当前路由中暴露: $name"
-                is ToolRouteSnapshot.Route.Skill -> return "工具路由已变更为 skill: $name"
+                null -> return "Tool is not exposed in the current route: $name"
+                is ToolRouteSnapshot.Route.Skill -> return "Tool route has changed to a skill: $name"
                 ToolRouteSnapshot.Route.Local -> {
                     val expected = snapshot.definitions.firstOrNull { it.name == name }
                     // Compare against the same normalized ToolDefinition that was exposed to the model.
@@ -26,7 +26,7 @@ class ToolRouteExecutionGuard(private val registry: ToolRegistry) {
                     if (expected != null &&
                         (currentDefinition == null || !definitionMatches(expected, currentDefinition))
                     ) {
-                        return "工具定义已变更，拒绝执行: $name"
+                        return "Tool definition has changed; execution refused: $name"
                     }
                 }
             }

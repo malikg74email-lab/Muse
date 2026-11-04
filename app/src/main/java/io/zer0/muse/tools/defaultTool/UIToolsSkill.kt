@@ -51,9 +51,9 @@ object UIToolsSkill {
     fun toolDefs(): List<ToolRegistry.ToolDef> = listOf(
         ToolRegistry.ToolDef(
             name = GET_PAGE_INFO,
-            description = "获取当前屏幕的 UI 层级信息(节点树)。每个节点包含路径标识(如 0.1.2)、" +
-                "class、text、bounds(坐标范围)、clickable/editable/focused 状态。" +
-                "用于了解当前页面有哪些可交互元素及其坐标。需先启用无障碍服务。",
+            description = "Get the current screen's UI hierarchy (node tree). Each node includes a path id (e.g. 0.1.2)," +
+                "class, text, bounds (coordinate range), and clickable/editable/focused state." +
+                "Used to learn which interactive elements the current page has and their coordinates. The accessibility service must be enabled first.",
             parameters = emptyMap(),
             required = emptySet(),
             category = "built-in",
@@ -61,11 +61,11 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = CLICK,
-            description = "在屏幕指定坐标执行点击。坐标为屏幕绝对像素。" +
-                "建议先用 ui_get_page_info 获取目标元素的 bounds 再点击中心点。",
+            description = "Tap at the specified screen coordinates. Coordinates are absolute screen pixels." +
+                "It is recommended to first get the target element's bounds with ui_get_page_info and tap its centre point.",
             parameters = mapOf(
-                "x" to "必填,点击的 x 坐标(屏幕像素)",
-                "y" to "必填,点击的 y 坐标(屏幕像素)",
+                "x" to "Required, the x coordinate to tap (screen pixels)",
+                "y" to "Required, the y coordinate to tap (screen pixels)",
             ),
             required = setOf("x", "y"),
             category = "built-in",
@@ -74,10 +74,10 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = LONG_PRESS,
-            description = "在屏幕指定坐标执行长按(按住 500ms)。常用于弹出上下文菜单。",
+            description = "Long-press at the specified screen coordinates (hold 500ms). Often used to pop up a context menu.",
             parameters = mapOf(
-                "x" to "必填,长按的 x 坐标",
-                "y" to "必填,长按的 y 坐标",
+                "x" to "Required, the x coordinate to long-press",
+                "y" to "Required, the y coordinate to long-press",
             ),
             required = setOf("x", "y"),
             category = "built-in",
@@ -86,14 +86,14 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = SWIPE,
-            description = "在屏幕执行滑动手势。从起点滑到终点,duration 控制速度(越长越慢)。" +
-                "上滑翻页:startY 大 endY 小;下滑反之。",
+            description = "Perform a swipe gesture on the screen, from the start point to the end point; duration controls the speed (longer is slower)." +
+                "Swipe up to turn a page: startY larger, endY smaller; the reverse for swiping down.",
             parameters = mapOf(
-                "start_x" to "必填,起点 x 坐标",
-                "start_y" to "必填,起点 y 坐标",
-                "end_x" to "必填,终点 x 坐标",
-                "end_y" to "必填,终点 y 坐标",
-                "duration" to "可选,滑动时长(毫秒),默认 300,越大越慢",
+                "start_x" to "Required, start point x coordinate",
+                "start_y" to "Required, start point y coordinate",
+                "end_x" to "Required, end point x coordinate",
+                "end_y" to "Required, end point y coordinate",
+                "duration" to "Optional, swipe duration (milliseconds), default 300, larger is slower",
             ),
             required = setOf("start_x", "start_y", "end_x", "end_y"),
             category = "built-in",
@@ -108,12 +108,12 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = SET_TEXT,
-            description = "在指定节点上设置文本(通过 ACTION_SET_TEXT)。" +
-                "node_id 来自 ui_get_page_info 返回的路径标识(如 0.1.2)或 ui_get_page_info 中的 focused 节点。" +
-                "用于在输入框填写内容。",
+            description = "Set text on the specified node (via ACTION_SET_TEXT)." +
+                "node_id comes from the path id returned by ui_get_page_info (e.g. 0.1.2) or the focused node in ui_get_page_info." +
+                "Used to fill content into input fields.",
             parameters = mapOf(
-                "node_id" to "必填,目标节点路径(来自 ui_get_page_info 的 [path])",
-                "text" to "必填,要输入的文本",
+                "node_id" to "Required, target node path (the [path] from ui_get_page_info)",
+                "text" to "Required, the text to input",
             ),
             required = setOf("node_id", "text"),
             category = "built-in",
@@ -121,11 +121,11 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = SCREENSHOT,
-            description = "截取当前屏幕并保存为图片。需 Android 14+(API 34)。" +
-                "返回保存路径。不传 path 时保存到应用缓存目录。",
+            description = "Capture the current screen and save it as an image. Requires Android 14+ (API 34)." +
+                "Returns the save path. When path is not given, it saves to the app cache directory.",
             parameters = mapOf(
-                "path" to "可选,保存路径(绝对路径),默认保存到缓存目录",
-                "format" to "可选,图片格式 PNG(默认) 或 JPEG",
+                "path" to "Optional, save path (absolute path); default saves to the cache directory",
+                "format" to "Optional, image format PNG (default) or JPEG",
             ),
             required = emptySet(),
             category = "built-in",
@@ -133,7 +133,7 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = BACK,
-            description = "模拟按下返回键(全局动作 GLOBAL_ACTION_BACK)。",
+            description = "Simulate pressing the Back key (global action GLOBAL_ACTION_BACK).",
             parameters = emptyMap(),
             required = emptySet(),
             category = "built-in",
@@ -141,7 +141,7 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = HOME,
-            description = "模拟按下 Home 键(回到桌面,GLOBAL_ACTION_HOME)。",
+            description = "Simulate pressing the Home key (return to the launcher, GLOBAL_ACTION_HOME).",
             parameters = emptyMap(),
             required = emptySet(),
             category = "built-in",
@@ -149,10 +149,10 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = GLOBAL_ACTION,
-            description = "执行全局无障碍动作。常用 action_id: 1=BACK, 2=HOME, 3=RECENTS(最近任务)," +
+            description = "Execute a global accessibility action. Common action_id values: 1=BACK, 2=HOME, 3=RECENTS (recent tasks)," +
                 " 4=NOTIFICATIONS, 5=QUICK_SETTINGS, 6=POWER_DIALOG, 7=TOGGLE_NOTIFICATION, 10=DISMISS_NOTIFICATION_SHADE。",
             parameters = mapOf(
-                "action_id" to "必填,全局动作 ID(如 1=返回, 2=HOME)",
+                "action_id" to "Required, global action ID (e.g. 1=Back, 2=HOME)",
             ),
             required = setOf("action_id"),
             category = "built-in",
@@ -161,8 +161,8 @@ object UIToolsSkill {
         ),
         ToolRegistry.ToolDef(
             name = GET_CURRENT_APP,
-            description = "获取当前前台应用/Activity 的组件名(如 com.android.settings/.Settings)。" +
-                "用于了解用户当前在哪个应用。",
+            description = "Get the component name of the current foreground app/Activity (e.g. com.android.settings/.Settings)." +
+                "Used to learn which app the user is currently in.",
             parameters = emptyMap(),
             required = emptySet(),
             category = "built-in",
@@ -173,75 +173,75 @@ object UIToolsSkill {
     // ── 执行逻辑 ──────────────────────────────────────────────────────────────
 
     suspend fun getPageInfo(client: AccessibilityClient): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val info = client.getPageInfo()
-        return info.ifBlank { "[错误] 无法获取 UI 层级(可能无活动窗口)" }
+        return info.ifBlank { "Error: unable to get the UI hierarchy (possibly no active window)" }
     }
 
     suspend fun click(client: AccessibilityClient, x: Int, y: Int): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val ok = client.click(x, y)
-        return if (ok) "[成功] 已点击 ($x, $y)" else "[失败] 点击未完成(坐标越界或手势被取消)"
+        return if (ok) "Success: tapped ($x, $y)" else "Error: tap did not complete (coordinates out of bounds or the gesture was cancelled)"
     }
 
     suspend fun longPress(client: AccessibilityClient, x: Int, y: Int): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val ok = client.longPress(x, y)
-        return if (ok) "[成功] 已长按 ($x, $y)" else "[失败] 长按未完成"
+        return if (ok) "Success: long-pressed ($x, $y)" else "Error: long-press did not complete"
     }
 
     suspend fun swipe(client: AccessibilityClient, startX: Int, startY: Int, endX: Int, endY: Int, duration: Long): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val ok = client.swipe(startX, startY, endX, endY, duration)
-        return if (ok) "[成功] 已滑动 ($startX,$startY) -> ($endX,$endY)" else "[失败] 滑动未完成"
+        return if (ok) "Success: swiped ($startX,$startY) -> ($endX,$endY)" else "Error: swipe did not complete"
     }
 
     suspend fun setText(client: AccessibilityClient, nodeId: String, text: String): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
-        if (nodeId.isBlank()) return "[错误] 缺少 node_id 参数"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
+        if (nodeId.isBlank()) return "Error: missing node_id parameter"
         val ok = client.setText(nodeId, text)
-        return if (ok) "[成功] 已在节点 $nodeId 输入文本" else "[失败] 设置文本失败(节点不可编辑或不存在)"
+        return if (ok) "Success: text entered on node $nodeId" else "Error: setting text failed (node not editable or does not exist)"
     }
 
     suspend fun screenshot(client: AccessibilityClient, context: Context, path: String?, format: String): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val targetPath = path?.takeIf { it.isNotBlank() } ?: run {
             val ext = if (format.equals("JPEG", ignoreCase = true)) ".jpg" else ".png"
             File(context.cacheDir, "ui_screenshot_${System.currentTimeMillis()}$ext").absolutePath
         }
         val ok = client.screenshot(targetPath, format)
-        if (ok) return "[成功] 截图已保存: $targetPath"
+        if (ok) return "Success: screenshot saved: $targetPath"
         // v2.6.13: 区分“能力没拿到”与“拿到了但这次失败”，否则模型只能盲猜原因。
         val hint = if (!client.canTakeScreenshot()) {
-            "服务未获得截图能力，请在系统设置里关闭再重新开启 Muse 的无障碍服务"
+            "The service has not obtained screenshot capability; turn Shaheen 2's accessibility service off and back on in system settings"
         } else {
-            "需 Android 14+，或当前页面禁止截屏（如支付/密码页）"
+            "Requires Android 14+, or the current page forbids screenshots (e.g. payment/password pages)"
         }
-        return "[失败] 截图失败($hint)"
+        return "Error: screenshot failed ($hint)"
     }
 
     suspend fun back(client: AccessibilityClient): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val ok = client.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
-        return if (ok) "[成功] 已返回" else "[失败] 返回动作失败"
+        return if (ok) "Success: went back" else "Error: Back action failed"
     }
 
     suspend fun home(client: AccessibilityClient): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val ok = client.globalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME)
-        return if (ok) "[成功] 已回到桌面" else "[失败] HOME 动作失败"
+        return if (ok) "Success: returned to the launcher" else "Error: HOME action failed"
     }
 
     suspend fun globalAction(client: AccessibilityClient, actionId: Int): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val ok = client.globalAction(actionId)
-        return if (ok) "[成功] 全局动作 $actionId 已执行" else "[失败] 全局动作 $actionId 失败"
+        return if (ok) "Success: global action $actionId executed" else "Error: global action $actionId failed"
     }
 
     suspend fun getCurrentApp(client: AccessibilityClient): String {
-        if (!ensureConnected(client)) return "[错误] 无障碍服务未启用"
+        if (!ensureConnected(client)) return "Error: accessibility service is not enabled"
         val name = client.currentActivityName()
-        return name.ifBlank { "[提示] 当前无法确定前台应用" }
+        return name.ifBlank { "Note: cannot determine the foreground app right now" }
     }
 
     // ── 内部工具 ──────────────────────────────────────────────────────────────
@@ -276,26 +276,26 @@ class UIToolsRegistrar(
         val executors: List<Pair<ToolRegistry.ToolDef, suspend (Map<String, String>) -> String>> = listOf(
             UIToolsSkill.toolDefs()[0] to { UIToolsSkill.getPageInfo(client) },
             UIToolsSkill.toolDefs()[1] to { args ->
-                val x = args["x"]?.toIntOrNull() ?: return@to "[错误] 缺少或无效的 x 参数"
-                val y = args["y"]?.toIntOrNull() ?: return@to "[错误] 缺少或无效的 y 参数"
+                val x = args["x"]?.toIntOrNull() ?: return@to "Error: missing or invalid x parameter"
+                val y = args["y"]?.toIntOrNull() ?: return@to "Error: missing or invalid y parameter"
                 UIToolsSkill.click(client, x, y)
             },
             UIToolsSkill.toolDefs()[2] to { args ->
-                val x = args["x"]?.toIntOrNull() ?: return@to "[错误] 缺少或无效的 x 参数"
-                val y = args["y"]?.toIntOrNull() ?: return@to "[错误] 缺少或无效的 y 参数"
+                val x = args["x"]?.toIntOrNull() ?: return@to "Error: missing or invalid x parameter"
+                val y = args["y"]?.toIntOrNull() ?: return@to "Error: missing or invalid y parameter"
                 UIToolsSkill.longPress(client, x, y)
             },
             UIToolsSkill.toolDefs()[3] to { args ->
-                val sx = args["start_x"]?.toIntOrNull() ?: return@to "[错误] 缺少 start_x"
-                val sy = args["start_y"]?.toIntOrNull() ?: return@to "[错误] 缺少 start_y"
-                val ex = args["end_x"]?.toIntOrNull() ?: return@to "[错误] 缺少 end_x"
-                val ey = args["end_y"]?.toIntOrNull() ?: return@to "[错误] 缺少 end_y"
+                val sx = args["start_x"]?.toIntOrNull() ?: return@to "Error: missing start_x"
+                val sy = args["start_y"]?.toIntOrNull() ?: return@to "Error: missing start_y"
+                val ex = args["end_x"]?.toIntOrNull() ?: return@to "Error: missing end_x"
+                val ey = args["end_y"]?.toIntOrNull() ?: return@to "Error: missing end_y"
                 val dur = args["duration"]?.toLongOrNull() ?: 300L
                 UIToolsSkill.swipe(client, sx, sy, ex, ey, dur)
             },
             UIToolsSkill.toolDefs()[4] to { args ->
-                val nodeId = args["node_id"] ?: return@to "[错误] 缺少 node_id"
-                val text = args["text"] ?: return@to "[错误] 缺少 text"
+                val nodeId = args["node_id"] ?: return@to "Error: missing node_id"
+                val text = args["text"] ?: return@to "Error: missing text"
                 UIToolsSkill.setText(client, nodeId, text)
             },
             UIToolsSkill.toolDefs()[5] to { args ->
@@ -306,7 +306,7 @@ class UIToolsRegistrar(
             UIToolsSkill.toolDefs()[6] to { UIToolsSkill.back(client) },
             UIToolsSkill.toolDefs()[7] to { UIToolsSkill.home(client) },
             UIToolsSkill.toolDefs()[8] to { args ->
-                val actionId = args["action_id"]?.toIntOrNull() ?: return@to "[错误] 缺少或无效的 action_id"
+                val actionId = args["action_id"]?.toIntOrNull() ?: return@to "Error: missing or invalid action_id"
                 UIToolsSkill.globalAction(client, actionId)
             },
             UIToolsSkill.toolDefs()[9] to { UIToolsSkill.getCurrentApp(client) },
@@ -314,6 +314,6 @@ class UIToolsRegistrar(
         executors.forEach { (def, fn) ->
             toolRegistry.register(def, fn)
         }
-        Logger.i("UIToolsRegistrar", "已注册 ${executors.size} 个 UI 工具")
+        Logger.i("UIToolsRegistrar", "Registered ${executors.size} UI tools")
     }
 }

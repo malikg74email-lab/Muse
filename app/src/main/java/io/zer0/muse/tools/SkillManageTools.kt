@@ -46,10 +46,10 @@ class SkillManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "skill_manage_list",
-                description = "列出全部技能及启停状态（id、名称、分类、是否启用、是否内置）。" +
-                    "用于启停/删除前确认技能 id。",
+                description = "List all skills and their enabled state (id, name, category, whether enabled, whether built-in)." +
+                    "Used to confirm a skill id before enabling/disabling/deleting.",
                 parameters = mapOf(
-                    "query" to "可选，按名称或分类过滤",
+                    "query" to "Optional, filter by name or category",
                 ),
                 required = emptySet(),
                 riskLevel = ToolRiskLevel.SAFE,
@@ -67,12 +67,12 @@ class SkillManageTools(
                     }
                 }
                 if (filtered.isEmpty()) {
-                    "没有匹配的技能。"
+                    "No matching skills."
                 } else {
                     filtered.joinToString("\n") { s ->
                         "${s.id} | ${s.name} | ${s.category} | " +
-                            "${if (s.enabled) "启用" else "停用"} | " +
-                            "${if (s.id in BUILT_IN_SKILL_IDS) "内置" else "自定义"}"
+                            "${if (s.enabled) "enabled" else "disabled"} | " +
+                            "${if (s.id in BUILT_IN_SKILL_IDS) "built-in" else "custom"}"
                     }
                 }
             }
@@ -83,10 +83,10 @@ class SkillManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "skill_manage_toggle",
-                description = "启用或停用一个技能。停用后助手无法再调用该技能，用户可在设置→Skill 重新开启。",
+                description = "Enable or disable a skill. After disabling, the assistant can no longer call that skill; the user can re-enable it in Settings → Skill.",
                 parameters = mapOf(
-                    "skill_id" to "必填，技能 id（可用 skill_manage_list 获取）",
-                    "enabled" to "true=启用，false=停用；默认 true",
+                    "skill_id" to "Required, skill id (get it with skill_manage_list)",
+                    "enabled" to "true=enable, false=disable; default true",
                 ),
                 required = setOf("skill_id"),
                 riskLevel = ToolRiskLevel.NORMAL,
@@ -95,16 +95,16 @@ class SkillManageTools(
             val id = args["skill_id"]?.trim().orEmpty()
             val enabled = args["enabled"]?.trim()?.lowercase() != "false"
             if (id.isBlank()) {
-                errorJson("参数 skill_id 缺失或为空")
+                errorJson("Parameter skill_id is missing or empty")
             } else {
                 runBlocking {
                     val skill = skillRepository.getById(id)
                     if (skill == null) {
-                        errorJson("未找到技能 $id")
+                        errorJson("Skill $id not found")
                     } else {
                         skillRepository.setEnabled(id, enabled)
-                        Logger.i(TAG, "工具${if (enabled) "启用" else "停用"}技能: $id")
-                        okJson("已${if (enabled) "启用" else "停用"}技能「${skill.name}」（$id）。")
+                        Logger.i(TAG, "Tool ${if (enabled) "enabled" else "disabled"} skill: $id")
+                        okJson("${if (enabled) "Enabled" else "Disabled"} skill \"${skill.name}\" ($id).")
                     }
                 }
             }
@@ -115,10 +115,10 @@ class SkillManageTools(
         registry.register(
             ToolRegistry.ToolDef(
                 name = "skill_manage_delete",
-                description = "删除一个自定义技能（不可撤销）。内置技能不可删除，只可启停。" +
-                    "执行前应先用 skill_manage_list 确认技能 id。",
+                description = "Delete a custom skill (irreversible). Built-in skills cannot be deleted, only enabled/disabled." +
+                    "Confirm the skill id with skill_manage_list before executing.",
                 parameters = mapOf(
-                    "skill_id" to "必填，技能 id",
+                    "skill_id" to "Required, skill id",
                 ),
                 required = setOf("skill_id"),
                 riskLevel = ToolRiskLevel.HIGH,
@@ -126,16 +126,16 @@ class SkillManageTools(
         ) { args ->
             val id = args["skill_id"]?.trim().orEmpty()
             when {
-                id.isBlank() -> errorJson("参数 skill_id 缺失或为空")
-                id in BUILT_IN_SKILL_IDS -> errorJson("内置技能 $id 不可删除（只可启停），与 UI 层保护一致")
+                id.isBlank() -> errorJson("Parameter skill_id is missing or empty")
+                id in BUILT_IN_SKILL_IDS -> errorJson("Built-in skill $id cannot be deleted (only enabled/disabled), consistent with the UI-layer protection")
                 else -> runBlocking {
                     val skill = skillRepository.getById(id)
                     if (skill == null) {
-                        errorJson("未找到技能 $id")
+                        errorJson("Skill $id not found")
                     } else {
                         skillRepository.delete(id)
-                        Logger.i(TAG, "工具删除技能: $id (${skill.name})")
-                        okJson("已删除技能「${skill.name}」（$id）。")
+                        Logger.i(TAG, "Tool deleted skill: $id (${skill.name})")
+                        okJson("Deleted skill \"${skill.name}\" ($id).")
                     }
                 }
             }

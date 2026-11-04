@@ -123,9 +123,9 @@ class SessionAttachmentService(
                 if (attachmentId in droppedAttachmentIds) return@launch
                 if (chunkCount == 0) {
                     updateAttachment(attachmentId, sessionId) {
-                        it.copy(status = SessionAttachmentStatus.FAILED, errorMessage = "内容为空或分块失败")
+                        it.copy(status = SessionAttachmentStatus.FAILED, errorMessage = "Content is empty or chunking failed")
                     }
-                    Logger.w(TAG, "会话附件索引失败:内容为空 | sessionId=$sessionId | name=$name")
+                    Logger.w(TAG, "Session attachment indexing failed: content empty | sessionId=$sessionId | name=$name")
                 } else {
                     updateAttachment(attachmentId, sessionId) {
                         it.copy(
@@ -142,7 +142,7 @@ class SessionAttachmentService(
                             contentHash = RagService.computeContentHash(content),
                         ),
                     )
-                    Logger.i(TAG, "会话附件索引完成 | sessionId=$sessionId | name=$name | chunks=$chunkCount")
+                    Logger.i(TAG, "Session attachment indexing complete | sessionId=$sessionId | name=$name | chunks=$chunkCount")
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // 删除会话/附件是正常取消，不应把已删除任务改写为 FAILED。
@@ -151,7 +151,7 @@ class SessionAttachmentService(
                 updateAttachment(attachmentId, sessionId) {
                     it.copy(status = SessionAttachmentStatus.FAILED, errorMessage = e.message)
                 }
-                Logger.e(TAG, "会话附件索引异常 | sessionId=$sessionId | name=$name", e)
+                Logger.e(TAG, "Session attachment indexing exception | sessionId=$sessionId | name=$name", e)
             } finally {
                 activeJobs.remove(attachmentId)
             }
@@ -183,13 +183,13 @@ class SessionAttachmentService(
                     // QUEUED/CHUNKING 也要清理：任务可能已写入部分 chunk 或文档元数据。
                     ragService.deleteDocIndex(attachment.docId)
                     docDao.delete(attachment.docId)
-                }.onFailure { Logger.w(TAG, "删除附件索引失败 | docId=${attachment.docId}", it) }
+                }.onFailure { Logger.w(TAG, "Deleting attachment index failed | docId=${attachment.docId}", it) }
             }
         }
         sessionAttachments.remove(sessionId)
         attachments.forEach { droppedAttachmentIds.remove(it.id) }
         emitState()
-        Logger.i(TAG, "会话附件已清理 | sessionId=$sessionId | keepIndex=$keepIndex | count=${attachments.size}")
+        Logger.i(TAG, "Session attachments cleaned up | sessionId=$sessionId | keepIndex=$keepIndex | count=${attachments.size}")
     }
 
     /** 更新指定附件的状态(内存)。 */

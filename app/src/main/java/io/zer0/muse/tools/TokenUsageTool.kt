@@ -38,9 +38,9 @@ object TokenUsageTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = NAME,
-        description = "查询 token 消耗和上下文占用：本会话累计、今日/累计全来源合计、按模型分布、" +
-            "当前上下文占用量与上限。用户问「用了多少 token」「今天花了多少」「上下文还剩多少」" +
-            "或需要自查成本时调用。纯读取，无必填参数。",
+        description = "Query token consumption and context usage: this session's cumulative total, today's/all-time totals across all sources, distribution by model," +
+            "and the current context usage and limit. Call when the user asks 'how many tokens were used', 'how much was spent today', 'how much context is left'," +
+            "or when you need to check costs yourself. Pure read; no required parameters.",
         parameters = mapOf(
             "scope" to
                 "Optional. 'today' (default) = all sources since local midnight; " +

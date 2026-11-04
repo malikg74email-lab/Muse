@@ -37,14 +37,14 @@ object ToolArgsParser {
      */
     fun parse(json: String?, toolName: String = "unknown"): Map<String, String> {
         if (json.isNullOrBlank()) {
-            Logger.w(TAG, "$toolName arguments 为空")
+            Logger.w(TAG, "$toolName arguments is empty")
             return emptyMap()
         }
         val trimmed = json.trim()
         if (!trimmed.startsWith("{")) {
             Logger.w(
                 TAG,
-                "$toolName arguments 不是 JSON 对象(首字符='${trimmed.firstOrNull()}'),返回空 map",
+                "$toolName arguments is not a JSON object (first character='${trimmed.firstOrNull()}'), returning an empty map",
             )
             return emptyMap()
         }
@@ -54,7 +54,7 @@ object ToolArgsParser {
         }.onError { msg, _ ->
             Logger.w(
                 TAG,
-                "$toolName arguments 解析失败: $msg " +
+                "$toolName arguments parsing failed: $msg " +
                     ToolDataPrivacy.safeArgumentsForPreview(toolName, trimmed),
             )
         }.getOrNull()

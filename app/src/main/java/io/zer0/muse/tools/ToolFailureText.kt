@@ -26,14 +26,14 @@ internal object ToolFailureText {
      */
     fun httpFailure(prefix: String, url: String, cause: Throwable?): String = when (cause) {
         is SocketTimeoutException, is InterruptedIOException ->
-            "$prefix 超时(连接或读取): $url"
+            "$prefix timed out (connect or read): $url"
         is UnknownHostException ->
-            "$prefix 域名解析失败: $url"
+            "$prefix domain resolution failed: $url"
         is SSLException ->
-            "$prefix TLS 握手失败: $url"
+            "$prefix TLS handshake failed: $url"
         null ->
-            "$prefix 请求失败: $url → 未知网络异常"
+            "$prefix request failed: $url → unknown network exception"
         else ->
-            "$prefix 请求失败: $url → ${cause.message ?: cause.javaClass.simpleName}"
+            "$prefix request failed: $url → ${cause.message ?: cause.javaClass.simpleName}"
     }
 }

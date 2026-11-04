@@ -32,7 +32,7 @@ object UserPreferenceTool {
         parameters =
         mapOf(
             "rule" to "Required. The preference as an imperative sentence in the user's own language, " +
-                "e.g. \"回答不要用空泛的鼓励\".",
+                "e.g. \"do not use empty encouragement in replies\".",
             "source" to "Optional. The user's original wording, for traceability.",
         ),
         required = setOf("rule"),

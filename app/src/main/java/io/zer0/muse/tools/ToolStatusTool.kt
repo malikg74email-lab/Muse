@@ -29,9 +29,9 @@ object ToolStatusTool {
 
     fun toolDef(): ToolRegistry.ToolDef = ToolRegistry.ToolDef(
         name = "tool_status",
-        description = "报告此刻真正可调用的工具,分「可用」与「被权限挡住」两类。" +
-            "在承诺任何设备级操作(点击、滑动、读屏、shell)之前先调它," +
-            "避免声称自己做不到的事。返回各通道就绪状态,以及被挡住的工具需要开启什么。",
+        description = "Report the tools that are truly callable right now, divided into 'available' and 'blocked by permissions'." +
+            "Call it before promising any device-level operation (tapping, swiping, screen reading, shell)," +
+            "to avoid claiming you can do something you cannot. Returns each channel's readiness state and what the blocked tools need enabled.",
         parameters = mapOf(
             "detail" to "Optional. 'summary' (default) = counts plus blocked list; 'full' = also list every usable tool name.",
         ),
@@ -61,21 +61,21 @@ object ToolStatusTool {
         val (usable, blocked) = registered.partition { ToolRequirements.isUsable(it, channels) }
 
         return buildString {
-            appendLine("## 工具可用性（实时）")
+            appendLine("## Tool availability (live)")
             appendLine()
             appendChannelSection(state, runtimePermissionChecks)
             appendLine()
-            appendLine("已注册工具 ${registered.size} 个：可用 ${usable.size}，因权限受阻 ${blocked.size}。")
+            appendLine("Registered tools ${registered.size}: usable ${usable.size}, blocked by permissions ${blocked.size}.")
             if (blocked.isNotEmpty()) {
                 appendLine()
-                appendLine("### 当前不可调用（先别答应，也不要试）")
+                appendLine("### Currently not callable (do not promise these, and do not try them)")
                 appendBlockedSection(blocked, channels)
                 appendLine()
-                append("开启任一通道后重新调用本工具即可看到更新。")
+                append("After enabling any channel, call this tool again to see the update.")
             }
             if (detail == "full" && usable.isNotEmpty()) {
                 appendLine()
-                appendLine("### 当前可用")
+                appendLine("### Currently available")
                 append(usable.joinToString(", "))
             }
         }
@@ -95,22 +95,22 @@ object ToolStatusTool {
         state: AutomationManager.PermissionState,
         runtimePermissionChecks: Map<Channel, Boolean>,
     ) {
-        appendLine("通道状态:")
-        appendLine("- 无障碍: ${if (state.accessibilityEnabled) "可用" else "未开启"}")
+        appendLine("Channel status:")
+        appendLine("- Accessibility: ${if (state.accessibilityEnabled) "available" else "not enabled"}")
         appendLine(
             "- Shell(Shizuku/adb): " +
                 if (state.shellEnabled) {
-                    "可用"
+                    "Available"
                 } else {
-                    "不可用（${state.shizukuMessage}）"
+                    "Unavailable (${state.shizukuMessage})"
                 },
         )
-        appendLine("- Root: ${if (state.rootEnabled) "可用" else "未获取"}")
+        appendLine("- Root: ${if (state.rootEnabled) "available" else "not obtained"}")
         val granted = runtimePermissionChecks.filterValues { it }.keys
         val missing = runtimePermissionChecks.filterValues { !it }.keys
-        if (granted.isNotEmpty()) appendLine("- 单项权限已授予: ${granted.joinToString("、") { it.label() }}")
-        if (missing.isNotEmpty()) appendLine("- 单项权限缺失: ${missing.joinToString("、") { it.label() }}")
-        appendLine("- 最高可用层级: ${state.highestLevelName()}")
+        if (granted.isNotEmpty()) appendLine("- Individual permissions granted: ${granted.joinToString(", ") { it.label() }}")
+        if (missing.isNotEmpty()) appendLine("- Individual permissions missing: ${missing.joinToString(", ") { it.label() }}")
+        appendLine("- Highest available tier: ${state.highestLevelName()}")
     }
 
     /** 受阻工具按"缺什么"分组，便于一次说清开哪一项能解锁多少。 */
@@ -119,10 +119,10 @@ object ToolStatusTool {
             .entries
             .sortedByDescending { it.value.size }
             .forEach { (missing, tools) ->
-                val label = if (missing.isEmpty()) "其他" else missing.joinToString(" 或 ") { it.label() }
+                val label = if (missing.isEmpty()) "Other" else missing.joinToString(" or ") { it.label() }
                 val tail = if (tools.size > BLOCKED_PREVIEW_LIMIT) " …" else ""
                 appendLine(
-                    "- 需要 $label （${tools.size} 个）: " +
+                    "- Needs $label (${tools.size} tools): " +
                         tools.take(BLOCKED_PREVIEW_LIMIT).joinToString(", ") + tail,
                 )
             }
@@ -141,16 +141,16 @@ object ToolStatusTool {
     }
 
     private fun Channel.label(): String = when (this) {
-        Channel.ACCESSIBILITY -> "无障碍"
+        Channel.ACCESSIBILITY -> "Accessibility"
         Channel.SHELL -> "Shizuku/ADB"
         Channel.ROOT -> "Root"
-        Channel.USAGE_STATS -> "使用情况访问"
-        Channel.NOTIFICATION_LISTENER -> "通知使用权"
-        Channel.CONTACTS -> "联系人"
-        Channel.SMS -> "短信"
-        Channel.PHONE_CALL -> "电话"
-        Channel.CALENDAR -> "日历"
-        Channel.LOCATION -> "定位"
-        Channel.RUNTIME -> "运行时权限"
+        Channel.USAGE_STATS -> "Usage access"
+        Channel.NOTIFICATION_LISTENER -> "Notification access"
+        Channel.CONTACTS -> "Contacts"
+        Channel.SMS -> "SMS"
+        Channel.PHONE_CALL -> "Phone"
+        Channel.CALENDAR -> "Calendar"
+        Channel.LOCATION -> "Location"
+        Channel.RUNTIME -> "Runtime permission"
     }
 }

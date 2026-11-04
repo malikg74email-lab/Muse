@@ -27,10 +27,10 @@ class CalendarToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "calendar_today",
-                description = "获取今日日历事件列表。需要 READ_CALENDAR 权限。",
+                description = "Get today's calendar event list. Requires the READ_CALENDAR permission.",
                 parameters = mapOf(
-                    "date" to "可选,指定日期 YYYY-MM-DD,默认今天",
-                    "days" to "可选,查询未来几天,默认 0=只今天",
+                    "date" to "Optional, specify a date YYYY-MM-DD, default today",
+                    "days" to "Optional, query how many days ahead, default 0 = today only",
                 ),
                 required = emptySet(),
                 category = "built-in",
@@ -118,14 +118,14 @@ class CalendarToolsRegistrar(
         toolRegistry.register(
             ToolRegistry.ToolDef(
                 name = "add_calendar_event",
-                description = "向系统日历添加一个新事件。需要 WRITE_CALENDAR 权限。",
+                description = "Add a new event to the system calendar. Requires the WRITE_CALENDAR permission.",
                 parameters = mapOf(
-                    "title" to "必填,事件标题",
-                    "start_time" to "必填,开始时间 ISO 8601 或 yyyy-MM-dd HH:mm,如 2026-07-10 09:00",
-                    "end_time" to "可选,结束时间,默认开始时间+1小时",
-                    "description" to "可选,事件描述",
-                    "location" to "可选,地点",
-                    "all_day" to "可选,true/false,默认 false",
+                    "title" to "Required, event title",
+                    "start_time" to "Required, start time in ISO 8601 or yyyy-MM-dd HH:mm, e.g. 2026-07-10 09:00",
+                    "end_time" to "Optional, end time, default start time +1 hour",
+                    "description" to "Optional, event description",
+                    "location" to "Optional, location",
+                    "all_day" to "Optional, true/false, default false",
                 ),
                 required = setOf("title", "start_time"),
                 category = "built-in",
@@ -167,7 +167,7 @@ class CalendarToolsRegistrar(
                 } else {
                     context.getString(R.string.tool_calendar_add_failed_perm)
                 }
-            }.onError { msg, _ -> Logger.w("CalendarTools", "添加日历事件失败: $msg") }
+            }.onError { msg, _ -> Logger.w("CalendarTools", "Failed to add the calendar event: $msg") }
                 .getOrNull() ?: context.getString(R.string.tool_calendar_add_failed)
         }
     }

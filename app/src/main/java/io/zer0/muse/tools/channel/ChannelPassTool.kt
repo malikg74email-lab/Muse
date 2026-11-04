@@ -28,10 +28,10 @@ class ChannelPassTool(
      */
     fun toolDef() = ToolRegistry.ToolDef(
         name = "channel_pass",
-        description = "本轮选择不发言。如果你觉得没有必要回复,或想等其他成员先说,请调用此工具。" +
-            "你可以提供 reason 说明为什么不发言(可选)。",
+        description = "Choose not to speak this turn. If you feel there is no need to reply, or want to let other members speak first, call this tool." +
+            "You may provide a reason explaining why you are not speaking (optional).",
         parameters = mapOf(
-            "reason" to "可选。不发言的原因,便于调试与审计",
+            "reason" to "Optional. The reason for not speaking, for debugging and audit",
         ),
         required = emptySet(),
         category = "built-in",
@@ -47,6 +47,6 @@ class ChannelPassTool(
     suspend fun execute(args: Map<String, String>): String {
         val reason = args["reason"]?.trim()?.takeIf { it.isNotBlank() }
         onPass(reason)
-        return "已跳过本轮"
+        return "Skipped this turn"
     }
 }

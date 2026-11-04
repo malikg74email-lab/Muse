@@ -68,8 +68,8 @@ class TermuxChannel private constructor(private val context: Context) {
             val bundle = intent.getBundleExtra(EXTRA_RESULT_BUNDLE)
                 ?: intent.getBundleExtra(EXTRA_RESULT_BUNDLE_TERMUX)
             if (bundle == null) {
-                Logger.w(TAG, "Termux 结果缺 result bundle,extras=${intent.extras?.keySet()}")
-                deferred.complete(TermuxResult(-1, "", "", "结果格式异常(缺 result bundle)"))
+                Logger.w(TAG, "Termux result is missing the result bundle, extras=${intent.extras?.keySet()}")
+                deferred.complete(TermuxResult(-1, "", "", "Result format abnormal (missing result bundle)"))
                 return
             }
             val entries = HashMap<String, Any?>()
@@ -105,7 +105,7 @@ class TermuxChannel private constructor(private val context: Context) {
         return when {
             result.error != null -> Availability.NotConfigured(result.error)
             result.stdout.contains("__MUSE_TERMUX_OK__") -> Availability.Ready
-            else -> Availability.NotConfigured("探测输出异常(exit=${result.exitCode})")
+            else -> Availability.NotConfigured("Probe output abnormal (exit=${result.exitCode})")
         }
     }
 
@@ -116,8 +116,8 @@ class TermuxChannel private constructor(private val context: Context) {
      * @param workdir 工作目录(默认 Termux home)
      */
     suspend fun exec(command: String, timeoutMs: Long = DEFAULT_TIMEOUT_MS, workdir: String? = null): ExecResult {
-        if (!isInstalled()) return ExecResult(-1, "", "", "未安装 Termux")
-        if (!hasPermission()) return ExecResult(-1, "", "", "缺少 Termux 调用权限")
+        if (!isInstalled()) return ExecResult(-1, "", "", "Termux not installed")
+        if (!hasPermission()) return ExecResult(-1, "", "", "Missing Termux invocation permission")
         ensureReceiver()
         val requestId = nextRequestId.incrementAndGet()
         val deferred = CompletableDeferred<TermuxResult>()
@@ -126,15 +126,15 @@ class TermuxChannel private constructor(private val context: Context) {
             context.startService(buildRunCommandIntent(command, workdir, requestId))
         } catch (e: Exception) {
             pending.remove(requestId)
-            Logger.w(TAG, "启动 Termux 服务失败: ${e.message}")
+            Logger.w(TAG, "Starting the Termux service failed: ${e.message}")
             val raw = e.message ?: e.javaClass.simpleName
             // Android 8+ 后台服务启动限制:App 纯后台时启动外部服务会被系统拒绝
             val hint = if (raw.contains("Not allowed to start service") || raw.contains("background")) {
-                "(Android 后台限制:请保持 App 在前台,或开启「设置→Agent→后台与可靠性→保持后台运行」)"
+                "(Android background restriction: please keep the app in the foreground, or enable \"Settings → Agent → Background & reliability → Keep running in background\")"
             } else {
                 ""
             }
-            return ExecResult(-1, "", "", "启动 Termux 服务失败: $raw$hint")
+            return ExecResult(-1, "", "", "Starting the Termux service failed: $raw$hint")
         }
         val result = try {
             withTimeoutOrNull(timeoutMs) { deferred.await() }
@@ -142,7 +142,7 @@ class TermuxChannel private constructor(private val context: Context) {
             pending.remove(requestId)
         }
         if (result == null) {
-            return ExecResult(-1, "", "", "等待结果超时(${timeoutMs / 1000}s):Termux 可能被系统限制后台启动或未响应")
+            return ExecResult(-1, "", "", "Waiting for the result timed out (${timeoutMs / 1000}s): Termux may be restricted from background start by the system, or is not responding")
         }
         return ExecResult(result.exitCode, result.stdout, result.stderr, result.error)
     }
@@ -276,23 +276,23 @@ class TermuxChannel private constructor(private val context: Context) {
             // Termux 的成功码是 Errno.ERRNO_SUCCESS = -1，ResultData.getErrCode() 无错时返回 -1。
             // 拿 “!= 0” 判定会把每次成功都写成「Termux 服务错误码 -1」，通道看上去永久不可用。
             // 只有正数才是真错误；0 交给旧版本/其他实现当成功码。
-            val error = errmsg ?: if (errCode != null && errCode > 0) "Termux 服务错误码 $errCode" else null
+            val error = errmsg ?: if (errCode != null && errCode > 0) "Termux service error code $errCode" else null
             return TermuxResult(exitCode, stdout, stderr, error)
         }
 
         /** 面向用户/模型的引导文案(硬编码中文,与 device_shell 等运行时提示同口径)。 */
         fun describe(availability: Availability): String = when (availability) {
-            is Availability.Ready -> "Termux 通道就绪"
+            is Availability.Ready -> "Termux channel ready"
             is Availability.NotInstalled ->
-                "Termux 通道不可用:未安装 Termux。请先安装 Termux(应用商店 / F-Droid),装好后回到 设置→工具 检测。"
+                "Termux channel unavailable: Termux is not installed. Please install Termux first (app store / F-Droid), then go back to Settings → Tools to detect."
             is Availability.PermissionMissing ->
-                "Termux 通道待授权:请到 系统设置→应用→Termux→附加权限,勾选「运行 Termux 命令」" +
-                    "(Run commands in Termux environment),然后重试。"
+                "Termux channel pending authorization: please go to System Settings → Apps → Termux → Additional permissions and check \"Run Termux commands\"" +
+                    "(Run commands in Termux environment), then retry."
             is Availability.NotConfigured ->
-                "Termux 通道待配置:请在 Termux 中执行 " +
-                    "`echo 'allow-external-apps = true' >> ~/.termux/termux.properties` 并重启 Termux;" +
-                    "部分系统(Android 10+)还需允许 Termux 被外部启动(如「关联应用」选项)。" +
-                    "\n最近一次错误:${availability.detail ?: "未知"}"
+                "Termux channel pending configuration: please run the following in Termux " +
+                    "`echo 'allow-external-apps = true' >> ~/.termux/termux.properties` and restart Termux;" +
+                    "On some systems (Android 10+) you also need to allow Termux to be started externally (e.g. the \"associated apps\" option)." +
+                    "\nMost recent error: ${availability.detail ?: "unknown"}"
         }
     }
 }

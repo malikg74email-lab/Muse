@@ -202,14 +202,14 @@ object SkillImporter {
      */
     private fun safetyReview(id: String, name: String, description: String, params: JsonObject, promptText: String? = null): String? {
         // 1. 基本长度检查
-        if (name.length < 2) return "name 长度过短(至少 2 个字符)"
-        if (description.length < 5) return "description 长度过短(至少 5 个字符),请补充该 skill 的用途和触发场景"
+        if (name.length < 2) return "name is too short (at least 2 characters)"
+        if (description.length < 5) return "description is too short (at least 5 characters); please add the skill's purpose and trigger scenarios"
 
         // 2. id 黑名单
         val lowerId = id.lowercase()
         for (sub in BLOCKED_ID_SUBSTRINGS) {
             if (lowerId.contains(sub)) {
-                return "id '$id' 包含保留词 '$sub',不允许伪装成系统 skill"
+                return "id '$id' contains the reserved word '$sub'; impersonating a system skill is not allowed"
             }
         }
 
@@ -224,7 +224,7 @@ object SkillImporter {
             val combinedText = "$name $description".lowercase()
             for (keyword in BLOCKED_KEYWORDS) {
                 if (combinedText.contains(keyword.lowercase())) {
-                    return "name / description 包含不被允许的内容('$keyword'),可能涉及提示词注入或行为覆盖"
+                    return "name / description contains disallowed content ('$keyword'), possibly involving prompt injection or behaviour override"
                 }
             }
         }
@@ -232,18 +232,18 @@ object SkillImporter {
         // 4. parametersJson 结构检查
         val type = params["type"]?.jsonPrimitive?.contentOrNull
         if (type != "object") {
-            return "parametersJson 的 type 必须是 'object',实际为 '$type'"
+            return "parametersJson's type must be 'object', actual: '$type'"
         }
         val properties = params["properties"]?.jsonObject
         if (properties == null) {
-            return "parametersJson 缺少 properties 对象"
+            return "parametersJson is missing the properties object"
         }
         for ((paramName, paramDef) in properties) {
-            if (paramDef !is JsonObject) return "参数 '$paramName' 的定义必须是 JSON 对象"
+            if (paramDef !is JsonObject) return "Parameter '$paramName' must be defined as a JSON object"
             val paramType = paramDef["type"]?.jsonPrimitive?.contentOrNull
-            if (paramType.isNullOrBlank()) return "参数 '$paramName' 缺少 type 字段"
+            if (paramType.isNullOrBlank()) return "Parameter '$paramName' is missing the type field"
             if (paramType !in ALLOWED_PARAM_TYPES) {
-                return "参数 '$paramName' 的类型 '$paramType' 不在允许范围内($ALLOWED_PARAM_TYPES)"
+                return "Parameter '$paramName''s type '$paramType' is outside the allowed range ($ALLOWED_PARAM_TYPES)"
             }
         }
 
@@ -298,10 +298,10 @@ object SkillImporter {
     fun parseRecipe(jsonText: String): RecipeParseResult {
         val root = resultOf {
             AppJson.decodeFromString(kotlinx.serialization.json.JsonObject.serializer(), jsonText)
-        }.getOrNull() ?: return RecipeParseResult.Err("JSON 解析失败")
+        }.getOrNull() ?: return RecipeParseResult.Err("JSON parsing failed")
         val arr = root["skills"] as? kotlinx.serialization.json.JsonArray
-            ?: return RecipeParseResult.Err("不是技能包格式(缺少 skills 数组)")
-        if (arr.isEmpty()) return RecipeParseResult.Err("技能包为空")
+            ?: return RecipeParseResult.Err("Not in skill-pack format (missing the skills array)")
+        if (arr.isEmpty()) return RecipeParseResult.Err("Skill pack is empty")
         val valid = mutableListOf<SkillEntity>()
         val errors = mutableListOf<String>()
         arr.forEachIndexed { index, element ->
@@ -312,7 +312,7 @@ object SkillImporter {
             }
         }
         return if (valid.isEmpty()) {
-            RecipeParseResult.Err("包内没有可导入的技能: ${errors.take(3).joinToString("; ")}")
+            RecipeParseResult.Err("No importable skills in the pack: ${errors.take(3).joinToString("; ")}")
         } else {
             RecipeParseResult.Ok(valid)
         }
@@ -348,48 +348,48 @@ object SkillImporter {
         val raw: JsonObject = resultOf {
             AppJson.decodeFromString(JsonObject.serializer(), jsonText)
         }.onError { msg, _ ->
-            Logger.w("SkillImporter", "JSON 解析失败: $msg")
-        }.getOrNull() ?: return Result.Err("JSON 解析失败")
+            Logger.w("SkillImporter", "JSON parsing failed: $msg")
+        }.getOrNull() ?: return Result.Err("JSON parsing failed")
 
         val id = raw["id"]?.jsonPrimitive?.contentOrNull?.trim()
-            ?: return Result.Err("缺少 id 字段")
+            ?: return Result.Err("Missing the id field")
         // L-SI6: 校验 id 长度(1..64)和合法 slug(仅小写字母/数字/下划线/连字符)
         if (id.isBlank() || id.any { it.isWhitespace() }) {
-            return Result.Err("id 不能为空或包含空白字符")
+            return Result.Err("id must not be empty or contain whitespace characters")
         }
         if (id.length > 64) {
-            return Result.Err("id 长度不能超过 64 字符(当前 ${id.length})")
+            return Result.Err("id length must not exceed 64 characters (currently ${id.length})")
         }
         if (!ID_REGEX.matches(id)) {
-            return Result.Err("id 只能包含小写字母、数字、下划线和连字符(如 fetch_weather / my-skill-1)")
+            return Result.Err("id may only contain lowercase letters, digits, underscores and hyphens (e.g. fetch_weather / my-skill-1)")
         }
         // H-SI1: 校验 id 不在内置保留 id 集合,防止覆盖内置 skill
         if (id in RESERVED_IDS) {
-            return Result.Err("id '$id' 与内置 skill 冲突,不允许覆盖内置 skill,请改用其它 id")
+            return Result.Err("id '$id' conflicts with a built-in skill; overwriting built-in skills is not allowed, please use another id")
         }
 
         val name = raw["name"]?.jsonPrimitive?.contentOrNull?.trim()
-            ?: return Result.Err("缺少 name 字段")
+            ?: return Result.Err("Missing the name field")
         val description = raw["description"]?.jsonPrimitive?.contentOrNull?.trim() ?: ""
         val parametersJson = raw["parametersJson"]?.jsonPrimitive?.contentOrNull ?: "{}"
         val requiredJson = raw["requiredJson"]?.jsonPrimitive?.contentOrNull ?: "[]"
         val implementationKotlin = raw["implementationKotlin"]?.jsonPrimitive?.contentOrNull?.trim()
-            ?: return Result.Err("缺少 implementationKotlin 字段")
+            ?: return Result.Err("Missing the implementationKotlin field")
         val category = raw["category"]?.jsonPrimitive?.contentOrNull?.trim()?.ifBlank { "custom" } ?: "custom"
         // B-19: 导入时做 category 白名单校验。缺省/空回退 "custom"(向后兼容);
         // 非白名单值一律拒绝,尤其防御 category="plugin" 伪装绕过助手白名单。
         if (category !in ALLOWED_CATEGORIES) {
             return Result.Err(
-                "category '$category' 不在允许范围内($ALLOWED_CATEGORIES);" +
-                    "导入的 skill 不能声明为 'plugin'(插件 skill 由插件管理器独占管理)",
+                "category '$category' is outside the allowed range ($ALLOWED_CATEGORIES);" +
+                    "Imported skills cannot declare themselves as 'plugin' (plugin skills are managed exclusively by the plugin manager)",
             )
         }
 
         val isPrompt = isPromptSkill(implementationKotlin)
         if (!isPrompt && implementationKotlin !in ALLOWED_IMPLEMENTATIONS) {
             return Result.Err(
-                "implementationKotlin 必须是内置实现之一: $ALLOWED_IMPLEMENTATIONS 或提示词技能 key '$PROMPT_IMPLEMENTATION_KEY'," +
-                    "实际为 '$implementationKotlin'。自定义 skill 只能复用预定义的 Kotlin 函数或使用提示词技能(不支持任意代码执行)。",
+                "implementationKotlin must be one of the built-in implementations: $ALLOWED_IMPLEMENTATIONS or the prompt-skill key '$PROMPT_IMPLEMENTATION_KEY'," +
+                    "actual: '$implementationKotlin'. Custom skills can only reuse predefined Kotlin functions or use prompt skills (arbitrary code execution is not supported).",
             )
         }
 
@@ -406,14 +406,14 @@ object SkillImporter {
             }.trim()
             if (promptText.isEmpty()) {
                 return Result.Err(
-                    "prompt 技能的指令文本不能为空: 请用 prompt 字段给出指令文本," +
-                        "或把 implementationKotlin 写成 '$PROMPT_PREFIX<指令文本>'",
+                    "A prompt skill's instruction text must not be empty: provide the instruction text in the prompt field," +
+                        "or write implementationKotlin as '$PROMPT_PREFIX<instruction text>'",
                 )
             }
             if (promptText.length > MAX_PROMPT_CHARS) {
                 return Result.Err(
-                    "prompt 指令文本过长(${promptText.length} 字符,上限 $MAX_PROMPT_CHARS)," +
-                        "请精简后重试",
+                    "Prompt instruction text is too long (${promptText.length} characters, limit $MAX_PROMPT_CHARS)," +
+                        "please trim it and retry",
                 )
             }
             storedImplementation = encodePromptText(promptText)
@@ -423,22 +423,22 @@ object SkillImporter {
             // M-SI3: 校验 parametersJson 是否为合法 JSON 对象
             validatedParams = resultOf {
                 AppJson.decodeFromString(JsonObject.serializer(), parametersJson)
-            }.getOrNull() ?: return Result.Err("parametersJson 不是合法的 JSON 对象: $parametersJson")
+            }.getOrNull() ?: return Result.Err("parametersJson is not a valid JSON object: $parametersJson")
             // 校验 requiredJson 是否为合法 JSON 数组
             resultOf {
                 AppJson.decodeFromString(
                     kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.json.JsonElement.serializer()),
                     requiredJson,
                 )
-            }.getOrNull() ?: return Result.Err("requiredJson 不是合法的 JSON 数组: $requiredJson")
+            }.getOrNull() ?: return Result.Err("requiredJson is not a valid JSON array: $requiredJson")
             validatedRequiredJson = requiredJson
             storedImplementation = implementationKotlin
         }
 
         // M-SI4: 安全审查(prompt injection / 社会工程 / 非法参数类型)
         safetyReview(id, name, description, validatedParams, promptText)?.let {
-            Logger.w("SkillImporter", "skill '$id' 安全审查未通过: $it")
-            return Result.Err("安全审查未通过: $it")
+            Logger.w("SkillImporter", "skill '$id' failed the security review: $it")
+            return Result.Err("Security review failed: $it")
         }
 
         val now = System.currentTimeMillis()

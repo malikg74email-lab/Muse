@@ -66,9 +66,9 @@ object SubagentTool {
 
     fun toolDef() = ToolRegistry.ToolDef(
         name = "subagent_task",
-        description = "启动 / 续接 / 关闭一个非阻塞的子代理任务。" +
-            "action 取值:launch(新建任务,返回 taskId 与 threadId)、reply(按 threadId 续接)、" +
-            "close(释放线程)、status(查看进度)、cancel(中止任务)、list(列出全部任务)。",
+        description = "Launch / continue / close a non-blocking sub-agent task." +
+            "action values: launch (create a task, returns taskId and threadId), reply (continue by threadId)," +
+            "close (release the thread), status (view progress), cancel (abort the task), list (list all tasks).",
         parameters = mapOf(
             "action" to "Required. One of: launch / reply / close / status / cancel / list.",
             "agent_id" to "Required for launch. The assistant id to run the task.",
@@ -395,7 +395,7 @@ object SubagentTool {
             // 审计修复 (3.5): 协程取消信号必须向上传播,不能被 catch(Exception) 吞掉
             throw e
         } catch (e: Exception) {
-            Logger.w("SubagentTool", "子 agent 任务执行失败: taskId=$taskId, threadId=$threadId", e)
+            Logger.w("SubagentTool", "Sub-agent task execution failed: taskId=$taskId, threadId=$threadId", e)
             val err = e.message ?: e.javaClass.simpleName
             deferredResultStore.fail(taskId, err)
             if (deferredResultStore.getTask(taskId)?.status == DeferredResultStore.TaskStatus.FAILED) {

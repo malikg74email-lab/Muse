@@ -83,7 +83,7 @@ class AgentToolsRegistrar(
         toolRegistry.registerWithContext(NoteThoughtTool.toolDef()) { args, executionContext ->
             proactiveThoughtStore?.let { store ->
                 NoteThoughtTool.execute(args, store, executionContext)
-            } ?: "Error: 牵挂账本未就绪"
+            } ?: "Error: the thought ledger is not ready"
         }
     }
 
@@ -234,9 +234,9 @@ class AgentToolsRegistrar(
         toolRegistry.registerWithContext(
             ToolRegistry.ToolDef(
                 name = "update_card_data",
-                description = "更新已展示卡片所绑定的结构化数据。" +
-                    "卡片会通过 window.muse.getData() 与 window.muse.data.onChange 重新读取。" +
-                    "省略 card_id 时默认更新当前这条消息上的卡片。",
+                description = "Update the structured data bound to an already-displayed card." +
+                    "The card re-reads via window.muse.getData() and window.muse.data.onChange." +
+                    "When card_id is omitted, the card on the current message is updated by default.",
                 parameters = mapOf(
                     "card_id" to "Optional. The message id carrying the card. Omit it to update the card on the current message.",
                     "data" to "Required. JSON text with the new data.",
