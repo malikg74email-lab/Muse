@@ -37,7 +37,7 @@ jobs:
       - name: Run unit tests (ai/app/memory)
         run: |
           chmod +x gradlew
-          ./gradlew :ai:testDebugUnitTest :app:testDebugUnitTest :memory:testDebugUnitTest -PreleaseSkipVersionCheck=true -PreleaseSkipKeystoreCheck=true
+          ./gradlew :ai:testDebugUnitTest :app:testDebugUnitTest :memory:testDebugUnitTest -PreleaseSkipVersionCheck=true -PreleaseSkipKeystoreCheck=true --continue
 
       - name: Upload unit test reports
         if: always()
