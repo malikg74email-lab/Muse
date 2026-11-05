@@ -32,6 +32,13 @@ internal data class GeminiRequest(
     val generationConfig: GeminiGenerationConfig? = null,
     /** H-GEM2: 工具定义列表,启用 function calling。 */
     val tools: List<GeminiTool>? = null,
+    /**
+     * Shaheen 2 Fix Phase 1 (diagnosis §5 Fix 1.1): function-calling control.
+     * Pehle ye field DTO mein tha hi nahi, is liye app ka `toolChoice="required"`
+     * Gemini path par khamoshi se gir jata tha aur model native call ki bajaye
+     * tool call ko text mein likh deta tha. Ab OpenAI provider ke barabar hai.
+     */
+    val toolConfig: GeminiToolConfig? = null,
     /** H-GEM4: 安全阈值设置(可选,控制各风险类别的拦截等级)。 */
     val safetySettings: List<GeminiSafetySetting>? = null,
 )
@@ -114,6 +121,33 @@ internal data class GeminiTool(
     @SerialName("google_search")
     val googleSearch: GeminiGoogleSearch? = null,
 )
+
+/** Shaheen 2 Fix Phase 1: Gemini `toolConfig` — function calling ka control wrapper. */
+@Serializable
+internal data class GeminiToolConfig(
+    val functionCallingConfig: GeminiFunctionCallingConfig? = null,
+)
+
+@Serializable
+internal data class GeminiFunctionCallingConfig(
+    /** "AUTO" (model ki marzi) / "ANY" (koi ek function call lazmi) / "NONE" (calls band). */
+    val mode: String,
+    val allowedFunctionNames: List<String>? = null,
+)
+
+/**
+ * Shaheen 2 Fix Phase 1: app-level `toolChoice` → Gemini functionCallingConfig mapping.
+ * OpenAI provider ke saath parity: "required" → ANY (forced native call), "none" → NONE,
+ * baqi sab (null / "auto") → AUTO. Sirf tab istemal ho jab function tools bheje ja rahe hon.
+ */
+internal fun geminiToolConfigFor(toolChoice: String?): GeminiToolConfig {
+    val mode = when (toolChoice?.lowercase()) {
+        "required" -> "ANY"
+        "none" -> "NONE"
+        else -> "AUTO"
+    }
+    return GeminiToolConfig(functionCallingConfig = GeminiFunctionCallingConfig(mode = mode))
+}
 
 @Serializable
 internal class GeminiGoogleSearch

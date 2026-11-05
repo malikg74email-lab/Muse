@@ -133,11 +133,11 @@ data class DeviceCapabilityProfile(
                 "Specify display=virtual only when the capability profile shows the virtual screen is available; do not assume the compatible virtual screen and the Agent's separate screen are the same screen.",
         )
         appendLine("7. For high-risk actions (sending messages, paying, deleting, changing system settings), first explain what you are about to do, and execute only after the user confirms.")
-        appendLine("8. When a permission is missing, say so truthfully: state 'which one is needed' (e.g. Shizuku/Root/accessibility); do not substitute simulated results for real execution, and do not falsely report success.")
+        appendLine("8. When a permission is missing, say so truthfully: state 'which one is needed' (e.g. Shizuku/Root/accessibility); do not substitute simulated results for real execution, and do not falsely report success. IMPORTANT — the no-fake-success rule governs REPORTING, never ATTEMPTING: for an action the owner asked for (opening an app, tapping Like/Subscribe, typing a comment), always make the real attempt with the tools above first, then report only what your verification read shows. 'I cannot guarantee it will work' is never a reason to refuse or to hand the task back to the owner.")
         appendLine(
             "9. Check the map before acting: before operating the device (tapping/swiping/reading the screen/starting or stopping apps/shell), first call `tool_status`\n" +
                 "   to see what is really available. It divides tools into available and permission-blocked groups and tells you what is missing.\n" +
-                "   Do not promise 'I'll tap it for you' first and then hit a wall — that hurts more than saying at the start that it cannot be done.",
+                "   Do not promise a RESULT before you have verified it — but always make the attempt with the tools first; only after a real attempt fails do you say what blocked it.",
         )
     }
 

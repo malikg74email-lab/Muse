@@ -146,6 +146,7 @@ class GeminiProvider(
             reasoningLevel = request.reasoningLevel,
             supportsImageOutput = request.model.supportsImageOutput(),
             tools = request.tools,
+            toolChoice = request.toolChoice,
             nativeWebSearch = request.nativeWebSearch,
             modelId = request.model.id,
         )
@@ -250,6 +251,7 @@ class GeminiProvider(
                                 reasoningLevel = request.reasoningLevel,
                                 supportsImageOutput = request.model.supportsImageOutput(),
                                 tools = request.tools,
+                                toolChoice = request.toolChoice,
                                 nativeWebSearch = request.nativeWebSearch,
                                 modelId = request.model.id,
                                 forceThinkingLevel = true,
@@ -536,6 +538,7 @@ class GeminiProvider(
             reasoningLevel = request.reasoningLevel,
             supportsImageOutput = request.model.supportsImageOutput(),
             tools = request.tools,
+            toolChoice = request.toolChoice,
             nativeWebSearch = request.nativeWebSearch,
             modelId = request.model.id,
         )
@@ -1033,6 +1036,7 @@ class GeminiProvider(
         reasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
         supportsImageOutput: Boolean = false,
         tools: List<ToolDefinition>? = null,
+        toolChoice: String? = null,
         nativeWebSearch: Boolean = false,
         modelId: String? = null,
         forceThinkingLevel: Boolean = false,
@@ -1078,6 +1082,13 @@ class GeminiProvider(
                 responseModalities = responseModalities,
             ),
             tools = geminiTools,
+            // Shaheen 2 Fix Phase 1 (§5 Fix 1.1): toolChoice ko Gemini toolConfig mein
+            // bhejo — "required" par mode ANY model ko native function call par majboor
+            // karta hai. Sirf tab jab asal function declarations ja rahi hon; native
+            // web search (google_search) ke saath functionCallingConfig nahi bhej sakte.
+            toolConfig = geminiTools
+                ?.firstOrNull { it.functionDeclarations != null }
+                ?.let { geminiToolConfigFor(toolChoice) },
             // Shaheen 2: har Gemini request ke saath sab se narm safety thresholds
             // (GEMINI_LOOSEST_SAFETY_SETTINGS — tamam configurable categories BLOCK_NONE).
             safetySettings = GEMINI_LOOSEST_SAFETY_SETTINGS,

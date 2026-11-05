@@ -250,4 +250,31 @@ class AppControlCoreTest {
             result,
         )
     }
+
+    // ── Shaheen 2 Fix Phase 1 (§5 Fix 1.6): foreground verification ──────────
+
+    @Test
+    fun `foregroundVerdict verifies only when the target is observed`() {
+        assertEquals(
+            true,
+            AppControlCore.foregroundVerdict("com.google.android.youtube", "com.google.android.youtube"),
+        )
+    }
+
+    @Test
+    fun `foregroundVerdict is unverified when nothing can be observed`() {
+        assertEquals(false, AppControlCore.foregroundVerdict("com.google.android.youtube", null))
+    }
+
+    @Test
+    fun `foregroundVerdict rejects a different foreground package`() {
+        // Null ka matlab: launch kamyabi nahi — caller ko Failed report karna hai,
+        // Success kabhi nahi (yehi "jhoot bolta hai" wali shikayat ki jad thi).
+        assertNull(AppControlCore.foregroundVerdict("com.google.android.youtube", "io.zer0.muse"))
+    }
+
+    @Test
+    fun `success defaults to no foreground check applied`() {
+        assertNull(AppActionResult.Success(ExecutionChannel.APP).verifiedForeground)
+    }
 }

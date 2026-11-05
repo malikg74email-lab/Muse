@@ -99,7 +99,7 @@ class PhoneToolsImpl(private val context: Context) {
         val packageName = args["packageName"]?.takeIf { it.isNotBlank() }
         // 三选一优先级:data_uri > action > packageName
         // M-TR1: 改用 resultOf{}(正确重抛 CancellationException)
-        return resultOf {
+        val baseResult = resultOf {
             if (dataUri != null) {
                 // Deep Link 跳转
                 val intent =
@@ -131,6 +131,30 @@ class PhoneToolsImpl(private val context: Context) {
             }
         }.onError { msg, _ -> Logger.w("ToolRegistry", "Open app failed: $msg") }
             .getOrNull() ?: context.getString(R.string.tool_open_app_failed)
+
+        // Shaheen 2 Fix Phase 1 (§5 Fix 1.6): package-name wale raste par foreground
+        // ki tasdeeq — startActivity ka nah phatna kamyabi nahi hai. Ye check resultOf
+        // ke bahir hai kyunke uska block suspend nahi hai (delay wahan nahi chal sakta).
+        // ActivityManager.appTasks wahi technique hai jo screen-read bhi istemal
+        // karta hai; koi naya channel nahi chahiye.
+        if (dataUri == null && action == null && packageName != null &&
+            baseResult == context.getString(R.string.tool_app_opened, packageName)
+        ) {
+            kotlinx.coroutines.delay(450)
+            val foreground = runCatching {
+                val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                am.appTasks.firstOrNull()?.taskInfo?.topActivity?.packageName
+            }.getOrNull()
+            return when {
+                foreground == packageName ->
+                    context.getString(R.string.tool_app_opened_verified, packageName)
+                foreground != null ->
+                    context.getString(R.string.tool_app_open_wrong_foreground, packageName, foreground)
+                else ->
+                    context.getString(R.string.tool_app_opened_unverified, packageName)
+            }
+        }
+        return baseResult
     }
 
     /** 分享文本:通过 ACTION_SEND + createChooser 弹出系统分享面板。 */

@@ -836,6 +836,9 @@ class ToolOrchestrator(
         var hasToolCalls = true
         var forceFinalResponse = false
         var nativeFallbackUsed = false
+        // Shaheen 2 Fix Phase 1 (§5 Fix 1.4): text-fallback detector ki re-prompt
+        // sirf aik dafa (bounded) — dusri dafa bhi text hi aye to lasting error.
+        var textFallbackRetried = false
         var finalAssistantMessage: UIMessage? = null
         // A-07: 非正常退出原因(卡死/连续失败),用于收尾消息文案
         var abortReason: String? = null
@@ -997,6 +1000,69 @@ class ToolOrchestrator(
                     }
 
                     if (!outcome.hasToolCalls) {
+                        // Shaheen 2 Fix Phase 1 (§5 Fix 1.4) — text-fallback detector:
+                        // final text mein tool call TEXT ki shakal mein likha ho aur
+                        // structured calls zero hon to turn khamoshi se COMPLETED nahi
+                        // hoga. Pehli dafa: model ko native call ki re-prompt karke aik
+                        // aur round. Dusri dafa: plain lasting error — fake success kabhi nahi.
+                        val textCallDetection =
+                            if (!forceFinalResponse) {
+                                TextToolCallDetector.detect(
+                                    outcome.assistantMessage.content,
+                                    params.tools.mapTo(HashSet()) { it.name },
+                                )
+                            } else {
+                                null
+                            }
+                        if (textCallDetection != null && !textFallbackRetried && round < execPolicy.maxRounds) {
+                            textFallbackRetried = true
+                            Logger.w(
+                                TAG,
+                                "Text tool-call detected with zero executed calls; re-prompting once for a native call" +
+                                    " | tool=${textCallDetection.toolName} | viaTag=${textCallDetection.viaTag}" +
+                                    " | sessionId=${params.sessionId} | round=$round",
+                            )
+                            conversationHistory.add(outcome.assistantMessage.copy(toolCalls = emptyList()))
+                            conversationHistory.add(
+                                UIMessage(
+                                    role = MessageRole.USER,
+                                    content = TextToolCallDetector.repromptText(textCallDetection),
+                                ),
+                            )
+                            // Agli round ke liye naya placeholder (tool path ki tarah).
+                            val nextAssistant = UIMessage(role = MessageRole.ASSISTANT, content = "")
+                            val snapshot = accessor.snapshot
+                            val isCurrentDisplayedSession =
+                                if (snapshot.isAgentMode) {
+                                    snapshot.agentSessionId == params.sessionId
+                                } else {
+                                    snapshot.currentSessionId == params.sessionId
+                                }
+                            if (isCurrentDisplayedSession) {
+                                accessor.updateMessages { it + nextAssistant }
+                            }
+                            currentAssistantId = nextAssistant.id
+                            hasToolCalls = true
+                            continue
+                        }
+                        if (textCallDetection != null) {
+                            // Re-prompt ke baad bhi text hi aya — ya round ki gunjaish nahi.
+                            hasToolCalls = false
+                            finalAssistantMessage =
+                                outcome.assistantMessage.copy(
+                                    toolCalls = emptyList(),
+                                    content = TextToolCallDetector.FAILURE_TEXT,
+                                )
+                            terminationReason = ToolLoopTerminationReason.INVALID_TOOL_CALLS
+                            abortReason = TextToolCallDetector.FAILURE_TEXT
+                            forceFinalResponse = false
+                            Logger.w(
+                                TAG,
+                                "Text tool-call persisted after re-prompt; ending with a plain error (no fake success)" +
+                                    " | tool=${textCallDetection.toolName} | sessionId=${params.sessionId}",
+                            )
+                            break
+                        }
                         hasToolCalls = false
                         finalAssistantMessage = outcome.assistantMessage
                         terminationReason =

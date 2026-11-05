@@ -135,7 +135,14 @@ class AppControlTools(
     /** 把 [AppActionResult] 翻成给模型看的一句话；做不到时说明缺哪一项能力。 */
     private fun describe(action: String, target: String, result: AppActionResult): String = when (result) {
         is AppActionResult.Success -> context.getString(
-            R.string.app_control_ok,
+            // Shaheen 2 Fix Phase 1 (§5 Fix 1.6): launch ki kamyabi foreground
+            // verification ke saath bandhi hai — verified / unverified lafz result
+            // mein saaf aye, taake model andaza kamyabi na sunaye.
+            when (result.verifiedForeground) {
+                true -> R.string.app_control_ok_verified
+                false -> R.string.app_control_ok_unverified
+                null -> R.string.app_control_ok
+            },
             action,
             readableTarget(target),
             context.getString(

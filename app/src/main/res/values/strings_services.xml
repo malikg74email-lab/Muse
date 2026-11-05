@@ -195,6 +195,9 @@
     <string name="tool_deep_link_opened">Deep Link opened: %1$s</string>
     <string name="tool_action_started">Action started: %1$s</string>
     <string name="tool_app_opened">App opened: %1$s</string>
+    <string name="tool_app_opened_verified">App opened: %1$s — verified: it is in the foreground now.</string>
+    <string name="tool_app_opened_unverified">Launch issued for: %1$s — could not verify it is in the foreground; report it as launched, not as confirmed open.</string>
+    <string name="tool_app_open_wrong_foreground">Launch was issued for %1$s, but it did not come to the foreground (foreground is %2$s). Do not report it as opened.</string>
     <string name="tool_open_app_failed">Failed to open app</string>
     <string name="tool_missing_param_text_share">Missing parameter: text (content to share)</string>
     <string name="tool_text_empty">text cannot be empty</string>
@@ -417,6 +420,8 @@
     <string name="app_control_clear_data_action">clear data of</string>
     <string name="app_control_uninstall_action">uninstall</string>
     <string name="app_control_ok">Done: %1$s %2$s (via %3$s)</string>
+    <string name="app_control_ok_verified">Done: %1$s %2$s (via %3$s) — verified: the app is in the foreground now.</string>
+    <string name="app_control_ok_unverified">Done: %1$s %2$s (via %3$s) — note: the launch was issued but could not be verified on screen; report it as launched, not as confirmed open.</string>
     <string name="app_control_unavailable">Cannot %1$s %2$s: %3$s</string>
     <string name="app_control_failed">Failed to %1$s %2$s: %3$s</string>
     <string name="app_control_reason_invalid_name">invalid app name or package name</string>

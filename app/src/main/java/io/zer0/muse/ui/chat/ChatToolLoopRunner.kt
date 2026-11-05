@@ -576,6 +576,11 @@ internal class ChatToolLoopRunner(
                                     authorizedToolNames,
                                     loadedToolNames,
                                     skillToolNames,
+                                    // Shaheen 2 Fix Phase 1 (§5 Fix 1.2): ye runner sirf
+                                    // ToolOrchestrator ke agent loop ki rounds chalata hai,
+                                    // is liye phone-control set (app_launch / screen_* / ui_*)
+                                    // hamesha schema mein rakho — keyword luck par nahi.
+                                    agentMode = true,
                                 )
                                 .takeUnless { disableTools || nativeSearchForRound || params.forceFinalResponse }
                                 ?: emptyList()

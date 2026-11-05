@@ -47,8 +47,20 @@ enum class AppControlAction {
 
 /** 一次应用控制请求的结果（供工具层翻译成人话）。 */
 sealed interface AppActionResult {
-    /** 执行成功（[via] 记录实际走的通道，供日志与口径核对）。 */
-    data class Success(val via: ExecutionChannel) : AppActionResult
+    /**
+     * 执行成功（[via] 记录实际走的通道，供日志与口径核对）。
+     *
+     * Shaheen 2 Fix Phase 1 (§5 Fix 1 item 6): LAUNCH ke liye [verifiedForeground]
+     * batata hai ke launch ke baad target waqai foreground mein aya ya nahi —
+     * `true` = check karke pakka, `false` = launch command chal gaya lekin koi
+     * channel foreground ko dekh hi nahi saka (unverified, success ka daawa
+     * kamzor lafzon mein hoga), `null` = is action par check laagu nahi.
+     * Foreground kuch aur nikle to Success banta hi nahi — Failed banta hai.
+     */
+    data class Success(
+        val via: ExecutionChannel,
+        val verifiedForeground: Boolean? = null,
+    ) : AppActionResult
 
     /**
      * 该动作当前**不可能**完成（缺通道 / 目标不允许 / 包名非法）。
@@ -156,6 +168,20 @@ object AppControlCore {
             else -> AppActionResult.Success(channels.preferredElevated())
         }
         return result
+    }
+
+    /**
+     * Shaheen 2 Fix Phase 1 (§5 Fix 1 item 6): foreground verification ka faisla.
+     *
+     * @return `true` agar observed foreground hi target hai; `false` agar koi
+     * channel foreground ko dekh hi nahi saka (observed null — unverified);
+     * observed koi aur package ho to `null` — matlab launch foreground nahi
+     * aya, aur caller ko ise Success nahi, Failed kehna hai.
+     */
+    fun foregroundVerdict(targetPackage: String, observedForeground: String?): Boolean? = when {
+        observedForeground == null -> false
+        observedForeground == targetPackage -> true
+        else -> null
     }
 
     /** 需要 Shell/Root 的动作集合（工具层据此决定是否先探测通道）。 */

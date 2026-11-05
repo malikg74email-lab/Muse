@@ -108,7 +108,7 @@ class AndroidAppController(
             decision
         } else {
             when (action) {
-                AppControlAction.LAUNCH -> launchViaIntent(packageName)
+                AppControlAction.LAUNCH -> launchAndVerify(packageName)
                 AppControlAction.OPEN_APP_SETTINGS -> openAppSettings(packageName)
                 AppControlAction.FORCE_STOP,
                 AppControlAction.CLEAR_DATA,
@@ -134,6 +134,40 @@ class AndroidAppController(
             AppActionResult.Success(ExecutionChannel.APP)
         } else {
             AppActionResult.Failed("Could not launch $packageName (no launch entry and the automation channel is unavailable)")
+        }
+    }
+
+    /**
+     * Shaheen 2 Fix Phase 1 (§5 Fix 1 item 6): launch ke baad foreground ki tasdeeq.
+     *
+     * Pehle `startActivity()` ka nah phatna hi "Success" tha — app asal mein
+     * samne aye ya na aye, report kamyabi ki banti thi (Malik: "jhoot bolta hai").
+     * Ab launch ke baad maujooda channels (accessibility/Shell/Root) se foreground
+     * package parha jata hai:
+     *  - target hi foreground → verified Success;
+     *  - foreground koi aur package → Failed (plain alfaz mein, kamyabi ka daawa nahi);
+     *  - koi channel foreground dekh hi na sake → Success lekin
+     *    `verifiedForeground=false`, taake tool result khud kahe ke tasdeeq nahi hui.
+     */
+    private suspend fun launchAndVerify(packageName: String): AppActionResult {
+        val launched = launchViaIntent(packageName)
+        if (launched !is AppActionResult.Success) return launched
+        var lastObserved: String? = null
+        // App ko samne ane ka waqt do: 300ms / 800ms / 1500ms par teen checks.
+        for (waitMs in longArrayOf(300L, 500L, 700L)) {
+            kotlinx.coroutines.delay(waitMs)
+            lastObserved = runCatching { manager.currentPackage() }
+                .onFailure { Logger.w(TAG, "Foreground check failed: ${it.message}") }
+                .getOrNull() ?: lastObserved
+            if (lastObserved == packageName) break
+        }
+        return when (val verdict = AppControlCore.foregroundVerdict(packageName, lastObserved)) {
+            true -> AppActionResult.Success(launched.via, verifiedForeground = true)
+            false -> AppActionResult.Success(launched.via, verifiedForeground = false)
+            else -> AppActionResult.Failed(
+                "Launch was issued, but $packageName did not come to the foreground " +
+                    "(foreground is ${lastObserved ?: "unknown"}). Do not report it as opened.",
+            )
         }
     }
 

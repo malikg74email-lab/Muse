@@ -106,6 +106,7 @@ object ToolExposurePolicy {
         authorizedToolNames: Set<String> = emptySet(),
         loadedToolNames: Set<String> = emptySet(),
         skillToolNames: Set<String> = emptySet(),
+        agentMode: Boolean = false,
     ): List<ToolDefinition> {
         return if (tools.size <= SIMPLE_TOOL_SUBSET_THRESHOLD) {
             tools
@@ -120,6 +121,15 @@ object ToolExposurePolicy {
                 // 宽松兜底:明确动作请求且非简单短句 → OPTIONAL 长尾全放,避免多步任务中途缺工具
                 val optionalRelaxed = !isSimpleToolRequest(userText) && isDirectToolRequest(userText, tools)
                 tools.filter { tool ->
+                    // Shaheen 2 Fix Phase 1 (§5 Fix 1.2): Agent mode mein phone-control
+                    // ka core set hamesha schema mein rahe — keyword luck par na chhodo.
+                    // Diagnosis: `app_launch` kisi family mein tha hi nahi aur `ui_*` /
+                    // `screen_*` GLOBAL tier par keyword-gated thay, is liye "open YouTube"
+                    // par model ke paas naam prose mein tha lekin callable schema nahi,
+                    // aur us ne call ko text mein likh diya.
+                    if (agentMode && isAgentAlwaysAvailable(tool.name)) {
+                        return@filter true
+                    }
                     when (ToolCategories.categoryOf(tool.name)) {
                         // 未登记分类(MCP / 插件 / 技能等动态工具):
                         //  - 技能:与 OPTIONAL 同口径收窄(此前无条件放行,导致每个已启用技能
@@ -137,6 +147,20 @@ object ToolExposurePolicy {
 
     /** 工具族:关键词 → 相关工具集合。 */
     private data class ToolFamily(val keywords: Set<String>, val toolNames: Set<String>)
+
+    /**
+     * Shaheen 2 Fix Phase 1 (§5 Fix 1.2): Agent mode mein hamesha available phone-control set.
+     * Naam wale tools exact match; `screen_*` / `ui_*` poori families prefix se shamil hain
+     * (AutomationTools / UIToolsSkill ke saare control tools).
+     */
+    private val AGENT_ALWAYS_AVAILABLE_TOOLS =
+        setOf("app_launch", "app_list", "open_app", "list_installed_apps")
+
+    /** [AGENT_ALWAYS_AVAILABLE_TOOLS] + `screen_*` / `ui_*` prefix families. */
+    fun isAgentAlwaysAvailable(toolName: String): Boolean =
+        toolName in AGENT_ALWAYS_AVAILABLE_TOOLS ||
+            toolName.startsWith("screen_") ||
+            toolName.startsWith("ui_")
 
     private const val SIMPLE_TOOL_SUBSET_THRESHOLD = 20
 
@@ -214,8 +238,17 @@ object ToolExposurePolicy {
                 toolNames = setOf("list_installed_apps", "get_recent_notifications", "open_system_setting"),
             ),
             ToolFamily(
-                keywords = setOf("打开应用", "启动应用", "open app", "launch app"),
-                toolNames = setOf("open_app"),
+                // Shaheen 2 Fix Phase 1 (§5 Fix 1.2): pehle ye family sirf `open_app` ko
+                // map karti thi — `app_launch` kisi family mein tha hi nahi. Ab launch ke
+                // teeno raste shamil hain, aur keywords mein aam English + Roman Urdu
+                // phrasings ("open", "kholo", "chalao" ...) bhi hain taake Malik ke
+                // roz-marra ke jumlay bhi family ko hit karein.
+                keywords =
+                setOf(
+                    "打开应用", "启动应用", "open app", "launch app",
+                    "open", "launch", "kholo", "khol do", "khol", "chalao", "app kholo",
+                ),
+                toolNames = setOf("open_app", "app_launch", "app_list", "screen_launch_app", "list_installed_apps"),
             ),
             ToolFamily(
                 keywords = setOf("发短信", "发邮件", "打电话", "拨号", "send sms", "send email", "make a call"),
@@ -466,6 +499,11 @@ object ToolExposurePolicy {
                     "自动点击", "点击屏幕", "点击按钮", "帮我点", "滑动屏幕",
                     "界面操作", "屏幕操作", "输入文字", "按键", "无障碍",
                     "auto click", "tap", "swipe", "accessibility",
+                    // Shaheen 2 Fix Phase 1 (§5 Fix 2.1): like/subscribe/comment ke liye
+                    // koi family thi hi nahi — ab ye jumlay screen-control family ko hit
+                    // karte hain taake `screen_tap_text` / `ui_click` / `screen_input`
+                    // usi turn ke schema mein hon.
+                    "like", "subscribe", "comment", "like karo", "like kar do",
                 ),
                 toolNames =
                 setOf(
@@ -533,6 +571,14 @@ object ToolExposurePolicy {
             "发短信",
             "发邮件",
             "打开应用",
+            // Shaheen 2 Fix Phase 1: aam English + Roman Urdu action alfaaz bhi explicit
+            // tool intent hain, taake "open YouTube" / "YouTube kholo" par toolChoice
+            // "required" ban sake (family-match guard hasMatchingExposedTool phir bhi laagu hai).
+            "open",
+            "launch",
+            "kholo",
+            "khol do",
+            "chalao",
             "翻译",
             "画图",
             "生成图片",

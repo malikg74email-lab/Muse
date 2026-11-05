@@ -320,4 +320,83 @@ class ToolExposurePolicyTest {
         assertFalse("看屏幕不应带出点击类", "ui_click" in looksAtScreen)
         assertFalse("看屏幕不应带出 GUI Agent", "ui_agent" in looksAtScreen)
     }
+
+    // ── Shaheen 2 Fix Phase 1 (§5 Fix 1.2 / 2.1) ─────────────────────────────
+
+    /** Phone-control tools ke saath bada tool face (narrowing threshold se upar). */
+    private val phoneControlTools = padding + listOf(
+        tool("app_launch"), tool("app_list"), tool("open_app"), tool("list_installed_apps"),
+        tool("screen_read"), tool("screen_tap_text"), tool("screen_input"), tool("ui_click"),
+        tool("calculator"),
+    )
+
+    @Test
+    fun `open YouTube exposes app_launch through the launch family`() {
+        // Device test 2026-11-05 regression: pehle launch family sirf open_app ko map
+        // karti thi; "open YouTube" par app_launch schema mein tha hi nahi.
+        val names = ToolExposurePolicy.filterToolsForRequest("open YouTube", phoneControlTools)
+            .map { it.name }.toSet()
+        assertTrue("app_launch schema mein hona chahiye", "app_launch" in names)
+        assertTrue("open_app bhi family mein hai", "open_app" in names)
+    }
+
+    @Test
+    fun `Roman Urdu kholo exposes app_launch`() {
+        val names = ToolExposurePolicy.filterToolsForRequest("YouTube kholo", phoneControlTools)
+            .map { it.name }.toSet()
+        assertTrue("Roman Urdu 'kholo' par app_launch ana chahiye", "app_launch" in names)
+        val names2 = ToolExposurePolicy.filterToolsForRequest("YouTube khol do", phoneControlTools)
+            .map { it.name }.toSet()
+        assertTrue("'khol do' par bhi app_launch ana chahiye", "app_launch" in names2)
+    }
+
+    @Test
+    fun `open YouTube can require a tool call`() {
+        assertTrue(
+            ToolExposurePolicy.shouldRequireTool("open YouTube", phoneControlTools),
+        )
+        assertTrue(
+            ToolExposurePolicy.shouldRequireTool("YouTube kholo", phoneControlTools),
+        )
+    }
+
+    @Test
+    fun `like request exposes the screen tap tools`() {
+        val names = ToolExposurePolicy.filterToolsForRequest(
+            "YouTube khol kar Info 5 ki video like karo",
+            phoneControlTools,
+        ).map { it.name }.toSet()
+        assertTrue("like par screen_tap_text ana chahiye", "screen_tap_text" in names)
+        assertTrue("like par ui_click ana chahiye", "ui_click" in names)
+        assertTrue("comment ke liye screen_input ana chahiye", "screen_input" in names)
+    }
+
+    @Test
+    fun `agent mode always exposes the phone control set`() {
+        // Agent mode mein keyword luck khatam: guftagu wale jumle par bhi
+        // app_launch / screen_* / ui_* schema mein rehte hain.
+        val names = ToolExposurePolicy.filterToolsForRequest(
+            "hello, how are you today my friend",
+            phoneControlTools,
+            agentMode = true,
+        ).map { it.name }.toSet()
+        assertTrue("app_launch" in names)
+        assertTrue("app_list" in names)
+        assertTrue("open_app" in names)
+        assertTrue("screen_tap_text" in names)
+        assertTrue("screen_input" in names)
+        assertTrue("ui_click" in names)
+    }
+
+    @Test
+    fun `non agent mode still narrows phone control on idle chat`() {
+        // Purana narrowing rawaiya mehfooz: agentMode=false par idle chat mein
+        // GLOBAL control tools nahi ate (sirf family/sticky/authorized par ate hain).
+        val names = ToolExposurePolicy.filterToolsForRequest(
+            "hello, how are you today my friend",
+            phoneControlTools,
+        ).map { it.name }.toSet()
+        assertFalse("ui_click" in names)
+        assertFalse("screen_tap_text" in names)
+    }
 }
