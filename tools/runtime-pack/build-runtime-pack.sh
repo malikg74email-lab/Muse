@@ -44,7 +44,7 @@ CARES_VER="1.34.9"
 ICU_VER="78.3"
 SQLITE_VER="3.54.1-1"
 ZLIB_VER="1.3.2"
-NPM_VER="12.2.1"
+NPM_VER="12.2.2"
 LIBFFI_VER="3.8.0"
 
 # ─── 文件映射：源实体文件名 -> 输出名（jniLibs 只接受 lib*.so 命名） ────────
@@ -98,7 +98,7 @@ pkg_url() { # $1=包 key  $2=abi(arm64|x86_64|all)
 fetch_deb() { # $1=包 key $2=abi $3=目标文件
   if [ ! -f "$3" ]; then
     echo "  下载 $1 ($2) ..."
-    curl -sSL --retry 3 --connect-timeout 20 -o "$3" "$(pkg_url "$1" "$2")"
+    curl -sSL --fail --retry 3 --connect-timeout 20 -o "$3" "$(pkg_url "$1" "$2")"
   fi
 }
 
