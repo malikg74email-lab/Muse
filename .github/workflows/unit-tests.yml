@@ -1,0 +1,54 @@
+name: Unit Tests (Shaheen)
+
+# Fork-only minimal workflow (same pattern as build-apk.yml / build-release.yml):
+# upstream ci.yml's "Lane checks" step fails on this fork before the unit lane
+# is ever reached — ci/script/check_hardcoded_cjk.py counts pre-existing
+# upstream Chinese literals in ui/ against a baseline that does not include
+# them (proven locally 2026-11-05: hygiene + engineering-discipline checks
+# exit 0, check_hardcoded_cjk.py exits 1, lane aborts). This workflow runs
+# ONLY the JVM unit tests so the fork gets a real test verdict.
+# The Gradle tasks below are exactly the app/memory/ai subset of
+# ci/run_ci_checks.ps1 -Lane unit, with the same skip props that lane passes.
+# No runtime-pack step: the CI unit lane is a bare gradlew call and no Gradle
+# task consumes the packed runtime assets (they are plain files under
+# app/src/main/assets + jniLibs; absent in a fresh checkout by design).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;27.0.12077973 cmake;3.22.1
+
+      - name: Run unit tests (ai/app/memory)
+        run: |
+          chmod +x gradlew
+          ./gradlew :ai:testDebugUnitTest :app:testDebugUnitTest :memory:testDebugUnitTest -PreleaseSkipVersionCheck=true -PreleaseSkipKeystoreCheck=true
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: |
+            ai/build/reports/tests
+            app/build/reports/tests
+            memory/build/reports/tests
+            ai/build/test-results
+            app/build/test-results
+            memory/build/test-results
+          if-no-files-found: ignore
