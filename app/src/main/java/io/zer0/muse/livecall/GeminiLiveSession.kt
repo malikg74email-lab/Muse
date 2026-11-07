@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,6 +121,28 @@ class GeminiLiveSession(
             .build()
         webSocket = client.newWebSocket(request, SessionSocketListener())
         Logger.i(TAG, "Live call connecting (model=${LiveCallConfig.LIVE_MODEL_ID})")
+        armSetupWatchdog()
+    }
+
+    /**
+     * setup 看门狗(验收审计 D1):socket 连上但服务端迟迟不回 setupComplete 时,
+     * 原实现会让界面永远停在「连接中」。这里在时限到达后复查阶段,仍是
+     * CONNECTING 就落到带纯文本原因的 ERROR(界面展示 + Retry 真重拨);
+     * 已接通/已结束则什么都不做。end() 会 cancel 整个 scope,看门狗随之消失。
+     */
+    private fun armSetupWatchdog() {
+        val startedAtMillis = System.currentTimeMillis()
+        scope.launch {
+            delay(LiveCallConfig.SETUP_TIMEOUT_MS)
+            val elapsed = System.currentTimeMillis() - startedAtMillis
+            if (LiveSetupWatchdog.shouldFail(stateMachine.phase, elapsed)) {
+                Logger.w(TAG, "Setup watchdog fired after ${elapsed}ms without setupComplete")
+                fail(
+                    "The voice service did not answer in time. " +
+                        "Check your internet connection, then tap Retry.",
+                )
+            }
+        }
     }
 
     /** 静音开关:静音时停发麦克风帧(采集不中断,避免重启 AudioRecord 的竞态)。 */
@@ -252,8 +275,14 @@ class GeminiLiveSession(
                 }
                 responses += LiveToolResponse(id = call.id, name = call.name, rawResult = result)
             }
-            if (responses.isNotEmpty() && !endingIntentionally.get()) {
-                ws.send(LiveCallProtocol.encodeToolResponses(responses))
+            // 发送前再查一次取消集:执行途中到达的取消同样要丢掉对应结果(D4)。
+            val cancelledNow = synchronized(cancelledToolCallIds) { cancelledToolCallIds.toSet() }
+            val sendable = LiveCallProtocol.dropCancelledResponses(responses, cancelledNow)
+            // 通话若已在执行途中落到 ERROR/ENDED,结果不再往死掉的 socket 里发。
+            if (sendable.isNotEmpty() && !endingIntentionally.get() &&
+                stateMachine.phase == LiveCallPhase.LIVE
+            ) {
+                ws.send(LiveCallProtocol.encodeToolResponses(sendable))
             }
         }
     }

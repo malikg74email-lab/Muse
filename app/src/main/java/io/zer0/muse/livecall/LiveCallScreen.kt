@@ -201,8 +201,16 @@ fun LiveCallScreen(
                     },
                     needsKeySetup = uiState.needsKeySetup,
                     onRetry = {
-                        micDenied = false
-                        controller.retry()
+                        // 验收审计 D3:麦克风被拒时的 Retry 必须重新拉起系统权限请求,
+                        // 而不是直接重拨 —— 权限没批时重拨只会在采集处再次失败,
+                        // 界面就成了「点 Retry → 同样失败」的死循环。权限批下后
+                        // 启动器回调自己会发起通话;连接类失败才走控制器真重拨。
+                        if (micDenied) {
+                            micDenied = false
+                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        } else {
+                            controller.retry()
+                        }
                     },
                     onOpenKeySettings = onOpenKeySettings,
                     onClose = handleClose,

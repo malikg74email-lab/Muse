@@ -60,7 +60,7 @@ object RuntimeSelfCheckTool {
         val data = MuseRuntime.ensureData(context)
         sb.append("\n- Runtime data: ").append(
             if (data.isSuccess) {
-                "Ready (${MuseRuntime.RUNTIME_DATA_VERSION})"
+                "Ready (${MuseRuntime.bundledDataVersion(context)})"
             } else {
                 "Extraction failed (${data.exceptionOrNull()?.message})"
             },

@@ -1270,7 +1270,6 @@
     <ID>ReturnCount:MuseCrashHandler.kt$MuseCrashHandler.Companion$private fun readQueueFromSp(sp: SharedPreferences): List&lt;String&gt;</ID>
     <ID>ReturnCount:MusePopover.kt$MusePopoverPositionProvider$override fun calculatePosition( anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize, ): IntOffset</ID>
     <ID>ReturnCount:NotifyTool.kt$NotifyTool$fun execute(args: Map&lt;String, String&gt;, notificationManager: MuseNotificationManager): String</ID>
-    <ID>ReturnCount:OAuthCallbackActivity.kt$OAuthCallbackActivity$private fun handleIntent(intent: Intent?)</ID>
     <ID>ReturnCount:OAuthManager.kt$OAuthManager$fun completeAuthorizationCodeFlow(code: String, state: String): Boolean</ID>
     <ID>ReturnCount:OAuthManager.kt$OAuthManager$private suspend fun refreshTokenIfNeededLocked(providerId: String, config: OAuthConfig? = null): Result&lt;String&gt;</ID>
     <ID>ReturnCount:OAuthManager.kt$OAuthManager$suspend fun getStoredToken(providerId: String): TokenBundle?</ID>

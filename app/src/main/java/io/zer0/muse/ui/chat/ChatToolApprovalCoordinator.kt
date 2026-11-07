@@ -44,6 +44,16 @@ internal class ChatToolApprovalCoordinator(
          */
         const val APPROVAL_UNFOCUSED_PAUSE_MAX_MS = 10 * 60_000L
     }
+
+    /**
+     * Shaheen 2 Allow Cards (Part 1, 2026-11-07): remembered gate
+     * decisions. Constructed from the app context — the store's
+     * DataStore delegate is a top-level singleton, so this instance
+     * reads/writes the same file as the settings page's instance.
+     */
+    private val allowCardGateStore: io.zer0.muse.tools.AllowCardGateStore by lazy {
+        io.zer0.muse.tools.AllowCardGateStore(host.appContext)
+    }
     suspend fun requestToolApprovalForSession(
         sessionId: String,
         toolName: String,
@@ -92,16 +102,74 @@ internal class ChatToolApprovalCoordinator(
             "ToolApproval",
             "resolved | tool=$toolName | state=$resolved",
         )
-        // 状态机闭环:显式列出所有终态分支,确保 ToolApprovalState.Answered 有处理路径
-        when (resolved) {
-            is ToolApprovalState.Pending -> { /* 待审批,继续走下方用户审批流程 */ }
-            is ToolApprovalState.Answered -> {
-                // 用户已提供自定义答案(替代工具执行),直接返回该答案
-                return resolved
+
+        // ── Shaheen 2 Allow Cards (Part 1, 2026-11-07) ─────────────────
+        // Sensitive-category gate on top of the legacy resolver. A hard
+        // Denied from the resolver (explicit ALWAYS_DENY, ParamPolicy hard
+        // deny, STRICT phone-call deny) returns FIRST — an owner's
+        // lockdown always beats a remembered allow. Otherwise the gate
+        // decides from remembered scoped decisions; Ask forces the card
+        // below even if the legacy path would have auto-run the call.
+        val gateClassification = io.zer0.muse.tools.SensitiveToolGate.classify(toolName, args)
+        var gateForcedCard = false
+        if (gateClassification != null) {
+            if (resolved is ToolApprovalState.Denied) return resolved
+            // A memory read failure must never silently allow: fall back
+            // to an empty memory view, which makes the gate Ask.
+            val gateMemory = runCatching { allowCardGateStore.memoryView() }
+                .getOrDefault(io.zer0.muse.tools.AllowCardMemoryView())
+            when (
+                val gateDecision = io.zer0.muse.tools.AllowCardGatekeeper.decide(
+                    classification = gateClassification,
+                    memory = gateMemory,
+                    configuredPolicy = configuredPolicy,
+                    mode = mode,
+                    toolAllowedThisSession = allowedThisSession,
+                )
+            ) {
+                io.zer0.muse.tools.GateDecision.Allow -> return ToolApprovalState.Auto
+                is io.zer0.muse.tools.GateDecision.Deny ->
+                    return ToolApprovalState.Denied(gateDecision.reason)
+                io.zer0.muse.tools.GateDecision.Ask -> gateForcedCard = true
             }
-            is ToolApprovalState.Approved, is ToolApprovalState.Auto,
-            is ToolApprovalState.Denied,
-            -> return resolved
+            Logger.d(
+                "ToolApproval",
+                "allow-card gate | tool=$toolName | category=${gateClassification.category}" +
+                    " | scope=${gateClassification.scopeKey} | forcedCard=$gateForcedCard",
+            )
+        }
+
+        if (!gateForcedCard) {
+            // 状态机闭环:显式列出所有终态分支,确保 ToolApprovalState.Answered 有处理路径
+            when (resolved) {
+                is ToolApprovalState.Pending -> { /* 待审批,继续走下方用户审批流程 */ }
+                is ToolApprovalState.Answered -> {
+                    // 用户已提供自定义答案(替代工具执行),直接返回该答案
+                    return resolved
+                }
+                is ToolApprovalState.Approved, is ToolApprovalState.Auto,
+                is ToolApprovalState.Denied,
+                -> return resolved
+            }
+            // Owner-default posture (Part 1): a NON-sensitive call whose
+            // only reason for a card is the ASK-mode default proceeds on
+            // the session the owner is looking at — routine work is not
+            // nagged. STRICT mode, explicit per-tool policies, ParamPolicy
+            // asks and non-displayed (remote) sessions keep the card.
+            if (gateClassification == null &&
+                io.zer0.muse.tools.AllowCardGatekeeper.isRoutineAskDefaultSuppressible(
+                    configuredPolicy = configuredPolicy,
+                    mode = mode,
+                    isDisplayedSession = displayedSessionId != null && displayedSessionId == sessionId,
+                    paramPolicyEngaged = io.zer0.muse.tools.ParamPolicies.evaluate(toolName, args) != null,
+                )
+            ) {
+                Logger.d(
+                    "ToolApproval",
+                    "routine ask-default suppressed (owner principle) | tool=$toolName | risk=$risk",
+                )
+                return ToolApprovalState.Auto
+            }
         }
 
         // 需要用户审批:添加到待审批列表并等待结果
@@ -116,6 +184,10 @@ internal class ChatToolApprovalCoordinator(
                 // 预览只有前 200 字符,完整参数一并交给卡片,让它能告诉用户还差多少、
                 // 并在展开后展示全量。判定用的也是这份 args,两者同源。
                 argumentsFull = args,
+                // Shaheen 2 Allow Cards (Part 1): one plain-English line on
+                // the card saying WHY this needs the owner's tap. Only set
+                // when the sensitive-category gate forced this card.
+                gateReason = if (gateForcedCard) gateClassification?.whyLine else null,
             )
         host.pendingToolApprovalRecords[toolCallId] = pending
         // v2.0.1: 后台时提醒"等待批准"（前台静默，见 notifyChatPendingApproval 内部判断）
@@ -160,7 +232,23 @@ internal class ChatToolApprovalCoordinator(
                     awaitOutcome = { sliceMs -> withTimeoutOrNull(sliceMs) { deferred.await() } },
                 )
             when (outcome) {
-                is ApprovalWaitOutcome.Resolved -> outcome.state
+                is ApprovalWaitOutcome.Resolved -> {
+                    // Shaheen 2 Allow Cards (Part 1): an approved first-use
+                    // scope (MCP server / message recipient) becomes KNOWN
+                    // permanently, whatever scope the owner picked — that
+                    // is what "first use" means. Timeouts and abandons
+                    // never reach this branch, so an unanswered card
+                    // records nothing.
+                    if (gateClassification?.firstUse == true &&
+                        outcome.state is ToolApprovalState.Approved
+                    ) {
+                        runCatching { allowCardGateStore.markKnown(gateClassification.scopeKey) }
+                            .onFailure {
+                                Logger.w("ToolApproval", "markKnown(${gateClassification.scopeKey}) failed: ${it.message}")
+                            }
+                    }
+                    outcome.state
+                }
                 ApprovalWaitOutcome.Abandoned -> {
                     // 审批已从等待注册表注销(会话被删 / 生成被停 / 同一 toolCallId 重新登记),
                     // 不会再有结论回来 —— 立刻收尾,不留悬挂协程。

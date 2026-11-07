@@ -24,6 +24,7 @@ import io.zer0.muse.data.chat.rewrite.buildCommitParts
 import io.zer0.muse.data.session.ConversationTurnEntity
 import io.zer0.muse.notification.MuseNotificationTarget
 import io.zer0.muse.session.WarmupHistory
+import io.zer0.muse.tools.ExecutionModeRouter
 import io.zer0.muse.tools.SessionToolLoadRegistry
 import io.zer0.muse.tools.StreamRoundParams
 import io.zer0.muse.tools.StreamRoundResult
@@ -313,6 +314,43 @@ internal class ChatToolLoopRunner(
         // C-17: 本代媒体登记表清零(上一代遗留 id 不参与本代收尾兜底)
         host.generationState.toolMediaMessages.clear()
         val baseHistorySize = conversationHistory.size
+
+        // ── Shaheen 2 Auto-Training (Part 2, 2026-11-07) ──────────────
+        // Working Instructions Pack delivery bookkeeping. The pack TEXT
+        // rides in every system prompt (SystemPromptAssembler §9.5); what
+        // happens here is the readiness bookkeeping from the spec: when
+        // this provider+model's recorded pack version is stale (a newly
+        // selected model has no record at all — selection itself makes
+        // no request, so the first turn with that model is the delivery
+        // point), the delivery directive is appended to the last user
+        // message of the REQUEST-side history only (never the chat UI),
+        // and the first completed round is checked for the ack line
+        // (see the StreamRoundResult.Success construction below).
+        // A store failure degrades to "no record" → delivery attempted;
+        // bookkeeping must never block the owner's turn.
+        val packDeliveryStore = io.zer0.muse.tools.PackDeliveryStore(host.appContext)
+        val packDeliveryKey =
+            io.zer0.muse.tools.WorkingInstructionsPack.deliveryKey(
+                effectiveProviderConfig?.id,
+                effectiveModel?.id,
+            )
+        var packAckPending = false
+        if (packDeliveryKey != null) {
+            val packRecord =
+                runCatching { packDeliveryStore.getRecord(packDeliveryKey) }.getOrNull()
+            if (io.zer0.muse.tools.WorkingInstructionsPack.needsDelivery(packRecord)) {
+                val lastUserIdx = conversationHistory.indexOfLast { it.role == MessageRole.USER }
+                if (lastUserIdx >= 0) {
+                    val originalUserMessage = conversationHistory[lastUserIdx]
+                    conversationHistory[lastUserIdx] =
+                        originalUserMessage.copy(
+                            content = originalUserMessage.content + "\n\n" +
+                                io.zer0.muse.tools.WorkingInstructionsPack.deliveryDirective(),
+                        )
+                    packAckPending = true
+                }
+            }
+        }
         // v2.x: 工具定义占用在本轮生成里算一次就存下来 —— 工具清单（[tools]）整轮不变，
         // 而编排器每轮会问两次 contextBudgetTokens()，每次都过一遍 schema 的 BPE 编码是纯浪费。
         // TokenEstimator.estimateToolDefinitions 内部另有一层按内容指纹的缓存，这里是第二层。
@@ -581,6 +619,11 @@ internal class ChatToolLoopRunner(
                                     // is liye phone-control set (app_launch / screen_* / ui_*)
                                     // hamesha schema mein rakho — keyword luck par nahi.
                                     agentMode = true,
+                                    // Shaheen 2 Fix Phase 3 (§8 fix addition 7): is command
+                                    // ka mode bhi do — DEVICE par device set, INTERNAL par
+                                    // workspace/code set always-on rahega (agentMode wala
+                                    // device set is ke upar additional hai, replacement nahi).
+                                    mode = ExecutionModeRouter.classify(latestUserText),
                                 )
                                 .takeUnless { disableTools || nativeSearchForRound || params.forceFinalResponse }
                                 ?: emptyList()
@@ -1532,13 +1575,54 @@ internal class ChatToolLoopRunner(
                     state.builder.append(params.builder)
                     state.reasoningBuilder.setLength(0)
                     state.reasoningBuilder.append(params.reasoningBuilder)
+                    // Shaheen 2 Auto-Training (Part 2): settle the pack ack
+                    // on the FIRST completed round of a delivery turn —
+                    // verify the exact ack line, strip it from the final
+                    // message (it may have flashed briefly while streaming;
+                    // the orchestrator's completion replaces the streamed
+                    // bubble with this message), and record the delivery
+                    // honestly: VERIFIED only when the ack actually came
+                    // back, DELIVERED_UNVERIFIED otherwise. A missing ack
+                    // never blocks or retries the owner's turn.
+                    val settledAssistantMessage =
+                        if (packAckPending && packDeliveryKey != null) {
+                            packAckPending = false
+                            val packAckVerified =
+                                io.zer0.muse.tools.WorkingInstructionsPack.verifyAck(
+                                    assistantMessage.content,
+                                )
+                            host.coroutineScope.launch(Dispatchers.IO) {
+                                runCatching {
+                                    packDeliveryStore.recordDelivery(
+                                        packDeliveryKey,
+                                        io.zer0.muse.tools.WorkingInstructionsPack.PACK_VERSION,
+                                        packAckVerified,
+                                    )
+                                }
+                            }
+                            if (packAckVerified) {
+                                assistantMessage.copy(
+                                    content =
+                                    io.zer0.muse.tools.WorkingInstructionsPack.stripAck(
+                                        assistantMessage.content,
+                                    ),
+                                )
+                            } else {
+                                assistantMessage
+                            }
+                        } else {
+                            assistantMessage
+                        }
                     return StreamRoundResult.Success(
-                        assistantMessage = assistantMessage,
+                        assistantMessage = settledAssistantMessage,
                         hasToolCalls = hasToolCalls,
                         contentLength = params.builder.length,
                         firstTokenTime = firstTokenTime,
                         citationUrls = citationUrls.toList(),
                         toolCallsTruncated = toolCallsTruncated,
+                        // Part 3: the loop needs the round's finish reason
+                        // to auto-continue length-limited coding turns.
+                        finishReason = doneFinishReason,
                     )
                 }
 

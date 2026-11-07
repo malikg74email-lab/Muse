@@ -41,39 +41,7 @@ enum class McpConnectionState {
 
     /** 连接失败(超过最大重试次数)。 */
     FAILED,
-
-    /** Phase 10.4: 需要重新 OAuth 授权(token 过期且 refresh 失败)。 */
-    NEEDS_AUTH,
 }
-
-/**
- * Phase 10.4 (M3): MCP OAuth 2.1 PKCE 配置。
- *
- * MCP 规范要求 OAuth 2.1(= OAuth 2.0 + 强制 PKCE + best practices)。
- * 授权码流程 + PKCE:
- *  1. client 生成 code_verifier(43-128 字符随机串)
- *  2. code_challenge = BASE64URL(SHA256(code_verifier))
- *  3. 打开浏览器到 authorization_endpoint,response_type=code&code_challenge=...
- *  4. 用户授权后,server 重定向到 redirect_uri,带 code 参数
- *  5. client 用 code + code_verifier 换 access_token + refresh_token
- *  6. 后续请求带 Bearer access_token;过期用 refresh_token 续期
- *
- * @param clientId OAuth client id(需在 server 预注册或 dynamic registration)
- * @param redirectUri 回调 URI(app deep link,如 io.zer0.muse://oauth/callback)
- * @param authorizationEndpoint 授权页 URL(如 https://server/oauth/authorize)
- * @param tokenEndpoint token 交换 URL(如 https://server/oauth/token)
- * @param scopes 空格分隔的 scope 列表(如 "tools:read tools:call")
- * @param enabled 是否启用 OAuth(关闭则用 [McpServerConfig.authToken] 静态 token)
- */
-@Serializable
-data class McpOAuthConfig(
-    val clientId: String = "",
-    val redirectUri: String = "io.zer0.muse://oauth/callback",
-    val authorizationEndpoint: String = "",
-    val tokenEndpoint: String = "",
-    val scopes: String = "",
-    val enabled: Boolean = false,
-)
 
 /**
  * 飞书 MCP 的应用身份配置。
@@ -105,12 +73,16 @@ data class McpFeishuAuthConfig(
 }
 
 /**
- * Phase 10.4 (M3): OAuth token 缓存(持久化到 DataStore)。
+ * Token 缓存(持久化到 DataStore)。
  *
- * @param accessToken 访问令牌(请求时带 Bearer)
- * @param refreshToken 刷新令牌(access_token 过期时用)
+ * Shaheen 2 Fix Phase 3 (§10 fix 13): MCP OAuth remove honay ke baad is type
+ * ka wahid istemal 飞书 tenant_access_token ka short-lived cache hai
+ * (appId/appSecret se hasil hota hai — ye user login nahi hai)。
+ *
+ * @param accessToken 访问令牌
+ * @param refreshToken 刷新令牌(飞书 TAT mein istemal nahi hota, khaali rehta hai)
  * @param expiresAt 过期时间戳(ms),0 表示无过期
- * @param scope 实际授权的 scope(可能不同于请求的 scope)
+ * @param scope scope(飞书 TAT mein khaali)
  */
 @Serializable
 data class McpTokenInfo(
@@ -161,13 +133,12 @@ data class McpTokenInfo(
  *          POST endpoint 从 SSE 事件里的 endpoint 字段动态获取
  *   - STREAMABLE_HTTP: 单一 endpoint(如 https://server/mcp),所有请求 POST 到此 URL
  * @param headers 自定义请求头(如 Authorization、X-API-Key)
- * @param authToken Bearer token(静态 token,OAuth 未启用时用;优先级低于 OAuth token)
+ * @param authToken Bearer token(静态 token,本地保存)
  * @param enabled 是否启用(禁用的 server 不自动连接)
  * @param autoReconnect 是否自动重连(指数退避)
  * @param maxReconnectAttempts 最大重连次数(默认 5,达到后转 FAILED 状态)
  * @param reconnectBaseMs 重连基础间隔(默认 1000ms,指数退避:base * 2^attempt,上限 30s)
  * @param requestTimeoutMs 单次请求超时(默认 30s)
- * @param oauthConfig Phase 10.4: OAuth 2.1 PKCE 配置(enabled=true 时优先用 OAuth token)
  */
 @Serializable
 data class McpServerConfig(
@@ -184,7 +155,6 @@ data class McpServerConfig(
     val maxReconnectAttempts: Int = 5,
     val reconnectBaseMs: Long = 1000L,
     val requestTimeoutMs: Long = 30_000L,
-    val oauthConfig: McpOAuthConfig = McpOAuthConfig(),
     /** 飞书 tenant_access_token 自动刷新配置,默认关闭以保持旧 MCP 配置兼容。 */
     val feishuAuth: McpFeishuAuthConfig = McpFeishuAuthConfig(),
     /** v1.0.92 (B-4): 最近一次连接成功的时间戳(0=从未成功);设置页展示"最后连接"用。 */
@@ -195,9 +165,8 @@ data class McpServerConfig(
     /**
      * 合并 headers 和 authToken,Authorization 优先用 headers 里的。
      *
-     * Phase 10.4: OAuth token 由 [McpClient] 在请求前动态注入(不在此方法处理),
-     * 因为 OAuth token 可能过期需要 refresh,逻辑在 McpClient.ensureValidToken() 里。
-     * 此方法只处理静态 authToken(非 OAuth 场景)。
+     * 飞书 TAT 头由 [McpClient] 在请求前动态注入(不在此方法处理),
+     * 因为 TAT 短期有效、需要按需刷新。此方法只处理静态 authToken。
      */
     fun resolvedHeaders(): Map<String, String> {
         val result = headers.toMutableMap()

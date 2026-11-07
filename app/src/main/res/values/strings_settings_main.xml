@@ -203,12 +203,6 @@
     <string name="settings_mcp_empty_subtitle">Connect an external tool server so the assistant can use its tools</string>
     <string name="settings_mcp_failed">Failed: %1$s</string>
     <string name="settings_mcp_more">More</string>
-    <string name="settings_mcp_oauth_authorize">OAuth Authorize</string>
-    <string name="settings_mcp_oauth_cannot_start">Cannot start OAuth authorization flow</string>
-    <string name="settings_mcp_oauth_open_failed">Cannot open authorization page: %1$s</string>
-    <string name="settings_mcp_oauth_revoke">Revoke OAuth</string>
-    <string name="settings_mcp_oauth_revoked">OAuth authorization revoked</string>
-    <string name="settings_mcp_oauth_revoke_failed">Revoke failed: %1$s</string>
     <string name="settings_mcp_browse_resources">Browse Resources</string>
     <string name="settings_mcp_browse_prompts">Browse Prompts</string>
     <string name="settings_mcp_reconnect">Reconnect</string>

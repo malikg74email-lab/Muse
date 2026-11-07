@@ -43,7 +43,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.zer0.ai.core.OAuthConfig
 import io.zer0.ai.core.ProviderConfig
 import io.zer0.ai.core.ProviderType
 import io.zer0.muse.R
@@ -294,13 +293,7 @@ internal fun ConfigTab(
     balanceResult: String?,
     onQueryBalance: () -> Unit,
     onImportServiceAccountJson: () -> Unit,
-    // P1-6: OAuth 登录(仅当 oauthConfig != null 时显示)
-    oauthConfig: OAuthConfig? = null,
-    onOAuthLogin: () -> Unit = {},
-    isOAuthLoading: Boolean = false,
-    // P2-11: 已存储 OAuth token 状态 + 撤销回调
-    hasStoredOAuthToken: Boolean = false,
-    onRevokeOAuth: () -> Unit = {},
+    // Shaheen 2 Fix Phase 3 (§10 fix 13): OAuth login params hata diye gaye hain.
     // P1-3: 限流参数(RPM + 最大并发,空串表示不限)
     requestLimitPerMinuteText: String = "",
     onRequestLimitPerMinuteTextChange: (String) -> Unit = {},
@@ -373,112 +366,6 @@ internal fun ConfigTab(
                         apiKeyVisible = apiKeyVisible,
                         onApiKeyVisibleChange = onApiKeyVisibleChange,
                     )
-
-                    // P1-6: OAuth 登录按钮 + 状态行(仅当 oauthConfig != null 时显示)
-                    // - 用 Surface + MuseShapes.pill 包裹,非 Material3 Button
-                    // - 加载中(AWAITING_USER / POLLING):按钮禁用 + 圆形进度 + "等待授权完成..."
-                    // - 点击:调用 onOAuthLogin,由 ProviderEditPage 启动 Device Flow / Auth Code Flow
-                    // P2-11: 已存储 token 时额外显示「撤销访问」按钮(红色 errorContainer 配色,
-                    //   与登录按钮风格统一但语义对立)
-                    if (oauthConfig != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = MusePaddings.contentGap),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(MusePaddings.contentGap),
-                        ) {
-                            // OAuth 登录胶囊按钮(非 Material3 Button,用 Surface + clickable 包裹)
-                            val oauthBtnBg = if (isOAuthLoading) {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            } else {
-                                MaterialTheme.colorScheme.primaryContainer
-                            }
-                            val oauthBtnContentColor = if (isOAuthLoading) {
-                                MaterialTheme.colorScheme.outline
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            }
-                            Surface(
-                                shape = MuseShapes.pill,
-                                color = oauthBtnBg,
-                                modifier = Modifier.clickable(enabled = !isOAuthLoading) { onOAuthLogin() },
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                ) {
-                                    if (isOAuthLoading) {
-                                        MuseSpinner(
-                                            size = MuseIconSizes.iconTiny,
-                                            color = oauthBtnContentColor,
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = MuseIcons.lock,
-                                            contentDescription = null,
-                                            tint = oauthBtnContentColor,
-                                            modifier = Modifier.size(MuseIconSizes.iconSmall),
-                                        )
-                                    }
-                                    Text(
-                                        text = stringResource(R.string.oauth_login),
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                                        color = oauthBtnContentColor,
-                                    )
-                                }
-                            }
-                            // P2-11: 撤销访问胶囊按钮(仅当已有已存储 token 时显示)
-                            // - 用 Surface + MuseShapes.pill,与登录按钮风格一致
-                            // - errorContainer 配色暗示「破坏性操作」
-                            // - 已在登录流程中(isOAuthLoading)禁用,避免状态冲突
-                            if (hasStoredOAuthToken) {
-                                val revokeBtnBg = if (isOAuthLoading) {
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                } else {
-                                    MaterialTheme.colorScheme.errorContainer
-                                }
-                                val revokeBtnContentColor = if (isOAuthLoading) {
-                                    MaterialTheme.colorScheme.outline
-                                } else {
-                                    MaterialTheme.colorScheme.onErrorContainer
-                                }
-                                Surface(
-                                    shape = MuseShapes.pill,
-                                    color = revokeBtnBg,
-                                    modifier = Modifier.clickable(enabled = !isOAuthLoading) { onRevokeOAuth() },
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    ) {
-                                        Icon(
-                                            imageVector = MuseIcons.x,
-                                            contentDescription = null,
-                                            tint = revokeBtnContentColor,
-                                            modifier = Modifier.size(MuseIconSizes.iconSmall),
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.oauth_revoke),
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                                            color = revokeBtnContentColor,
-                                        )
-                                    }
-                                }
-                            }
-                            // 加载状态提示
-                            if (isOAuthLoading) {
-                                Text(
-                                    text = stringResource(R.string.oauth_polling),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                        }
-                    }
 
                     // v2.4: 独立测试连接按钮 + 结果胶囊
                     // - 测试中: 按钮内 CircularProgressIndicator

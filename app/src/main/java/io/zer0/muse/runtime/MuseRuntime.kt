@@ -46,7 +46,12 @@ object MuseRuntime {
     /** 传给子进程的 CPU 核数环境变量名（脚本包装层在原生取不到时据此兜底）。 */
     const val ENV_CPU_COUNT = "MUSE_CPU_COUNT"
 
-    /** 数据包版本标记（升级 assets 时同步修改，触发重新解压）。 */
+    /**
+     * 数据包版本标记的**兜底值**：正常路径不写死版本——标记由
+     * [bundledDataVersion] 从包内 `VERSION.txt`（打包脚本从真实
+     * package.json 写出）派生，npm 浮动后自动跟随；只有 VERSION.txt
+     * 读不到时才退回这个常量（见 [RuntimeDataVersion]）。
+     */
     const val RUNTIME_DATA_VERSION = "npm-12.2.2"
 
     // ── 路径 ─────────────────────────────────────────────────────
@@ -83,19 +88,55 @@ object MuseRuntime {
     private const val MARK_FILE = ".runtime-data-version"
 
     /**
+     * 当前 APK 内置数据包的版本标记：打开 assets zip，读根部
+     * [RuntimeDataVersion.VERSION_TXT_ENTRY] 并规范化。
+     *
+     * VERSION.txt 是打包脚本写出的**第一个根文件**（stage 根目录只有它），
+     * 流式扫描在命中处即停，成本可忽略；任何失败（读不到 / 格式不符）
+     * 都退回兜底常量 [RUNTIME_DATA_VERSION]，行为退化为旧的写死口径，
+     * 绝不因派生失败而卡住解压。
+     */
+    internal fun bundledDataVersion(ctx: Context): String {
+        val fromZip = runCatching {
+            ctx.assets.open(ASSETS_ZIP).use { raw ->
+                ZipInputStream(raw.buffered()).use { zip ->
+                    var entry = zip.nextEntry
+                    var marker: String? = null
+                    while (entry != null) {
+                        if (entry.name == RuntimeDataVersion.VERSION_TXT_ENTRY && !entry.isDirectory) {
+                            marker = RuntimeDataVersion.markerFromVersionTxt(
+                                zip.readBytes().toString(Charsets.UTF_8),
+                            )
+                            break
+                        }
+                        zip.closeEntry()
+                        entry = zip.nextEntry
+                    }
+                    marker
+                }
+            }
+        }.onFailure { Logger.w(TAG, "Could not read bundled VERSION.txt: ${it.message}") }.getOrNull()
+        return fromZip ?: RUNTIME_DATA_VERSION
+    }
+
+    /**
      * 从 assets 解压运行时数据（幂等；版本标记命中时跳过）。
+     *
+     * 标记与**包内实际 npm**比对（[bundledDataVersion] 派生），因此打包侧
+     * npm 版本浮动后，升级安装会自动重新解压，不再残留旧 npm 数据。
      */
     suspend fun ensureData(ctx: Context): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val rt = runtimeDir(ctx)
             val mark = File(rt, MARK_FILE)
             val installed = runCatching { mark.readText().trim() }.getOrNull()
-            if (installed == RUNTIME_DATA_VERSION && npmCli(ctx).isFile) {
+            val bundled = bundledDataVersion(ctx)
+            if (installed == bundled && npmCli(ctx).isFile) {
                 setupBinLinks(ctx)
                 return@runCatching
             }
 
-            Logger.i(TAG, "Extracting runtime data ($installed -> $RUNTIME_DATA_VERSION)")
+            Logger.i(TAG, "Extracting runtime data ($installed -> $bundled)")
             npmDir(ctx).deleteRecursively()
             ctx.assets.open(ASSETS_ZIP).use { raw ->
                 ZipInputStream(raw.buffered()).use { zip ->
@@ -117,7 +158,7 @@ object MuseRuntime {
                     }
                 }
             }
-            mark.writeText(RUNTIME_DATA_VERSION)
+            mark.writeText(bundled)
             setupBinLinks(ctx)
             Logger.i(TAG, "Runtime data extraction complete")
         }.onFailure { Logger.w(TAG, "Runtime data extraction failed: ${it.message}", it) }

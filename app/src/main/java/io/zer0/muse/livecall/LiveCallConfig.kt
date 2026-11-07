@@ -45,6 +45,13 @@ object LiveCallConfig {
     /** 上行音频的 MIME(Live API 要求带 rate 后缀)。 */
     const val INPUT_AUDIO_MIME = "audio/pcm;rate=$INPUT_SAMPLE_RATE"
 
+    /**
+     * setup 看门狗时限:socket 打开后若迟迟等不到 setupComplete(服务端静默卡住、
+     * setup 被无声拒绝等),超过此时限就落到带原因的 ERROR,绝不让界面无限停在
+     * 「连接中」。20 秒远长于正常 setup 往返(亚秒级),不会误杀健康连接。
+     */
+    const val SETUP_TIMEOUT_MS = 20_000L
+
     private const val WS_BASE_URL =
         "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent"
 

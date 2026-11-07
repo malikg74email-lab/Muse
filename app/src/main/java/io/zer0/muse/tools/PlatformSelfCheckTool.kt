@@ -60,7 +60,7 @@ object PlatformSelfCheckTool {
         )
         val data = MuseRuntime.ensureData(context)
         sb.append("\n  - Runtime data: ").append(
-            if (data.isSuccess) "Ready (${MuseRuntime.RUNTIME_DATA_VERSION})" else "Extraction failed",
+            if (data.isSuccess) "Ready (${MuseRuntime.bundledDataVersion(context)})" else "Extraction failed",
         )
         val npmCli = MuseRuntime.npmCli(context)
         if (npmCli.isFile) {

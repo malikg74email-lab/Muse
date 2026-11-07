@@ -195,14 +195,14 @@ class MuseApp : Application(), ImageLoaderFactory {
         // Koin/后台 Runner 再次触发同一崩溃,导致用户无法抵达 SafeModeScreen
         if (MuseCrashHandler.checkSafeMode(this)) {
             Logger.w("MuseApp", "Safe mode active — skipping service initialization")
-            // v2.6.0: 安全模式同样安装 Activity 追踪(OAuth 等仍可用)
+            // v2.6.0: 安全模式同样安装 Activity 追踪
             io.zer0.muse.ui.common.CurrentActivityTracker.install(this)
             super.onCreate()
             return
         }
         super.onCreate()
-        // v2.6.0: 安装应用级 Activity 追踪 —— OAuth Auth Code Flow 需真实 Activity
-        // 启动浏览器 Intent,部分 Compose 容器下 findActivity() 可能拿不到上下文。
+        // v2.6.0: 安装应用级 Activity 追踪 —— 部分 Compose 容器下
+        // findActivity() 可能拿不到上下文,浏览器 Intent 等场景需要真实 Activity。
         io.zer0.muse.ui.common.CurrentActivityTracker.install(this)
         // StrictMode:仅 debug 构建,检测主线程磁盘读写/网络访问违规并 penaltyLog。
         // 必须在服务初始化前启用,以便捕获 Koin/Runner 初始化期间的违规;release 不启用避免性能开销。
@@ -296,14 +296,9 @@ class MuseApp : Application(), ImageLoaderFactory {
             // 断点续传(工具中断恢复):初始化 pending tool calls 持久化文件路径。
             // 必须 Early-init,确保 ChatViewModel 启动时 fileRef 已就绪。
             io.zer0.muse.chat.PendingToolCallStore.init(this)
-            // P2-11: 注入 SecureCredentialStore 到 OAuthManager 单例,
-            // 登录成功后 OAuth token 会加密写入独立 SP(与普通 API Key 物理隔离)
-            io.zer0.muse.auth.OAuthManager.init(io.zer0.muse.auth.SecureCredentialStore(this))
-            // v2.6.0: 装配全局代理提供者 —— token 交换/刷新必须与用户配置的代理一致。
-            // 否则代理用户会遇到“浏览器授权成功但应用 token 交换失败”(直连被地区拒绝)。
-            io.zer0.muse.auth.OAuthManager.installProxyConfigProvider {
-                settings.proxyConfigCache
-            }
+            // Shaheen 2 Fix Phase 3 (§10 fix 13): OAuthManager init hata diya
+            // gaya — auth package (OAuthManager/SecureCredentialStore) remove
+            // ho chuka hai; Shaheen 2 mein koi login system nahi hai.
             // v2.6.9（用户反馈）: 把代理同步到全局 ProxyProvider。
             //
             // 背景：全仓 28 处 OkHttpClient 构造点里只有 3 处应用了代理，
@@ -318,15 +313,9 @@ class MuseApp : Application(), ImageLoaderFactory {
                     io.zer0.ai.core.ProxyProvider.set(cfg.toProxyDescriptor())
                 }
             }
-            // v2.6.2（Codex 登录修复）: 存量 Codex 供应商自愈 —— 旧版因 account-id
-            // 解析路径错误，已登录用户的 provider 里从未写入 ChatGPT-Account-ID 头，
-            // 导致所有 Codex 推理请求 403。这里从加密存储的 id_token 现解析并补写，
-            // 让老用户无需重新登录即可恢复。幂等，无 OAuth 时静默跳过。
-            appScope.launch {
-                resultOf { settings.healCodexAccountHeadersIfNeeded() }
-                    .onError { msg, t -> Logger.w("MuseApp", "Codex account header self-healing failed: $msg", t) }
-                    .onSuccess { n -> if (n > 0) Logger.i("MuseApp", "Codex account header self-healing done: fixed $n providers") }
-            }
+            // Shaheen 2 Fix Phase 3 (§10 fix 13): Codex account-header self-heal
+            // bhi hata diya gaya — woh OAuth id_token par mabni tha aur
+            // Codex preset ke saath hi khatam ho gaya.
             // Phase 8.10: 创建通知渠道(幂等,Android 8.0+ 必需)
             notificationManager.ensureChannels()
             // 通知监听服务可能尚未被系统绑定;先恢复本地通知历史,让通知工具和设置页

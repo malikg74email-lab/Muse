@@ -399,4 +399,68 @@ class ToolExposurePolicyTest {
         assertFalse("ui_click" in names)
         assertFalse("screen_tap_text" in names)
     }
+
+    // ── Shaheen 2 Fix Phase 3 (§8 fix addition 7): mode-scoped always-on ────
+
+    /** Device + internal dono ke GLOBAL tools aik saath (narrowing threshold se upar). */
+    private val modeTools = padding + listOf(
+        tool("app_launch"), tool("ui_click"), tool("screen_tap_text"),
+        tool("workspace_write"), tool("workspace_read"), tool("execute_shell"), tool("terminal_exec"),
+        tool("calculator"),
+    )
+
+    @Test
+    fun `device mode always exposes phone control but not workspace tools`() {
+        val names = ToolExposurePolicy.filterToolsForRequest(
+            "hello, how are you today my friend",
+            modeTools,
+            mode = ExecutionMode.DEVICE,
+        ).map { it.name }.toSet()
+        assertTrue("DEVICE par ui_click hona chahiye", "ui_click" in names)
+        assertTrue("DEVICE par screen_tap_text hona chahiye", "screen_tap_text" in names)
+        assertFalse("DEVICE par workspace_write nahi ana chahiye", "workspace_write" in names)
+        assertFalse("DEVICE par execute_shell nahi ana chahiye", "execute_shell" in names)
+    }
+
+    @Test
+    fun `internal mode always exposes workspace tools but not phone control`() {
+        val names = ToolExposurePolicy.filterToolsForRequest(
+            "hello, how are you today my friend",
+            modeTools,
+            mode = ExecutionMode.INTERNAL,
+        ).map { it.name }.toSet()
+        assertTrue("INTERNAL par workspace_write hona chahiye", "workspace_write" in names)
+        assertTrue("INTERNAL par execute_shell hona chahiye", "execute_shell" in names)
+        assertTrue("INTERNAL par terminal_exec hona chahiye", "terminal_exec" in names)
+        assertFalse("INTERNAL par ui_click nahi ana chahiye", "ui_click" in names)
+        assertFalse("INTERNAL par screen_tap_text nahi ana chahiye", "screen_tap_text" in names)
+    }
+
+    @Test
+    fun `null mode keeps phase 1 narrowing exactly`() {
+        // mode na diya jaye to Phase 1 ka rawaiya: idle chat par dono set band.
+        val names = ToolExposurePolicy.filterToolsForRequest(
+            "hello, how are you today my friend",
+            modeTools,
+        ).map { it.name }.toSet()
+        assertFalse("ui_click" in names)
+        assertFalse("workspace_write" in names)
+        assertFalse("execute_shell" in names)
+    }
+
+    @Test
+    fun `mode scoping does not hide keyword matched families`() {
+        // Mode sirf always-on scope hai; family-hit wale tools apne raste se
+        // ate rehte hain (mixed multi-step tasks beech mein na rukein).
+        val names = ToolExposurePolicy.filterToolsForRequest(
+            "YouTube kholo aur phir workspace mein note bhi likh do",
+            modeTools,
+            mode = ExecutionMode.DEVICE,
+        ).map { it.name }.toSet()
+        assertTrue("app_launch family se ana chahiye", "app_launch" in names)
+        assertTrue(
+            "workspace keyword family-hit se ana chahiye, mode use chhupata nahi",
+            "workspace_write" in names,
+        )
+    }
 }

@@ -11,6 +11,7 @@ import io.zer0.muse.tools.ToolRiskLevel
  * 命名前缀统一 `app_`，与 `screen_*`（UI 自动化）、`device_*`（设备命令）并列：
  *  - `app_list`        列出可启动应用（无授权要求）
  *  - `app_launch`      启动应用（无授权要求）
+ *  - `app_deep_link`   深链接打开应用内具体页面（先链接、验落点、败才退回启动；无授权要求）
  *  - `app_settings`    打开应用系统设置页（无授权要求，用户可自行改权限/清数据）
  *  - `app_force_stop`  强行停止（需 Shizuku/adb 或 Root）
  *  - `app_clear_data`  清空数据（需 Shizuku/adb 或 Root）
@@ -70,6 +71,34 @@ class AppControlTools(
 
         registry.register(
             ToolRegistry.ToolDef(
+                name = "app_deep_link",
+                description = "Open a SPECIFIC page inside a famous app via its deep link, verified step by step: " +
+                    "the link is tried first, the landing is verified on screen, and only if the link fails does it fall back " +
+                    "to launching the app (with a navigation hint for the screen tools). Slow opens are retried a few times and " +
+                    "the result says how many attempts happened. Prefer this over app_launch whenever the user names a specific " +
+                    "video, search, chat, page or post. Supported: youtube (video / query / page=subscriptions), " +
+                    "youtube_studio (video edit page), whatsapp (phone with country code, or a wa.me link), " +
+                    "facebook (handle, handle+post, or a full facebook url), url (any https link).",
+                parameters = mapOf(
+                    "app" to "Required: youtube | youtube_studio | whatsapp | facebook | url",
+                    "video" to "For youtube/youtube_studio: a video id or any YouTube URL of the video",
+                    "query" to "For youtube: a search query",
+                    "page" to "For youtube: 'subscriptions'",
+                    "phone" to "For whatsapp: phone number with country code, or a wa.me link",
+                    "handle" to "For facebook: profile/page username or id",
+                    "post" to "For facebook: post id (together with handle)",
+                    "url" to "A full https link (a facebook post URL, or any link when app=url)",
+                    "expect_text" to "Optional: text expected on the landing screen; checked after landing",
+                ),
+                required = setOf("app"),
+                riskLevel = ToolRiskLevel.NORMAL,
+            ),
+        ) { args ->
+            openDeepLink(args)
+        }
+
+        registry.register(
+            ToolRegistry.ToolDef(
                 name = "app_settings",
                 description = "Open an app's system settings details page (can view/modify permissions, notifications, storage usage)." +
                     "Such operations are suited to letting the user confirm themselves; safer than clearing data directly.",
@@ -122,6 +151,31 @@ class AppControlTools(
         }
     }
 
+    /**
+     * app_deep_link 的执行入口：解析（注册表）→ 打开（控制器，含验证与 fallback）
+     * → 渲染报告（纯函数）。解析被拒时如实返回原因，绝不猜链接。
+     */
+    private suspend fun openDeepLink(args: Map<String, String>): String {
+        val params = args.filterValues { it.isNotBlank() }
+        return when (val resolution = DeepLinkRegistry.resolve(args["app"]?.trim().orEmpty(), params)) {
+            is DeepLinkResolution.Rejected -> "Cannot open a deep link: ${resolution.reason}"
+            is DeepLinkResolution.Resolved -> {
+                val target = params["expect_text"]?.trim()?.takeIf { it.isNotEmpty() }
+                    ?.let { resolution.target.copy(screenHint = it) }
+                    ?: resolution.target
+                val outcome = controller.openDeepLink(target)
+                val launchDescription = (outcome as? DeepLinkOutcome.FellBackToAppLaunch)?.let { fallback ->
+                    describe(
+                        context.getString(R.string.app_control_launch_action),
+                        target.packageName ?: target.appLabel,
+                        fallback.launch,
+                    )
+                }
+                DeepLinkReport.render(target, outcome, launchDescription)
+            }
+        }
+    }
+
     /** 统一的"执行 + 翻译"入口：入参为空的处理也只在这里写一次。 */
     private suspend fun runAction(action: AppControlAction, actionLabelRes: Int, rawApp: String?): String {
         val app = rawApp?.trim().orEmpty()
@@ -152,7 +206,12 @@ class AppControlTools(
                     ExecutionChannel.ROOT -> R.string.app_control_via_root
                 },
             ),
-        )
+            // Shaheen 2 Deep Links & Shortcuts (§6a): 重试过几次必须写明，不许静默
+        ) + if (result.attempts > 1) {
+            context.getString(R.string.app_control_attempts, result.attempts)
+        } else {
+            ""
+        }
 
         is AppActionResult.Unavailable -> context.getString(
             R.string.app_control_unavailable,

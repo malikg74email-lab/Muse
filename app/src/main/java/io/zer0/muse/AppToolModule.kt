@@ -34,9 +34,10 @@ val appToolModule = module {
     single { io.zer0.muse.channel.DingtalkReceiver(get(), androidContext(), get()) }
     // P1-3b 拆域: 文本/编码工具注册器(URL/Base64/哈希/UUID/随机数,从 ToolRegistry 抽出)
     single { io.zer0.muse.tools.EncodingToolsRegistrar(androidContext(), get()) }
-    // v2.0: OAuth 连接器工具(connector_list / call_connector)
-    single { io.zer0.muse.connector.ConnectorStore(androidContext()) }
-    single { io.zer0.muse.tools.ConnectorToolsRegistrar(get(), get()) }
+    // Shaheen 2 Fix Phase 3 (§10 fix 13): OAuth connectors remove ho gaye
+    // hain (ConnectorStore / ConnectorToolsRegistrar deleted) — connector
+    // feature ki wahid authentication OAuth2 thi, aur koi login system
+    // Shaheen 2 mein nahi hai.
     // P1-3b 拆域: 核心基础工具注册器(get_current_time/calculator/echo)
     single { io.zer0.muse.tools.CoreToolsRegistrar(androidContext(), get()) }
     // P1-3b 拆域: 天气工具注册器(get_weather)
@@ -73,6 +74,17 @@ val appToolModule = module {
     // 修复 NoDefinitionFoundException:此前 ToolsSettingsPage 用 koinInject() 取 ToolConfigStore,
     // 但 Koin 中未注册,导致点击"为每个工具设置是否批准"按钮进入页面时 Compose 重组崩溃
     single { ToolConfigStore(androidContext()) }
+
+    // Shaheen 2 Allow Cards (Part 1, 2026-11-07): remembered gate
+    // decisions (always-allow scopes + known MCP servers/recipients).
+    // ToolsSettingsPage reviews/resets them via koinInject; the approval
+    // coordinator/controller construct their own instances over the same
+    // top-level DataStore delegate (same file, no duplicate-store crash).
+    single { io.zer0.muse.tools.AllowCardGateStore(androidContext()) }
+
+    // Shaheen 2 Auto-Training (Part 2, 2026-11-07): per provider+model
+    // Working Instructions Pack delivery records.
+    single { io.zer0.muse.tools.PackDeliveryStore(androidContext()) }
 
     // P2-6: BrowserManager 浏览器自动化(Headless WebView,供 AI 工具调用)
     // 注:ToolRegistry 与 UI(浏览器状态胶囊)共享同一实例,AI 操作实时可看

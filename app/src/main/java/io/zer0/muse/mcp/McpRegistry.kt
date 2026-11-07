@@ -243,46 +243,6 @@ class McpRegistry(
         }
     }
 
-    // ── Phase 10.4: OAuth 2.1 PKCE 代理(供 UI 调用) ──────────────────────────
-
-    /**
-     * Phase 10.4: 启动指定 server 的 OAuth 授权流程。
-     * @return 授权 URL(UI 用 Intent.ACTION_VIEW 打开);null 表示 server 不存在或 OAuth 未启用
-     */
-    fun startOAuthFlow(serverId: String): String? {
-        val client = clients[serverId] ?: return null
-        return runCatching { client.startOAuthFlow() }.getOrNull()
-    }
-
-    /**
-     * Phase 10.4: 完成 OAuth 授权流程(浏览器回调后调用)。
-     * 成功后自动重连 server。
-     * @return true 成功;false 失败(state 不匹配 / 交换失败 / server 不存在)
-     */
-    suspend fun completeOAuthFlow(serverId: String, redirectUri: String): Boolean {
-        val client = clients[serverId] ?: return false
-        val ok = client.completeOAuthFlow(redirectUri)
-        if (ok) {
-            // 授权成功,重连(这次能拿到 token,正常握手)
-            val cfg = _servers.value.firstOrNull { it.id == serverId } ?: return ok
-            disconnectServer(serverId)
-            connectServer(cfg)
-        }
-        return ok
-    }
-
-    /** Phase 10.4: 撤销指定 server 的 OAuth 授权。 */
-    suspend fun revokeOAuth(serverId: String) {
-        val client = clients[serverId] ?: return
-        client.revokeOAuth()
-    }
-
-    /** Phase 10.4: 指定 server 是否需要 OAuth 授权。 */
-    fun needsOAuth(serverId: String): Boolean {
-        val client = clients[serverId] ?: return false
-        return client.needsOAuth()
-    }
-
     // ── Phase 11.1.2: resources / prompts 聚合 API ──────────────────────────
 
     /**
@@ -351,44 +311,19 @@ class McpRegistry(
             .getOrNull() ?: McpPromptResult()
     }
 
-    // ── Phase 11.1.3: Dynamic Client Registration 代理 ──────────────────────
-
-    /**
-     * Phase 11.1.3: 自动发现 OAuth 元数据 + 动态注册客户端。
-     *
-     * 成功后把填好的 [McpOAuthConfig] 持久化到 server 配置,然后转 NEEDS_AUTH 等 UI 授权。
-     * 失败原因:server URL 不可达 / 不支持动态注册 / 注册端点返回错误。
-     *
-     * @return 填好的 [McpOAuthConfig];失败返回 null
-     */
-    suspend fun discoverAndRegisterOAuth(serverId: String): McpOAuthConfig? {
-        val cfg = _servers.value.firstOrNull { it.id == serverId } ?: return null
-        if (cfg.url.isBlank()) return null
-        val oauthConfig = McpDynamicRegistration.discoverAndRegister(
-            serverUrl = cfg.url,
-            // L-REG1: 从 config 读取 redirectUri,而非硬编码
-            redirectUri = cfg.oauthConfig.redirectUri,
-        ) ?: return null
-        // 持久化到 server 配置
-        val updated = cfg.copy(oauthConfig = oauthConfig)
-        updateServer(updated)
-        Logger.i(TAG, "[$serverId] dynamic registration succeeded, clientId=${oauthConfig.clientId}")
-        return oauthConfig
-    }
-
     /**
      * 连接到指定 server,握手成功后注册 tools 到 [ToolRegistry]。
      */
     private suspend fun connectServer(config: McpServerConfig) {
         if (clients.containsKey(config.id)) return // 已连接
         // G2: 连接入口 SSRF 兜底 — 即使绕过 upsertServer 入口(startAll 读取存量配置/
-        // init collector/reconnect/OAuth 后重连),也不发起指向内网的连接。
+        // init collector/reconnect 后重连),也不发起指向内网的连接。
         if (config.isSsrfBlocked()) {
             Logger.w(TAG, "[${config.id}] URL hit SSRF protection (internal/reserved address); connection refused")
             updateState(config.id, McpConnectionState.FAILED)
             return
         }
-        // Phase 10.4: 传入 settings,使 McpClient 支持 OAuth token 持久化
+        // settings 注入:McpClient 的飞书 TAT 持久化用
         val client = McpClient(config, settings = settings, appContext = context)
         // init collector 与 startAll 可能同时发现同一个 server,用 putIfAbsent 防止双 client
         // 并行握手、重复注册同名 MCP 工具和重复重连。
@@ -418,12 +353,11 @@ class McpRegistry(
         }
 
         client.start()
-        // M-REG1: 用 first{} 替代 200ms 轮询,等待终态(CONNECTED/FAILED/NEEDS_AUTH)
+        // M-REG1: 用 first{} 替代 200ms 轮询,等待终态(CONNECTED/FAILED)
         val finalState = withTimeoutOrNull(10_000L) {
             client.state.first {
                 it == McpConnectionState.CONNECTED ||
-                    it == McpConnectionState.FAILED ||
-                    it == McpConnectionState.NEEDS_AUTH
+                    it == McpConnectionState.FAILED
             }
         }
         if (finalState == null) {
@@ -700,10 +634,7 @@ class McpRegistry(
                 ready = serverIds.all { it in toolsReadyServers }
                 failed = !ready && serverIds.any { id ->
                     id in toolLoadFailedServers ||
-                        serversState.value[id] in setOf(
-                            McpConnectionState.FAILED,
-                            McpConnectionState.NEEDS_AUTH,
-                        )
+                        serversState.value[id] == McpConnectionState.FAILED
                 }
                 if (!ready && !failed) delay(50L)
             }

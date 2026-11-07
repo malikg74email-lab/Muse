@@ -430,6 +430,7 @@
     <string name="app_control_reason_system_app">this action is not allowed on system apps</string>
     <string name="app_control_reason_self">this action is not allowed on Shaheen 2 itself</string>
     <string name="app_control_via_app">app permission</string>
+    <string name="app_control_attempts"> (after %1$d attempts)</string>
     <string name="app_control_via_shell">Shizuku/adb</string>
     <string name="app_control_via_root">Root</string>
 </resources>

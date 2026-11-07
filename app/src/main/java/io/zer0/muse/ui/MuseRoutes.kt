@@ -223,8 +223,8 @@ object MuseRoutes {
     /** v1.0.92: 消息渠道页(外部 IM 桥接配置)。 */
     const val CHANNELS = "channels"
 
-    /** v1.0.92: OAuth 连接器页(通用 OAuth2 接入)。 */
-    const val CONNECTORS = "connectors"
+    // Shaheen 2 Fix Phase 3 (§10 fix 13): CONNECTORS route hata di gayi —
+    // OAuth connector page remove ho chuki hai, is constant ka koi user nahi tha.
 
     /** v1.0.4: AI 工具管理页(从设置 → 助手与 Agent 进入,展示 ToolRegistry 中全部工具)。 */
     const val TOOLS = "tools"

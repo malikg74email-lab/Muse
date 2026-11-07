@@ -335,6 +335,16 @@ sealed class StreamRoundResult {
         val firstTokenTime: Long,
         val citationUrls: List<String> = emptyList(),
         val toolCallsTruncated: Boolean = false,
+        /**
+         * Shaheen 2 Coding Completeness (Part 3, 2026-11-07): the
+         * provider's finish/stop reason for this round, passed through
+         * so the loop can tell a length-limited cut (ChatStopReason
+         * .isLengthLimited) from a natural stop and auto-continue a
+         * coding turn instead of reporting truncated work as finished.
+         * Null when the provider reported none. Defaulted so every
+         * other StreamRoundResult producer is unaffected.
+         */
+        val finishReason: String? = null,
     ) : StreamRoundResult()
 
     /**
@@ -839,6 +849,26 @@ class ToolOrchestrator(
         // Shaheen 2 Fix Phase 1 (§5 Fix 1.4): text-fallback detector ki re-prompt
         // sirf aik dafa (bounded) — dusri dafa bhi text hi aye to lasting error.
         var textFallbackRetried = false
+        // Shaheen 2 Fix Phase 3 (§8 additions 7–9): is turn ka mode aik dafa,
+        // aakhri USER message se classify karo. DEVICE turn par mode-bound
+        // success (verification lazmi) aur ui_agent foreground forcing lagegi;
+        // INTERNAL turn par orchestrator ka rawaiya bilkul nahi badalta.
+        val turnMode =
+            ExecutionModeRouter.classify(
+                conversationHistory.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty(),
+            )
+        var deviceActionExecuted = false
+        var deviceVerified = false
+        var deviceVerifyRetried = false
+        // Shaheen 2 Coding Completeness (Part 3, 2026-11-07): length-limit
+        // auto-continue ka hisaab (bounded), file-tool re-prompt aik dafa,
+        // aur is turn mein file tools istemal hue ya nahi. User text
+        // turnMode wali hi classification source se lia gaya hai.
+        val lastUserText =
+            conversationHistory.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
+        var autoContinueRounds = 0
+        var fileToolRepromptUsed = false
+        var fileToolsUsedThisTurn = false
         var finalAssistantMessage: UIMessage? = null
         // A-07: 非正常退出原因(卡死/连续失败),用于收尾消息文案
         var abortReason: String? = null
@@ -865,6 +895,31 @@ class ToolOrchestrator(
         // 每轮都要按"当前历史"算一次 token 占用（给内联输出预算用）。历史每轮只多两条，
         // 共用一份按实例的计数缓存后，第 2 轮起只算新增的那两条，不再整份重跑 BPE。
         val loopTokenCache = io.zer0.muse.util.MessageTokenCache()
+
+        // Shaheen 2 Coding Completeness (Part 3): bounded re-prompt ka
+        // shared pattern (Phase 1 detector / Phase 3 verify blocks wala
+        // hi tarika) — mojooda reply history mein jata hai, note USER
+        // message ki surat mein lagti hai, aur agle round ke liye naya
+        // assistant placeholder banta hai. Sirf Part 3 ke do naye blocks
+        // istemal karte hain; Phase 1/3 ke blocks unhi ke pattern par
+        // pehle se likhe hue hain, unhe nahi chua gaya.
+        fun continueWithUserNote(reply: UIMessage, note: String) {
+            conversationHistory.add(reply.copy(toolCalls = emptyList()))
+            conversationHistory.add(UIMessage(role = MessageRole.USER, content = note))
+            val nextAssistant = UIMessage(role = MessageRole.ASSISTANT, content = "")
+            val snapshot = accessor.snapshot
+            val isCurrentDisplayedSession =
+                if (snapshot.isAgentMode) {
+                    snapshot.agentSessionId == params.sessionId
+                } else {
+                    snapshot.currentSessionId == params.sessionId
+                }
+            if (isCurrentDisplayedSession) {
+                accessor.updateMessages { it + nextAssistant }
+            }
+            currentAssistantId = nextAssistant.id
+            hasToolCalls = true
+        }
 
         while ((hasToolCalls || forceFinalResponse) && round < execPolicy.maxRounds) {
             round++
@@ -1063,8 +1118,149 @@ class ToolOrchestrator(
                             )
                             break
                         }
+                        // Shaheen 2 Coding Completeness (Part 3a): length limit
+                        // ne coding/work turn ko beech mein kaat dia to turn
+                        // "complete" nahi hoga — reply history mein rahegi,
+                        // CONTINUE note lagegi, aur model wahi se aage badhega
+                        // (bounded: CodingCompleteness.MAX_AUTO_CONTINUES).
+                        // Yeh check device-verify se PEHLE hai: adhoori reply
+                        // par verification ki demand bekaar hai.
+                        if (!forceFinalResponse &&
+                            round < execPolicy.maxRounds &&
+                            CodingCompleteness.shouldAutoContinue(
+                                finishReason = outcome.finishReason,
+                                userText = lastUserText,
+                                replyText = outcome.assistantMessage.content,
+                                fileToolsUsedThisTurn = fileToolsUsedThisTurn,
+                                continuesUsed = autoContinueRounds,
+                            )
+                        ) {
+                            autoContinueRounds++
+                            Logger.w(
+                                TAG,
+                                "Length-limited coding turn auto-continued" +
+                                    " | continue=$autoContinueRounds/${CodingCompleteness.MAX_AUTO_CONTINUES}" +
+                                    " | sessionId=${params.sessionId} | round=$round",
+                            )
+                            continueWithUserNote(
+                                outcome.assistantMessage,
+                                CodingCompleteness.CONTINUE_TEXT,
+                            )
+                            continue
+                        }
+                        // Shaheen 2 Coding Completeness (Part 3b): coding turn
+                        // ka jawab giant code block ki surat mein chat text
+                        // mein aya aur file tools istemal hi nahi hue — aik
+                        // dafa file tools ki taraf re-prompt (Phase 1 detector
+                        // ka one-shot pattern). Dusri dafa jawab jaisa hai
+                        // waisa accept hoga.
+                        if (!forceFinalResponse &&
+                            round < execPolicy.maxRounds &&
+                            CodingCompleteness.shouldRepromptToFileTools(
+                                userText = lastUserText,
+                                replyText = outcome.assistantMessage.content,
+                                fileToolsUsedThisTurn = fileToolsUsedThisTurn,
+                                alreadyReprompted = fileToolRepromptUsed,
+                            )
+                        ) {
+                            fileToolRepromptUsed = true
+                            Logger.w(
+                                TAG,
+                                "Giant inline code block on a coding turn; re-prompting once toward file tools" +
+                                    " | blockChars=${CodingCompleteness.largestInlineCodeBlockChars(outcome.assistantMessage.content)}" +
+                                    " | sessionId=${params.sessionId} | round=$round",
+                            )
+                            continueWithUserNote(
+                                outcome.assistantMessage,
+                                CodingCompleteness.FILE_TOOL_REPROMPT_TEXT,
+                            )
+                            continue
+                        }
+                        // Shaheen 2 Fix Phase 3 (§8 fix addition 8): mode-bound success.
+                        // DEVICE turn mein device action execute ho chuka ho lekin
+                        // screen verification na mili ho to "ho gaya" wala jawab
+                        // complete nahi hoga: pehle aik bounded re-prompt
+                        // (verification tool ki demand), phir bhi na mile to final
+                        // jawab par plain unverified note — fake success kabhi nahi
+                        // (Phase 1 ka usool: no-fake-success reporting par hai,
+                        // koshish par nahi; aur yahan koshish ho bhi chuki hai).
+                        if (turnMode == ExecutionMode.DEVICE && deviceActionExecuted && !deviceVerified) {
+                            if (!deviceVerifyRetried && !forceFinalResponse && round < execPolicy.maxRounds) {
+                                deviceVerifyRetried = true
+                                Logger.w(
+                                    TAG,
+                                    "Device action executed without screen verification; re-prompting once for a verification call" +
+                                        " | sessionId=${params.sessionId} | round=$round",
+                                )
+                                conversationHistory.add(outcome.assistantMessage.copy(toolCalls = emptyList()))
+                                conversationHistory.add(
+                                    UIMessage(
+                                        role = MessageRole.USER,
+                                        content = ExecutionModeRouter.VERIFY_REPROMPT_TEXT,
+                                    ),
+                                )
+                                // Agli round ke liye naya placeholder (detector path ki tarah).
+                                val nextAssistant = UIMessage(role = MessageRole.ASSISTANT, content = "")
+                                val snapshot = accessor.snapshot
+                                val isCurrentDisplayedSession =
+                                    if (snapshot.isAgentMode) {
+                                        snapshot.agentSessionId == params.sessionId
+                                    } else {
+                                        snapshot.currentSessionId == params.sessionId
+                                    }
+                                if (isCurrentDisplayedSession) {
+                                    accessor.updateMessages { it + nextAssistant }
+                                }
+                                currentAssistantId = nextAssistant.id
+                                hasToolCalls = true
+                                continue
+                            }
+                            hasToolCalls = false
+                            finalAssistantMessage =
+                                outcome.assistantMessage.copy(
+                                    toolCalls = emptyList(),
+                                    content = outcome.assistantMessage.content + ExecutionModeRouter.UNVERIFIED_NOTE_SUFFIX,
+                                )
+                            terminationReason =
+                                if (forceFinalResponse) {
+                                    ToolLoopTerminationReason.COMPLETED_AFTER_TOOL_FAILURES
+                                } else {
+                                    ToolLoopTerminationReason.COMPLETED
+                                }
+                            forceFinalResponse = false
+                            Logger.w(
+                                TAG,
+                                "Device action finished without screen verification; final reply marked unverified (no fake success)" +
+                                    " | sessionId=${params.sessionId}",
+                            )
+                            break
+                        }
                         hasToolCalls = false
-                        finalAssistantMessage = outcome.assistantMessage
+                        // Shaheen 2 Coding Completeness (Part 3c): auto-continue
+                        // ki hadd ke baad bhi reply length limit par kati ho to
+                        // final jawab par honest not-finished note lagega —
+                        // truncated kaam kabhi "finished" report nahi hoga.
+                        val endedTruncated =
+                            CodingCompleteness.endedTruncated(
+                                finishReason = outcome.finishReason,
+                                userText = lastUserText,
+                                replyText = outcome.assistantMessage.content,
+                                fileToolsUsedThisTurn = fileToolsUsedThisTurn,
+                            )
+                        finalAssistantMessage =
+                            if (endedTruncated) {
+                                Logger.w(
+                                    TAG,
+                                    "Coding turn ended still length-limited after auto-continues; " +
+                                        "final reply marked not-finished | sessionId=${params.sessionId}",
+                                )
+                                outcome.assistantMessage.copy(
+                                    content = outcome.assistantMessage.content +
+                                        CodingCompleteness.TRUNCATED_FINAL_SUFFIX,
+                                )
+                            } else {
+                                outcome.assistantMessage
+                            }
                         terminationReason =
                             if (forceFinalResponse) {
                                 ToolLoopTerminationReason.COMPLETED_AFTER_TOOL_FAILURES
@@ -1163,9 +1359,31 @@ class ToolOrchestrator(
                         break
                     }
 
+                    // Shaheen 2 Fix Phase 3 (§8 fix addition 9): DEVICE turn mein
+                    // ui_agent ka display "foreground" par force karo — `display=auto`
+                    // ka virtual-screen default Malik ke asal-screen wale kaam ko
+                    // invisible kar deta tha. Is point ke baad ki har cheez (stall
+                    // signature, cleaned history message, pending store, task card,
+                    // execution) isi forced list ko istemal karti hai, is liye
+                    // signature har round mein consistent rehti hai.
+                    // automation_workflow / virtual_* yahan nahi hain — un ki
+                    // per-step virtual intent explicit hoti hai, woh nahi badalti.
+                    val roundToolCalls =
+                        if (turnMode == ExecutionMode.DEVICE) {
+                            toolCallList.map { tc ->
+                                if (tc.name == "ui_agent") {
+                                    tc.copy(arguments = ExecutionModeRouter.forceForegroundDisplay(tc.arguments))
+                                } else {
+                                    tc
+                                }
+                            }
+                        } else {
+                            toolCallList
+                        }
+
                     // M3.3: 连续无进展早停检测 — 归入 execPolicy 轮级签名重复检测,
                     // 在回填前判断,避免卡死时还执行重复工具。
-                    val currentSignature = toolCallSignature(toolCallList)
+                    val currentSignature = toolCallSignature(roundToolCalls)
                     val progressDecision = execPolicy.checkRoundProgress(currentSignature)
                     if (!progressDecision.allowed) {
                         Logger.w(
@@ -1188,7 +1406,7 @@ class ToolOrchestrator(
                     // arguments(坏 JSON → "{}")而数量不变,坏 arguments 仍会进入历史回传,
                     // 下一轮请求触发 400 "Assistant tool call arguments must be valid JSON"。
                     // 改为始终使用清洗后的 toolCallList。
-                    val cleanedAssistantToolMsg = assistantToolMsg.copy(toolCalls = toolCallList)
+                    val cleanedAssistantToolMsg = assistantToolMsg.copy(toolCalls = roundToolCalls)
 
                     // 带 tool_calls 的 assistant 消息只属于本轮 Provider 协议历史。
                     // MessageEntity 不保存 toolCalls 字段，若把 content 为空的协议消息落库，
@@ -1209,7 +1427,7 @@ class ToolOrchestrator(
                     // 参数截断轮同理：回填用的 arguments 只是 `{}` 占位，落进 pending
                     // 会在重启后被当成真调用执行。
                     if (params.allowToolExecution && !truncatedArgsRound) {
-                        savePendingToolCalls(params.sessionId, toolCallList, executionIdentity, host)
+                        savePendingToolCalls(params.sessionId, roundToolCalls, executionIdentity, host)
                     }
 
                     // 构建任务卡并切换到 EXECUTING
@@ -1220,7 +1438,7 @@ class ToolOrchestrator(
                     // 不前进的步骤；截断事实由下面的工具回执卡片向用户说明。
                     val silentToolNames = setOf("send_sticker", "list_stickers")
                     val taskCardToolCallsWithIds =
-                        toolCallList
+                        roundToolCalls
                             .filter { it.name !in silentToolNames }
                             .map { it.id to (it.name to it.arguments) }
                     val taskCardToolCalls = taskCardToolCallsWithIds.map { it.second }
@@ -1366,7 +1584,7 @@ class ToolOrchestrator(
                     if (toolCallList.size > 1 && WeakToolUseDetector.isWeakToolModel(params.model)) {
                         Logger.i(TAG, "Weak-tool model detected ${toolCallList.size} tool calls, executing serially | model=${params.model?.id}")
                     }
-                    val parallelRound = !truncatedArgsRound && shouldExecuteRoundInParallel(toolCallList, params)
+                    val parallelRound = !truncatedArgsRound && shouldExecuteRoundInParallel(roundToolCalls, params)
                     val stateLock = if (parallelRound) Mutex() else null
                     val approvalLock = if (parallelRound) Mutex() else null
                     if (parallelRound) {
@@ -1382,7 +1600,7 @@ class ToolOrchestrator(
                             // 作为 tool result 回填给模型，由它在下一轮重发完整参数。
                             // 代价是本回合多占一轮请求（轮次上限最坏多吃 1 轮），
                             // 优于一整轮静默作废；反复截断仍受停滞检测与轮次上限约束。
-                            toolCallList.mapIndexed { idx, tc ->
+                            roundToolCalls.mapIndexed { idx, tc ->
                                 ToolExecResult(
                                     idx = idx,
                                     tc = tc,
@@ -1395,11 +1613,39 @@ class ToolOrchestrator(
                             }
                         } else {
                             executeToolRound(
-                                toolCallList = toolCallList,
+                                toolCallList = roundToolCalls,
                                 parallel = parallelRound,
                                 execute = { idx, tc -> executeToolCall(idx, tc, stateLock, approvalLock) },
                             )
                         }
+                    // Shaheen 2 Coding Completeness (Part 3): file tools ka
+                    // istemal note karo — completion branch isi hisaab se
+                    // auto-continue / file-tool re-prompt ka faisla karti hai.
+                    for (result in execResults) {
+                        if (result.isSuccess && CodingCompleteness.isFileWriteTool(result.tc.name)) {
+                            fileToolsUsedThisTurn = true
+                        }
+                    }
+                    // Shaheen 2 Fix Phase 3 (§8 fix addition 8): DEVICE turn ki kamyabi
+                    // ka hisaab — device action execute hua? screen par verify bhi hua?
+                    // Phase 1 ke verified launch results mein "— verified:" marker
+                    // hota hai; warna kisi verification tool ki kamyabi lazmi hai.
+                    // Completion branch is hisaab ke baghair "ho gaya" accept nahi karegi.
+                    if (turnMode == ExecutionMode.DEVICE) {
+                        for (result in execResults) {
+                            val name = result.tc.name
+                            if (ExecutionModeRouter.isVerificationTool(name) && result.isSuccess) {
+                                deviceVerified = true
+                            }
+                            if (ExecutionModeRouter.isDeviceActionTool(name)) {
+                                if (result.isSuccess) deviceActionExecuted = true
+                                if (ExecutionModeRouter.resultShowsForegroundVerification(result.finalToolResult)) {
+                                    deviceActionExecuted = true
+                                    deviceVerified = true
+                                }
+                            }
+                        }
+                    }
                     if (!params.allowToolExecution) {
                         // 给模型一轮明确的“工具已暂停”结果，然后强制关闭工具收尾；
                         // 思考和最终回复仍然保留，不会触发真实工具副作用。
@@ -1681,7 +1927,7 @@ class ToolOrchestrator(
 
                     // v1.x: 步结束日志 — 记录工具名、成功/失败数、耗时
                     val stepElapsedMs = System.currentTimeMillis() - stepStartedAt
-                    val toolNames = toolCallList.joinToString(",") { it.name }
+                    val toolNames = roundToolCalls.joinToString(",") { it.name }
                     val successCount = execResults.count { it.isSuccess }
                     val failCount = execResults.size - successCount
                     // P3-9: 每轮耗时埋点 — 除 debug 日志外同时写入 Perf(供一次日志/ANR 诊断定位慢在哪一段)

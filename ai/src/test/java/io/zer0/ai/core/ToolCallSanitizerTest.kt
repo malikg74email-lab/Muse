@@ -168,4 +168,69 @@ class ToolCallSanitizerTest {
     fun `overlong tool name is rejected`() {
         assertFalse(ToolCallSanitizer.isValidName("a".repeat(65)))
     }
+
+    // ── Shaheen 2 Fix Phase 3 (§5 Fix 1.5): launch-family parameter aliases ──
+    // Malik's exact device-test shape: the model emitted package_name where
+    // app_launch wants `app`; the call used to fail validation unrepaired.
+
+    @Test
+    fun `package_name alias is renamed to app for app_launch`() {
+        val out = ToolCallSanitizer.applyArgumentAliases(
+            "app_launch",
+            """{"package_name":"com.google.android.youtube"}""",
+        )
+        assertEquals("""{"app":"com.google.android.youtube"}""", out)
+    }
+
+    @Test
+    fun `sanitize applies the alias repair end to end`() {
+        val tc = ToolCall(
+            id = "1",
+            name = "app_launch",
+            arguments = """{"package_name":"com.google.android.youtube"}""",
+        )
+        val sanitized = ToolCallSanitizer.sanitize(listOf(tc)).single()
+        assertEquals("""{"app":"com.google.android.youtube"}""", sanitized.arguments)
+    }
+
+    @Test
+    fun `open_app alias maps to packageName and screen_launch_app to package`() {
+        assertEquals(
+            """{"packageName":"com.google.android.youtube"}""",
+            ToolCallSanitizer.applyArgumentAliases("open_app", """{"package_name":"com.google.android.youtube"}"""),
+        )
+        assertEquals(
+            """{"package":"com.google.android.youtube"}""",
+            ToolCallSanitizer.applyArgumentAliases("screen_launch_app", """{"pkg":"com.google.android.youtube"}"""),
+        )
+    }
+
+    @Test
+    fun `present canonical parameter is never overwritten`() {
+        val input = """{"app":"com.example.real","package_name":"com.example.other"}"""
+        assertEquals(input, ToolCallSanitizer.applyArgumentAliases("app_launch", input))
+    }
+
+    @Test
+    fun `multiple alias candidates are left untouched instead of guessed`() {
+        val input = """{"package_name":"com.example.a","app_name":"Example"}"""
+        assertEquals(input, ToolCallSanitizer.applyArgumentAliases("app_launch", input))
+    }
+
+    @Test
+    fun `non-launch tools and non-object json are untouched`() {
+        val search = """{"package_name":"com.example.a"}"""
+        assertEquals(search, ToolCallSanitizer.applyArgumentAliases("web_search", search))
+        assertEquals("[]", ToolCallSanitizer.applyArgumentAliases("app_launch", "[]"))
+        assertEquals("not json", ToolCallSanitizer.applyArgumentAliases("app_launch", "not json"))
+    }
+
+    @Test
+    fun `other argument keys survive the rename`() {
+        val out = ToolCallSanitizer.applyArgumentAliases(
+            "app_launch",
+            """{"package_name":"com.google.android.youtube","wait":true}""",
+        )
+        assertEquals("""{"app":"com.google.android.youtube","wait":true}""", out)
+    }
 }

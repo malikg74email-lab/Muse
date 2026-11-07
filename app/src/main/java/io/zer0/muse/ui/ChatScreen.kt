@@ -1685,6 +1685,9 @@ fun ChatScreen(
                                     onReferenceImageChange = { dataUri ->
                                         viewModel.setToolApprovalReferenceImage(approval.toolCallId, dataUri)
                                     },
+                                    // Shaheen 2 Allow Cards (Part 1): pass the
+                                    // gate's plain-English why-line through.
+                                    gateReason = approval.gateReason,
                                 )
                             }
                         } else if (approvals.size > 1) {

@@ -44,7 +44,49 @@ internal data class AnthropicRequest(
      * null 表示不启用工具调用;非空时透传为 tools 数组。
      */
     val tools: List<AnthropicTool>? = null,
+    /**
+     * Shaheen 2 Fix Phase 3 (diagnosis §9 fix 10): 工具选择策略。
+     * 此前 AnthropicRequest 根本没有这个字段,app 的 toolChoice="required"
+     * 在 Anthropic 路径上被静默丢弃(与 OpenAI/Gemini 不对等)。
+     * null 表示不发送该字段,走服务端默认(auto)。
+     */
+    val tool_choice: AnthropicToolChoice? = null,
 )
+
+/**
+ * Shaheen 2 Fix Phase 3: Anthropic `tool_choice` 对象。
+ *
+ * 形态: {"type": "auto" | "any" | "none"} 或 {"type": "tool", "name": "<工具名>"}。
+ * 注意:扩展思考(thinking)启用时,API 拒绝 any/tool 强制模式,
+ * Provider 在 thinking != null 时会把这两种映射丢弃(见 AnthropicProvider)。
+ */
+@Serializable
+internal data class AnthropicToolChoice(
+    val type: String,
+    val name: String? = null,
+)
+
+/**
+ * Shaheen 2 Fix Phase 3: 把 app 统一的 toolChoice 字符串映射为 Anthropic 形态,
+ * 与 Phase 1 的 geminiToolConfigFor 同构(纯函数,JVM 可测)。
+ *
+ *  - "required" → any(必须调用某个工具)
+ *  - "none"     → none(禁止调用工具)
+ *  - "auto"     → auto(模型自选)
+ *  - 其它非空值 → tool + name(强制指定工具;保留原始大小写,工具名大小写敏感)
+ *  - null/空白  → null(不发送字段;Anthropic 服务端默认即 auto,
+ *                 与 OpenAI 路径原样透传 request.toolChoice(含 null)的行为对等)
+ */
+internal fun anthropicToolChoiceFor(toolChoice: String?): AnthropicToolChoice? {
+    val raw = toolChoice?.trim().orEmpty()
+    if (raw.isEmpty()) return null
+    return when (raw.lowercase()) {
+        "auto" -> AnthropicToolChoice(type = "auto")
+        "required" -> AnthropicToolChoice(type = "any")
+        "none" -> AnthropicToolChoice(type = "none")
+        else -> AnthropicToolChoice(type = "tool", name = raw)
+    }
+}
 
 /**
  * v1.80 (H-ANT2): Anthropic 工具定义。

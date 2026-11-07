@@ -154,8 +154,6 @@
                  <data android:scheme="muse" android:host="knowledge" />
                  <data android:scheme="muse" android:host="knowledge-bases" />
             </intent-filter>
-            <!-- P1-6: OAuth 回调 io.zer0.muse://oauth/callback 已迁移到 OAuthCallbackActivity -->
-            <!-- (原 Phase 10.4 的 pathPrefix="/callback" filter 已移除,避免与 OAuthCallbackActivity 冲突) -->
             <!-- Phase 8.10: 接收系统分享(纯文本) -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -193,26 +191,6 @@
               .LauncherMemo     → 备忘录
               .LauncherStudy    → 学习记录
         -->
-
-        <!-- P1-6: OAuth 回调空 Activity — 接收 io.zer0.muse://oauth/callback Deep Link -->
-        <!-- exported=true 是 Deep Link 必需(浏览器/系统调起) -->
-        <!-- 透明主题避免无 UI Activity 启动时闪屏 -->
-        <activity
-            android:name=".auth.OAuthCallbackActivity"
-            android:exported="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:excludeFromRecents="true"
-            android:noHistory="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="io.zer0.muse"
-                    android:host="oauth"
-                    android:path="/callback" />
-            </intent-filter>
-        </activity>
 
         <!-- Phase 12: Glance Compose 桌面小部件(快捷启动到最近会话) -->
         <receiver

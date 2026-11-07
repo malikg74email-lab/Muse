@@ -562,6 +562,22 @@ class SystemPromptAssembler(
             // ── 9. 操作安全 ──
             val safety = promptLoader.render("operation_safety", locale = locale, fallback = OPERATION_SAFETY_SECTION)
             if (safety.isNotBlank()) sections.add(safety)
+
+            // ── 9.5 Shaheen 2 Working Instructions Pack (Part 2, 2026-11-07) ──
+            // Malik's auto-training order: the SAME pack for every provider
+            // and every model — only transport differs, never content — so
+            // the locale is pinned to "en" (front text is English by
+            // standing rule) and the fallback is the pack's canonical text.
+            // Delivery/readiness bookkeeping lives in ChatToolLoopRunner +
+            // PackDeliveryStore; this section is what makes the pack part
+            // of every session's instructions by construction.
+            val workingInstructions =
+                promptLoader.render(
+                    "working_instructions",
+                    locale = "en",
+                    fallback = io.zer0.muse.tools.WorkingInstructionsPack.TEXT,
+                )
+            if (workingInstructions.isNotBlank()) sections.add(workingInstructions)
             perfTimer.split("static_templates")
 
             // ── 10. MOOD 格式要求(第六步) — v1.0.51 恢复固定条数 ──

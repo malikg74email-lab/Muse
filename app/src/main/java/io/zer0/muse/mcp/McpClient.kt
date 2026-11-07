@@ -197,7 +197,7 @@ internal data class McpServerInfo(
 class McpClient(
     private val config: McpServerConfig,
     private val client: OkHttpClient = McpClient.defaultClient,
-    /** Phase 10.4: SettingsRepository 注入(OAuth 启用时用于 token 持久化;null 走静态 token)。 */
+    /** SettingsRepository 注入(飞书 TAT 持久化用;null 时走静态 token)。 */
     private val settings: io.zer0.muse.data.SettingsRepository? = null,
     /** P1-A: 应用上下文（stdio 传输解析内置运行时路径用；其他传输可为 null）。 */
     private val appContext: android.content.Context? = null,
@@ -263,10 +263,6 @@ class McpClient(
     @Volatile
     private var closed = false
 
-    /** Phase 10.4: OAuth token 内存缓存(从 settings 加载,refresh 后更新)。 */
-    @Volatile
-    private var oauthToken: McpTokenInfo? = null
-
     /** 飞书 TAT 内存缓存(短期 token,真实凭证仍保存在 SettingsRepository 的加密 token key 中)。 */
     @Volatile
     private var feishuTenantToken: McpTokenInfo? = null
@@ -276,13 +272,6 @@ class McpClient(
 
     private val feishuTenantTokenClient = McpFeishuTenantTokenClient()
     private val feishuRefreshMutex = Mutex()
-
-    /** Phase 10.4: 当前 PKCE pair(startOAuthFlow 生成,completeOAuthFlow 消费)。 */
-    @Volatile
-    private var pendingPkce: McpOAuthFlow.PkcePair? = null
-
-    /** Phase 10.4: 是否启用 OAuth。 */
-    private val oauthEnabled: Boolean get() = config.oauthConfig.enabled && settings != null
 
     /**
      * Phase 9.5 (P3-2): tools/list_changed 通知回调。
@@ -322,8 +311,7 @@ class McpClient(
         synchronized(this) {
             if (closed) return
             if (_state.value != McpConnectionState.DISCONNECTED &&
-                _state.value != McpConnectionState.FAILED &&
-                _state.value != McpConnectionState.NEEDS_AUTH
+                _state.value != McpConnectionState.FAILED
             ) {
                 return
             }
@@ -334,19 +322,7 @@ class McpClient(
     /**
      * 同步建立连接 + initialize 握手。
      * 在 IO 协程里调用。失败触发 [scheduleReconnect]。
-     *
-     * Phase 10.4: OAuth 启用时,先确保 token 有效(加载/refresh);无 token 或 refresh 失败
-     * 转 NEEDS_AUTH 状态(等 UI 调 [startOAuthFlow] 引导用户授权)。
      */
-    /**
-     * C-25: OAuth 回调 URI 日志脱敏 — 只留 scheme://host/path,丢弃 query
-     * (query 含授权 code / state,整条入日志会泄漏授权码)。
-     */
-    private fun sanitizeRedirectUriForLog(uri: String): String = runCatching {
-        val u = java.net.URI(uri)
-        "${u.scheme}://${u.host}${u.rawPath ?: ""}"
-    }.getOrElse { "(unparseable redirect uri)" }
-
     private suspend fun connect() {
         try {
             connectInternal()
@@ -373,12 +349,9 @@ class McpClient(
         }
         Logger.d(TAG, "[${config.name}] connecting transport=${config.transportType} $endpointDesc")
 
-        // Phase 10.4: OAuth 模式下先校验 token
-        if (oauthEnabled && !ensureValidToken()) {
-            Logger.w(TAG, "[${config.name}] OAuth token invalid or unauthorized, moving to NEEDS_AUTH")
-            _state.value = McpConnectionState.NEEDS_AUTH
-            return
-        }
+        // Shaheen 2 Fix Phase 3 (§10 fix 13): MCP OAuth gate hata diya gaya —
+        // MCP servers ab sirf static authToken / headers / 飞书 app credentials
+        // se chalte hain; koi user OAuth authorization nahi hoti.
         if (config.feishuAuth.enabled && !ensureFeishuTenantToken()) {
             Logger.w(TAG, "[${config.name}] Feishu TAT fetch failed, entering reconnect/failed state")
             scheduleReconnect()
@@ -407,45 +380,10 @@ class McpClient(
         }
     }
 
-    // ── Phase 10.4: OAuth 2.1 PKCE ───────────────────────────────────────────
-
-    /**
-     * 确保 OAuth token 有效:加载缓存 → 检查过期 → refresh。
-     * @return true 表示当前有有效 token;false 表示未授权 / refresh 失败(需重新授权)
-     */
-    private suspend fun ensureValidToken(forceRefresh: Boolean = false): Boolean {
-        if (!oauthEnabled) return true
-        // 首次加载:从 DataStore 读缓存
-        if (oauthToken == null) {
-            oauthToken = settings?.getMcpToken(config.id)
-        }
-        val token = oauthToken ?: return false // 未授权
-        // M-MCP2: forceRefresh=true 时强制 refresh(用于请求收到 401 后重试)
-        if (!forceRefresh && token.isValid()) return true
-        // 过期 → 尝试 refresh
-        if (!token.canRefresh()) {
-            settings?.clearMcpToken(config.id)
-            oauthToken = null
-            return false
-        }
-        Logger.d(TAG, "[${config.name}] OAuth token expired, trying refresh")
-        val newToken = McpOAuthFlow.refreshAccessToken(config.oauthConfig, token.refreshToken)
-        if (newToken == null) {
-            Logger.w(TAG, "[${config.name}] OAuth refresh failed, re-authorization required")
-            settings?.clearMcpToken(config.id)
-            oauthToken = null
-            return false
-        }
-        oauthToken = newToken
-        settings?.saveMcpToken(config.id, newToken)
-        Logger.i(TAG, "[${config.name}] OAuth token refreshed, new expiry ${newToken.expiresAt}")
-        return true
-    }
-
     /**
      * 确保飞书 tenant_access_token 有效。
      *
-     * 与 MCP OAuth 分开处理:飞书 TAT 没有 refresh_token,过期后用 app_id +
+     * 飞书 TAT 没有 refresh_token,过期后用 app_id +
      * app_secret 重新换取。短期 TAT 持久化到已有加密 token 存储,但永远不写日志。
      */
     private suspend fun ensureFeishuTenantToken(forceRefresh: Boolean = false): Boolean {
@@ -475,77 +413,16 @@ class McpClient(
         accessToken.isNotBlank() && (expiresAt == 0L || expiresAt > now + FEISHU_REFRESH_MARGIN_MS)
 
     /**
-     * 构造请求头:静态 headers + authToken + OAuth Bearer(OAuth 优先级最高)。
-     * OAuth token 由 [ensureValidToken] 预先刷新到 [oauthToken],此方法仅读取。
+     * 构造请求头:静态 headers + authToken(config.resolvedHeaders 处理)+
+     * 飞书 TAT 头(已缓存时)。
      */
     private fun resolvedAuthHeaders(): Map<String, String> {
         val headers = config.resolvedHeaders().toMutableMap()
-        oauthToken?.takeIf { it.accessToken.isNotBlank() }?.let { token ->
-            headers["Authorization"] = "Bearer ${token.accessToken}"
-        }
         feishuTenantToken?.takeIf { it.accessToken.isNotBlank() }?.let { token ->
             headers["X-Lark-MCP-TAT"] = token.accessToken
         }
         return headers
     }
-
-    /**
-     * Phase 10.4: 启动 OAuth 授权流程(由 UI 调用)。
-     *
-     * @return 授权 URL(用 Intent.ACTION_VIEW 打开浏览器);null 表示 OAuth 未启用
-     */
-    fun startOAuthFlow(): String? {
-        if (!oauthEnabled) return null
-        val pkce = McpOAuthFlow.generatePkcePair()
-        pendingPkce = pkce
-        return McpOAuthFlow.buildAuthorizationUrl(config.oauthConfig, pkce)
-    }
-
-    /**
-     * Phase 10.4: 完成 OAuth 授权流程(浏览器回调后调用)。
-     *
-     * @param redirectUri 回调 URI(含 code + state 参数)
-     * @return true 成功(token 已持久化,可调 [start] 重连);false 失败(state 不匹配 / 交换失败)
-     */
-    suspend fun completeOAuthFlow(redirectUri: String): Boolean {
-        val pkce = pendingPkce ?: run {
-            Logger.w(TAG, "[${config.name}] completeOAuthFlow but no pending PKCE pair")
-            return false
-        }
-        val parsed = McpOAuthFlow.parseRedirectCallback(redirectUri, config.oauthConfig.redirectUri)
-        if (parsed == null) {
-            // C-25: 回调 URI 含 code/state,整条入日志会泄漏授权码 — 只记 scheme://host/path
-            Logger.w(TAG, "[${config.name}] OAuth callback parsing failed: ${sanitizeRedirectUriForLog(redirectUri)}")
-            return false
-        }
-        val (code, state) = parsed
-        if (state != pkce.state) {
-            Logger.w(TAG, "[${config.name}] OAuth state mismatch: expected=${pkce.state}, got=$state")
-            return false
-        }
-        val token = McpOAuthFlow.exchangeCodeForToken(config.oauthConfig, code, pkce.verifier)
-        if (token == null) {
-            Logger.w(TAG, "[${config.name}] OAuth token exchange failed")
-            return false
-        }
-        oauthToken = token
-        settings?.saveMcpToken(config.id, token)
-        pendingPkce = null
-        Logger.i(TAG, "[${config.name}] OAuth authorization succeeded, token valid until ${token.expiresAt}")
-        return true
-    }
-
-    /** Phase 10.4: 撤销 OAuth 授权(清 token + PKCE,转 NEEDS_AUTH)。 */
-    suspend fun revokeOAuth() {
-        oauthToken = null
-        pendingPkce = null
-        settings?.clearMcpToken(config.id)
-        _state.value = McpConnectionState.NEEDS_AUTH
-        Logger.i(TAG, "[${config.name}] OAuth authorization revoked")
-    }
-
-    /** Phase 10.4: 是否需要 OAuth 授权(NEEDS_AUTH 状态 + OAuth 启用)。 */
-    fun needsOAuth(): Boolean = oauthEnabled && _state.value == McpConnectionState.NEEDS_AUTH
 
     // ── SSE 传输 ──────────────────────────────────────────────────────────────
 
@@ -740,14 +617,9 @@ class McpClient(
             try {
                 client.newCall(request).execute().use { resp ->
                     // M-MCP2: 收到 401 时强制 refresh token 并重试一次
-                    if (resp.code == 401 && retryOn401 && (oauthEnabled || feishuAuthEnabled)) {
+                    if (resp.code == 401 && retryOn401 && feishuAuthEnabled) {
                         Logger.w(TAG, "[${config.name}] POST received 401, refreshing auth credentials and retrying")
-                        val refreshed = if (oauthEnabled) {
-                            ensureValidToken(forceRefresh = true)
-                        } else {
-                            ensureFeishuTenantToken(forceRefresh = true)
-                        }
-                        if (refreshed) {
+                        if (ensureFeishuTenantToken(forceRefresh = true)) {
                             return@withContext postSseRequest(jsonRpc, retryOn401 = false)
                         }
                         return@withContext null
@@ -842,14 +714,9 @@ class McpClient(
             try {
                 client.newCall(request).execute().use { resp ->
                     // M-MCP2: 收到 401 时强制 refresh token 并重试一次
-                    if (resp.code == 401 && retryOn401 && (oauthEnabled || feishuAuthEnabled)) {
+                    if (resp.code == 401 && retryOn401 && feishuAuthEnabled) {
                         Logger.w(TAG, "[${config.name}] StreamableHTTP received 401, refreshing auth credentials and retrying")
-                        val refreshed = if (oauthEnabled) {
-                            ensureValidToken(forceRefresh = true)
-                        } else {
-                            ensureFeishuTenantToken(forceRefresh = true)
-                        }
-                        if (refreshed) {
+                        if (ensureFeishuTenantToken(forceRefresh = true)) {
                             return@withContext postStreamableRequest(jsonRpc, retryOn401 = false)
                         }
                         return@withContext null

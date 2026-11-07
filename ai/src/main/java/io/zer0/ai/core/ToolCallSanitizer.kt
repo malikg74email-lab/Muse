@@ -3,6 +3,7 @@ package io.zer0.ai.core
 import io.zer0.common.Logger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
 /**
@@ -78,14 +79,69 @@ object ToolCallSanitizer {
             )
             tc.copy(name = effectiveName, arguments = "{}")
         } else {
-            if (repaired != tc.arguments) {
+            // Shaheen 2 Fix Phase 3 (§5 Fix 1.5): launch family ke liye parameter
+            // alias bhi repair karo (package_name → app waghera), warna model ki
+            // near-miss call validation par gir jati thi.
+            val aliased = applyArgumentAliases(effectiveName, repaired)
+            if (aliased != tc.arguments) {
                 safeWarn(
                     "Tool arguments repaired: ${safeArgumentsForLog(effectiveName, tc.arguments)}" +
                         " repaired=[REDACTED]",
                 )
             }
-            tc.copy(name = effectiveName, arguments = repaired)
+            tc.copy(name = effectiveName, arguments = aliased)
         }
+    }
+
+    // ── Shaheen 2 Fix Phase 3 (diagnosis §5 Fix 1.5): parameter aliases ──────
+    //
+    // Device-test evidence: model ne ye bheja tha —
+    //   app_launch({package_name: "com.google.android.youtube"})
+    // lekin app_launch ka canonical parameter `app` hai. Ye near-miss pehle
+    // repair nahi hoti thi, is liye launch validation par fail ho jata tha.
+    // Usool (jaan-bujh kar narrow, pure, unit-tested): sirf app-launch family
+    // ke liye, jab canonical key ghayab ho aur exactly aik known alias string
+    // value rakhta ho, to us key ko canonical naam de do. Canonical value
+    // maujood ho to kabhi overwrite nahi hota.
+
+    /** Launch-family tools ke canonical app/package parameters (tool schemas se). */
+    private val LAUNCH_FAMILY_CANONICAL_PARAM: Map<String, String> = mapOf(
+        "app_launch" to "app",
+        "app_open_settings" to "app",
+        "app_force_stop" to "app",
+        "app_clear_data" to "app",
+        "app_uninstall" to "app",
+        "open_app" to "packageName",
+        "screen_launch_app" to "package",
+    )
+
+    /** Wo alias keys jo models aam tor par app/package parameter ke liye bhejte hain. */
+    private val APP_PARAM_ALIASES: Set<String> = setOf(
+        "package_name", "packageName", "pkg", "package", "app_name", "appName", "app",
+    )
+
+    /**
+     * [argumentsJson] par [LAUNCH_FAMILY_CANONICAL_PARAM] alias repair lagata hai.
+     * Non-launch tool, non-object JSON, canonical key maujood, ya zero/multiple
+     * alias candidates par input waisa ka waisa wapas aata hai.
+     */
+    internal fun applyArgumentAliases(toolName: String, argumentsJson: String): String {
+        val canonical = LAUNCH_FAMILY_CANONICAL_PARAM[toolName] ?: return argumentsJson
+        val obj = runCatching { Json.parseToJsonElement(argumentsJson) as? JsonObject }
+            .getOrNull() ?: return argumentsJson
+        if (canonical in obj) return argumentsJson
+        val candidates = (APP_PARAM_ALIASES - canonical).filter { key ->
+            (obj[key] as? JsonPrimitive)?.isString == true
+        }
+        if (candidates.size != 1) return argumentsJson
+        val aliasKey = candidates.single()
+        val value = obj.getValue(aliasKey)
+        val rebuilt = buildJsonObject {
+            for ((k, v) in obj) {
+                if (k == aliasKey) put(canonical, value) else put(k, v)
+            }
+        }
+        return rebuilt.toString()
     }
 
     /** 工具名结尾允许的标识符形态。 */

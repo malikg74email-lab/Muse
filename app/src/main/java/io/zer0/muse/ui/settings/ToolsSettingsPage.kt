@@ -212,6 +212,14 @@ fun ToolsSettingsPage(onBack: () -> Unit) {
             )
         }
 
+        // ── Shaheen 2 Allow Cards (Part 1): remembered gate decisions ──
+        item(key = "allow_card_memory_label") {
+            SectionLabel(stringResource(R.string.allow_card_memory_title))
+        }
+        item(key = "allow_card_memory") {
+            AllowCardMemorySection()
+        }
+
         // ── 按风险等级分组展示 ───────────────────────────────────────
         grouped.forEach { (riskLevel, toolsInGroup) ->
             item(key = "header_${riskLevel.name}") {
@@ -418,4 +426,93 @@ private fun riskLevelSectionTitle(level: ToolRiskLevel): Int = when (level) {
     ToolRiskLevel.SAFE -> R.string.tools_settings_section_safe
     ToolRiskLevel.NORMAL -> R.string.tools_settings_section_normal
     ToolRiskLevel.HIGH -> R.string.tools_settings_section_high
+}
+
+/**
+ * Shaheen 2 Allow Cards (Part 1, 2026-11-07): review + reset surface for
+ * the gate's remembered decisions — the natural home is this page, next
+ * to the per-tool policies the decisions complement. Lives inside the
+ * existing settings structure; no new settings maze.
+ */
+@Composable
+private fun AllowCardMemorySection() {
+    val gateStore: io.zer0.muse.tools.AllowCardGateStore = koinInject()
+    val scope = rememberCoroutineScope()
+    val memory by gateStore.memoryFlow
+        .collectAsStateWithLifecycle(initialValue = io.zer0.muse.tools.AllowCardGateStore.StoredMemory())
+    val alwaysAllowed = remember(memory) { memory.alwaysAllowedScopes.sorted() }
+    val known = remember(memory) { memory.knownScopes.sorted() }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.allow_card_memory_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        if (alwaysAllowed.isEmpty() && known.isEmpty()) {
+            Text(
+                text = stringResource(R.string.allow_card_memory_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        } else {
+            SettingsGroup {
+                alwaysAllowed.forEachIndexed { index, scopeKey ->
+                    if (index > 0) SettingsGroupDivider()
+                    AllowCardMemoryRow(
+                        kindLabel = stringResource(R.string.allow_card_memory_always),
+                        scopeKey = scopeKey,
+                        onForget = { scope.launch { gateStore.forgetAlwaysAllow(scopeKey) } },
+                    )
+                }
+                known.forEachIndexed { index, scopeKey ->
+                    if (index > 0 || alwaysAllowed.isNotEmpty()) SettingsGroupDivider()
+                    AllowCardMemoryRow(
+                        kindLabel = stringResource(R.string.allow_card_memory_known),
+                        scopeKey = scopeKey,
+                        onForget = { scope.launch { gateStore.forgetKnown(scopeKey) } },
+                    )
+                }
+            }
+            androidx.compose.material3.TextButton(
+                onClick = { scope.launch { gateStore.resetAll() } },
+            ) {
+                Text(text = stringResource(R.string.allow_card_memory_reset_all))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AllowCardMemoryRow(
+    kindLabel: String,
+    scopeKey: String,
+    onForget: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = kindLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = scopeKey,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = MuseMonoFontFamily,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        androidx.compose.material3.TextButton(onClick = onForget) {
+            Text(text = stringResource(R.string.allow_card_memory_forget))
+        }
+    }
 }

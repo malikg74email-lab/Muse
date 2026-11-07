@@ -52,6 +52,8 @@ object ModelContextWindowRegistry {
         "gemini-1.5-flash" to 1000000,
         "gemini-2.5-pro" to 1000000,
         "gemini-2.5-flash" to 1000000,
+        // Shaheen 2 Fix Phase 3 (§5 Fix 1.3): phone-selected model id was missing here too.
+        "gemini-3.1-flash-lite" to 1000000,
         // DeepSeek 深度求索
         "deepseek-chat" to 64000,
         "deepseek-reasoner" to 64000,

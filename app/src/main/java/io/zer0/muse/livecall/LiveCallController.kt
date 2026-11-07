@@ -60,33 +60,53 @@ class LiveCallController(
     private var sessionJobs: List<Job> = emptyList()
 
     /**
+     * 会话生命周期锁(验收审计 D2):startCall 的「查阶段 → 异步建会话」之间有窗口,
+     * beginSession 又在 Default 调度器的多个线程上改 session/sessionJobs;不串行化时
+     * 两次几乎同时的发起(连点 Retry、权限回调与界面 LaunchedEffect 赛跑)可能交错出
+     * 一个没人持有的孤儿会话 —— socket 开着、采集开着,却没有任何收集器能关掉它。
+     */
+    private val lifecycleLock = Any()
+
+    /** 已有一发起流程在途(查 key 中 / 建会话中),同步置位,堵住上面的窗口。 */
+    @Volatile
+    private var startInFlight = false
+
+    /**
      * 发起通话。界面点圆环 / 错误屏点 Retry 都走这里;通话中重复调用无副作用。
      * 没有 key 时不启动任何音频/网络,只把「需要设置 key」的状态摆到界面上。
      */
     fun startCall() {
-        val phase = _uiState.value.phase
-        if (phase == LiveCallPhase.CONNECTING || phase == LiveCallPhase.LIVE) return
+        synchronized(lifecycleLock) {
+            val phase = _uiState.value.phase
+            if (phase == LiveCallPhase.CONNECTING || phase == LiveCallPhase.LIVE) return
+            if (startInFlight) return
+            startInFlight = true
+        }
         scope.launch {
-            val providers = runCatching { settings.providersFlow.first() }.getOrElse {
-                Logger.w(TAG, "Reading providers failed: ${it.message}")
-                emptyList()
-            }
-            val activeId = runCatching { settings.activeProviderIdFlow.first() }.getOrNull()
-            when (val decision = LiveCallKeyResolver.decide(providers, activeId)) {
-                LiveCallKeyResolver.Decision.NoKey -> {
-                    _uiState.value = UiState(
-                        phase = LiveCallPhase.IDLE,
-                        errorMessage = appContext.getString(R.string.live_call_no_key_message),
-                        needsKeySetup = true,
-                    )
-                    Logger.i(TAG, "Live call not started: no Gemini key configured")
+            try {
+                val providers = runCatching { settings.providersFlow.first() }.getOrElse {
+                    Logger.w(TAG, "Reading providers failed: ${it.message}")
+                    emptyList()
                 }
-                is LiveCallKeyResolver.Decision.Ready -> beginSession(decision.apiKey)
+                val activeId = runCatching { settings.activeProviderIdFlow.first() }.getOrNull()
+                when (val decision = LiveCallKeyResolver.decide(providers, activeId)) {
+                    LiveCallKeyResolver.Decision.NoKey -> {
+                        _uiState.value = UiState(
+                            phase = LiveCallPhase.IDLE,
+                            errorMessage = appContext.getString(R.string.live_call_no_key_message),
+                            needsKeySetup = true,
+                        )
+                        Logger.i(TAG, "Live call not started: no Gemini key configured")
+                    }
+                    is LiveCallKeyResolver.Decision.Ready -> beginSession(decision.apiKey)
+                }
+            } finally {
+                synchronized(lifecycleLock) { startInFlight = false }
             }
         }
     }
 
-    private fun beginSession(apiKey: String) {
+    private fun beginSession(apiKey: String) = synchronized(lifecycleLock) {
         endSessionSilently()
         val declarations = LiveCallToolBridge.buildVoiceDeclarations(
             toolRegistry.listToolsAsToolDefinitions(),
@@ -179,11 +199,15 @@ class LiveCallController(
     }
 
     private fun endSessionSilently() {
-        sessionJobs.forEach { it.cancel() }
-        sessionJobs = emptyList()
-        // 旧会话一并真正收尾(end() 内部有 CAS 幂等,重复调用无副作用),
-        // 避免快速重拨时旧 socket 泄漏成「幽灵通话」。
-        session?.end()
-        session = null
+        // 与 beginSession 同一把锁(D2);beginSession 持有锁时调用本函数靠
+        // Java 监视器的可重入性,不会自锁。
+        synchronized(lifecycleLock) {
+            sessionJobs.forEach { it.cancel() }
+            sessionJobs = emptyList()
+            // 旧会话一并真正收尾(end() 内部有 CAS 幂等,重复调用无副作用),
+            // 避免快速重拨时旧 socket 泄漏成「幽灵通话」。
+            session?.end()
+            session = null
+        }
     }
 }

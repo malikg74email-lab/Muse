@@ -22,7 +22,37 @@ class ChatToolController(
     /** 与生成侧 requestToolApproval 共享的等待结果表(键 = toolCallId)。 */
     private val approvalResults: ConcurrentHashMap<String, CompletableDeferred<ToolApprovalState>>,
     private val toolConfigStore: ToolConfigStore?,
+    /**
+     * Shaheen 2 Allow Cards (Part 1, 2026-11-07): scoped gate decisions
+     * are recorded here, at the owner-action seam — this controller is
+     * where Allow / Deny / session / always taps actually land. Optional
+     * so existing constructions keep compiling; when null, gate memory
+     * simply isn't recorded (cards still work via the coordinator).
+     */
+    private val allowCardGateStore: io.zer0.muse.tools.AllowCardGateStore? = null,
 ) {
+
+    /**
+     * Classify a pending approval under the sensitive-category gate and
+     * run [record] against its scope key. Non-sensitive pendings and a
+     * missing store are no-ops: legacy per-tool memory already covers
+     * routine tools.
+     */
+    private fun recordGateDecision(
+        pending: io.zer0.muse.ui.PendingToolApproval,
+        record: suspend (io.zer0.muse.tools.AllowCardGateStore, String) -> Unit,
+    ) {
+        val store = allowCardGateStore ?: return
+        val classification =
+            io.zer0.muse.tools.SensitiveToolGate.classify(pending.toolName, pending.argumentsFull)
+                ?: return
+        accessor.coroutineScope.launch {
+            runCatching { record(store, classification.scopeKey) }
+                .onFailure {
+                    Logger.w("ChatVM", "allow-card gate record(${classification.scopeKey}) failed: ${it.message}")
+                }
+        }
+    }
 
     /** 设置待审批工具调用的参考图覆盖值(data URI;null 清除已选图片)。 */
     fun setToolApprovalReferenceImage(toolCallId: String, dataUri: String?) {
@@ -120,12 +150,23 @@ class ChatToolController(
         accessor.update {
             it.copy(pendingToolApprovals = it.pendingToolApprovals.filter { p -> p.toolCallId != toolCallId })
         }
+        // Allow Cards (Part 1): an owner's Deny on a gated call is
+        // remembered for the session, so the same scope is not re-asked
+        // until the next app session. (A card timeout never lands here —
+        // it records nothing.)
+        recordGateDecision(pending) { store, scopeKey -> store.rememberSessionDeny(scopeKey) }
         approvalResults[toolCallId]?.complete(ToolApprovalState.Denied(reason))
     }
 
     /** 持久化单工具策略(由审批卡片"始终允许"按钮触发)。与本次批准解耦。 */
     fun persistToolPolicy(toolCallId: String, policy: ToolApprovalPolicy) {
         val pending = accessor.snapshot.pendingToolApprovals.firstOrNull { it.toolCallId == toolCallId } ?: return
+        // Allow Cards (Part 1): "Always approve" on a gated card also
+        // remembers the gate scope ("Always allow this kind"), so the
+        // category-level memory and the per-tool policy stay in step.
+        if (policy == ToolApprovalPolicy.ALWAYS_ALLOW) {
+            recordGateDecision(pending) { store, scopeKey -> store.rememberAlwaysAllow(scopeKey) }
+        }
         val store = toolConfigStore ?: return
         accessor.coroutineScope.launch {
             runCatching { store.setPolicy(pending.toolName, policy) }
@@ -136,6 +177,10 @@ class ChatToolController(
     /** 把工具加入当前会话的临时允许集合(本会话不再问,仅内存不持久化)。 */
     fun allowToolForSession(toolCallId: String) {
         val pending = accessor.snapshot.pendingToolApprovals.firstOrNull { it.toolCallId == toolCallId } ?: return
+        // Allow Cards (Part 1): mirror the session grant into gate scope
+        // memory, so a gated scope approved "for this session" is not
+        // re-asked by the gate later in the same session.
+        recordGateDecision(pending) { store, scopeKey -> store.rememberSessionAllow(scopeKey) }
         val sessionId = if (accessor.snapshot.isAgentMode) {
             accessor.snapshot.agentSessionId
         } else {

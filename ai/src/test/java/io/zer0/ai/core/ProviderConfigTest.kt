@@ -35,6 +35,21 @@ class ProviderConfigTest {
     }
 
     @Test
+    fun `legacy stored json with removed oauthConfig field still decodes`() {
+        // Shaheen 2 Fix Phase 3 (§10 fix 13): oauthConfig field + OAuthConfig
+        // type remove ho gaye hain. Purane installs ki stored providers_json
+        // mein ye field maujood ho sakta hai — AppJson (ignoreUnknownKeys)
+        // use ignore karke config ko salamat load kare.
+        val legacyJson = """
+            {"id":"p1","displayName":"P1","apiKey":"k",
+             "oauthConfig":{"clientId":"cid","flowType":"DEVICE"}}
+        """.trimIndent()
+        val cfg = io.zer0.common.AppJson.decodeFromString(ProviderConfig.serializer(), legacyJson)
+        assertEquals("p1", cfg.id)
+        assertEquals("k", cfg.apiKey)
+    }
+
+    @Test
     fun `should default enabled to true when not provided`() {
         val cfg = ProviderConfig(id = "p1", displayName = "P1")
         assertTrue(cfg.enabled)

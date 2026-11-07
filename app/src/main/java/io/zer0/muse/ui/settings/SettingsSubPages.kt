@@ -53,14 +53,12 @@ import io.zer0.common.Result
 import io.zer0.common.resultOf
 import io.zer0.muse.BuildConfig
 import io.zer0.muse.R
-import io.zer0.muse.auth.OAuthManager
 import io.zer0.muse.data.ChatPreferences
 import io.zer0.muse.data.SettingsRepository
 import io.zer0.muse.data.assistant.AssistantRepository
 import io.zer0.muse.ui.common.feedback.MuseAlertDialog
 import io.zer0.muse.ui.common.feedback.MuseDialog
 import io.zer0.muse.ui.common.feedback.MuseToast
-import io.zer0.muse.ui.common.findActivity
 import io.zer0.muse.ui.common.form.MuseCapsuleButton
 import io.zer0.muse.ui.common.icons.MuseIcons
 import io.zer0.muse.ui.common.navigation.MuseLargeTitleHeader
@@ -227,10 +225,6 @@ fun SettingsModelPage(
     var isFromPreset by remember { mutableStateOf(false) }
     // v1.38: 预设供应商选择全屏页面显示状态(原 ModalBottomSheet 改为全屏页面)
     var showPresetPicker by remember { mutableStateOf(false) }
-    // v2.6.0: 一键 OAuth 登录的 Device Flow 提示状态(userCode, verificationUri)。
-    // Device Flow 必须在 UI 展示 user_code,用户才能去授权页输入;原一键路径只弹
-    // “正在打开浏览器”却不展示码 → 用户无从完成授权。
-    var quickLoginDeviceInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
     // v1.97: 扫描二维码导入 Provider
     var showQrScanDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -383,60 +377,6 @@ fun SettingsModelPage(
         return
     }
 
-    // v2.6.0: 一键登录的 Device Flow 提示弹窗 —— 展示 user_code + 一键打开授权页。
-    quickLoginDeviceInfo?.let { (userCode, verificationUri) ->
-        MuseDialog(
-            onDismissRequest = {
-                OAuthManager.cancel()
-                quickLoginDeviceInfo = null
-            },
-            title = stringResource(R.string.oauth_login),
-            content = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(R.string.oauth_device_code_prompt, verificationUri, userCode),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(Modifier.size(MusePaddings.contentGap))
-                    Surface(
-                        shape = MuseShapes.medium,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = userCode,
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = MusePaddings.itemGap),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    Spacer(Modifier.size(MusePaddings.contentGap))
-                    MuseCapsuleButton(
-                        text = stringResource(R.string.oauth_device_open_page),
-                        onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    android.content.Intent(
-                                        android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse(verificationUri),
-                                    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
-                                )
-                            }.onFailure {
-                                io.zer0.muse.ui.common.feedback.MuseToast.show(
-                                    context.getString(R.string.oauth_device_open_failed),
-                                )
-                            }
-                        },
-                        leadingIcon = MuseIcons.externalLink,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-        )
-    }
-
     // v1.38: 预设供应商选择全屏页面(替代 ModalBottomSheet,根治关闭后卡死)
     if (showPresetPicker) {
         PresetProviderPickerDialog(
@@ -449,69 +389,13 @@ fun SettingsModelPage(
                     apiKey = "",
                     models = preset.models.map { it.copy(providerId = newId) },
                 )
-                // v2.6.0: OAuth 预设一键登录 —— 点预设直接跳授权，
-                // 验证完回来自动保存+激活，不进编辑页（同 ChatGPT 官方 App 体验）。
-                // Device Flow 预设（如 xAI）无需 Activity；Auth Code Flow 需要。
-                val oauth = preset.oauthConfig
-                if (oauth != null) {
-                    val isDeviceFlow = !oauth.deviceCodeUrl.isNullOrBlank()
-                    val activity = context.findActivity()
-                    if (!isDeviceFlow && activity == null) {
-                        io.zer0.muse.ui.common.feedback.MuseToast.show(
-                            context.getString(R.string.oauth_activity_context_unavailable),
-                        )
-                        showPresetPicker = false
-                    } else {
-                        showPresetPicker = false
-                        io.zer0.muse.ui.common.feedback.MuseToast.show(
-                            context.getString(R.string.oauth_quick_login_started),
-                        )
-                        scope.launch {
-                            // 先落盘配置（登录成功后 OAuthManager 按 providerId 写 token）
-                            settings.addProvider(newConfig)
-                            // v2.6.0: Device Flow 轮询期间监听状态,拿到 userCode 后弹窗展示
-                            // (与编辑页同一机制);否则用户看不到码、无从授权。
-                            val watcher = if (isDeviceFlow) {
-                                scope.launch {
-                                    OAuthManager.stateFlow.collect { s ->
-                                        if (s is OAuthManager.State.AWAITING_USER && s.userCode.isNotBlank()) {
-                                            quickLoginDeviceInfo = s.userCode to s.verificationUri
-                                        }
-                                    }
-                                }
-                            } else {
-                                null
-                            }
-                            val flow: kotlin.Result<String> = if (isDeviceFlow) {
-                                OAuthManager.launchDeviceFlow(oauth, newId)
-                            } else {
-                                OAuthManager.launchAuthorizationCodeFlow(activity!!, oauth, newId)
-                            }
-                            watcher?.cancel()
-                            quickLoginDeviceInfo = null
-                            flow.fold(
-                                onSuccess = {
-                                    settings.setActiveProvider(newId)
-                                    io.zer0.muse.ui.common.feedback.MuseToast.show(
-                                        context.getString(R.string.oauth_quick_login_success, preset.displayName),
-                                    )
-                                },
-                                onFailure = { err ->
-                                    // 登录失败删除刚加的空配置，避免留下一堆未完成的供应商
-                                    settings.deleteProvider(newId)
-                                    io.zer0.muse.ui.common.feedback.MuseToast.show(
-                                        context.getString(R.string.oauth_login_failed, err.message ?: ""),
-                                    )
-                                },
-                            )
-                        }
-                    }
-                } else {
-                    editingConfig = newConfig
-                    isNewProvider = true
-                    isFromPreset = true
-                    showPresetPicker = false
-                }
+                // Shaheen 2 Fix Phase 3 (§10 fix 13): OAuth quick-login branch
+                // hata diya gaya — ab koi preset OAuth nahi rakhta, is liye har
+                // preset seedha API-key edit page par khulta hai.
+                editingConfig = newConfig
+                isNewProvider = true
+                isFromPreset = true
+                showPresetPicker = false
             },
             onPickCustom = {
                 editingConfig = io.zer0.ai.core.ProviderConfig(

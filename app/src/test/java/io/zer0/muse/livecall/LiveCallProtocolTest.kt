@@ -147,6 +147,23 @@ class LiveCallProtocolTest {
     }
 
     @Test
+    fun `cancelled tool responses are dropped before sending`() {
+        val responses = listOf(
+            LiveToolResponse(id = "fc-1", name = "app_launch", rawResult = "opened"),
+            LiveToolResponse(id = "fc-2", name = "screen_read", rawResult = "text"),
+        )
+        // 执行途中到达的取消:对应结果必须被丢掉,其余照常发送。
+        val kept = LiveCallProtocol.dropCancelledResponses(responses, setOf("fc-1"))
+        assertEquals(listOf("fc-2"), kept.map { it.id })
+        // 全部取消 → 一条都不发。
+        assertTrue(
+            LiveCallProtocol.dropCancelledResponses(responses, setOf("fc-1", "fc-2")).isEmpty(),
+        )
+        // 无取消 → 原样返回。
+        assertEquals(responses, LiveCallProtocol.dropCancelledResponses(responses, emptySet()))
+    }
+
+    @Test
     fun `decode garbage or unknown frames yields no events`() {
         assertTrue(LiveCallProtocol.decodeServerMessage("not json").isEmpty())
         assertTrue(LiveCallProtocol.decodeServerMessage("""{"usageMetadata":{}}""").isEmpty())

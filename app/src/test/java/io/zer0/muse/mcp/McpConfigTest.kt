@@ -73,11 +73,24 @@ class McpConfigTest {
             enabled = false,
             maxReconnectAttempts = 9,
             requestTimeoutMs = 7_000L,
-            oauthConfig = McpOAuthConfig(enabled = true, clientId = "cid", scopes = "tools:read"),
         )
         val json = io.zer0.common.AppJson.encodeToString(McpServerConfig.serializer(), config)
         val decoded = io.zer0.common.AppJson.decodeFromString(McpServerConfig.serializer(), json)
         assertEquals(config, decoded)
+    }
+
+    @Test
+    fun `legacy stored config with removed oauthConfig field still decodes`() {
+        // Shaheen 2 Fix Phase 3 (§10 fix 13): oauthConfig field hata diya gaya
+        // hai; purani stored JSON (jis mein ye field hai) AppJson ke
+        // ignoreUnknownKeys ki wajah se baghair crash ke load honi chahiye.
+        val legacyJson = """
+            {"id":"m1","name":"M1","url":"https://example.com/mcp",
+             "oauthConfig":{"clientId":"cid","enabled":true,"scopes":"tools:read"}}
+        """.trimIndent()
+        val decoded = io.zer0.common.AppJson.decodeFromString(McpServerConfig.serializer(), legacyJson)
+        assertEquals("m1", decoded.id)
+        assertEquals("https://example.com/mcp", decoded.url)
     }
 
     @Test

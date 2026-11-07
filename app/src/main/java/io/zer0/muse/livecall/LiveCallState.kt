@@ -43,7 +43,13 @@ class LiveCallStateMachine(initial: LiveCallPhase = LiveCallPhase.IDLE) {
     var phase: LiveCallPhase = initial
         private set
 
-    /** @return 是否真的发生了迁移。 */
+    /**
+     * @return 是否真的发生了迁移。
+     * 同步:迁移会从 socket 线程、界面线程、看门狗协程并发到达,读-改-写必须
+     * 原子化,否则「挂断」与「setupComplete」赛跑时后写者可能把已结束的通话
+     * 又写成 LIVE(幽灵通话)。
+     */
+    @Synchronized
     fun transitionTo(target: LiveCallPhase): Boolean {
         val next = LiveCallTransitions.next(phase, target)
         val changed = next != phase
@@ -52,9 +58,24 @@ class LiveCallStateMachine(initial: LiveCallPhase = LiveCallPhase.IDLE) {
     }
 
     /** 回到 IDLE(错误屏/结束屏被关闭后复位)。 */
+    @Synchronized
     fun reset() {
         phase = LiveCallPhase.IDLE
     }
+}
+
+/**
+ * setup 看门狗的纯决策(验收审计 D1):socket 已打开但 setupComplete 迟迟不来时,
+ * 会话不能永远停在 CONNECTING —— 只有「仍在 CONNECTING 且已超过时限」才判失败;
+ * 已接通(LIVE)/已结束的通话永不受看门狗影响。
+ */
+object LiveSetupWatchdog {
+
+    fun shouldFail(
+        phase: LiveCallPhase,
+        elapsedMillis: Long,
+        timeoutMillis: Long = LiveCallConfig.SETUP_TIMEOUT_MS,
+    ): Boolean = phase == LiveCallPhase.CONNECTING && elapsedMillis >= timeoutMillis
 }
 
 /** 字幕说话人。 */

@@ -123,6 +123,19 @@ object ModelRegistry {
         toolReasoningAbility()
         visionGrounding("gemini")
     }
+    // Shaheen 2 Fix Phase 3 (diagnosis §5 Fix 1.3): Malik ke phone par selected
+    // model `gemini-3.1-flash-lite` kisi bhi definition se match nahi hota tha —
+    // GEMINI_FLASH ke notTokens("3") use bahar kar dete hain aur 2.5 wali
+    // definitions "2","5" mangti hain — is liye resolveAbilities khaali aata tha
+    // aur TOOL ability ghayab thi (tools suppress honay ki aik wajah).
+    // Abilities 2.5 Flash sibling ke pattern par hain; GeminiProvider khud bhi
+    // gemini-3 ids ko thinking-capable treat karta hai (forceThinkingLevel).
+    private val GEMINI_3_1_FLASH_LITE = defineModel {
+        tokens("gemini", "3", "1", "flash", "lite")
+        visionInput()
+        toolReasoningAbility()
+        visionGrounding("gemini")
+    }
     private val GEMINI_2_5_PRO = defineModel {
         tokens("gemini", "2", "5", "pro")
         visionInput()
@@ -369,7 +382,7 @@ object ModelRegistry {
         GPT_4_TURBO, GPT_4,
         CLAUDE_3_5_SONNET, CLAUDE_3_5_HAIKU, CLAUDE_3_7, CLAUDE_4, CLAUDE_4_5,
         CLAUDE_OPUS, CLAUDE_SONNET,
-        GEMINI_2_0_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO,
+        GEMINI_2_0_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO, GEMINI_3_1_FLASH_LITE,
         GEMINI_1_5_PRO, GEMINI_1_5_FLASH, GEMINI_PRO, GEMINI_FLASH,
         DEEPSEEK_V3, DEEPSEEK_CHAT, DEEPSEEK_R1, DEEPSEEK_REASONER, DEEPSEEK_V4, DEEPSEEK_OCR,
         QWEN_MAX, QWEN_PLUS, QWEN_TURBO, QWEN_3_5, QWEN_VL, QWEN2_VL, QWEN_QWQ,

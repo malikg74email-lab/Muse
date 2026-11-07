@@ -15,9 +15,17 @@
 # 环境依赖（WSL Ubuntu 示例）：
 #   sudo apt-get install -y curl ca-certificates patchelf
 #
-# 升级流程（换 Node / 依赖版本时逐项同步）：
-#   1. 修改下方「版本锁定」常量
-#   2. 更新 app/.../runtime/MuseRuntime.kt 的 RUNTIME_DATA_VERSION（npm 版本变化时）
+# 版本策略（2026-11-07 起）：不再写死版本号。写死已三次被 Termux 仓库淘汰
+#   （2026-11-03 nodejs/libsqlite/npm、2026-11-05 npm、2026-11-07 zlib）。
+#   现在每次构建从官方 Packages 索引按包名解析当前版本与 Filename（见下方
+#   「Termux 索引解析」一节），索引里找不到就大声报错终止，绝不用旧版顶替。
+#
+# 升级流程（逐项同步）：
+#   1. 版本号无需维护（自动解析）；包集合变化时改下方 PKG_NAME 与 COLLECT。
+#   2. npm 版本变化无需再手工同步 MuseRuntime：重解压标记已由
+#      MuseRuntime.bundledDataVersion() 从本包 VERSION.txt（下方从真实
+#      package.json 写出）派生，npm 浮动后升级设备自动重解压。
+#      MuseRuntime.RUNTIME_DATA_VERSION 只是 VERSION.txt 读不到时的兜底。
 #   3. 若新增依赖库，补充 app/build.gradle.kts 的 jniLibs.keepDebugSymbols 列表
 #   4. 重新构建后，跑 RuntimeSelfCheckTest（connected 测试）验证
 #
@@ -34,32 +42,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 WORK="${MUSE_RUNTIME_WORK:-/tmp/muse-runtime-pack}"
 
-TERMUX_BASE="https://packages.termux.dev/apt/termux-main/pool/main"
-
-# ─── 版本锁定 ───────────────────────────────────────────────────────────────
-NODE_VER="26.13.0"
-LIBCXX_VER="30"
-OPENSSL_VER="1%3A3.6.5"   # URL 中 ':' 需转义为 %3A
-CARES_VER="1.34.9"
-ICU_VER="78.3"
-SQLITE_VER="3.54.1-1"
-ZLIB_VER="1.3.2"
-NPM_VER="12.2.2"
-LIBFFI_VER="3.8.0"
-
-# ─── 文件映射：源实体文件名 -> 输出名（jniLibs 只接受 lib*.so 命名） ────────
-declare -A FILEMAP=(
-  ["libc++_shared.so"]="libc++_shared.so"
-  ["libssl.so.3"]="libssl.so"
-  ["libcrypto.so.3"]="libcrypto.so"
-  ["libcares.so"]="libcares.so"
-  ["libicui18n.so.78.3"]="libicui18n.so"
-  ["libicuuc.so.78.3"]="libicuuc.so"
-  ["libicudata.so.78.3"]="libicudata.so"
-  ["libffi.so"]="libffi.so"
-  ["libsqlite3.54.1.so"]="libsqlite3.so"
-  ["libz.so.1.3.2"]="libz.so"
+# ─── 包集合：内部 key -> Termux 包名（版本由下方索引解析动态决定） ──────────
+declare -A PKG_NAME=(
+  [nodejs]="nodejs" [libcxx]="libc++" [openssl]="openssl" [cares]="c-ares"
+  [libicu]="libicu" [libsqlite]="libsqlite" [zlib]="zlib" [libffi]="libffi"
+  [npm]="npm"
 )
+
+# ─── 文件收集表：源文件 glob -> 输出名（jniLibs 只接受 lib*.so 命名） ──────
+# 带版本后缀的实体名（libz.so.1.4、libicui18n.so.78.3、libsqlite3.54.1.so）
+# 随上游版本浮动，故用 glob 匹配；收集时据实际命中文件名动态构建 FILEMAP。
+declare -a COLLECT=(
+  "libc++_shared.so|libc++_shared.so"
+  "libssl.so.3|libssl.so"
+  "libcrypto.so.3|libcrypto.so"
+  "libcares.so|libcares.so"
+  "libicui18n.so.*|libicui18n.so"
+  "libicuuc.so.*|libicuuc.so"
+  "libicudata.so.*|libicudata.so"
+  "libffi.so|libffi.so"
+  "libsqlite3*.so|libsqlite3.so"
+  "libz.so.*|libz.so"
+)
+declare -A FILEMAP=()
 
 # ─── DT_NEEDED 映射：原字符串 -> 新名（含链接名与实体名两种形态） ───────────
 declare -A NEEDMAP=(
@@ -76,31 +81,79 @@ declare -A NEEDMAP=(
   ["libsqlite3.so.3.53.4"]="libsqlite3.so"
 )
 
-# ─── Termux 包 URL 解析 ─────────────────────────────────────────────────────
-pkg_url() { # $1=包 key  $2=abi(arm64|x86_64|all)
-  local key="$1" abi="$2"
-  # 本脚本内部叫 arm64，Termux 仓库叫 aarch64；x86_64 两边一致。
-  [ "$abi" = "arm64" ] && abi="aarch64"
-  case "$key" in
-    nodejs)    echo "$TERMUX_BASE/n/nodejs/nodejs_${NODE_VER}_${abi}.deb" ;;
-    libffi)     echo "$TERMUX_BASE/libf/libffi/libffi_${LIBFFI_VER}_${abi}.deb" ;;
-    libcxx)     echo "$TERMUX_BASE/libc/libc%2B%2B/libc%2B%2B_${LIBCXX_VER}_${abi}.deb" ;;
-    openssl)    echo "$TERMUX_BASE/o/openssl/openssl_${OPENSSL_VER}_${abi}.deb" ;;
-    cares)      echo "$TERMUX_BASE/c/c-ares/c-ares_${CARES_VER}_${abi}.deb" ;;
-    libicu)     echo "$TERMUX_BASE/libi/libicu/libicu_${ICU_VER}_${abi}.deb" ;;
-    libsqlite)  echo "$TERMUX_BASE/libs/libsqlite/libsqlite_${SQLITE_VER}_${abi}.deb" ;;
-    zlib)       echo "$TERMUX_BASE/z/zlib/zlib_${ZLIB_VER}_${abi}.deb" ;;
-    npm)        echo "$TERMUX_BASE/n/npm/npm_${NPM_VER}_all.deb" ;;
-    *) echo "!! 未知包: $key" >&2; exit 1 ;;
-  esac
+# === RESOLUTION SECTION BEGIN (test-extractable) ===
+# ─── Termux 索引解析：构建时从官方 Packages 索引解析版本，绝不写死 ────────
+TERMUX_REPO="https://packages.termux.dev/apt/termux-main"
+TERMUX_DIST="stable"
+INDEX_DIR="$WORK/index"
+declare -A RESOLVED_FILE=()   # "key|abi" -> pool 相对 Filename
+declare -A RESOLVED_VER=()    # "key|abi" -> Version
+
+termux_arch() { # $1=arm64|x86_64|all；本脚本叫 arm64，仓库叫 aarch64；arch:all 的包（如 npm）在各 arch 索引中都有 stanza，all 用 aarch64 索引
+  if [ "$1" = "x86_64" ]; then echo "x86_64"; else echo "aarch64"; fi
 }
 
-fetch_deb() { # $1=包 key $2=abi $3=目标文件
-  if [ ! -f "$3" ]; then
-    echo "  下载 $1 ($2) ..."
-    curl -sSL --fail --retry 3 --connect-timeout 20 -o "$3" "$(pkg_url "$1" "$2")"
-  fi
+fetch_index() { # $1=termux arch；每次运行重新下载，避免陈旧索引指向已被淘汰的文件
+  local arch="$1" out="$INDEX_DIR/Packages-$arch"
+  mkdir -p "$INDEX_DIR"
+  echo "  解析 Termux 索引 ($arch) ..." >&2
+  curl -sSL --fail --retry 3 --connect-timeout 20 -o "$out" \
+    "$TERMUX_REPO/dists/$TERMUX_DIST/main/binary-$arch/Packages"
 }
+
+resolve_pkg() { # $1=key $2=abi(arm64|x86_64|all)；填充 RESOLVED_FILE / RESOLVED_VER
+  local key="$1" abi="$2" slot="$1|$2"
+  [ -n "${RESOLVED_FILE[$slot]:-}" ] && return 0
+  local name="${PKG_NAME[$key]:-}"
+  [ -n "$name" ] || { echo "!! 未知包 key: $key" >&2; exit 1; }
+  local arch; arch=$(termux_arch "$abi")
+  fetch_index "$arch"
+  local parsed
+  parsed=$(awk -v want="$name" '
+    BEGIN { RS=""; FS="\n" }
+    {
+      pkg=""; ver=""; fn=""
+      for (i=1; i<=NF; i++) {
+        if ($i ~ /^Package: /) pkg=substr($i, 10)
+        else if ($i ~ /^Version: /) ver=substr($i, 10)
+        else if ($i ~ /^Filename: /) fn=substr($i, 11)
+      }
+      if (pkg == want) { print ver "\t" fn; exit }
+    }' "$INDEX_DIR/Packages-$arch")
+  local ver="${parsed%%$'\t'*}" fn="${parsed##*$'\t'}"
+  if [ -z "$parsed" ] || [ -z "$ver" ] || [ -z "$fn" ]; then
+    echo "!! 包 $name 在 Termux 索引中未找到 (abi=$abi, arch=$arch) — 终止，不做任何替代" >&2
+    exit 1
+  fi
+  RESOLVED_FILE[$slot]="$fn"
+  RESOLVED_VER[$slot]="$ver"
+  echo "  [解析] $name ($abi) -> $ver" >&2
+}
+
+verify_deb() { # $1=文件：必须是真正的 ar 归档，否则大声报错终止（杜绝 404 页面冒充 .deb）
+  ar t "$1" >/dev/null 2>&1 || { echo "!! $1 不是有效的 .deb（ar 校验失败）" >&2; exit 1; }
+}
+
+FETCHED_DEB=""
+fetch_deb() { # $1=包 key $2=abi $3=目标目录；结果路径写入全局 FETCHED_DEB
+  # 注意：必须直接调用、不能用 $(fetch_deb ...) 命令替换——子 shell 会把
+  # resolve_pkg 填好的 RESOLVED_* 状态吞掉，后续步骤将拿到空版本。
+  local key="$1" abi="$2" destdir="$3"
+  resolve_pkg "$key" "$abi"
+  local dest="$destdir/$(basename "${RESOLVED_FILE[$key|$abi]}")"
+  mkdir -p "$destdir"
+  if [ -f "$dest" ] && ! ar t "$dest" >/dev/null 2>&1; then
+    echo "  缓存损坏，重新下载 $key ($abi) ..." >&2
+    rm -f "$dest"
+  fi
+  if [ ! -f "$dest" ]; then
+    echo "  下载 $key ($abi) ${RESOLVED_VER[$key|$abi]} ..." >&2
+    curl -sSL --fail --retry 3 --connect-timeout 20 -o "$dest" "$TERMUX_REPO/${RESOLVED_FILE[$key|$abi]}"
+  fi
+  verify_deb "$dest"
+  FETCHED_DEB="$dest"
+}
+# === RESOLUTION SECTION END ===
 
 unpack_deb() { # $1=deb 文件 $2=输出目录
   local deb="$1" out="$2"
@@ -125,29 +178,47 @@ build_abi() { # $1=arm64|x86_64
 
   echo "== [$abi] 下载 =="
   mkdir -p "$debs"
+  declare -A DEB_PATH=() UNPACK_DIR=()
   for key in nodejs libcxx openssl cares libicu libsqlite zlib libffi; do
-    fetch_deb "$key" "$abi" "$debs/$key.deb"
+    fetch_deb "$key" "$abi" "$debs"
+    DEB_PATH[$key]="$FETCHED_DEB"
   done
 
   echo "== [$abi] 解包 =="
   for key in nodejs libcxx openssl cares libicu libsqlite zlib libffi; do
-    [ -d "$base/unpacked/$key" ] || unpack_deb "$debs/$key.deb" "$base/unpacked/$key"
+    UNPACK_DIR[$key]="$base/unpacked/$(basename "${DEB_PATH[$key]}" .deb)"
+    [ -d "${UNPACK_DIR[$key]}" ] || unpack_deb "${DEB_PATH[$key]}" "${UNPACK_DIR[$key]}"
   done
 
   echo "== [$abi] 收集源文件 =="
   rm -rf "$work"; mkdir -p "$work"
   local missing=0
-  for f in "${!FILEMAP[@]}"; do
-    local src
-    src=$(find "$base/unpacked" -name "$f" -type f | head -1 || true)
-    if [ -z "$src" ]; then echo "  !! 未找到 $f"; missing=1; continue; fi
-    cp "$src" "$work/$f"
+  FILEMAP=()
+  local pair pat out src
+  for pair in "${COLLECT[@]}"; do
+    pat="${pair%%|*}"; out="${pair##*|}"
+    # 同一 glob 命中多个实体文件时取路径最长者（即版本后缀最全的实体文件）
+    src=$(find "$base/unpacked" -name "$pat" -type f | awk '{ print length($0) "\t" $0 }' | sort -rn | head -1 | cut -f2- || true)
+    if [ -z "$src" ]; then echo "  !! 未找到 $pat"; missing=1; continue; fi
+    FILEMAP[$(basename "$src")]="$out"
+    cp "$src" "$work/$(basename "$src")"
   done
   [ "$missing" = 1 ] && { echo "!! [$abi] 依赖缺失，终止"; exit 1; }
 
   local node_src
-  node_src=$(find "$base/unpacked/nodejs" -type f -name node | head -1)
+  node_src=$(find "${UNPACK_DIR[nodejs]}" -type f -name node | head -1)
   cp "$node_src" "$work/libmuse_node.so"
+
+  # 依据本次解析到的实际版本补充 DT_NEEDED 映射（静态表中的旧版本条目命中不到时自动无害失效）
+  local icu_ver="${RESOLVED_VER[libicu|$abi]}" z_ver="${RESOLVED_VER[zlib|$abi]}"
+  local icu_major="${icu_ver%%.*}"
+  NEEDMAP["libicui18n.so.${icu_ver}"]="libicui18n.so"
+  NEEDMAP["libicuuc.so.${icu_ver}"]="libicuuc.so"
+  NEEDMAP["libicudata.so.${icu_ver}"]="libicudata.so"
+  NEEDMAP["libicui18n.so.${icu_major}"]="libicui18n.so"
+  NEEDMAP["libicuuc.so.${icu_major}"]="libicuuc.so"
+  NEEDMAP["libicudata.so.${icu_major}"]="libicudata.so"
+  NEEDMAP["libz.so.${z_ver}"]="libz.so"
 
   echo "== [$abi] patchelf 处理 =="
   (cd "$work"
@@ -193,12 +264,14 @@ build_npm_assets() {
 
   echo "== [npm] 下载并解包 =="
   mkdir -p "$base/debs"
-  fetch_deb npm all "$base/debs/npm.deb"
-  [ -d "$base/unpacked" ] || unpack_deb "$base/debs/npm.deb" "$base/unpacked"
+  fetch_deb npm all "$base/debs"
+  local npm_deb="$FETCHED_DEB"
+  local npm_unpacked="$base/unpacked/$(basename "$npm_deb" .deb)"
+  [ -d "$npm_unpacked" ] || unpack_deb "$npm_deb" "$npm_unpacked"
 
   rm -rf "$stage"; mkdir -p "$stage"
   local npm_dir
-  npm_dir=$(find "$base/unpacked" -type d -path '*usr/lib/node_modules/npm' | head -1)
+  npm_dir=$(find "$npm_unpacked" -type d -path '*usr/lib/node_modules/npm' | head -1)
   cp -r "$npm_dir" "$stage/npm"
   echo "npm $(grep -m1 '"version"' "$stage/npm/package.json" | sed 's/.*: *"\([^"]*\)".*/\1/')" > "$stage/VERSION.txt"
 

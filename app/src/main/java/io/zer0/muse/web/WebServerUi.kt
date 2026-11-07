@@ -16,7 +16,7 @@ object WebServerUi {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Muse · Web</title>
+<title>Shaheen 2 · Web</title>
 <style>
 :root{
   --bg:#ffffff; --surface:#f7f7f8; --surface2:#eaeaec; --line:#e4e4e7;
@@ -103,11 +103,11 @@ a{color:var(--ink)}
 <div class="wrap">
 
   <!-- F-43: 旧内嵌页仅在 React assets 缺失时兜底展示,醒目提示用户升级 Muse App -->
-  <div class="legacy-notice">The web console has been upgraded. Please update the Muse App to the latest version to use the new interface. This is the legacy compatibility page.</div>
+  <div class="legacy-notice">The web console has been upgraded. Please update the Shaheen 2 App to the latest version to use the new interface. This is the legacy compatibility page.</div>
 
   <!-- 登录页 -->
   <div id="view-login" class="login">
-    <div class="brand">Muse</div>
+    <div class="brand">Shaheen 2</div>
     <div class="sub">Enter the 6-digit PIN generated on the phone settings page</div>
     <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="······" autocomplete="off">
     <button id="login-btn" class="btn">Connect</button>
@@ -118,7 +118,7 @@ a{color:var(--ink)}
   <!-- 主界面 -->
   <div id="view-main" class="hide">
     <div class="top">
-      <span class="logo">Muse</span>
+      <span class="logo">Shaheen 2</span>
       <span class="sp"></span>
       <button id="btn-new">New chat</button>
       <button id="btn-refresh">Refresh</button>

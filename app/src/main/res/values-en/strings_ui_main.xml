@@ -306,19 +306,6 @@
     <string name="message_action_annotate">Annotate</string>
     <string name="message_annotate_title">Message notes</string>
     <string name="message_annotate_hint">Write a note…</string>
-    <string name="connector_page_title">Connectors</string>
-    <string name="connector_intro">Connect external services (calendar/notes/code hosting). Fill in the endpoints and credentials from the provider\'s app registration; authorization uses the system browser and credentials are encrypted.</string>
-    <string name="connector_add">Add connector</string>
-    <string name="connector_connect">Connect</string>
-    <string name="connector_connect_success">Connected %1$s</string>
-    <string name="connector_connect_failed">Connection failed: %1$s</string>
-    <string name="connector_empty">No connectors yet.</string>
-    <string name="connector_config_corrupt">Config is corrupt, data preserved, you can re-import</string>
-    <string name="connector_field_authorize">Authorize URL</string>
-    <string name="connector_field_token">Token URL</string>
-    <string name="connector_field_scope">Scope</string>
-    <string name="connector_field_client_id">Client ID</string>
-    <string name="connector_field_client_secret">Client Secret</string>
     <string name="channel_inbox_title">Recently received</string>
     <string name="channel_intro_title">Push messages to your IM</string>
     <string name="channel_intro">Once configured, the assistant can send messages to Feishu/QQ channels via tools. Credentials are encrypted and kept on this device only.</string>
@@ -600,22 +587,8 @@
     <!-- ===== Stats screen ===== -->
 
     <!-- ===== P1-6: OAuth login (ProviderEditPage) ===== -->
-    <string name="oauth_login">OAuth Login</string>
-    <string name="oauth_login_success">OAuth login successful</string>
-    <string name="oauth_login_failed">OAuth login failed: %1$s</string>
-    <string name="oauth_activity_context_unavailable">Unable to obtain Activity context</string>
-    <string name="oauth_device_code_prompt">Visit %1$s and enter code: %2$s</string>
-    <string name="oauth_polling">Waiting for authorization...</string>
-    <string name="oauth_open_verification_uri">Open link</string>
 
     <!-- ===== P2-11: OAuth credential isolation (revoke / auto refresh) ===== -->
-    <string name="oauth_revoke">Revoke Access</string>
-    <string name="oauth_revoke_confirm">Confirm revoke OAuth access for this provider?</string>
-    <string name="oauth_revoke_success">Access revoked</string>
-    <string name="oauth_token_expired">Authorization expired, please login again</string>
-    <string name="oauth_token_refreshed">Authorization auto refreshed</string>
-    <string name="oauth_stored">Authorization stored</string>
-    <string name="oauth_codex_account_bound">Codex account bound (ID prefix: %1$s)</string>
 
     <!-- ===== P1-4: Tablet adaptation (responsive layout) ===== -->
 
@@ -923,7 +896,6 @@
     <string name="settings_bubble_skin_plugin_section">Plugin skins</string>
     <string name="settings_bubble_skin_plugin_source">From plugin %1$s · v%2$s</string>
     <string name="settings_bubble_skin_plugin_unavailable_fallback">The selected plugin skin is unavailable (plugin disabled or uninstalled); fell back to the built-in default skin</string>
-    <string name="connector_error_activity_unavailable">Activity unavailable</string>
     <string name="channel_conversation_role_assistant">Assistant</string>
     <string name="channel_conversation_role_user">Contact</string>
     <string name="channel_conversation_turn_line">%1$s: %2$s</string>

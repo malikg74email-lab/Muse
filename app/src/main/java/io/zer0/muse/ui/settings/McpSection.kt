@@ -1,7 +1,5 @@
 package io.zer0.muse.ui.settings
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -282,8 +280,9 @@ private fun McpServerRow(
     var menuExpanded by remember { mutableStateOf(false) }
     var showResources by remember { mutableStateOf(false) }
     var showPrompts by remember { mutableStateOf(false) }
-    // OAuth 支持:启用 OAuth 配置或已注册 clientId
-    val oauthSupported = server.oauthConfig.let { it.enabled || it.clientId.isNotBlank() }
+    // Shaheen 2 Fix Phase 3 (§10 fix 13): MCP OAuth authorize/revoke menu
+    // hata diya gaya — MCP servers sirf static token / headers / 飞书 app
+    // credentials se chalte hain.
     // 状态描述字符串(需在 @Composable 上下文中提取,不能在 semantics{} lambda 内调用 stringResource)
     val stateEnabledText = stringResource(R.string.settings_state_enabled)
     val stateDisabledText = stringResource(R.string.settings_state_disabled)
@@ -385,38 +384,6 @@ private fun McpServerRow(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        if (oauthSupported) {
-                            MuseActionSheetRow(text = stringResource(R.string.settings_mcp_oauth_authorize)) {
-                                menuExpanded = false
-                                resultOf { mcpRegistry.startOAuthFlow(server.id) }
-                                    .onSuccess { url ->
-                                        if (url == null) {
-                                            MuseToast.show(context.getString(R.string.settings_mcp_oauth_cannot_start))
-                                        } else {
-                                            runCatching {
-                                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                                            }.onFailure {
-                                                MuseToast.show(context.getString(R.string.settings_mcp_oauth_open_failed, it.message))
-                                            }
-                                        }
-                                    }
-                                    .onError { _, t ->
-                                        MuseToast.show(context.getString(R.string.settings_mcp_failed, t?.message))
-                                    }
-                            }
-                            MuseActionSheetRow(text = stringResource(R.string.settings_mcp_oauth_revoke)) {
-                                menuExpanded = false
-                                scope.launch {
-                                    resultOf { mcpRegistry.revokeOAuth(server.id) }
-                                        .onSuccess {
-                                            MuseToast.show(context.getString(R.string.settings_mcp_oauth_revoked))
-                                        }
-                                        .onError { _, t ->
-                                            MuseToast.show(context.getString(R.string.settings_mcp_oauth_revoke_failed, t?.message))
-                                        }
-                                }
-                            }
-                        }
                         MuseActionSheetRow(text = stringResource(R.string.settings_mcp_browse_resources)) {
                             menuExpanded = false
                             showResources = true

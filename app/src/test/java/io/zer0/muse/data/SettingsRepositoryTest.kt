@@ -25,26 +25,33 @@ class SettingsRepositoryTest {
     private fun newRepository(): SettingsRepository = SettingsRepository(context, mockk(relaxed = true))
 
     @Test
-    fun enterGuestMode_keepsOnboardingNickname() = runBlocking {
+    fun saveOwnerDisplayName_storesNameWithoutAnyLoginSemantics() = runBlocking {
+        // Shaheen 2 Fix Phase 3 (§10 fix 14): enterGuestMode/mockLogin hata
+        // diye gaye hain. Onboarding ab sirf naam store karta hai —
+        // accountState mein naam ana chahiye lekin koi login/guest flag
+        // set nahi hona chahiye (is app mein login system hai hi nahi)।
         val repo = newRepository()
-        repo.saveUserProfile(UserProfile(userNickName = "子奇"))
 
-        repo.enterGuestMode()
+        repo.saveOwnerDisplayName("Malik")
 
         val state = repo.accountStateFlow.first()
-        assertTrue(state.isGuestMode)
-        assertEquals("子奇", state.userName)
+        assertEquals("Malik", state.userName)
+        assertFalse(state.isLoggedIn)
+        assertFalse(state.isGuestMode)
+        assertEquals(0L, state.loginAt)
+        assertEquals("", state.loginMethod)
     }
 
     @Test
-    fun enterGuestMode_withoutNicknameFallsBackToGuest() = runBlocking {
+    fun saveOwnerDisplayName_blankFallsBackToDefaultName() = runBlocking {
         val repo = newRepository()
 
-        repo.enterGuestMode()
+        repo.saveOwnerDisplayName("")
 
         val state = repo.accountStateFlow.first()
-        assertTrue(state.isGuestMode)
-        assertEquals(context.getString(R.string.settings_repo_guest_name), state.userName)
+        assertEquals(context.getString(R.string.settings_repo_default_user_name), state.userName)
+        assertFalse(state.isLoggedIn)
+        assertFalse(state.isGuestMode)
     }
 
     @Test

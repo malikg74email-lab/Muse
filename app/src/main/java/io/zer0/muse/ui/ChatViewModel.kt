@@ -1017,6 +1017,14 @@ data class PendingToolApproval(
      * LLM 自身无法访问用户本地相册,故本字段是图生图参考图的主要来源。
      */
     val referenceImageOverride: String? = null,
+    /**
+     * Shaheen 2 Allow Cards (Part 1, 2026-11-07): one plain-English line
+     * explaining WHY this call needs the owner's approval, set only when
+     * the sensitive-category gate (SensitiveToolGate) forced the card.
+     * Null for ordinary legacy approval cards — their rendering is
+     * unchanged.
+     */
+    val gateReason: String? = null,
 )
 
 /**
@@ -1916,6 +1924,9 @@ class ChatViewModel(
             sessionPermissionStore = sessionPermissionStore,
             approvalResults = toolApprovalResults,
             toolConfigStore = toolConfigStore,
+            // Shaheen 2 Allow Cards (Part 1): scoped gate decisions are
+            // recorded at this controller's owner-action seam.
+            allowCardGateStore = io.zer0.muse.tools.AllowCardGateStore(appContext),
         )
 
     // v1.x: 媒体/产物 Controller(artifact 选中/关闭/观察)

@@ -49,7 +49,6 @@ import io.zer0.common.Logger
 import io.zer0.common.Result
 import io.zer0.common.resultOf
 import io.zer0.muse.R
-import io.zer0.muse.auth.OAuthManager
 import io.zer0.muse.data.SettingsRepository
 import io.zer0.muse.ui.common.feedback.MuseDialog
 import io.zer0.muse.ui.common.feedback.MuseToast
@@ -769,134 +768,9 @@ internal fun ProviderEditPage(
         onSave(buildCurrentConfig())
     }
 
-    // ── P1-6: OAuth 登录 ──────────────────────────────────────────────
-    // P2-11: OAuthManager 已在 MuseApp.onCreate 中注入 SecureCredentialStore,
-    // 这里直接通过 OAuthManager 间接访问(读取 / 刷新 / 撤销)。
-    // 观察 OAuthManager 状态流,驱动弹窗 / 自动填入 apiKey / 错误提示
-    val oauthState by OAuthManager.stateFlow.collectAsStateWithLifecycle()
-    // Device Flow 的 user_code 弹窗状态(userCode, verificationUri)
-    var showDeviceCodeDialog by remember { mutableStateOf(false) }
-    var deviceCodeInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
-    // P2-11: 是否已有已存储的 OAuth token(控制「撤销访问」按钮显示)
-    var hasStoredOAuthToken by remember { mutableStateOf(false) }
-    // P2-11: 「撤销访问」确认弹窗
-    var showRevokeConfirm by remember { mutableStateOf(false) }
-
-    // P2-11: 进入页面时优先从 SecureCredentialStore 读取已存储 token,
-    // 未过期直接复用,过期则自动 refresh,失败则提示用户重新登录。
-    LaunchedEffect(config.id, config.oauthConfig) {
-        if (config.oauthConfig == null) return@LaunchedEffect
-        val stored = OAuthManager.getStoredToken(config.id) ?: return@LaunchedEffect
-        hasStoredOAuthToken = true
-        val now = System.currentTimeMillis()
-        val bufferMs = 60_000L // 60s 提前刷新窗口,与 OAuthManager.REFRESH_BUFFER_SECONDS 对齐
-        if (stored.expiresAt == 0L || stored.expiresAt > now + bufferMs) {
-            // 未过期,直接填入 apiKey 输入框
-            if (stored.accessToken.isNotBlank() && apiKey.isBlank()) {
-                apiKey = stored.accessToken
-                MuseToast.show(context.getString(R.string.oauth_stored))
-            }
-        } else {
-            // 过期,尝试自动刷新
-            // B-24: 把持久化的 config.oauthConfig 传入刷新路径 — 内存 providerConfigs 只在
-            // launch* 流程填充,App 重启后为空,必须显式注入 config 才能保证跨重启自动刷新可用。
-            OAuthManager.refreshTokenIfNeeded(config.id, config.oauthConfig)
-                .onSuccess { newToken ->
-                    apiKey = newToken
-                    MuseToast.show(context.getString(R.string.oauth_token_refreshed))
-                }
-                .onFailure {
-                    hasStoredOAuthToken = false
-                    MuseToast.show(context.getString(R.string.oauth_token_expired))
-                }
-        }
-    }
-
-    LaunchedEffect(oauthState) {
-        when (val s = oauthState) {
-            is OAuthManager.State.SUCCESS -> {
-                apiKey = s.apiKey
-                hasStoredOAuthToken = true
-                // v2.6.2（Codex 登录修复）: 解析 ChatGPT 账号 ID 并写入 customHeaders ——
-                // Codex 端点请求除 Bearer 外必须携带 ChatGPT-Account-ID 头。
-                // 旧实现读顶层 claim（实际嵌套在 `https://api.openai.com/auth` 命名空间下），
-                // 恒为 null；且解析失败时整个 onSave 被跳过，连 access_token 都没落盘。
-                val accountId = io.zer0.muse.auth.parseChatGptAccountId(s.idToken)
-                    ?: io.zer0.muse.auth.parseChatGptAccountId(s.apiKey)
-                val base = buildCurrentConfig()
-                val openAiSpecific =
-                    (base.specific as? io.zer0.ai.core.ProviderSpecificConfig.OpenAI)
-                        ?: io.zer0.ai.core.ProviderSpecificConfig.OpenAI(useResponseApi = true)
-                val mergedHeaders = openAiSpecific.customHeaders +
-                    mapOf("originator" to "muse") +
-                    (accountId?.let { mapOf("ChatGPT-Account-ID" to it) } ?: emptyMap())
-                // 无论 account-id 是否解析成功，都把 access_token 落盘（否则登录形同白做）
-                onSave(
-                    base.copy(
-                        apiKey = s.apiKey,
-                        specific = openAiSpecific.copy(customHeaders = mergedHeaders),
-                    ),
-                )
-                if (!accountId.isNullOrBlank()) {
-                    MuseToast.show(
-                        context.getString(R.string.oauth_codex_account_bound, accountId.take(8)),
-                    )
-                } else {
-                    Logger.w(
-                        "ProviderEditPage",
-                        "Codex login succeeded but chatgpt_account_id could not be parsed from id_token (idToken present=${!s.idToken.isNullOrBlank()})",
-                    )
-                }
-                MuseToast.show(context.getString(R.string.oauth_login_success))
-                MuseToast.show(context.getString(R.string.oauth_stored))
-                OAuthManager.resetState()
-                deviceCodeInfo = null
-                showDeviceCodeDialog = false
-            }
-            is OAuthManager.State.ERROR -> {
-                MuseToast.show(context.getString(R.string.oauth_login_failed, s.message))
-                OAuthManager.resetState()
-                deviceCodeInfo = null
-                showDeviceCodeDialog = false
-            }
-            is OAuthManager.State.AWAITING_USER -> {
-                // Device Flow 携带 userCode,弹窗显示;Auth Code Flow 的 userCode 为空,由 ConfigTab 内联显示
-                if (s.userCode.isNotBlank()) {
-                    deviceCodeInfo = s.userCode to s.verificationUri
-                    showDeviceCodeDialog = true
-                }
-            }
-            else -> { /* IDLE / POLLING: 由 ConfigTab 内联显示加载状态 */ }
-        }
-    }
-    // 离开页面时取消进行中的 OAuth 流程,避免状态泄漏到下次进入
-    DisposableEffect(Unit) {
-        onDispose { OAuthManager.cancel() }
-    }
-    // OAuth 登录入口:Device Flow 优先,降级 Auth Code Flow
-    // P2-11: 透传 providerId = config.id,登录成功后由 OAuthManager 自动持久化 TokenBundle
-    val onOAuthLogin: () -> Unit = lambda@{
-        val oauthConfig = config.oauthConfig ?: run {
-            MuseToast.show(context.getString(R.string.oauth_login_failed, "OAuth not configured"))
-            return@lambda
-        }
-        if (oauthConfig.deviceCodeUrl.isNullOrBlank()) {
-            // Auth Code Flow 需要 Activity 上下文
-            val activity = context.findActivity() ?: run {
-                MuseToast.show(context.getString(R.string.oauth_login_failed, "Unable to get the Activity context"))
-                return@lambda
-            }
-            ioScope.launch { OAuthManager.launchAuthorizationCodeFlow(activity, oauthConfig, config.id) }
-        } else {
-            ioScope.launch { OAuthManager.launchDeviceFlow(oauthConfig, config.id) }
-        }
-    }
-    // P2-11: 撤销访问 — 删除 SecureCredentialStore 中的 token + 清空 apiKey 输入框
-    val onRevokeOAuth: () -> Unit = {
-        showRevokeConfirm = true
-    }
-    val isOAuthLoading = oauthState is OAuthManager.State.AWAITING_USER ||
-        oauthState is OAuthManager.State.POLLING
+    // Shaheen 2 Fix Phase 3 (§10 fix 13): OAuth login block hata diya gaya —
+    // is app mein koi login system nahi hai; provider sirf local API key
+    // se chalta hai jo neeche ConfigTab mein enter hoti hai.
 
     // v1.35: 改用普通全屏 Scaffold(不再用 Dialog),系统导航栏 inset 正确传递
     // v1.48: BackHandler 检查未保存修改,避免误退丢失编辑
@@ -1076,12 +950,6 @@ internal fun ProviderEditPage(
                         isQueryingBalance = isQueryingBalance,
                         balanceResult = balanceResult,
                         onQueryBalance = { queryBalance(buildTempConfig()) },
-                        oauthConfig = config.oauthConfig,
-                        onOAuthLogin = onOAuthLogin,
-                        isOAuthLoading = isOAuthLoading,
-                        // P2-11: 透传已存储 token 状态 + 撤销回调
-                        hasStoredOAuthToken = hasStoredOAuthToken,
-                        onRevokeOAuth = onRevokeOAuth,
                         // P1-3: 透传限流参数
                         requestLimitPerMinuteText = requestLimitPerMinuteText,
                         onRequestLimitPerMinuteTextChange = { requestLimitPerMinuteText = it.filter { ch -> ch.isDigit() } },
@@ -1193,116 +1061,4 @@ internal fun ProviderEditPage(
         )
     }
 
-    // P1-6: Device Flow user_code 弹窗 — 显示 verification_uri + user_code 给用户
-    if (showDeviceCodeDialog && deviceCodeInfo != null) {
-        val (userCode, verificationUri) = deviceCodeInfo!!
-        MuseDialog(
-            onDismissRequest = {
-                // 用户取消:中止 OAuth 流程
-                OAuthManager.cancel()
-                showDeviceCodeDialog = false
-                deviceCodeInfo = null
-            },
-            title = stringResource(R.string.oauth_login),
-            content = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(
-                            R.string.oauth_device_code_prompt,
-                            verificationUri,
-                            userCode,
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(Modifier.size(MusePaddings.contentGap))
-                    // v2.6.0: 提供“直接打开授权页”按钮 —— 原实现只展示 URL 文本,
-                    // 用户需自己开浏览器拄地址,一键登录体验断裂。
-                    MuseCapsuleButton(
-                        text = stringResource(R.string.oauth_device_open_page),
-                        onClick = {
-                            runCatching {
-                                val intent = android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse(verificationUri),
-                                ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                context.startActivity(intent)
-                            }.onFailure {
-                                io.zer0.muse.ui.common.feedback.MuseToast.show(
-                                    context.getString(R.string.oauth_device_open_failed),
-                                )
-                            }
-                        },
-                        leadingIcon = MuseIcons.externalLink,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.size(MusePaddings.contentGap))
-                    // user_code 用大字号 + 居中显示,便于用户抄写到授权页
-                    Surface(
-                        shape = MuseShapes.medium,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = userCode,
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = androidx.compose.ui.unit.TextUnit(
-                                    2f,
-                                    androidx.compose.ui.unit.TextUnitType.Sp,
-                                ),
-                            ),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = MusePaddings.itemGap),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        )
-                    }
-                }
-            },
-            confirmText = stringResource(R.string.oauth_open_verification_uri),
-            onConfirm = {
-                // 用 Intent 打开 verification_uri
-                runCatching {
-                    val openIntent = Intent(Intent.ACTION_VIEW, Uri.parse(verificationUri))
-                    openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(openIntent)
-                }.onFailure {
-                    MuseToast.show(
-                        context.getString(R.string.oauth_login_failed, it.message ?: "Unable to open the browser"),
-                    )
-                }
-            },
-            dismissText = stringResource(R.string.settings_common_cancel),
-            onDismiss = {
-                OAuthManager.cancel()
-                showDeviceCodeDialog = false
-                deviceCodeInfo = null
-            },
-        )
-    }
-
-    // P2-11: 撤销 OAuth 访问确认弹窗 — 删除 SecureCredentialStore 中的 token
-    if (showRevokeConfirm) {
-        MuseDialog(
-            onDismissRequest = { showRevokeConfirm = false },
-            title = stringResource(R.string.oauth_revoke),
-            content = { Text(stringResource(R.string.oauth_revoke_confirm)) },
-            confirmText = stringResource(R.string.oauth_revoke),
-            onConfirm = {
-                showRevokeConfirm = false
-                ioScope.launch {
-                    OAuthManager.revokeStoredToken(config.id)
-                    // 清空 apiKey 输入框 + 同步本地状态
-                    apiKey = ""
-                    hasStoredOAuthToken = false
-                    MuseToast.show(context.getString(R.string.oauth_revoke_success))
-                }
-            },
-            dismissText = stringResource(R.string.settings_common_cancel),
-            onDismiss = { showRevokeConfirm = false },
-            destructive = true,
-        )
-    }
 }

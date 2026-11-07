@@ -107,6 +107,12 @@ object ToolExposurePolicy {
         loadedToolNames: Set<String> = emptySet(),
         skillToolNames: Set<String> = emptySet(),
         agentMode: Boolean = false,
+        // Shaheen 2 Fix Phase 3 (§8 fix addition 7): per-command mode —
+        // null = Phase 1 wala rawaiya (sirf agentMode hook); DEVICE ho to
+        // phone-control set, INTERNAL ho to workspace/code set always-on.
+        // Baqi families keyword/sticky se hi aati hain, is liye mixed
+        // multi-step tasks (pehle device, phir file) beech mein nahi rukte.
+        mode: ExecutionMode? = null,
     ): List<ToolDefinition> {
         return if (tools.size <= SIMPLE_TOOL_SUBSET_THRESHOLD) {
             tools
@@ -121,6 +127,19 @@ object ToolExposurePolicy {
                 // 宽松兜底:明确动作请求且非简单短句 → OPTIONAL 长尾全放,避免多步任务中途缺工具
                 val optionalRelaxed = !isSimpleToolRequest(userText) && isDirectToolRequest(userText, tools)
                 tools.filter { tool ->
+                    // Shaheen 2 Fix Phase 3 (§8 fix addition 7): mode-scoped always-on.
+                    // DEVICE → device set; INTERNAL → workspace/code set. Ye sirf
+                    // always-on scope badalta hai; doosri families apne keyword/
+                    // sticky raste se aati rehti hain (mixed tasks ke liye).
+                    val modeAlwaysAvailable =
+                        when (mode) {
+                            ExecutionMode.DEVICE -> isAgentAlwaysAvailable(tool.name)
+                            ExecutionMode.INTERNAL -> ExecutionModeRouter.isInternalAlwaysAvailable(tool.name)
+                            null -> false
+                        }
+                    if (modeAlwaysAvailable) {
+                        return@filter true
+                    }
                     // Shaheen 2 Fix Phase 1 (§5 Fix 1.2): Agent mode mein phone-control
                     // ka core set hamesha schema mein rahe — keyword luck par na chhodo.
                     // Diagnosis: `app_launch` kisi family mein tha hi nahi aur `ui_*` /
@@ -154,7 +173,7 @@ object ToolExposurePolicy {
      * (AutomationTools / UIToolsSkill ke saare control tools).
      */
     private val AGENT_ALWAYS_AVAILABLE_TOOLS =
-        setOf("app_launch", "app_list", "open_app", "list_installed_apps")
+        setOf("app_launch", "app_list", "open_app", "list_installed_apps", "app_deep_link")
 
     /** [AGENT_ALWAYS_AVAILABLE_TOOLS] + `screen_*` / `ui_*` prefix families. */
     fun isAgentAlwaysAvailable(toolName: String): Boolean =
@@ -248,7 +267,7 @@ object ToolExposurePolicy {
                     "打开应用", "启动应用", "open app", "launch app",
                     "open", "launch", "kholo", "khol do", "khol", "chalao", "app kholo",
                 ),
-                toolNames = setOf("open_app", "app_launch", "app_list", "screen_launch_app", "list_installed_apps"),
+                toolNames = setOf("open_app", "app_launch", "app_list", "screen_launch_app", "list_installed_apps", "app_deep_link"),
             ),
             ToolFamily(
                 keywords = setOf("发短信", "发邮件", "打电话", "拨号", "send sms", "send email", "make a call"),
@@ -515,10 +534,6 @@ object ToolExposurePolicy {
             ToolFamily(
                 keywords = setOf("自动操作", "自动化流程", "虚拟屏", "多步操作", "agent 操作", "virtual screen", "automation workflow"),
                 toolNames = setOf("automation_workflow", "ui_agent", "virtual_screen", "virtual_screen_input"),
-            ),
-            ToolFamily(
-                keywords = setOf("连接器", "oauth", "connector"),
-                toolNames = setOf("connector_list", "call_connector"),
             ),
         )
 

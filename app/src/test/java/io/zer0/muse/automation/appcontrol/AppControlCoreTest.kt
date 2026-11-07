@@ -277,4 +277,11 @@ class AppControlCoreTest {
     fun `success defaults to no foreground check applied`() {
         assertNull(AppActionResult.Success(ExecutionChannel.APP).verifiedForeground)
     }
+
+    @Test
+    fun `success defaults to a single attempt and records retries`() {
+        // §6a 记账：默认一次；重试过的 launch 必须把次数带出来给工具层写明
+        assertEquals(1, AppActionResult.Success(ExecutionChannel.APP).attempts)
+        assertEquals(3, AppActionResult.Success(ExecutionChannel.APP, attempts = 3).attempts)
+    }
 }

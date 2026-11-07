@@ -181,6 +181,7 @@ class AnthropicProvider(
                     stream = true,
                     reasoningLevel = request.reasoningLevel,
                     tools = request.tools,
+                    toolChoice = request.toolChoice,
                 )
             // v1.0.1: 用 effectiveApiKey() 支持多 key 轮换
             val httpRequest = Request.Builder()
@@ -543,6 +544,7 @@ class AnthropicProvider(
             stream = false,
             reasoningLevel = request.reasoningLevel,
             tools = request.tools,
+            toolChoice = request.toolChoice,
         )
         val url = baseUrl() + anthropicConfig.messagesPath
         Logger.i("AnthropicProvider", "completeText: POST ${sanitizeUrl(url)} model=${request.model.id}")
@@ -921,6 +923,10 @@ class AnthropicProvider(
         stream: Boolean,
         reasoningLevel: ReasoningLevel? = null,
         tools: List<ToolDefinition>? = null,
+        // Shaheen 2 Fix Phase 3 (§9 fix 10): 此前没有这个参数,app 的
+        // toolChoice="required" 在 Anthropic 路径被静默丢弃;现在与
+        // OpenAI/Gemini 对等透传(映射见 anthropicToolChoiceFor)。
+        toolChoice: String? = null,
     ): String {
         // 映射 ReasoningLevel → thinking 字段
         val thinking: AnthropicThinking? = reasoningLevel?.let { level ->
@@ -962,6 +968,17 @@ class AnthropicProvider(
             null
         }
 
+        // Shaheen 2 Fix Phase 3: tool_choice 只在真正发送 tools 时才带上
+        // (与 OpenAI 路径同口径);且 thinking 启用时 Anthropic API 拒绝
+        // any/tool 强制模式(会 400),这两种映射降为不发送,auto/none 不受影响。
+        val mappedToolChoice = anthropicToolChoiceFor(toolChoice)
+        val anthropicToolChoice =
+            when {
+                anthropicTools == null -> null
+                thinking != null && (mappedToolChoice?.type == "any" || mappedToolChoice?.type == "tool") -> null
+                else -> mappedToolChoice
+            }
+
         val payload = AnthropicRequest(
             model = model,
             messages = messages,
@@ -971,6 +988,7 @@ class AnthropicProvider(
             stream = stream,
             thinking = thinking,
             tools = anthropicTools,
+            tool_choice = anthropicToolChoice,
         )
         return AppJson.encodeToString(payload)
     }

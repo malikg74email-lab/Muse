@@ -117,6 +117,17 @@ object LiveCallProtocol {
         return buildJsonObject { put("result", rawResult) }
     }
 
+    /**
+     * 丢掉已被服务端取消的工具结果(验收审计 D4):取消可能在工具执行途中到达,
+     * 执行前的检查拦不住这种迟到的取消;已取消的调用服务端不再等它的
+     * functionResponse,硬发回去轻则被忽略、重则触发协议错误。发送前必须再过滤一次。
+     */
+    fun dropCancelledResponses(
+        responses: List<LiveToolResponse>,
+        cancelledIds: Set<String>,
+    ): List<LiveToolResponse> =
+        if (cancelledIds.isEmpty()) responses else responses.filterNot { it.id in cancelledIds }
+
     /** 编码一批工具结果:{"toolResponse":{"functionResponses":[...]}} */
     fun encodeToolResponses(responses: List<LiveToolResponse>): String =
         buildJsonObject {

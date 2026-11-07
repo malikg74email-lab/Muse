@@ -221,9 +221,6 @@ object ToolCategories {
             // 消息渠道(v1.0.92)
             "send_channel_message",
             "channel_list",
-            // OAuth 连接器(v2.0)
-            "connector_list",
-            "call_connector",
             // 插件市场(v2.0.1)——检索与安装外部插件均属扩展能力
             "plugin_market_search",
             "plugin_market_install",

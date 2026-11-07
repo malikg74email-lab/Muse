@@ -537,6 +537,24 @@ object KnownModels {
                 description = "Google Gemini 2.5 Flash",
             ),
         )
+        // Shaheen 2 Fix Phase 3 (diagnosis §5 Fix 1.3): Malik ke phone par ye
+        // model id select tha lekin dictionary mein tha hi nahi — lookup null
+        // aata tha. contextWindow/maxOutputTokens/modalities 2.5 Flash sibling
+        // ke pattern par rakhe hain (repo ke apne Gemini Flash entries sab
+        // 1M context dete hain); pricing jaan-bujh kar null hai — offline
+        // verify nahi ho sakti aur KnownModels ka usool hai ke na-maloom
+        // qeemat guess nahi ki jati (TokenCostCalculator null par cost nahi deta).
+        put(
+            "gemini-3.1-flash-lite",
+            KnownModelInfo(
+                contextWindow = 1000000,
+                maxOutputTokens = 65536,
+                inputModalities = setOf(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO, Modality.FILE),
+                outputModalities = TEXT_OUT,
+                abilities = setOf(TOOL, REASONING),
+                description = "Google Gemini 3.1 Flash Lite",
+            ),
+        )
 
         // ── DeepSeek 系列 ──
         put(

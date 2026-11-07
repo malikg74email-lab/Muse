@@ -129,6 +129,13 @@ fun ToolApprovalCard(
      */
     onReferenceImageChange: (String?) -> Unit = {},
     /**
+     * Shaheen 2 Allow Cards (Part 1, 2026-11-07): one plain-English line
+     * saying WHY this call needs the owner's approval, present only when
+     * the sensitive-category gate forced this card. Null = legacy card,
+     * rendering unchanged.
+     */
+    gateReason: String? = null,
+    /**
      * Approval deadline shown as a countdown. Must match the VM-side approval timeout so the
      * card cannot silently expire while the user still believes it is still waiting.
      */
@@ -268,6 +275,16 @@ fun ToolApprovalCard(
                         },
                     )
                 }
+            }
+
+            // Shaheen 2 Allow Cards (Part 1): WHY this needs the owner's
+            // tap, in one plain line — shown only on gate-forced cards.
+            if (!gateReason.isNullOrBlank()) {
+                Text(
+                    text = gateReason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             // v2.x: 参数展示 — 预览 + 明确的截断提示 + 可展开看全量。
@@ -625,6 +642,7 @@ fun PendingApprovalsSummary(
                     onAllowThisSession = { onAllowThisSession(approval) },
                     referenceImageOverride = approval.referenceImageOverride,
                     onReferenceImageChange = { dataUri -> onReferenceImageChange(approval, dataUri) },
+                    gateReason = approval.gateReason,
                     countdownPaused = countdownPaused,
                 )
             }

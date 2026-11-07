@@ -60,6 +60,12 @@ sealed interface AppActionResult {
     data class Success(
         val via: ExecutionChannel,
         val verifiedForeground: Boolean? = null,
+        /**
+         * Shaheen 2 Deep Links & Shortcuts（architecture §6a）：LAUNCH 实际尝试
+         * 次数（首次 + 有界重试）。默认 1；>1 时工具层必须在结果里写明，
+         * 让"慢启动重试过几次"对模型与用户都可见，绝不静默重试。
+         */
+        val attempts: Int = 1,
     ) : AppActionResult
 
     /**

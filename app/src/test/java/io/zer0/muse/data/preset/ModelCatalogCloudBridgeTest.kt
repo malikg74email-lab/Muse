@@ -48,22 +48,29 @@ class ModelCatalogCloudBridgeTest {
     )
 
     @Test
-    fun codexPreset_hasNoBuiltInModels() {
-        // 应用内不预置 Codex 模型（清单以云端目录为准）。
-        val preset = PresetProviders(context).bySpecId("openai_codex")
-        assertTrue(preset != null)
-        assertEquals(0, preset!!.models.size)
+    fun oauthPresets_areRemoved() {
+        // Shaheen 2 Fix Phase 3 (§10 fix 13): OAuth-only presets
+        // (OpenAI Codex / xAI OAuth / GitHub Copilot) hata diye gaye hain —
+        // Shaheen 2 mein koi login system nahi hai, sirf local API key hai.
+        // (Is se pehle ke do tests Codex preset ki maujoodgi assert karte thay;
+        // ab wohi jagah un ki ghayabgi pin karti hai.)
+        val presets = PresetProviders(context)
+        assertTrue(presets.bySpecId("openai_codex") == null)
+        assertTrue(presets.bySpecId("xai_oauth") == null)
+        assertTrue(presets.bySpecId("github_copilot") == null)
+        val allIds = presets.all.map { it.id }.toSet()
+        assertFalse(allIds.contains("preset_openai_codex"))
+        assertFalse(allIds.contains("preset_xai_oauth"))
+        assertFalse(allIds.contains("preset_github_copilot"))
     }
 
     @Test
-    fun codexPreset_exposesCloudCatalogModels() {
-        // 注入云端目录后，预设选择页应看到目录里的 Codex 模型。
-        val store = ModelCatalogStore(context, cloudCatalog = { codexCloudCatalog() })
-        val preset = PresetProviders(context, store).bySpecId("openai_codex")
-        assertTrue(preset != null)
-        val ids = preset!!.models.map { it.id }.toSet()
-        assertTrue("应含 gpt-6.1-sol，实际=$ids", ids.contains("gpt-6.1-sol"))
-        assertTrue("应含 gpt-6-luna，实际=$ids", ids.contains("gpt-6-luna"))
+    fun apiKeyPresets_remainAfterOAuthRemoval() {
+        // API-key wale presets (khaas tor par xAI ka api-key variant) baqi hain.
+        val presets = PresetProviders(context)
+        assertTrue(presets.bySpecId("xai") != null)
+        assertTrue(presets.bySpecId("openai") != null)
+        assertTrue(presets.bySpecId("gemini") != null)
     }
 
     @Test

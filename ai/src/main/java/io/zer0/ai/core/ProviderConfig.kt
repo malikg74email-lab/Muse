@@ -31,15 +31,11 @@ enum class ProviderCategory {
  *  - ANTHROPIC → [DEFAULT_ANTHROPIC_BASE_URL]
  *  - GEMINI → [DEFAULT_GEMINI_BASE_URL]
  *
- * P1-6: [oauthConfig] 非空时,ProviderEditPage 会显示「OAuth 登录」按钮,
- * 通过 Device Flow 或 Authorization Code Flow 自动获取 [apiKey](access_token)。
- *
  * @param enabled 是否启用(默认 true),禁用的 Provider 不出现在选择列表
  * @param builtIn 是否内置(默认 false),内置 Provider 不可删除
  * @param balanceApiPath 余额查询端点路径(可选,如 /dashboard/billing/usage)
  * @param balanceResultPath 余额结果 JSON 路径(如 $.data.total_usage)
  * @param category 供应商分类(默认 OFFICIAL,向后兼容旧数据)
- * @param oauthConfig P1-6 OAuth 登录配置(可选);非空时支持 OAuth 自动获取 apiKey
  * @param allowMissingApiKey v1.0.6: 是否允许空 apiKey(authType=none/optional)。
  *   true 时 Provider 不强制要求 apiKey(如 Ollama 本地部署、system-speech 等)。
  *   默认 false(向后兼容,绝大多数供应商需要 apiKey)。
@@ -74,7 +70,10 @@ data class ProviderConfig(
     val balanceApiPath: String = "",
     val balanceResultPath: String = "",
     val category: ProviderCategory = ProviderCategory.OFFICIAL,
-    val oauthConfig: OAuthConfig? = null,
+    // Shaheen 2 Fix Phase 3 (§10 fix 13): oauthConfig field hata diya gaya —
+    // Shaheen 2 mein koi login system nahi hai, providers sirf local API key
+    // se chalte hain. Purani stored JSON mein agar ye field pari ho to
+    // AppJson (ignoreUnknownKeys=true) use ignore kar deta hai.
     val allowMissingApiKey: Boolean = false,
     val specId: String? = null,
     val requestLimitPerMinute: Int = 0,
@@ -95,9 +94,7 @@ data class ProviderConfig(
         }
         return "ProviderConfig(id=$id, displayName=$displayName, type=$type, baseUrl=$baseUrl, " +
             "apiKey=<redacted>, models=${models.size}, specific=$specific, enabled=$enabled, " +
-            "builtIn=$builtIn, category=$category, oauthConfig=${
-                if (oauthConfig != null) "OAuthConfig(clientId=${oauthConfig.clientId})" else "null"
-            })"
+            "builtIn=$builtIn, category=$category)"
     }
 
     /**

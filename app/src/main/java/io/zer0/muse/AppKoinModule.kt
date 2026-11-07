@@ -189,10 +189,10 @@ val appModule = module {
     }
     single { PresetProviders(androidContext(), get()) }
 
-    // P2-11: OAuth 凭证隔离 — 独立加密 SP(Keystore AES-256-GCM),
-    // 与普通 API Key(SettingsRepository.providers Flow)物理隔离,
-    // 仅 OAuthManager + UI(撤销访问)访问
-    single { io.zer0.muse.auth.SecureCredentialStore(androidContext()) }
+    // Shaheen 2 Fix Phase 3 (§10 fix 13): SecureCredentialStore ki Koin
+    // registration hata di gayi — us ka wahid consumer OAuthManager tha,
+    // aur OAuth/login system poora remove ho chuka hai. API keys
+    // SettingsRepository ke apne encrypted store mein rehti hain.
 
     // P2-10: Provider 插件注册中心(JSON 配置驱动的自定义供应商)
     // v1.134 P1-3: 注入 filesDir/muse_plugins/ 作为持久化目录,App 重启后自动恢复
@@ -612,7 +612,8 @@ val appModule = module {
             mediaGenToolsRegistrar = get(),
             // v1.0.92: 消息渠道工具(外部 IM 发送)
             channelToolsRegistrar = get(),
-            connectorToolsRegistrar = get(),
+            // Shaheen 2 Fix Phase 3 (§10 fix 13): connectorToolsRegistrar hata
+            // diya gaya — OAuth connector subsystem remove ho chuka hai.
             // v2.0.1: 插件市场工具(检索 / 审批安装)
             pluginMarketToolsRegistrar = get(),
             // v2.x 扩展运行时(P0):内置 Node 沙盒自检

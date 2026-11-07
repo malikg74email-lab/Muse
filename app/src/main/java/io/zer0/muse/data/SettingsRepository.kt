@@ -71,7 +71,7 @@ private fun <T> Flow<Preferences>.mapDistinct(transform: suspend (Preferences) -
  *  - WebServer 配置 / Web 搜索配置 / ASR 配置 / 媒体配置 / 代理配置
  *  - 账户状态(登录态 / 游客模式)
  *  - 首次引导是否已展示
- *  - MCP OAuth token 存储(按 serverId)
+ *  - MCP token 存储(按 serverId;Phase 3 ke baad sirf 飞书 TAT cache)
  *
  * 同时实现 [ProviderConfigStore] 接口,供 ai 模块的 ChatService/ImageService 注入。
  *
@@ -1536,41 +1536,18 @@ class SettingsRepository(
         cacheScope.launch { taskRoutingConfigFlow.collect { taskRoutingConfigCache = it } }
     }
 
-    suspend fun mockLogin(userName: String, method: String = "phone") {
-        store.edit {
-                prefs ->
-            prefs[KEY_ACCOUNT_LOGGED_IN] = true
-            prefs[KEY_ACCOUNT_USER_NAME] = userName.ifBlank { appContext.getString(R.string.settings_repo_default_user_name) }
-            prefs[KEY_ACCOUNT_LOGIN_AT] = System.currentTimeMillis()
-            prefs[KEY_ACCOUNT_LOGIN_METHOD] = method
-            prefs[KEY_ACCOUNT_GUEST_MODE] = false
-        }
-    }
-
-    /** 进入游客(离线体验)模式 — 跳过登录直接进入主界面。 */
-    suspend fun enterGuestMode() {
-        // 保留引导页/个人资料里已填写的昵称,只有完全没填时才回退为“游客”
-        val profile = getUserProfile()
-        val displayName =
-            profile.userNickName?.takeIf { it.isNotBlank() }
-                ?: appContext.getString(R.string.settings_repo_guest_name)
+    /**
+     * Shaheen 2 Fix Phase 3 (§10 fix 14): owner ka display name save karo —
+     * SIRF naam. Pehle ye jagah mockLogin thi jo account/login flags
+     * (logged_in / login_at / login_method / guest_mode) bhi set karti thi;
+     * Shaheen 2 personal hai, is mein koi login/account system nahi hai,
+     * is liye onboarding sirf naam store karta hai (UserProfile ke saath
+     * caller khud sync karta hai, pehle ki tarah)।
+     */
+    suspend fun saveOwnerDisplayName(userName: String) {
         store.edit { prefs ->
-            prefs[KEY_ACCOUNT_GUEST_MODE] = true
-            prefs[KEY_ACCOUNT_LOGGED_IN] = false
-            prefs[KEY_ACCOUNT_USER_NAME] = displayName
-            prefs[KEY_ACCOUNT_LOGIN_AT] = 0L
-            prefs[KEY_ACCOUNT_LOGIN_METHOD] = "guest"
-        }
-    }
-
-    suspend fun logout() {
-        store.edit {
-                prefs ->
-            prefs[KEY_ACCOUNT_LOGGED_IN] = false
-            prefs[KEY_ACCOUNT_USER_NAME] = ""
-            prefs[KEY_ACCOUNT_LOGIN_AT] = 0L
-            prefs[KEY_ACCOUNT_LOGIN_METHOD] = ""
-            prefs[KEY_ACCOUNT_GUEST_MODE] = false
+            prefs[KEY_ACCOUNT_USER_NAME] =
+                userName.ifBlank { appContext.getString(R.string.settings_repo_default_user_name) }
         }
     }
 
@@ -2553,56 +2530,6 @@ class SettingsRepository(
 
     /** v1.54: 全部 Provider 列表(用于 embedding provider 选择)。 */
     override suspend fun getAllProviders(): List<ProviderConfig> = providersFlow.first()
-
-    /**
-     * v2.6.2（Codex 登录修复）: 存量 Codex 供应商自愈。
-     *
-     * 背景:旧版从 id_token 顶层读 `chatgpt_account_id`（实际嵌套在
-     * `https://api.openai.com/auth` 命名空间下），恒为 null，导致已登录用户的
-     * provider 的 customHeaders 里从未写入 `ChatGPT-Account-ID`。本方法在启动时
-     * 扫描已存 OAuth token 的 provider，从加密存储的 id_token 现解析并补写该头，
-     * 让老用户无需重新登录即可恢复。
-     *
-     * 幂等:仅当 headers 缺 ChatGPT-Account-ID 且能解析出 account-id 时写回；
-     * 无 OAuth 存储 / 解析失败 / 已有该头时不动。
-     *
-     * @return 实际修复的 provider 数量
-     */
-    suspend fun healCodexAccountHeadersIfNeeded(): Int {
-        val store = io.zer0.muse.auth.OAuthManager.secureStoreOrNull() ?: return 0
-        var healed = 0
-        providersFlow.first().forEach { provider ->
-            // 仅处理配置了 OAuth 的 OpenAI 系供应商（Codex 预设 type=OPENAI）
-            if (provider.oauthConfig == null) return@forEach
-            if (provider.type != io.zer0.ai.core.ProviderType.OPENAI) return@forEach
-            val bundle = runCatching { store.getOAuthToken(provider.id) }.getOrNull() ?: return@forEach
-            // id_token 优先（标准来源）；缺失时回退 access_token ——
-            // Codex 的 access_token 同样是 JWT，内含同一个命名空间 claim。
-            val accountId = io.zer0.muse.auth.parseChatGptAccountId(bundle.idToken)
-                ?: io.zer0.muse.auth.parseChatGptAccountId(bundle.accessToken)
-            if (accountId.isNullOrBlank()) return@forEach
-            val specific = provider.resolvedSpecific() as? io.zer0.ai.core.ProviderSpecificConfig.OpenAI
-                ?: return@forEach
-            if (specific.customHeaders["ChatGPT-Account-ID"] == accountId) return@forEach
-            val updated = specific.copy(
-                customHeaders = specific.customHeaders +
-                    mapOf("ChatGPT-Account-ID" to accountId, "originator" to "muse"),
-            )
-            try {
-                updateProvider(provider.copy(specific = updated))
-                healed++
-                Logger.i(
-                    "SettingsRepository",
-                    "Codex account header self-healed: provider=${provider.id} account=${accountId.take(8)}…",
-                )
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Logger.w("SettingsRepository", "Failed to write Codex account header self-healing: ${e.message}", e)
-            }
-        }
-        return healed
-    }
 
     private suspend fun migrateLegacyProviderIfNeeded() {
         // M-SR5: AtomicBoolean 保证迁移只执行一次,避免并发首调时

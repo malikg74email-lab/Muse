@@ -3,7 +3,6 @@ package io.zer0.muse.data.preset
 import android.content.Context
 import io.zer0.ai.core.Model
 import io.zer0.ai.core.ModelAbility
-import io.zer0.ai.core.OAuthConfig
 import io.zer0.ai.core.ProviderCategory
 import io.zer0.ai.core.ProviderConfig
 import io.zer0.ai.core.ProviderSpecificConfig
@@ -21,18 +20,21 @@ import io.zer0.muse.R
  *  - 4 个 Coding Plan 供应商(dashscope-coding / kimi-coding / volcengine-coding / zhipu-coding)
  *    标记 specific.codingPlan = true
  *  - minimax / minimax-token-plan 走 Anthropic Messages 协议(baseUrl = /anthropic)
- *  - xai-oauth 走 OpenAI Responses 协议(type = OPENAI_RESPONSES)
  *  - ollama 走 authType=none 语义(allowMissingApiKey = true)
  *
  * 1muse 特有保留:
  *  - SiliconFlow 免费模型预填 8 个模型 + UI「一键填入免费模型」按钮
- *  - GitHub Copilot OAuth 预设
  *  - deepinfra / lingyi 两个海外/国产供应商
  *  - 6 个中转站模板(opencode / api2d / aihubmix / deepbricks / oneapi / newapi)
  *
+ * Shaheen 2 Fix Phase 3 (§10 fix 13): xAI-OAuth / OpenAI-Codex /
+ * GitHub-Copilot presets hata diye gaye hain — un ki wahid authentication
+ * OAuth login thi, aur Shaheen 2 mein koi login system nahi hai. xAI ka
+ * api-key preset (xai) baqi hai.
+ *
  * 分类:
- *  - 海外官方(15): OpenAI / Anthropic / Gemini / xAI / xAI-OAuth / OpenAI-Codex /
- *    GitHub-Copilot / Groq / Together / Mistral / OpenRouter / DeepInfra / Fireworks /
+ *  - 海外官方(12): OpenAI / Anthropic / Gemini / xAI /
+ *    Groq / Together / Mistral / OpenRouter / DeepInfra / Fireworks /
  *    Perplexity / Ollama
  *  - 国产官方(22): DeepSeek / 通义 / 智谱 / Kimi / 豆包 / 百川 / 零一 / 阶跃 / SiliconFlow /
  *    混元 / 百度 / 魔搭 / 无问芯穹 / 小米MiMo / 思必驰Agnes / MiniMax /
@@ -86,15 +88,12 @@ class PresetProviders(
 
     // ── 供应商分组 ─────────────────────────────────────────────────
 
-    /** 海外官方厂商(15 个)。 */
+    /** 海外官方厂商(12 个;Phase 3 mein 3 OAuth presets hata diye gaye)。 */
     val overseas: List<ProviderConfig> = listOf(
         openai(),
         anthropic(),
         gemini(),
         xai(),
-        xaiOauth(),
-        openaiCodex(),
-        githubCopilot(),
         groq(),
         together(),
         mistral(),
@@ -368,7 +367,8 @@ class PresetProviders(
      * P1-6: xAI 预设供应商(api-key 认证)。
      *
      * 走 OpenAI 兼容协议(type=OPENAI),baseUrl 用 xAI 官方端点。
-     * 也支持 OAuth 登录(OAuthConfig.XAI_PRESET),用户可选择 api-key 或 OAuth。
+     * Shaheen 2 Fix Phase 3 (§10 fix 13): OAuth variant hata diya gaya —
+     * Shaheen 2 mein login system nahi hai, sirf local API key chalti hai.
      */
     private fun xai() = ProviderConfig(
         id = "preset_xai",
@@ -400,138 +400,6 @@ class PresetProviders(
             chatModel("preset_xai", "grok-3", "Grok 3", contextWindow = 131_072, supportsVision = true, supportsTools = true),
             chatModel("preset_xai", "grok-3-mini", "Grok 3 mini", contextWindow = 131_072, reasoning = true, supportsTools = true),
         ),
-        oauthConfig = OAuthConfig.XAI_PRESET,
-    )
-
-    /**
-     * v1.0.6: xAI OAuth 预设供应商(走 OpenAI Responses 协议)。
-     *
-     * xAI OAuth 预设:走 OAuth + openai-responses 协议,
-     * baseUrl 指向 xAI OAuth 代理端点(https://cli-chat-proxy.grok.com)。
-     *
-     * 与 [xai] 区别:
-     *  - type = OPENAI_RESPONSES(走 /v1/responses 而非 /v1/chat/completions)
-     *  - OAuth 为唯一认证方式(不填 apiKey,通过 OAuth 拿 access_token)
-     *  - 模型列表聚焦 Grok 4.5+(Responses API 支持的模型)
-     */
-    private fun xaiOauth() = ProviderConfig(
-        id = "preset_xai_oauth",
-        displayName = "xAI Grok (OAuth Responses)",
-        type = ProviderType.OPENAI_RESPONSES,
-        baseUrl = "https://cli-chat-proxy.grok.com",
-        apiKey = "",
-        builtIn = true,
-        category = ProviderCategory.OFFICIAL,
-        models = listOf(
-            chatModel(
-                "preset_xai_oauth",
-                "grok-4.5",
-                "Grok 4.5",
-                contextWindow = 500_000,
-                maxOutputTokens = 128_000,
-                supportsVision = true,
-                reasoning = true,
-                supportsTools = true,
-            ),
-            chatModel(
-                "preset_xai_oauth",
-                "grok-4.5-latest",
-                "Grok 4.5 Latest",
-                contextWindow = 500_000,
-                maxOutputTokens = 128_000,
-                supportsVision = true,
-                reasoning = true,
-                supportsTools = true,
-            ),
-            chatModel(
-                "preset_xai_oauth",
-                "grok-build-latest",
-                "Grok Build Latest",
-                contextWindow = 500_000,
-                maxOutputTokens = 128_000,
-                supportsVision = true,
-                reasoning = true,
-                supportsTools = true,
-            ),
-            chatModel(
-                "preset_xai_oauth",
-                "grok-4.3",
-                "Grok 4.3",
-                contextWindow = 1_000_000,
-                maxOutputTokens = 128_000,
-                supportsVision = true,
-                reasoning = true,
-                supportsTools = true,
-            ),
-        ),
-        oauthConfig = OAuthConfig.XAI_OAUTH_PRESET,
-        specific = ProviderSpecificConfig.OpenAI(useResponseApi = true),
-        allowMissingApiKey = true, // OAuth 拿到 token 前允许空 apiKey
-    )
-
-    /**
-* v2.x（用户反馈）: OpenAI Codex 预设供应商 —— ChatGPT 订阅账号登录。
-*
-* 已验证的真实协议（Codex CLI 同款）：
-*  - 推理端点: `https://chatgpt.com/backend-api/codex/responses`（Responses 协议，走订阅额度）；
-*  - 认证: OAuth Authorization Code + PKCE（见 [OAuthConfig.OPENAI_CODEX_PRESET]），
-*    access_token 当 Bearer，另需 `ChatGPT-Account-ID` 头（从 id_token 解析）；
-*  - 模型: Codex 系（gpt-5.x / codex 变体），固定清单；
-*  - 与 api.openai.com 的 API 计费路径完全独立。
-*/
-    private fun openaiCodex() = ProviderConfig(
-        id = "preset_openai_codex",
-        displayName = "OpenAI Codex (ChatGPT account)",
-        type = ProviderType.OPENAI,
-        baseUrl = "https://chatgpt.com/backend-api/codex",
-        apiKey = "",
-        builtIn = true,
-        category = ProviderCategory.OFFICIAL,
-        // v2.6.0: 模型清单**完全由云端模型目录决定**（目录 providerId `openai-codex-oauth`），
-        // 不在应用内预置 —— ChatGPT 订阅的 Codex 模型随官方策略退役/新增，写死清单易过期。
-        // 见 ModelCatalogStore.CATALOG_AUTHORITATIVE_PROVIDERS 与 CatalogProviderIds。
-        models = emptyList(),
-        oauthConfig = OAuthConfig.OPENAI_CODEX_PRESET,
-        specific = ProviderSpecificConfig.OpenAI(useResponseApi = true),
-        allowMissingApiKey = true, // OAuth 拿到 token 前允许空 apiKey
-    )
-
-    /**
-     * v1.134 P2-1: GitHub Copilot 预设供应商(走 GitHub OAuth Device Flow)。
-     *
-     * 1muse 特有。用户用 GitHub 账号扫码授权后,
-     * access_token 当作 apiKey,Copilot 网关代理到 GPT-4o / Claude 等模型。
-     */
-    private fun githubCopilot() = ProviderConfig(
-        id = "preset_github_copilot",
-        displayName = "GitHub Copilot",
-        type = ProviderType.OPENAI,
-        baseUrl = "https://api.githubcopilot.com",
-        apiKey = "",
-        builtIn = true,
-        category = ProviderCategory.OFFICIAL,
-        models = listOf(
-            chatModel("preset_github_copilot", "gpt-4o", "GPT-4o", contextWindow = 128_000, supportsVision = true, supportsTools = true),
-            chatModel(
-                "preset_github_copilot",
-                "claude-sonnet-4-5-20250514",
-                "Claude Sonnet 4.5",
-                contextWindow = 200_000,
-                supportsVision = true,
-                reasoning = true,
-                supportsTools = true,
-            ),
-            chatModel(
-                "preset_github_copilot",
-                "gemini-2.5-flash",
-                "Gemini 2.5 Flash",
-                contextWindow = 1_048_576,
-                supportsVision = true,
-                reasoning = true,
-                supportsTools = true,
-            ),
-        ),
-        oauthConfig = OAuthConfig.GITHUB_COPILOT_PRESET,
     )
 
     private fun groq() = ProviderConfig(

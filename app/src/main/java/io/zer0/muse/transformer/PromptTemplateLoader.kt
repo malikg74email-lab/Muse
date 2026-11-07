@@ -49,6 +49,9 @@ class PromptTemplateLoader(private val context: Context) {
             "default_persona",
             "memory_rules",
             "platform_decl",
+            // Shaheen 2 Auto-Training (Part 2, 2026-11-07): Working
+            // Instructions Pack — provider-neutral, English only.
+            "working_instructions",
         )
     }
 

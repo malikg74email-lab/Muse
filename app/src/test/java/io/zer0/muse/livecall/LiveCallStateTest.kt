@@ -58,6 +58,30 @@ class LiveCallStateTest {
         assertTrue(sm.transitionTo(LiveCallPhase.ENDED))
     }
 
+    // ── setup 看门狗(验收审计 D1) ─────────────────────────────────────
+
+    @Test
+    fun `setup watchdog fails only a still-connecting call past the timeout`() {
+        val timeout = LiveCallConfig.SETUP_TIMEOUT_MS
+        // 仍在连接且超时 → 判失败,落到带原因的 ERROR 而不是无限「连接中」。
+        assertTrue(LiveSetupWatchdog.shouldFail(LiveCallPhase.CONNECTING, timeout))
+        assertTrue(LiveSetupWatchdog.shouldFail(LiveCallPhase.CONNECTING, timeout + 5_000))
+        // 未超时 → 不许误杀健康连接。
+        assertFalse(LiveSetupWatchdog.shouldFail(LiveCallPhase.CONNECTING, timeout - 1))
+        // 已接通 / 已结束 / 已出错的通话永不受看门狗影响。
+        assertFalse(LiveSetupWatchdog.shouldFail(LiveCallPhase.LIVE, timeout * 10))
+        assertFalse(LiveSetupWatchdog.shouldFail(LiveCallPhase.ENDED, timeout * 10))
+        assertFalse(LiveSetupWatchdog.shouldFail(LiveCallPhase.ERROR, timeout * 10))
+        assertFalse(LiveSetupWatchdog.shouldFail(LiveCallPhase.IDLE, timeout * 10))
+    }
+
+    @Test
+    fun `setup timeout is long enough to never kill a healthy setup`() {
+        // 正常 setup 往返是亚秒级;时限必须留出一个数量级以上的余量,
+        // 同时也不能长到让用户对着「连接中」干等。
+        assertTrue(LiveCallConfig.SETUP_TIMEOUT_MS in 5_000L..60_000L)
+    }
+
     // ── 字幕累加 ──────────────────────────────────────────────────────
 
     @Test

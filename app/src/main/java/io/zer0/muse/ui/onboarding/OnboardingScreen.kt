@@ -1517,7 +1517,7 @@ private fun BottomButtons(currentPage: Int, canGoNext: Boolean, onPrevious: () -
  * 翻页前保存当前步骤的数据到持久化存储。
  *
  * 各步骤对应的保存逻辑：
- *  - 步骤 2：保存用户名（mockLogin）+ 更新默认助手名字
+ *  - 步骤 2：保存用户名（saveOwnerDisplayName — sirf naam, koi login nahi）+ 更新默认助手名字
  *  - 步骤 4：创建并保存 ProviderConfig + 设置激活供应商
  *  - 步骤 5：保存选中的模型 id
  *
@@ -1537,8 +1537,9 @@ private suspend fun saveStepData(
 ) {
     when (currentPage) {
         2 -> {
-            // 保存用户名
-            settings.mockLogin(userName)
+            // 保存用户名(Phase 3 fix 14: sirf naam store hota hai — is app
+            // mein login/account ka koi tasawwur nahi hai)
+            settings.saveOwnerDisplayName(userName)
             // 更新默认助手名字
             val defaultAssistant = assistantRepo.getById("default")
             if (defaultAssistant != null && agentName.isNotBlank()) {

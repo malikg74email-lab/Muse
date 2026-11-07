@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import io.zer0.muse.R
 import io.zer0.muse.ui.navigation.ComponentGalleryRoute
-import io.zer0.muse.ui.navigation.ConnectorSettingsRoute
 import io.zer0.muse.ui.navigation.PluginManageRoute
 import io.zer0.muse.ui.navigation.SettingsAppearanceRoute
 import io.zer0.muse.ui.navigation.SettingsAgentRoute
@@ -186,12 +185,6 @@ internal object SettingsSearchExtras {
             SettingsGroupKind.MEMORY,
             SettingsEntryAction.Navigate(SettingsRagRoute),
             listOf("分段", "分块", "策略", "fenduan", "fenkuai", "celve", "fd", "fk", "cl"),
-        ),
-        record(
-            R.string.connector_page_title,
-            SettingsGroupKind.CONNECTION,
-            SettingsEntryAction.Navigate(ConnectorSettingsRoute),
-            listOf("连接器", "授权", "OAuth", "connector", "oauth", "shouquan", "lianjieqi", "sjq", "lqq", "sq"),
         ),
         record(
             R.string.settings_mcp_title,

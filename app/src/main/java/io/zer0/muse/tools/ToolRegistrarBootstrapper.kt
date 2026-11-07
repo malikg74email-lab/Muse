@@ -43,8 +43,6 @@ class ToolRegistrarBootstrapper(
     mediaGenToolsRegistrar: MediaGenToolsRegistrar,
     // v1.0.92: 消息渠道工具(外部 IM 发送)
     channelToolsRegistrar: ChannelToolsRegistrar,
-    // v2.0: OAuth 连接器工具(connector_list / call_connector)
-    connectorToolsRegistrar: ConnectorToolsRegistrar,
     // v2.0.1: 插件市场工具(检索 / 审批安装)
     pluginMarketToolsRegistrar: PluginMarketToolsRegistrar,
     // v2.x 扩展运行时(P0):内置 Node 沙盒自检(只读)
