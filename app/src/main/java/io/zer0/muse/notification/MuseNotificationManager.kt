@@ -147,6 +147,16 @@ class MuseNotificationManager(private val context: Context) {
                 description = context.getString(R.string.keep_alive_notification_text)
                 setShowBadge(false)
             },
+            // Shaheen 2 Fix Phase 2: 通话常驻通知(IMPORTANCE_LOW,不打扰;通话状态靠
+            // 通道本身与计时器呈现,End Call 动作挂在通知上)。
+            NotificationChannel(
+                CHANNEL_LIVE_CALL,
+                context.getString(R.string.notif_channel_live_call_name),
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply {
+                description = context.getString(R.string.notif_channel_live_call_desc)
+                setShowBadge(false)
+            },
         )
         channels.forEach { nm.createNotificationChannel(it) }
         Logger.i(TAG, "Notification channels ensured")
@@ -575,6 +585,9 @@ class MuseNotificationManager(private val context: Context) {
         const val CHANNEL_WEB_SERVER = "web_server"
         const val CHANNEL_PROACTIVE_MESSAGE = "proactive_message"
         const val CHANNEL_KEEP_ALIVE = "muse_keep_alive"
+
+        // Shaheen 2 Fix Phase 2: 实时通话前台服务的通知渠道(带 End Call 动作)。
+        const val CHANNEL_LIVE_CALL = "live_call"
         private const val NOTIF_ID_CHAT_COMPLETED = 1001
         private const val NOTIF_ID_CHAT_PENDING_APPROVAL = 1005
         private const val NOTIF_ID_LIVE_UPDATE = 1002

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shaheen 2 Fix Phase 2: live call (Gemini Live) strings. English only, per the standing rule. -->
+<resources>
+    <!-- Call screen -->
+    <string name="live_call_title">Live Call</string>
+    <string name="live_call_connecting">Connecting…</string>
+    <string name="live_call_listening">Listening…</string>
+    <string name="live_call_speaking">Shaheen is speaking…</string>
+    <string name="live_call_muted_label">You are muted</string>
+    <string name="live_call_speaker_you">You</string>
+    <string name="live_call_speaker_shaheen">Shaheen</string>
+    <string name="live_call_mute_cd">Mute microphone</string>
+    <string name="live_call_unmute_cd">Unmute microphone</string>
+    <string name="live_call_end_cd">End call</string>
+    <string name="live_call_close">Close</string>
+    <string name="live_call_retry">Retry</string>
+    <string name="live_call_setup_key">Set up API key</string>
+    <string name="live_call_no_key_message">No Gemini API key is set up yet. Add your Gemini key in Settings, then come back and tap Live Call again.</string>
+    <string name="live_call_mic_denied_message">Microphone permission is off, so the live call cannot start. Allow the microphone for Shaheen 2, then try again.</string>
+    <string name="live_call_ended">Call ended</string>
+
+    <!-- Foreground notification -->
+    <string name="live_call_notif_title">Shaheen 2 — Live Call</string>
+    <string name="live_call_notif_text">Live call in progress</string>
+    <string name="live_call_end_call">End Call</string>
+    <string name="notif_channel_live_call_name">Live call</string>
+    <string name="notif_channel_live_call_desc">Shows while a live voice call is in progress, with an End Call action</string>
+</resources>

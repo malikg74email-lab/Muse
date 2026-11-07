@@ -53,6 +53,9 @@
     <!-- v1.43: 前台服务保活(切后台时保持 AI 生成) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Shaheen 2 Fix Phase 2: 实时通话前台服务(microphone 型)+ 通话音频路由 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- 快速记录系统悬浮窗(用户主动授权后使用) -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -300,6 +303,14 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Shaheen 2 Fix Phase 2: 实时通话前台服务 —— 通话期间钉住进程,
+             常驻带 End Call 动作的通话通知(WhatsApp 式)。 -->
+        <service
+            android:name=".livecall.LiveCallService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!--
             v2.6.9: 常驻保活服务（用户显式开启）。

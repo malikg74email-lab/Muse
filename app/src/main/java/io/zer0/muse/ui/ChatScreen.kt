@@ -138,7 +138,7 @@ import io.zer0.muse.ui.common.surface.museBottomBarInsets
 import io.zer0.muse.ui.markdown.CardAction
 import io.zer0.muse.ui.speech.SpeechInput
 import io.zer0.muse.ui.speech.TtsControllerWidget
-import io.zer0.muse.ui.speech.VoiceConversationMode
+import io.zer0.muse.livecall.LiveCallScreen
 import io.zer0.muse.ui.theme.MuseAnimation
 import io.zer0.muse.ui.theme.MuseIconSizes
 import io.zer0.muse.ui.theme.MuseMotion
@@ -341,12 +341,19 @@ fun ChatScreen(
     onOpenSkills: () -> Unit = {},
     /** B0-07: 打开提示词模板管理页。 */
     onOpenPromptTemplateManager: () -> Unit = {},
+    /**
+     * Shaheen 2 Fix Phase 2: 实时通话发现未配置 Gemini key 时的出口 —— 打开应用内
+     * 设置(供应商/key 录入在那里),由 HomeScreen 以 onOpenSettings 注入。
+     */
+    onOpenKeySettings: () -> Unit = {},
     /** C4: 双栏嵌入模式(宽屏任务 tab 右栏)时传入栏级布局修饰符。 */
     modifier: Modifier = Modifier,
     /**
      * Shaheen 2 v5: 首页 Live Call 圆环的直达信号。每次自增代表一次新的
-     * 「打开语音对话」请求,ChatScreen 收到后自动进入既有的实时语音对话模式
-     * (VoiceConversationMode)。0 = 无请求。同一信号只消费一次,避免翻页回来重复弹出。
+     * 「打开实时通话」请求,ChatScreen 收到后自动进入通话界面。
+     * Shaheen 2 Fix Phase 2 起目的地是真正的 Gemini Live 通话(LiveCallScreen),
+     * 不再是库存的 VoiceConversationMode(其 ASR 门会把默认配置的用户锁死在错误横幅上)。
+     * 0 = 无请求。同一信号只消费一次,避免翻页回来重复弹出。
      */
     openVoiceSignal: Int = 0,
 ) {
@@ -460,7 +467,7 @@ fun ChatScreen(
     var showInChatSearch by rememberSaveable { mutableStateOf(false) }
     var inChatQuery by rememberSaveable { mutableStateOf("") }
     var currentMatchIndex by rememberSaveable { mutableStateOf(0) }
-    // P1-1: 实时语音对话全屏模式开关(语音对话状态机接线到聊天页)
+    // 实时通话全屏界面开关(Shaheen 2 Fix Phase 2 起承载 LiveCallScreen)
     var showVoiceConversation by remember { mutableStateOf(false) }
     // Shaheen 2 v5: 首页 Live Call 圆环直达 — 外部信号自增时自动打开语音对话;
     // 记录已消费的信号值,同一信号只打开一次(翻页/重组不重复触发)。
@@ -3354,7 +3361,11 @@ fun ChatScreen(
                 )
             }
 
-            // P1-1: 实时语音对话全屏模式 — 从顶部菜单「语音对话」进入(语音对话状态机接线到聊天页)
+            // Shaheen 2 Fix Phase 2: 实时通话全屏界面(Gemini Live)—— 首页圆环信号
+            // 的目的地。库存 VoiceConversationMode 不再从这里打开:它的 ASR 门会把
+            // 默认 SYSTEM 配置的用户锁死在 err_chat_voice_no_asr 横幅上,且其 Retry
+            // 实际是重生成聊天回复。通话的启动/错误/重试全部走 LiveCallController,
+            // 与 ASR 配置无关;聊天输入栏的语音听写(另一条路径)不受影响。
             AnimatedVisibility(
                 visible = showVoiceConversation,
                 // v2.x: 裸 fade 换令牌(时长随系统动画缩放)
@@ -3367,9 +3378,9 @@ fun ChatScreen(
                     animationSpec = MuseMotion.tween(MuseAnimation.NORMAL_MS),
                 ),
             ) {
-                VoiceConversationMode(
+                LiveCallScreen(
                     onClose = { showVoiceConversation = false },
-                    viewModel = viewModel,
+                    onOpenKeySettings = onOpenKeySettings,
                 )
             }
         } // CompositionLocalProvider(页面级玻璃源)

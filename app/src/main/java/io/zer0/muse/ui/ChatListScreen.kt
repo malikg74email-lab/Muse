@@ -762,8 +762,8 @@ private fun PartnerRow(
 
 /**
  * Shaheen 2 v5: 首页中心 Live Call 圆环 — 深蓝玻璃圆盘 + 青色辉光环 + 细红边,
- * 中央麦克风,下方「Live Call」标签。点击直达 Agent 页既有的实时语音对话
- * (VoiceConversationMode,ASR+TTS 循环),不在此伪造通话界面。
+ * 中央麦克风,下方「Live Call」标签。点击直达 Agent 页的实时通话界面
+ * (Shaheen 2 Fix Phase 2 起为 Gemini Live 真通话 LiveCallScreen)。
  * 辉光呼吸动画遵循系统减动效设置(减动效时静止)。
  */
 @Composable

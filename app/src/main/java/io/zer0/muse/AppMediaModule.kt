@@ -35,6 +35,16 @@ val appMediaModule = module {
     //   由这一个单例保证「同一时刻只有一条语音在播」。
     single { io.zer0.muse.ui.speech.VoicePlaybackController() }
 
+    // Shaheen 2 Fix Phase 2: 实时通话总控 —— 只依赖供应商配置(Gemini key)与
+    // 共享 ToolRegistry,与聊天同一条工具执行链;不依赖任何 ASR 配置。
+    single {
+        io.zer0.muse.livecall.LiveCallController(
+            androidContext(),
+            get(),
+            get(),
+        )
+    }
+
     // P2-9: 语音克隆 — ElevenLabs Voice Cloning Provider 复用 chat OkHttpClient
     //   (内部用 newBuilder() 覆盖为 30s 三项超时,满足"API 调用必须有超时(30 秒)"约束)
     single { io.zer0.muse.ui.speech.ElevenLabsVoiceCloningProvider(get(named("chat"))) }

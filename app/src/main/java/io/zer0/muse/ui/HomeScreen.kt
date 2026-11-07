@@ -174,7 +174,7 @@ fun HomeScreen(
 
     // Shaheen 2 v5: Live Call 圆环点击 — 自增直达信号并切到 Agent 页;
     // 宽屏时右栏聊天区已同屏可见,无需翻页。ChatScreen 收到信号后自动打开
-    // 既有的实时语音对话模式(VoiceConversationMode)。
+    // 实时通话界面(Shaheen 2 Fix Phase 2 起为 Gemini Live 真通话 LiveCallScreen)。
     val onOpenLiveCall: () -> Unit = {
         voiceSignal += 1
         if (!isWideTasks && pagerState.currentPage != 1) {
@@ -434,6 +434,7 @@ fun HomeScreen(
                                     onHtmlPreview = onHtmlPreview,
                                     onOpenSkills = onOpenSkills,
                                     onOpenPromptTemplateManager = onOpenPromptTemplateManager,
+                                    onOpenKeySettings = onOpenSettings,
                                     modifier = Modifier.fillMaxSize().weight(1f),
                                 )
                             }
@@ -507,6 +508,7 @@ fun HomeScreen(
                         onHtmlPreview = onHtmlPreview,
                         onOpenSkills = onOpenSkills,
                         onOpenPromptTemplateManager = onOpenPromptTemplateManager,
+                        onOpenKeySettings = onOpenSettings,
                     )
                     // Tab 2 "Recent"(Shaheen 2 v5): 最近会话 — 取代原群聊 Tab。
                     // 点击会话 → 切换会话并 push 聊天详情页(与任务页窄屏行为一致)。
