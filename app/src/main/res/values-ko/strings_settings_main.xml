@@ -202,10 +202,6 @@
     <string name="settings_mcp_empty_subtitle">외부 도구 서버에 연결하면 어시스턴트가 해당 도구를 사용할 수 있습니다</string>
     <string name="settings_mcp_failed">실패: %1$s</string>
     <string name="settings_mcp_more">더</string>
-    <string name="settings_mcp_oauth_open_failed">인증 페이지를 열 수 없습니다: %1$s</string>
-    <string name="settings_mcp_oauth_revoke">OAuth 취소</string>
-    <string name="settings_mcp_oauth_revoked">OAuth 승인이 취소되었습니다.</string>
-    <string name="settings_mcp_oauth_revoke_failed">취소 실패: %1$s</string>
     <string name="settings_mcp_browse_resources">리소스 찾아보기</string>
     <string name="settings_mcp_browse_prompts">프롬프트 찾아보기</string>
     <string name="settings_mcp_reconnect">다시 연결</string>

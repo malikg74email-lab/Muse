@@ -686,13 +686,8 @@
     <string name="settings_chat_quick_pool">アクションプール（タップで追加）</string>
     <string name="settings_chat_quick_pool_empty">すべてのアクションが有効です。</string>
     <string name="settings_chat_quick_customize">クイックアクションをカスタマイズ</string>
-    <string name="settings_preset_oauth_quick_login">タップでブラウザ認証、APIキー不要</string>
-    <string name="oauth_quick_login_started">ブラウザで認証を開いています…</string>
-    <string name="oauth_quick_login_success">認証成功、%1$s を有効化しました</string>
     <string name="settings_backup_include_secrets">プロバイダーの秘密情報を含める</string>
     <string name="settings_backup_include_secrets_subtitle">APIキーとログイン認証情報がバックアップに平文で保存されます。慎重に保管してください。</string>
-    <string name="oauth_device_open_page">認証ページを開く</string>
-    <string name="oauth_device_open_failed">ブラウザを開けません</string>
     <string name="keep_alive_notification_title">Muse はバックグラウンドで実行中</string>
     <string name="keep_alive_notification_text">定期タスクと自発メッセージを維持しています</string>
     <string name="settings_keep_alive_title">バックグラウンドで常駐</string>

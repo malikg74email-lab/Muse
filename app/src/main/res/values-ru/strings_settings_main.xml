@@ -202,10 +202,6 @@
     <string name="settings_mcp_empty_subtitle">Подключите внешний сервер инструментов, чтобы ассистент мог ими пользоваться</string>
     <string name="settings_mcp_failed">Не удалось: %1$s</string>
     <string name="settings_mcp_more">Более</string>
-    <string name="settings_mcp_oauth_open_failed">Невозможно открыть страницу авторизации: %1$s</string>
-    <string name="settings_mcp_oauth_revoke">Отменить OAuth</string>
-    <string name="settings_mcp_oauth_revoked">Авторизация OAuth отозвана</string>
-    <string name="settings_mcp_oauth_revoke_failed">Отозвать не удалось: %1$s</string>
     <string name="settings_mcp_browse_resources">Просмотр ресурсов</string>
     <string name="settings_mcp_browse_prompts">Просмотр подсказок</string>
     <string name="settings_mcp_reconnect">Восстановить соединение</string>

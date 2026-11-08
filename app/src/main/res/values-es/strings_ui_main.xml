@@ -289,19 +289,6 @@
     <string name="message_action_annotate">Anotar</string>
     <string name="message_annotate_title">Notas del mensaje</string>
     <string name="message_annotate_hint">Escribe una nota…</string>
-    <string name="connector_page_title">Conectores</string>
-    <string name="connector_intro">Conecta servicios externos (calendario/notas/código). Rellena los endpoints y credenciales de la app registrada; la autorización usa el navegador del sistema y las credenciales se cifran.</string>
-    <string name="connector_add">Añadir conector</string>
-    <string name="connector_connect">Conectar</string>
-    <string name="connector_connect_success">Conectado %1$s</string>
-    <string name="connector_connect_failed">Error de conexión: %1$s</string>
-    <string name="connector_empty">Aún no hay conectores.</string>
-    <string name="connector_config_corrupt">La configuración está dañada, datos preservados, puedes reimportar</string>
-    <string name="connector_field_authorize">URL de autorización</string>
-    <string name="connector_field_token">URL de token</string>
-    <string name="connector_field_scope">Scope</string>
-    <string name="connector_field_client_id">Client ID</string>
-    <string name="connector_field_client_secret">Client Secret</string>
     <string name="channel_inbox_title">Recibidos recientemente</string>
     <string name="channel_intro_title">Envía mensajes a tu IM</string>
     <string name="channel_intro">Una vez configurado, el asistente puede enviar mensajes a canales Feishu/QQ. Las credenciales se cifran y guardan solo en este dispositivo.</string>
@@ -494,21 +481,8 @@
     <!-- ===== Stats screen ===== -->
 
     <!-- ===== P1-6: OAuth login (ProviderEditPage) ===== -->
-    <string name="oauth_login">Iniciar sesión OAuth</string>
-    <string name="oauth_login_success">Inicio de sesión de OAuth exitoso</string>
-    <string name="oauth_login_failed">Error al iniciar sesión en OAuth: %1$s</string>
-    <string name="oauth_activity_context_unavailable">No se pudo obtener el contexto de Activity</string>
-    <string name="oauth_device_code_prompt">Visite %1$s e ingrese el código: %2$s</string>
-    <string name="oauth_polling">Esperando autorización...</string>
-    <string name="oauth_open_verification_uri">Abrir enlace</string>
 
     <!-- ===== P2-11: OAuth credential isolation (revoke / auto refresh) ===== -->
-    <string name="oauth_revoke">Revocar acceso</string>
-    <string name="oauth_revoke_confirm">¿Confirmar revocar el acceso OAuth para este proveedor?</string>
-    <string name="oauth_revoke_success">Acceso revocado</string>
-    <string name="oauth_token_expired">La autorización expiró, inicie sesión nuevamente</string>
-    <string name="oauth_token_refreshed">Autorización actualizada automáticamente</string>
-    <string name="oauth_stored">Autorización almacenada</string>
 
     <!-- ===== P1-4: Tablet adaptation (responsive layout) ===== -->
 
@@ -812,7 +786,6 @@
     <string name="settings_bubble_skin_plugin_section">Skins de plugin</string>
     <string name="settings_bubble_skin_plugin_source">Del plugin %1$s · v%2$s</string>
     <string name="settings_bubble_skin_plugin_unavailable_fallback">El skin de plugin seleccionado no está disponible (plugin deshabilitado o desinstalado); se ha vuelto al skin predeterminado integrado</string>
-    <string name="connector_error_activity_unavailable">Activity no disponible</string>
     <string name="channel_conversation_role_assistant">Asistente</string>
     <string name="channel_conversation_role_user">Contacto</string>
     <string name="channel_conversation_turn_line">%1$s: %2$s</string>

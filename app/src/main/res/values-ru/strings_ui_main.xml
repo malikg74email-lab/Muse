@@ -289,19 +289,6 @@
     <string name="message_action_annotate">Заметка</string>
     <string name="message_annotate_title">Заметки к сообщению</string>
     <string name="message_annotate_hint">Напишите заметку…</string>
-    <string name="connector_page_title">Коннекторы</string>
-    <string name="connector_intro">Подключение внешних сервисов (календарь/заметки/код). Укажите эндпоинты и учётные данные приложения; авторизация через браузер, данные шифруются.</string>
-    <string name="connector_add">Добавить коннектор</string>
-    <string name="connector_connect">Подключить</string>
-    <string name="connector_connect_success">Подключено: %1$s</string>
-    <string name="connector_connect_failed">Ошибка подключения: %1$s</string>
-    <string name="connector_empty">Коннекторов пока нет.</string>
-    <string name="connector_config_corrupt">Конфигурация повреждена, данные сохранены, можно импортировать повторно</string>
-    <string name="connector_field_authorize">URL авторизации</string>
-    <string name="connector_field_token">URL токена</string>
-    <string name="connector_field_scope">Scope</string>
-    <string name="connector_field_client_id">Client ID</string>
-    <string name="connector_field_client_secret">Client Secret</string>
     <string name="channel_inbox_title">Недавно полученные</string>
     <string name="channel_intro_title">Отправка сообщений в ваш IM</string>
     <string name="channel_intro">После настройки ассистент сможет отправлять сообщения в Feishu/QQ через инструменты. Учётные данные шифруются и хранятся только на этом устройстве.</string>
@@ -494,21 +481,8 @@
     <!-- ===== Stats screen ===== -->
 
     <!-- ===== P1-6: OAuth login (ProviderEditPage) ===== -->
-    <string name="oauth_login">OAuth вход</string>
-    <string name="oauth_login_success">OAuth вход выполнен</string>
-    <string name="oauth_login_failed">Ошибка входа OAuth: %1$s</string>
-    <string name="oauth_activity_context_unavailable">Не удалось получить контекст Activity</string>
-    <string name="oauth_device_code_prompt">Посетите %1$s и введите код: %2$s</string>
-    <string name="oauth_polling">Ожидание авторизации...</string>
-    <string name="oauth_open_verification_uri">Открыть ссылку</string>
 
     <!-- ===== P2-11: OAuth credential isolation (revoke / auto refresh) ===== -->
-    <string name="oauth_revoke">Отозвать доступ</string>
-    <string name="oauth_revoke_confirm">Отозвать доступ OAuth для этого провайдера?</string>
-    <string name="oauth_revoke_success">Доступ отозван</string>
-    <string name="oauth_token_expired">Срок действия авторизации истёк, войдите снова</string>
-    <string name="oauth_token_refreshed">Авторизация автоматически обновлена</string>
-    <string name="oauth_stored">Авторизация сохранена</string>
 
     <!-- ===== P1-4: Tablet adaptation (responsive layout) ===== -->
 
@@ -767,7 +741,6 @@
     <string name="muse_plugins_trust_title">Управление доверием</string>
     <string name="muse_plugins_unknown_author">Неизвестен</string>
     <string name="muse_plugins_unsigned_draft_only">Без подписи: можно сохранить только как отключённый черновик</string>
-    <string name="connector_error_activity_unavailable">Не удалось получить Activity</string>
     <string name="channel_conversation_role_assistant">Ассистент</string>
     <string name="channel_conversation_role_user">Собеседник</string>
     <string name="channel_conversation_turn_line">%1$s: %2$s</string>

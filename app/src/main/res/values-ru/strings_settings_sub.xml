@@ -686,13 +686,8 @@
     <string name="settings_chat_quick_pool">Пул действий (нажмите, чтобы добавить)</string>
     <string name="settings_chat_quick_pool_empty">Все действия включены.</string>
     <string name="settings_chat_quick_customize">Настроить быстрые действия</string>
-    <string name="settings_preset_oauth_quick_login">Нажмите для авторизации в браузере, без API-ключа</string>
-    <string name="oauth_quick_login_started">Открываем браузер для авторизации…</string>
-    <string name="oauth_quick_login_success">Авторизация успешна, включено %1$s</string>
     <string name="settings_backup_include_secrets">Включить секреты провайдеров</string>
     <string name="settings_backup_include_secrets_subtitle">API-ключи и учётные данные будут сохранены в файле резервной копии в открытом виде. Храните его в безопасности.</string>
-    <string name="oauth_device_open_page">Открыть страницу авторизации</string>
-    <string name="oauth_device_open_failed">Не удалось открыть браузер</string>
     <string name="keep_alive_notification_title">Muse работает в фоне</string>
     <string name="keep_alive_notification_text">Поддерживает задачи по расписанию и инициативные сообщения</string>
     <string name="settings_keep_alive_title">Работать в фоне постоянно</string>

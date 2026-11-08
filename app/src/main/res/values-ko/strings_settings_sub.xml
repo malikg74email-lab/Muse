@@ -686,13 +686,8 @@
     <string name="settings_chat_quick_pool">작업 풀(탭하여 추가)</string>
     <string name="settings_chat_quick_pool_empty">모든 작업이 사용 중입니다.</string>
     <string name="settings_chat_quick_customize">빠른 작업 사용자 지정</string>
-    <string name="settings_preset_oauth_quick_login">탭하여 브라우저에서 인증, API 키 불필요</string>
-    <string name="oauth_quick_login_started">브라우저에서 인증을 여는 중…</string>
-    <string name="oauth_quick_login_success">인증 성공, %1$s 활성화됨</string>
     <string name="settings_backup_include_secrets">공급자 시크릿 포함</string>
     <string name="settings_backup_include_secrets_subtitle">API 키와 로그인 자격 증명이 백업 파일에 평문으로 저장됩니다. 안전하게 보관하세요.</string>
-    <string name="oauth_device_open_page">인증 페이지 열기</string>
-    <string name="oauth_device_open_failed">브라우저를 열 수 없습니다</string>
     <string name="keep_alive_notification_title">Muse가 백그라운드에서 실행 중</string>
     <string name="keep_alive_notification_text">예약 작업과 능동 메시지를 유지합니다</string>
     <string name="settings_keep_alive_title">백그라운드 상주</string>
