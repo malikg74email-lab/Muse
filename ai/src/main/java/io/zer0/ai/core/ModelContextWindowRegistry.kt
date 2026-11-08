@@ -54,6 +54,11 @@ object ModelContextWindowRegistry {
         "gemini-2.5-flash" to 1000000,
         // Shaheen 2 Fix Phase 3 (§5 Fix 1.3): phone-selected model id was missing here too.
         "gemini-3.1-flash-lite" to 1000000,
+        // Shaheen 2 fix (2026-11-08): Malik's current phone model. The "gemini"
+        // brand default below already resolved this id to 1M; the explicit
+        // entry pins the value so a future brand-default change cannot
+        // silently shrink the window (and with it every truncation budget).
+        "gemini-3.6-flash" to 1000000,
         // DeepSeek 深度求索
         "deepseek-chat" to 64000,
         "deepseek-reasoner" to 64000,

@@ -68,6 +68,22 @@ class GeminiLiveSession(
     private val endingIntentionally = AtomicBoolean(false)
     private val started = AtomicBoolean(false)
 
+    /**
+     * 下一次 setup 要带的语种代码。默认 null = 不带:native-audio 模型拒绝显式的
+     * speechConfig.languageCode(带上就在 setup 阶段被服务端关连接),且它能
+     * 自动识别语种。[LiveLanguageFallback] 触发时也会把它清成 null 再重连一次。
+     */
+    @Volatile
+    private var setupLanguageCode: String? = null
+
+    /** 最近一次真正发出的 setup 是否带了语种代码(回退决策的输入,每次 onOpen 时更新)。 */
+    @Volatile
+    private var sentSetupWithLanguageCode: Boolean = false
+
+    /** 语种回退在一次通话里最多自动用一次,避免服务端持续拒绝时无限重连。 */
+    @Volatile
+    private var languageFallbackUsed: Boolean = false
+
     private val client: OkHttpClient = sharedClient ?: ProxyProvider.applyTo(OkHttpClient.Builder())
         .pingInterval(20, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
@@ -116,12 +132,61 @@ class GeminiLiveSession(
         if (!started.compareAndSet(false, true)) return
         if (!transition(LiveCallPhase.CONNECTING)) return
         enterCallAudioMode()
+        openSocket()
+        Logger.i(TAG, "Live call connecting (model=${LiveCallConfig.LIVE_MODEL_ID})")
+        armSetupWatchdog()
+    }
+
+    /** 建一条新 socket 并挂监听;[start] 与语种回退重连共用这一条路。 */
+    private fun openSocket() {
         val request = Request.Builder()
             .url(LiveCallConfig.webSocketUrl(apiKey))
             .build()
         webSocket = client.newWebSocket(request, SessionSocketListener())
-        Logger.i(TAG, "Live call connecting (model=${LiveCallConfig.LIVE_MODEL_ID})")
-        armSetupWatchdog()
+    }
+
+    /**
+     * 语种代码回退(2026-11-08 真机复测的修复之二):setup 还在 CONNECTING 阶段就
+     * 被服务端以「Unsupported language code …」拒绝时,若刚发出的 setup 确实带了
+     * 语种代码且本通话还没回退过,就悄悄换一条新 socket、用不带代码的 setup
+     * 自动重连一次,不惊动用户、不用他点 Retry。决策是纯函数
+     * [LiveLanguageFallback.shouldRetryWithoutLanguageCode]。
+     *
+     * 当前默认 setup 本来就不带代码(buildSetupMessage 默认省略),所以这条路在
+     * 现行配置下不会触发 —— 它是防「以后有人重新带上代码」的网,不是摆设:
+     * 条件任一不满足就返回 false,调用方照常落到带原因的 ERROR。
+     *
+     * @return true = 已接管这次失败并发起重连,调用方不要再 fail()。
+     */
+    private fun tryLanguageFallback(serverDetail: String?): Boolean {
+        if (endingIntentionally.get()) return false
+        if (stateMachine.phase != LiveCallPhase.CONNECTING) return false
+        if (!LiveLanguageFallback.shouldRetryWithoutLanguageCode(
+                serverDetail,
+                sentSetupWithLanguageCode,
+                languageFallbackUsed,
+            )
+        ) {
+            return false
+        }
+        languageFallbackUsed = true
+        setupLanguageCode = null
+        Logger.w(TAG, "Setup was rejected over its language code; retrying once without one")
+        reconnectSocket()
+        return true
+    }
+
+    /**
+     * 丢掉当前 socket、换一条新的:先把 [webSocket] 置空再关旧的 —— 旧 socket
+     * 随后到达的任何回调都会被各回调开头的 `ws !== webSocket` 判为过期而忽略,
+     * 不会把重连中的通话误判成失败。setup 看门狗不重新武装:它从 [start] 起算
+     * 的 20 秒总预算同时覆盖这次重连(正常 setup 往返是亚秒级,预算足够)。
+     */
+    private fun reconnectSocket() {
+        val old = webSocket
+        webSocket = null
+        runCatching { old?.close(1000, "Retrying setup without a language code") }
+        openSocket()
     }
 
     /**
@@ -166,12 +231,19 @@ class GeminiLiveSession(
 
     private inner class SessionSocketListener : WebSocketListener() {
         override fun onOpen(ws: WebSocket, response: Response) {
-            val setup = LiveCallConfig.buildSetupMessage(toolDeclarations = toolDeclarations)
+            // 已被回退重连替换掉的旧 socket:它的迟到回调一律不算数。
+            if (ws !== webSocket) return
+            val setup = LiveCallConfig.buildSetupMessage(
+                toolDeclarations = toolDeclarations,
+                languageCode = setupLanguageCode,
+            )
+            sentSetupWithLanguageCode = setupLanguageCode != null
             ws.send(setup)
             Logger.i(TAG, "Socket open, setup sent (${toolDeclarations.size} tool declarations)")
         }
 
         override fun onMessage(ws: WebSocket, text: String) {
+            if (ws !== webSocket) return
             val events = runCatching { LiveCallProtocol.decodeServerMessage(text) }
                 .getOrElse {
                     Logger.w(TAG, "Undecodable server frame ignored: ${it.message}")
@@ -181,11 +253,13 @@ class GeminiLiveSession(
         }
 
         override fun onMessage(ws: WebSocket, bytes: ByteString) {
+            if (ws !== webSocket) return
             // Live 的控制/音频帧都走 JSON 文本帧;二进制帧不是本协议的一部分,忽略即可。
             Logger.d(TAG, "Binary frame ignored (${bytes.size} bytes)")
         }
 
         override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
+            if (ws !== webSocket) return
             if (endingIntentionally.get()) return
             val message = when {
                 response != null ->
@@ -199,7 +273,12 @@ class GeminiLiveSession(
         }
 
         override fun onClosed(ws: WebSocket, code: Int, reason: String) {
+            if (ws !== webSocket) return
             if (endingIntentionally.get()) return
+            // setup 阶段因语种代码被关连接(2026-11-08 真机原样复现的就是这条路):
+            // 先走一次自动回退 —— 换不带代码的 setup 重连;回退不适用/已用过时
+            // 才落到下面带原因的 ERROR。
+            if (tryLanguageFallback(reason)) return
             val detail = reason.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: ""
             Logger.w(TAG, "Socket closed by server: code=$code reason=$reason")
             fail("The call ended unexpectedly$detail. Tap Retry to reconnect.")
@@ -255,7 +334,11 @@ class GeminiLiveSession(
             }
             is LiveServerEvent.ServerError -> {
                 Logger.w(TAG, "Server error frame: ${event.message}")
-                fail("The voice service said: ${event.message}")
+                // 与 onClosed 同一条回退路:setup 阶段因语种代码被拒时先自动
+                // 换不带代码的 setup 重连一次,不适用才落 ERROR。
+                if (!tryLanguageFallback(event.message)) {
+                    fail("The voice service said: ${event.message}")
+                }
             }
         }
     }

@@ -291,7 +291,18 @@ sealed class ProviderError {
          * Keep provider diagnostics useful without copying a response body that may echo
          * prompts, tool arguments, API keys, or redirect parameters.
          */
-        internal fun safeErrorDetail(body: String): String? {
+        internal fun safeErrorDetail(body: String): String? = safeErrorDetail(body, ERROR_DETAIL_MAX_CHARS)
+
+        /**
+         * Shaheen 2 fix (2026-11-08): same extraction/redaction as [safeErrorDetail]
+         * with a caller-chosen bound. Gemini's INVALID_ARGUMENT diagnostics (e.g.
+         * the functionCall/functionResponse mismatch sentence) run past the
+         * default 200 chars and were cut mid-explanation, leaving a bare
+         * "HTTP 400" with no actionable cause; the Gemini provider passes a
+         * larger bound for its server `error.message`. The default for every
+         * other caller is unchanged.
+         */
+        internal fun safeErrorDetail(body: String, maxLen: Int): String? {
             if (body.isBlank()) return null
             val candidate =
                 runCatching {
@@ -307,8 +318,11 @@ sealed class ProviderError {
                         .ifBlank { body }
                 }.getOrDefault(body)
             val redacted = redactSecrets(candidate)
-            return redacted.take(200).ifBlank { null }
+            return redacted.take(maxLen.coerceAtLeast(1)).ifBlank { null }
         }
+
+        /** Default bound for [safeErrorDetail] excerpts. */
+        private const val ERROR_DETAIL_MAX_CHARS = 200
 
         private fun redactSecrets(text: String): String {
             var value = text

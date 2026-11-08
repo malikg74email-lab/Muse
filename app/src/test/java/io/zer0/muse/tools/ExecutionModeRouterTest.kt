@@ -88,6 +88,10 @@ class ExecutionModeRouterTest {
     @Test
     fun `device action and verification tool sets are disjoint where it matters`() {
         assertTrue(ExecutionModeRouter.isDeviceActionTool("app_launch"))
+        // Compound-commands fix (2026-11-08): deep-link batch ki design ke
+        // mutabiq app_deep_link bhi device action hai — us ka verified
+        // report isi discipline mein parha jata hai.
+        assertTrue(ExecutionModeRouter.isDeviceActionTool("app_deep_link"))
         assertTrue(ExecutionModeRouter.isDeviceActionTool("screen_tap_text"))
         assertTrue(ExecutionModeRouter.isDeviceActionTool("ui_click"))
         assertTrue(ExecutionModeRouter.isDeviceActionTool("ui_agent"))

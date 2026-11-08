@@ -102,6 +102,13 @@ object ExecutionModeRouter {
     private val LAUNCH_TOOLS = setOf(
         "app_launch", "app_open_settings", "app_force_stop", "app_clear_data",
         "app_uninstall", "open_app", "screen_launch_app", "ui_agent",
+        // Deep Links batch (2026-11-08): app_deep_link ka landed-verified
+        // report "— verified:" marker carry karta hai aur us batch ki
+        // design yahi thi ke mode router use pick up kare — lekin ye set
+        // update reh gaya tha, is liye deep-link-only turn na
+        // deviceActionExecuted set karta tha na us ka verified marker
+        // parha jata tha. Compound-commands fix (2026-11-08) mein band.
+        "app_deep_link",
     )
 
     /** Screen/UI ke action tools (verification reads in mein shamil nahi). */

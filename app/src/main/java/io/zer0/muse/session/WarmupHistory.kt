@@ -92,6 +92,23 @@ object WarmupHistory {
             accumulated += tokens
             cutIndex = i
         }
+        // Shaheen 2 fix (2026-11-08): the token cut is tool-pair blind — it can
+        // land between an ASSISTANT tool_call and its TOOL result, leaving the
+        // kept history starting with an orphan result (providers reject that
+        // with HTTP 400; Gemini does so strictly). Walk the cut back to a
+        // clean turn boundary, mirroring the established rule in
+        // splitContextWindow (ai module): while the first kept message
+        // involves tools, keep walking back. The kept history may end up
+        // slightly over budget — integrity beats exact size, same trade-off
+        // as splitContextWindow documents.
+        while (cutIndex > 0 && cutIndex < history.size) {
+            val firstKept = history[cutIndex]
+            if (firstKept.role == MessageRole.TOOL || !firstKept.toolCalls.isNullOrEmpty()) {
+                cutIndex--
+            } else {
+                break
+            }
+        }
         return if (cutIndex <= 0) {
             TrimResult(history, false)
         } else {

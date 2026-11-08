@@ -136,6 +136,17 @@ object ModelRegistry {
         toolReasoningAbility()
         visionGrounding("gemini")
     }
+    // Shaheen 2 fix (2026-11-08): Malik's current phone model
+    // `gemini-3.6-flash` — same gap as 3.1 Flash Lite had in Phase 3:
+    // GEMINI_FLASH excludes it via notTokens("3"), the 2.5 definitions
+    // require "2"/"5", and 3.1 Flash Lite requires "1"/"lite", so
+    // resolveAbilities came back empty for the id.
+    private val GEMINI_3_6_FLASH = defineModel {
+        tokens("gemini", "3", "6", "flash")
+        visionInput()
+        toolReasoningAbility()
+        visionGrounding("gemini")
+    }
     private val GEMINI_2_5_PRO = defineModel {
         tokens("gemini", "2", "5", "pro")
         visionInput()
@@ -382,7 +393,7 @@ object ModelRegistry {
         GPT_4_TURBO, GPT_4,
         CLAUDE_3_5_SONNET, CLAUDE_3_5_HAIKU, CLAUDE_3_7, CLAUDE_4, CLAUDE_4_5,
         CLAUDE_OPUS, CLAUDE_SONNET,
-        GEMINI_2_0_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO, GEMINI_3_1_FLASH_LITE,
+        GEMINI_2_0_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO, GEMINI_3_1_FLASH_LITE, GEMINI_3_6_FLASH,
         GEMINI_1_5_PRO, GEMINI_1_5_FLASH, GEMINI_PRO, GEMINI_FLASH,
         DEEPSEEK_V3, DEEPSEEK_CHAT, DEEPSEEK_R1, DEEPSEEK_REASONER, DEEPSEEK_V4, DEEPSEEK_OCR,
         QWEN_MAX, QWEN_PLUS, QWEN_TURBO, QWEN_3_5, QWEN_VL, QWEN2_VL, QWEN_QWQ,

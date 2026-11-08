@@ -235,7 +235,9 @@ class GeminiProvider(
                 override fun onOpen(eventSource: EventSource, response: Response) {
                     if (myGen != generation.get()) return // H-GEM1: 旧流回调,忽略
                     if (!response.isSuccessful) {
-                        val errText = ProviderHttpSupport.readBodyCapped(response)
+                        // Shaheen 2 fix (2026-11-08): larger read cap so the error
+                        // JSON (and its message) survives — see ERROR_BODY_READ_MAX_LEN.
+                        val errText = ProviderHttpSupport.readBodyCapped(response, ERROR_BODY_READ_MAX_LEN)
                         val code = response.code
                         // Gemini 3 代起不再接受 token 预算，只认档位。
                         // 模型名认不出来时先用旧写法发，被 400 拒了再换成档位重发一次。
@@ -325,6 +327,10 @@ class GeminiProvider(
                                         body = errText,
                                         retryAfterSec = ProviderError.parseRetryAfter(response.header("Retry-After")),
                                     ),
+                                    // Shaheen 2 fix (2026-11-08): keep the full server
+                                    // message on the exception too, not only in the
+                                    // event's message field.
+                                    message = msg,
                                 ),
                             ),
                         )
@@ -492,7 +498,7 @@ class GeminiProvider(
                             t?.message?.takeIf { m -> m.isNotBlank() }
                                 ?: ErrorCode.STREAM_INTERRUPTED.toMessage("gemini")
                         } else {
-                            val respBody = ProviderHttpSupport.readBodyCapped(it)
+                            val respBody = ProviderHttpSupport.readBodyCapped(it, ERROR_BODY_READ_MAX_LEN)
                             parseErrorMessage(it.code, respBody)
                         }
                     } ?: (t?.message ?: ErrorCode.NETWORK_ERROR.toMessage())
@@ -586,13 +592,17 @@ class GeminiProvider(
                         markKeyFailed(hardBlock = true)
                     }
                     // M-GEM14: 用 readBodyCapped 替代 runCatching { resp.body.string() }
-                    val errText = ProviderHttpSupport.readBodyCapped(resp)
+                    // Shaheen 2 fix (2026-11-08): larger read cap + the thrown
+                    // exception carries parseErrorMessage's full server message,
+                    // not just the 200-char excerpt inside ProviderError.from.
+                    val errText = ProviderHttpSupport.readBodyCapped(resp, ERROR_BODY_READ_MAX_LEN)
                     throw ProviderException(
                         ProviderError.from(
                             code = code,
                             body = errText,
                             retryAfterSec = ProviderError.parseRetryAfter(resp.header("Retry-After")),
                         ),
+                        message = parseErrorMessage(code, errText),
                     )
                 }
                 val raw = resp.body.string()
@@ -906,7 +916,13 @@ class GeminiProvider(
                 val finalParts = if (parts.isEmpty()) listOf(GeminiPart(text = msg.content)) else parts
                 GeminiContent(role = geminiRole, parts = finalParts)
             }
-        return system to rest
+        // Shaheen 2 fix (2026-11-08): enforce Gemini's functionCall/functionResponse
+        // pairing invariant on the final contents (see GeminiContentsSanitizer).
+        // splitSystem is the single conversion point for both the streaming and
+        // the non-streaming path, so every history shape — windowed, compressed,
+        // checkpoint-merged, or left incomplete by an interrupted tool turn —
+        // is repaired here instead of surfacing as HTTP 400 INVALID_ARGUMENT.
+        return system to GeminiContentsSanitizer.sanitize(rest)
     }
 
     /**
@@ -1146,8 +1162,16 @@ class GeminiProvider(
 
     /**
      * M-GEM3: 按 status 区分错误类型,给出人类可读的中文提示。
+     *
+     * Shaheen 2 fix (2026-11-08): the server's own `error.message` is the only
+     * place that says WHY a request was rejected (e.g. a functionCall /
+     * functionResponse count mismatch) — keep it essentially whole (bounded
+     * by [ERROR_MESSAGE_MAX_CHARS], secrets still redacted via
+     * [ProviderError.safeErrorDetail]) instead of cutting it to a 200-char
+     * excerpt, so the banner/log carry the real diagnosis. `internal` so the
+     * behavior is unit-testable (same precedent as [buildUrl]).
      */
-    private fun parseErrorMessage(code: Int, body: String): String {
+    internal fun parseErrorMessage(code: Int, body: String): String {
         if (body.isBlank()) return "HTTP $code"
         // L-GEM1: 用 resultOf 替代 runCatching,正确传播 CancellationException
         val detail = resultOf {
@@ -1167,7 +1191,10 @@ class GeminiProvider(
             status?.takeIf { it.isNotBlank() }?.let { append(" (").append(it).append(")") }
             statusHint?.let { append(" [").append(it).append("]") }
             detail?.message?.takeIf { it.isNotBlank() }?.let {
-                append(": ").append(ProviderError.safeErrorDetail(it) ?: it.take(200))
+                append(": ").append(
+                    ProviderError.safeErrorDetail(it, ERROR_MESSAGE_MAX_CHARS)
+                        ?: it.take(ERROR_MESSAGE_MAX_CHARS),
+                )
             }
         }
     }
@@ -1367,6 +1394,22 @@ class GeminiProvider(
 
         // completeText 429 切换 key 最大次数,防止无限递归
         const val MAX_KEY_SWITCHES = 3
+
+        /**
+         * Shaheen 2 fix (2026-11-08): Gemini error bodies are read with a larger
+         * cap than the shared 500-char default (ProviderHttpSupport.ERROR_BODY_MAX_LEN),
+         * so the error JSON stays parseable and `error.message` survives intact —
+         * with the 500-char cap a long diagnostic was cut mid-string, the JSON
+         * failed to decode, and the user saw a bare "HTTP 400".
+         */
+        const val ERROR_BODY_READ_MAX_LEN = 4096
+
+        /**
+         * Shaheen 2 fix (2026-11-08): bound for the server's own error message
+         * inside the user-visible error text (see parseErrorMessage). Long
+         * enough for Gemini's full INVALID_ARGUMENT diagnostics.
+         */
+        const val ERROR_MESSAGE_MAX_CHARS = 600
 
         /** M-GEM4: 安全相关 finishReason,发 Error 而非 Done。 */
         val SAFETY_FINISH_REASONS = setOf("SAFETY", "RECITATION", "BLOCKLIST")

@@ -27,8 +27,14 @@ object LiveCallConfig {
     /** Gemini Live 预置语音(沉稳、信息型男声)。 */
     const val DEFAULT_VOICE_NAME = "Charon"
 
-    /** 说话语种:巴基斯坦乌尔都语 —— 配合 Roman Urdu 的语音人格,让发音/语调贴合。 */
-    const val DEFAULT_LANGUAGE_CODE = "ur-PK"
+    /**
+     * 注意:这里故意没有「默认语种代码」常量。native-audio 模型在 setup 阶段会
+     * 拒绝显式的 speechConfig.languageCode 并当场关掉会话 —— 2026-11-08 真机
+     * 复测的原样报错:"Unsupported language code 'ur-PK' for model
+     * models/gemini-2.5-flash-native-audio-preview-12-2025"。这类模型自动识别
+     * 语种,语音人格已要求 Roman Urdu,不带代码照样说乌尔都语;以后谁想再把
+     * 代码加回来,先看 [LiveLanguageFallback] 与单测钉住的契约。
+     */
 
     /** 麦克风上行采样率(Live API 输入固定要求 16kHz PCM)。 */
     const val INPUT_SAMPLE_RATE = 16_000
@@ -83,20 +89,26 @@ Malik is your owner, not a member of the public. Obey him; do not lecture him. I
      * 构造 BidiGenerateContent 的首条 setup 消息(JSON 字符串)。
      *
      * @param toolDeclarations [LiveCallToolBridge] 产出的 functionDeclarations;为空时省略 tools 字段。
+     * @param languageCode 默认 null = setup 里**不带** languageCode 字段 —— 当前
+     *  native-audio 模型拒绝显式语种代码(见上方说明),且语种靠自动识别。只有
+     *  调用方明确传入时才把该字段写进 speechConfig。
      */
     fun buildSetupMessage(
         systemInstruction: String = VOICE_SYSTEM_INSTRUCTION,
         toolDeclarations: List<JsonObject> = emptyList(),
         modelId: String = LIVE_MODEL_ID,
         voiceName: String = DEFAULT_VOICE_NAME,
-        languageCode: String = DEFAULT_LANGUAGE_CODE,
+        languageCode: String? = null,
     ): String {
         val setup = buildJsonObject {
             put("model", "models/$modelId")
             putJsonObject("generationConfig") {
                 putJsonArray("responseModalities") { add(kotlinx.serialization.json.JsonPrimitive("AUDIO")) }
                 putJsonObject("speechConfig") {
-                    put("languageCode", languageCode)
+                    // 只在显式传入时才写这个字段;默认省略(理由见参数文档)。
+                    if (languageCode != null) {
+                        put("languageCode", languageCode)
+                    }
                     putJsonObject("voiceConfig") {
                         putJsonObject("prebuiltVoiceConfig") {
                             put("voiceName", voiceName)
@@ -138,4 +150,37 @@ Malik is your owner, not a member of the public. Obey him; do not lecture him. I
         }
         return buildJsonObject { put("setup", setup) }.toString()
     }
+}
+
+/**
+ * 语种代码回退的纯决策(与 [LiveSetupWatchdog] 同一种写法,JVM 可测):
+ *
+ * 背景:2026-11-08 真机复测里,带 languageCode 的 setup 被服务端以
+ * "Unsupported language code 'ur-PK' for model …" 当场拒绝并关连接,界面上的
+ * Retry 只会把同一条 setup 原样再发一遍,永远救不回来。当时的正解是 setup
+ * 根本不要带代码(已在 [LiveCallConfig.buildSetupMessage] 落实,默认不带)。
+ *
+ * 这张决策表是**安全网**:万一以后有调用方重新显式带上语种代码、又被服务端
+ * 以同样的理由拒绝,引擎自动用**不带代码**的 setup 重连一次,不用人手点
+ * Retry。三个条件缺一不可:
+ *  - 服务端的话确实指向语种代码([isUnsupportedLanguageError]);
+ *  - 刚发出的 setup 确实带了代码(没带代码还被这样拒,重连也不会有区别);
+ *  - 本次通话还没用过回退(最多一次,绝不无限重连)。
+ */
+object LiveLanguageFallback {
+
+    /** 服务端这句话是不是在抱怨语种代码(大小写不敏感地匹配两种说法)。 */
+    fun isUnsupportedLanguageError(serverMessage: String?): Boolean {
+        if (serverMessage.isNullOrBlank()) return false
+        val text = serverMessage.lowercase()
+        return "unsupported language" in text || "language code" in text
+    }
+
+    /** 是否应当自动改用「不带语种代码」的 setup 重连一次。 */
+    fun shouldRetryWithoutLanguageCode(
+        serverMessage: String?,
+        sentWithLanguageCode: Boolean,
+        alreadyRetried: Boolean,
+    ): Boolean =
+        sentWithLanguageCode && !alreadyRetried && isUnsupportedLanguageError(serverMessage)
 }

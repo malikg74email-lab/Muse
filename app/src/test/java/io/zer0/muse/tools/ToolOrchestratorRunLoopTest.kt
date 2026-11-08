@@ -517,4 +517,183 @@ class ToolOrchestratorRunLoopTest {
         assertEquals(1, host.calls.size)
         assertNotNull(result.finalAssistantMessage)
     }
+
+    // ── Shaheen 2 Fix — Compound Device Commands (2026-11-08) ──────────
+    //
+    // Malik ka phone retest: "YouTube open krk sharara song open kro" —
+    // YouTube asal mein khula (verified launch) lekin agent sirf pehle
+    // step par ruk gaya. In tests ki scripted rounds wahi shakal dohrati
+    // hain: verified app_launch → model ki text reply → loop ka rawaiya.
+
+    /** strings_services.xml ke `app_control_ok_verified` ki asal shakal ("— verified:" marker ke saath). */
+    private val verifiedLaunchResult =
+        "Done: com.google.android.youtube launch (via intent) — verified: the app is in the foreground now."
+
+    /** DeepLinkRegistry ke landed-verified report ki shakal (wahi marker). */
+    private val verifiedDeepLinkResult =
+        "Deep link opened: YouTube search for Sharara — verified: com.google.android.youtube is in the foreground"
+
+    /** DEVICE turn ke params: seeded owner message base history mein hai (truncate-proof). */
+    private fun deviceParams(maxRounds: Int = 8) = params(maxRounds = maxRounds).copy(baseHistorySize = 1)
+
+    private fun textRound(content: String): StreamRoundResult.Success = StreamRoundResult.Success(
+        assistantMessage = UIMessage(role = MessageRole.ASSISTANT, content = content),
+        hasToolCalls = false,
+        contentLength = content.length,
+        firstTokenTime = 0L,
+    )
+
+    private fun deviceHistory(command: String) =
+        mutableListOf(UIMessage(role = MessageRole.USER, content = command))
+
+    @Test
+    fun `compound device command continues past a verified first step to the next tool call`() = runBlocking {
+        val host = FakeToolLoopHost(
+            ArrayDeque(
+                listOf(
+                    toolRound(listOf(ToolCall("l1", "app_launch", """{"app":"com.google.android.youtube"}"""))),
+                    textRound("YouTube khul gaya hai."),
+                    toolRound(listOf(ToolCall("t1", "screen_tap_text", """{"text":"Search"}"""))),
+                    toolRound(listOf(ToolCall("r1", "screen_read", """{}"""))),
+                    textRound("Sharara chal raha hai."),
+                ),
+            ),
+        )
+        coEvery { registry.executeFromJson("app_launch", any()) } coAnswers { verifiedLaunchResult }
+        coEvery { registry.executeFromJson("screen_tap_text", any()) } coAnswers { "Tapped Search" }
+        coEvery { registry.executeFromJson("screen_read", any()) } coAnswers { "Sharara — the song is playing on screen" }
+
+        val history = deviceHistory("YouTube open krk sharara song open kro")
+        val result = orchestrator().runLoop(deviceParams(), history, host, accessor, coordinator)
+
+        assertTrue(result.success)
+        assertEquals(ToolLoopTerminationReason.COMPLETED, result.terminationReason)
+        // Pehla result agli round mein wapas gaya — loop ne model ko
+        // aage badhne ka chance dia (masla ye nahi tha).
+        assertTrue(
+            host.calls[1].history.any { it.role == MessageRole.TOOL && it.content == verifiedLaunchResult },
+        )
+        // Lekin verified launch ke bawajood text par rukna accept nahi
+        // hua: continuation check gaya aur baqi calls asal mein chalein.
+        assertTrue(
+            history.any {
+                it.role == MessageRole.USER &&
+                    it.content == DeviceCompoundContinuation.CONTINUATION_REPROMPT_TEXT
+            },
+        )
+        assertEquals(3, result.totalToolCallCount)
+        assertEquals(5, host.calls.size)
+        // Aakhri verification ke baad ki report saaf hai — partial note nahi.
+        assertEquals("Sharara chal raha hai.", result.finalAssistantMessage?.content)
+    }
+
+    @Test
+    fun `compound device command stops cleanly once the end state is verified after the check`() = runBlocking {
+        val host = FakeToolLoopHost(
+            ArrayDeque(
+                listOf(
+                    toolRound(listOf(ToolCall("l1", "app_launch", """{"app":"com.google.android.youtube"}"""))),
+                    textRound("YouTube khul gaya hai."),
+                    toolRound(listOf(ToolCall("r1", "screen_read", """{}"""))),
+                    textRound("Sharara chal raha hai — screen par verified hai."),
+                ),
+            ),
+        )
+        coEvery { registry.executeFromJson("app_launch", any()) } coAnswers { verifiedLaunchResult }
+        coEvery { registry.executeFromJson("screen_read", any()) } coAnswers { "Sharara — the song is playing on screen" }
+
+        val history = deviceHistory("YouTube open krk sharara song open kro")
+        val result = orchestrator().runLoop(deviceParams(), history, host, accessor, coordinator)
+
+        assertTrue(result.success)
+        assertEquals(ToolLoopTerminationReason.COMPLETED, result.terminationReason)
+        assertEquals(2, result.totalToolCallCount)
+        assertEquals(4, host.calls.size)
+        // End-state verification ne qarz utaar dia: final report saaf hai.
+        assertEquals("Sharara chal raha hai — screen par verified hai.", result.finalAssistantMessage?.content)
+    }
+
+    @Test
+    fun `compound device command that still stops after the check ends with an honest partial note`() = runBlocking {
+        val host = FakeToolLoopHost(
+            ArrayDeque(
+                listOf(
+                    toolRound(listOf(ToolCall("l1", "app_launch", """{"app":"com.google.android.youtube"}"""))),
+                    textRound("YouTube khul gaya hai."),
+                    textRound("Ho gaya, YouTube khul gaya hai."),
+                ),
+            ),
+        )
+        coEvery { registry.executeFromJson("app_launch", any()) } coAnswers { verifiedLaunchResult }
+
+        val history = deviceHistory("YouTube open krk sharara song open kro")
+        val result = orchestrator().runLoop(deviceParams(), history, host, accessor, coordinator)
+
+        assertTrue(result.success)
+        assertEquals(ToolLoopTerminationReason.COMPLETED, result.terminationReason)
+        assertEquals(1, result.totalToolCallCount)
+        assertEquals(3, host.calls.size)
+        // Bare "Done" nahi: final jawab par plain partial note laga hai.
+        val finalContent = result.finalAssistantMessage?.content.orEmpty()
+        assertTrue(finalContent.startsWith("Ho gaya, YouTube khul gaya hai."))
+        assertTrue(finalContent.contains("could not be confirmed"))
+    }
+
+    @Test
+    fun `single step device command keeps the phase 3 behaviour - no continuation check`() = runBlocking {
+        val host = FakeToolLoopHost(
+            ArrayDeque(
+                listOf(
+                    toolRound(listOf(ToolCall("l1", "app_launch", """{"app":"com.google.android.youtube"}"""))),
+                    finalRound(),
+                ),
+            ),
+        )
+        coEvery { registry.executeFromJson("app_launch", any()) } coAnswers { verifiedLaunchResult }
+
+        val history = deviceHistory("YouTube kholo")
+        val result = orchestrator().runLoop(deviceParams(), history, host, accessor, coordinator)
+
+        assertTrue(result.success)
+        assertEquals(ToolLoopTerminationReason.COMPLETED, result.terminationReason)
+        assertEquals(1, result.totalToolCallCount)
+        assertEquals(2, host.calls.size)
+        assertFalse(
+            history.any { it.content == DeviceCompoundContinuation.CONTINUATION_REPROMPT_TEXT },
+        )
+        assertEquals("done", result.finalAssistantMessage?.content)
+    }
+
+    @Test
+    fun `deep link step counts as a device action and its verified report joins the same discipline`() = runBlocking {
+        val host = FakeToolLoopHost(
+            ArrayDeque(
+                listOf(
+                    toolRound(listOf(ToolCall("l1", "app_launch", """{"app":"com.google.android.youtube"}"""))),
+                    toolRound(listOf(ToolCall("d1", "app_deep_link", """{"app":"youtube","query":"Sharara"}"""))),
+                    textRound("Search results khul gaye hain."),
+                    toolRound(listOf(ToolCall("r1", "screen_read", """{}"""))),
+                    textRound("Sharara chal raha hai."),
+                ),
+            ),
+        )
+        coEvery { registry.executeFromJson("app_launch", any()) } coAnswers { verifiedLaunchResult }
+        coEvery { registry.executeFromJson("app_deep_link", any()) } coAnswers { verifiedDeepLinkResult }
+        coEvery { registry.executeFromJson("screen_read", any()) } coAnswers { "Sharara — the song is playing on screen" }
+
+        val history = deviceHistory("YouTube open krk sharara song open kro")
+        val result = orchestrator().runLoop(deviceParams(), history, host, accessor, coordinator)
+
+        assertTrue(result.success)
+        assertEquals(3, result.totalToolCallCount)
+        assertEquals(5, host.calls.size)
+        // Deep-link ka verified landing bhi "poora command" nahi tha
+        // (results page ≠ gana chal raha): aik continuation check gaya,
+        // end-state verification ke baad report saaf ayi.
+        assertEquals(
+            1,
+            history.count { it.content == DeviceCompoundContinuation.CONTINUATION_REPROMPT_TEXT },
+        )
+        assertEquals("Sharara chal raha hai.", result.finalAssistantMessage?.content)
+    }
 }

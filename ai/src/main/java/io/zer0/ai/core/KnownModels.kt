@@ -555,6 +555,23 @@ object KnownModels {
                 description = "Google Gemini 3.1 Flash Lite",
             ),
         )
+        // Shaheen 2 fix (2026-11-08): Malik's current phone model
+        // ("Gemini 3.6 Flash") — same gap as 3.1 Flash Lite had in Phase 3:
+        // no exact entry, so lookup returned null. Values follow the repo's
+        // Gemini Flash pattern (1M context, 65536 max output, same
+        // modalities/abilities); pricing deliberately null (not verifiable
+        // offline — KnownModels never guesses prices).
+        put(
+            "gemini-3.6-flash",
+            KnownModelInfo(
+                contextWindow = 1000000,
+                maxOutputTokens = 65536,
+                inputModalities = setOf(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO, Modality.FILE),
+                outputModalities = TEXT_OUT,
+                abilities = setOf(TOOL, REASONING),
+                description = "Google Gemini 3.6 Flash",
+            ),
+        )
 
         // ── DeepSeek 系列 ──
         put(

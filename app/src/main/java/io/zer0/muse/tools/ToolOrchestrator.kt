@@ -869,6 +869,21 @@ class ToolOrchestrator(
         var autoContinueRounds = 0
         var fileToolRepromptUsed = false
         var fileToolsUsedThisTurn = false
+        // Shaheen 2 Fix — Compound Device Commands (2026-11-08): Phase 3 ka
+        // gate PER-ACTION verification maangta hai — app_launch ka apna
+        // "— verified:" marker deviceVerified=true kar deta hai, is liye
+        // compound command ("YouTube open krk sharara song open kro") ka
+        // pehla step verify hote hi model ki text reply clean COMPLETED
+        // accept ho jati thi, baqi steps (search/play) hue hi nahi the.
+        // Ye hisaab wo kami band karta hai (pure faislay
+        // DeviceCompoundContinuation mein): command compound hai?
+        // continuation check ho chuka? aakhri device action ke baad koi
+        // naya action ya verification aya ya model seedha text par ruka?
+        val compoundDeviceCommand =
+            turnMode == ExecutionMode.DEVICE &&
+                DeviceCompoundContinuation.isCompoundDeviceCommand(lastUserText)
+        var deviceContinuationReprompts = 0
+        var deviceActionSinceContinuationCheck = false
         var finalAssistantMessage: UIMessage? = null
         // A-07: 非正常退出原因(卡死/连续失败),用于收尾消息文案
         var abortReason: String? = null
@@ -1231,6 +1246,73 @@ class ToolOrchestrator(
                             Logger.w(
                                 TAG,
                                 "Device action finished without screen verification; final reply marked unverified (no fake success)" +
+                                    " | sessionId=${params.sessionId}",
+                            )
+                            break
+                        }
+                        // Shaheen 2 Fix — Compound Device Commands (2026-11-08):
+                        // Upar wala Phase 3 gate tab fire hota hai jab koi
+                        // verification mili hi na ho. Malik wala case us se
+                        // ulta tha: app_launch ka apna "— verified:" marker
+                        // deviceVerified=true kar chuka tha, is liye compound
+                        // command ("YouTube open krk sharara song open kro")
+                        // ke sirf pehle step par model ki text reply clean
+                        // COMPLETED accept ho gayi — search/play hue hi nahi.
+                        // Yahan ka usool: compound command mein "ho gaya"
+                        // tab mana jaye jab aakhri action ke baad ya to koi
+                        // naya step chala ho ya end-state screen par verify
+                        // hua ho. Warna pehle aik bounded continuation check
+                        // (baqi steps karo ya end-state verify karo), aur
+                        // model phir bhi rukay to final jawab par plain
+                        // partial note — adhoora kaam bare "Done" kabhi nahi.
+                        val canCompoundReprompt = !forceFinalResponse && round < execPolicy.maxRounds
+                        if (DeviceCompoundContinuation.shouldRequestContinuation(
+                                isCompound = compoundDeviceCommand,
+                                deviceActionExecuted = deviceActionExecuted,
+                                actionSinceCheck = deviceActionSinceContinuationCheck,
+                                continuationRepromptsUsed = deviceContinuationReprompts,
+                                canReprompt = canCompoundReprompt,
+                            )
+                        ) {
+                            deviceContinuationReprompts++
+                            Logger.w(
+                                TAG,
+                                "Compound device command stopped after a verified step; " +
+                                    "re-prompting once to finish the remaining steps or verify the end state" +
+                                    " | sessionId=${params.sessionId} | round=$round",
+                            )
+                            continueWithUserNote(
+                                outcome.assistantMessage,
+                                DeviceCompoundContinuation.CONTINUATION_REPROMPT_TEXT,
+                            )
+                            continue
+                        }
+                        if (DeviceCompoundContinuation.shouldMarkPartial(
+                                isCompound = compoundDeviceCommand,
+                                deviceActionExecuted = deviceActionExecuted,
+                                actionSinceCheck = deviceActionSinceContinuationCheck,
+                                continuationRepromptsUsed = deviceContinuationReprompts,
+                                canReprompt = canCompoundReprompt,
+                            )
+                        ) {
+                            hasToolCalls = false
+                            finalAssistantMessage =
+                                outcome.assistantMessage.copy(
+                                    toolCalls = emptyList(),
+                                    content = outcome.assistantMessage.content +
+                                        DeviceCompoundContinuation.PARTIAL_NOTE_SUFFIX,
+                                )
+                            terminationReason =
+                                if (forceFinalResponse) {
+                                    ToolLoopTerminationReason.COMPLETED_AFTER_TOOL_FAILURES
+                                } else {
+                                    ToolLoopTerminationReason.COMPLETED
+                                }
+                            forceFinalResponse = false
+                            Logger.w(
+                                TAG,
+                                "Compound device command ended without the remaining steps done or verified; " +
+                                    "final reply marked possibly incomplete (no bare Done)" +
                                     " | sessionId=${params.sessionId}",
                             )
                             break
@@ -1634,11 +1716,28 @@ class ToolOrchestrator(
                     if (turnMode == ExecutionMode.DEVICE) {
                         for (result in execResults) {
                             val name = result.tc.name
+                            // Compound-continuation hisaab (2026-11-08): koi
+                            // kamyab verification ya "— verified:" wala result
+                            // aakhri action ka qarz utaar deta hai. Ye saaf
+                            // karna action branch se PEHLE hai taake aik
+                            // verified ACTION (maslan app_launch) apna qarz
+                            // khud note bhi kare — tartib hi semantics hai:
+                            // jo cheez action ke BAAD ayi, wahi use settle
+                            // karti hai; naya action naya qarz banata hai.
+                            if (result.isSuccess &&
+                                (ExecutionModeRouter.isVerificationTool(name) ||
+                                    ExecutionModeRouter.resultShowsForegroundVerification(result.finalToolResult))
+                            ) {
+                                deviceActionSinceContinuationCheck = false
+                            }
                             if (ExecutionModeRouter.isVerificationTool(name) && result.isSuccess) {
                                 deviceVerified = true
                             }
                             if (ExecutionModeRouter.isDeviceActionTool(name)) {
-                                if (result.isSuccess) deviceActionExecuted = true
+                                if (result.isSuccess) {
+                                    deviceActionExecuted = true
+                                    deviceActionSinceContinuationCheck = true
+                                }
                                 if (ExecutionModeRouter.resultShowsForegroundVerification(result.finalToolResult)) {
                                     deviceActionExecuted = true
                                     deviceVerified = true
