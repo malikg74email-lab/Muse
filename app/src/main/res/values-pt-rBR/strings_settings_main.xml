@@ -202,8 +202,6 @@
     <string name="settings_mcp_empty_subtitle">Conecte um servidor de ferramentas externo para o assistente usar essas ferramentas</string>
     <string name="settings_mcp_failed">Falha: %1$s</string>
     <string name="settings_mcp_more">Mais</string>
-    <string name="settings_mcp_oauth_authorize">Autorização OAuth</string>
-    <string name="settings_mcp_oauth_cannot_start">Não é possível iniciar o fluxo de autorização OAuth</string>
     <string name="settings_mcp_oauth_open_failed">Não é possível abrir a página de autorização: %1$s</string>
     <string name="settings_mcp_oauth_revoke">Revogar OAuth</string>
     <string name="settings_mcp_oauth_revoked">Autorização OAuth revogada</string>

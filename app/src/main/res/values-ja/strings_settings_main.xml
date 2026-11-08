@@ -202,8 +202,6 @@
     <string name="settings_mcp_empty_subtitle">外部ツールサーバーに接続すると、アシスタントがそのツールを使えます</string>
     <string name="settings_mcp_failed">失敗しました: %1$s</string>
     <string name="settings_mcp_more">もっと</string>
-    <string name="settings_mcp_oauth_authorize">OAuth認可</string>
-    <string name="settings_mcp_oauth_cannot_start">OAuth認証フローを開始できません</string>
     <string name="settings_mcp_oauth_open_failed">認証ページを開けません: %1$s</string>
     <string name="settings_mcp_oauth_revoke">OAuthを取り消す</string>
     <string name="settings_mcp_oauth_revoked">OAuth認可が取り消されました</string>
