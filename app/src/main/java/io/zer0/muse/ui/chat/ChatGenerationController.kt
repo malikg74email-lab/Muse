@@ -633,10 +633,47 @@ internal class ChatGenerationController(
             }
     }
 
+    /**
+     * 请求所属会话已不是当前会话时:回滚其乐观占位消息并跳过该请求
+     * (保留 outbox 给切回后的恢复流程),返回 true 表示已跳过。
+     *
+     * 该判定只读状态快照,不依赖任何 IO 结果 —— 因此必须在
+     * [consumeSendRequest] 等待 outbox 落盘之前先判一次:outboxReady 是
+     * Dispatchers.IO 上的真实异步,先等它再回滚会让回滚时机取决于 IO
+     * 线程的完成速度(IO 慢时占位消息残留、回滚被无限推迟)。
+     *
+     * B-14: 不清全局 isStreaming —— 旧会话请求不得隐藏当前会话的流式动画;
+     * 仅当当前会话确无在途生成时才复位指示器。
+     */
+    private fun skipRequestIfSessionSwitched(req: SendRequest): Boolean {
+        val state = accessor.snapshot
+        val currentSid =
+            if (state.isAgentMode) {
+                state.agentSessionId ?: req.sessionId
+            } else {
+                state.currentSessionId ?: req.sessionId
+            }
+        if (currentSid == req.sessionId) return false
+        val currentGenerating = chatGenerationManager.activeGenerations.value.containsKey(currentSid)
+        accessor.update { st ->
+            val filtered =
+                deps.stateStore.messages.value.filterNot { msg ->
+                    msg.id == req.userMessage.id || msg.id == req.assistantMessageId
+                }
+            deps.stateStore.messages.value = filtered
+            if (currentGenerating) st else st.copy(isStreaming = false, isWaitingFirstToken = false)
+        }
+        Logger.i("ChatVM", "Skipping outbox request outside the current session: ${req.outboxId}")
+        return true
+    }
+
     /** 消费单条发送请求:会话匹配校验 → 落盘 user 消息 → 启动生成 → 清理 outbox。 */
     @Suppress("TooGenericExceptionCaught")
     suspend fun consumeSendRequest(req: SendRequest) {
         deps.generationState.outboxRecoveryQueuedIds.remove(req.outboxId)
+        // 会话已切换的请求直接跳过:判定只读快照,不必等 outbox 落盘
+        // (切走的请求本就保留 outbox,等它落盘只会推迟回滚)。
+        if (skipRequestIfSessionSwitched(req)) return
         // 新请求必须先确认 outbox 已落盘；否则 launchStream 后立即删除 outbox 会留下不可恢复窗口。
         if (req.outboxReady != null && !req.outboxReady.await()) {
             rollbackOptimisticSend(req)
@@ -653,6 +690,8 @@ internal class ChatGenerationController(
             accessor.update { it.copy(isStreaming = false, isWaitingFirstToken = false) }
             return
         }
+        // await outbox 期间用户仍可能切换会话,再判一次(与原逻辑同语义)。
+        if (skipRequestIfSessionSwitched(req)) return
         val state = accessor.snapshot
         val currentSid =
             if (state.isAgentMode) {
@@ -660,22 +699,6 @@ internal class ChatGenerationController(
             } else {
                 state.currentSessionId ?: req.sessionId
             }
-        if (currentSid != req.sessionId) {
-            // 会话已切换,该 req 被跳过 — 仅回滚乐观更新(占位消息),保留 outbox 给切回后的恢复流程。
-            // B-14: 不清全局 isStreaming —— 旧会话请求不得隐藏当前会话的流式动画;
-            // 仅当当前会话(List 当前)确无在途生成时才复位指示器。
-            val currentGenerating = chatGenerationManager.activeGenerations.value.containsKey(currentSid)
-            accessor.update { st ->
-                val filtered =
-                    deps.stateStore.messages.value.filterNot { msg ->
-                        msg.id == req.userMessage.id || msg.id == req.assistantMessageId
-                    }
-                deps.stateStore.messages.value = filtered
-                if (currentGenerating) st else st.copy(isStreaming = false, isWaitingFirstToken = false)
-            }
-            Logger.i("ChatVM", "Skipping outbox request outside the current session: ${req.outboxId}")
-            return
-        }
         try {
             if (restoreBlocksChatWrites("appendUserMessage")) {
                 rollbackOptimisticSend(req)
